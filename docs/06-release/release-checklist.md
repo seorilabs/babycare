@@ -9,7 +9,7 @@
 
 ## Architecture Gate
 
-- [x] `pnpm run test:core` — 23건 통과
+- [x] `pnpm run test:core` — 25건 통과
 - [x] `pnpm run check:architecture`
 - [x] platform SDK import 없이 `packages/product-core` 경계 구현
 - [x] 현재 변경 snapshot의 architecture/core gate 재실행 증거

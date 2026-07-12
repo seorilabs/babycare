@@ -4,7 +4,7 @@
 
 | 파일 / 표시 이름 | 트리거 | 현재 역할 |
 | --- | --- | --- |
-| `static-checks.yml` / `Static Checks` | PR·push→`main`, dispatch | org RN static workflow로 `pnpm run test` |
+| `static-checks.yml` / `Static Checks` | PR·push→`main`, dispatch | org RN static workflow로 `test:static`, 별도 Java 21 job으로 Firebase Emulator |
 | `release-inventory.yml` / `Release Inventory` | dispatch | `check_release_readiness.sh`; placeholder가 남아 있어 현재 실패가 정상 |
 | `release-tag.yml` / `Release Tag` | dispatch | 명시적 SemVer tag |
 | `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | AIT build·배포 caller; target 미초기화 |
@@ -18,6 +18,7 @@
 
 - 현재 `seorilabs/babycare`는 private repo다. caller는 public/private 양쪽을 고려해 `github.event.repository.private` 조건을 둔다.
 - private repo의 JS/TS/docs/AIT candidate는 `seorilabs-rpi-arm64`를 우선 사용한다.
+- Firebase Emulator job도 private repo에서는 `seorilabs-rpi-arm64`를 사용하되 runner image의 Java를 가정하지 않고 `actions/setup-java@v5`로 Temurin 21을 준비한다.
 - public repo 또는 public PR path에서는 `ubuntu-latest` fallback을 사용한다.
 - Android release build는 RPI ARC로 보내지 않고 `ubuntu-latest` x64 Linux runner를 사용한다.
 - App Store/Xcode build는 RPI ARC로 보내지 않고 `macos-latest` runner를 사용한다.

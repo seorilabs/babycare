@@ -3,6 +3,7 @@ import {Alert, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-na
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import type {CareEvent, CareEventKind} from '@babycare/product-core';
 
+import {LocalSessionHydrationError} from './src/adapters/local/local-session-repository';
 import {appContainer} from './src/app/container';
 import {createLocalSession, domainContext, type LocalSession} from './src/app/session';
 import {createTheme} from './src/app/theme';
@@ -42,7 +43,15 @@ function BabyCareApp() {
     appContainer.sessionRepository
       .load()
       .then(value => setSession(value))
-      .catch(() => setSession(undefined))
+      .catch(error => {
+        setSession(undefined);
+        if (error instanceof LocalSessionHydrationError) {
+          Alert.alert(
+            '로컬 정보를 복구할 수 없어요',
+            '손상되었거나 이전 형식인 로컬 정보를 지웠습니다. 돌봄 정보를 다시 입력해 주세요.',
+          );
+        }
+      })
       .finally(() => setLoaded(true));
   }, []);
 
@@ -99,11 +108,12 @@ function BabyCareApp() {
           now={now}
           onDelete={async event => {
             try {
-              await appContainer.softDeleteCareEvent({
+              const deleted = await appContainer.softDeleteCareEvent({
                 groupId: context.groupId,
                 eventId: event.id,
                 requestedBy: context.caregiverId,
               });
+              setEvents(current => current.filter(item => item.id !== deleted.id));
               setSavedMessage('기록을 삭제했어요');
             } catch (error) {
               Alert.alert('삭제할 수 없어요', error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.');

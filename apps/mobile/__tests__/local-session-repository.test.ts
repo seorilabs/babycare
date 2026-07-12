@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import {LocalSessionRepository} from '../src/adapters/local/local-session-repository';
+import {
+  LocalSessionHydrationError,
+  LocalSessionRepository,
+} from '../src/adapters/local/local-session-repository';
 import type {LocalSession} from '../src/app/session';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -10,6 +13,9 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 const getItem = AsyncStorage.getItem as jest.MockedFunction<typeof AsyncStorage.getItem>;
+const removeItem = AsyncStorage.removeItem as jest.MockedFunction<
+  typeof AsyncStorage.removeItem
+>;
 
 const validSession: LocalSession = {
   groupId: 'group-without-a-local-prefix',
@@ -42,16 +48,20 @@ describe('LocalSessionRepository', () => {
     ['a name longer than 80 characters', {...validSession, babyName: '아'.repeat(81)}],
     ['a C0 control character', {...validSession, caregiverName: '보호\n자'}],
     ['a bidi control character', {...validSession, babyName: '아\u202E기'}],
-  ])('ignores a session with %s', async (_label, value) => {
-    await expect(load(value)).resolves.toBeUndefined();
+  ])('purges and reports a session with %s', async (_label, value) => {
+    await expect(load(value)).rejects.toBeInstanceOf(LocalSessionHydrationError);
+    expect(removeItem).toHaveBeenCalledTimes(1);
   });
 
   it.each([
     ['a non-calendar birth date', '2024-02-30'],
     ['a non-ISO birth date', '2024-2-29'],
     ['a future birth date', '9999-12-31'],
-  ])('ignores a session with %s', async (_label, birthDate) => {
-    await expect(load({...validSession, birthDate})).resolves.toBeUndefined();
+  ])('purges and reports a session with %s', async (_label, birthDate) => {
+    await expect(load({...validSession, birthDate})).rejects.toBeInstanceOf(
+      LocalSessionHydrationError,
+    );
+    expect(removeItem).toHaveBeenCalledTimes(1);
   });
 
   it.each([
@@ -60,13 +70,19 @@ describe('LocalSessionRepository', () => {
     ['a non-string caregiver ID', {caregiverId: 1}],
     ['an ambiguous invite code', {inviteCode: 'AB10IO'}],
     ['a lowercase invite code', {inviteCode: 'ab23cd'}],
-  ])('ignores a session with %s', async (_label, patch) => {
-    await expect(load({...validSession, ...patch})).resolves.toBeUndefined();
+  ])('purges and reports a session with %s', async (_label, patch) => {
+    await expect(load({...validSession, ...patch})).rejects.toBeInstanceOf(
+      LocalSessionHydrationError,
+    );
+    expect(removeItem).toHaveBeenCalledTimes(1);
   });
 
-  it('ignores malformed JSON', async () => {
+  it('purges and reports malformed JSON', async () => {
     getItem.mockResolvedValueOnce('{');
 
-    await expect(new LocalSessionRepository().load()).resolves.toBeUndefined();
+    await expect(new LocalSessionRepository().load()).rejects.toBeInstanceOf(
+      LocalSessionHydrationError,
+    );
+    expect(removeItem).toHaveBeenCalledTimes(1);
   });
 });

@@ -11,6 +11,17 @@ import {isValidBirthDate, type LocalSession} from '../../app/session';
 
 const SESSION_KEY = '@babycare/session/v1';
 
+export class LocalSessionHydrationError extends Error {
+  constructor(reason: 'invalid-json' | 'invalid-schema') {
+    super(
+      reason === 'invalid-json'
+        ? 'Saved local session is not valid JSON'
+        : 'Saved local session does not match the current schema',
+    );
+    this.name = 'LocalSessionHydrationError';
+  }
+}
+
 function isSession(value: unknown): value is LocalSession {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
@@ -44,18 +55,32 @@ function isSession(value: unknown): value is LocalSession {
   }
 }
 
+async function discardInvalidSession(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(SESSION_KEY);
+  } catch {
+    // The original validation error remains the actionable recovery signal.
+  }
+}
+
 export class LocalSessionRepository {
   async load(): Promise<LocalSession | undefined> {
     const raw = await AsyncStorage.getItem(SESSION_KEY);
     if (!raw) {
       return undefined;
     }
+    let value: unknown;
     try {
-      const value: unknown = JSON.parse(raw);
-      return isSession(value) ? value : undefined;
+      value = JSON.parse(raw);
     } catch {
-      return undefined;
+      await discardInvalidSession();
+      throw new LocalSessionHydrationError('invalid-json');
     }
+    if (!isSession(value)) {
+      await discardInvalidSession();
+      throw new LocalSessionHydrationError('invalid-schema');
+    }
+    return value;
   }
 
   async save(session: LocalSession): Promise<void> {

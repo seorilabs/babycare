@@ -24,6 +24,9 @@ export function createSoftDeleteCareEvent(dependencies: UpdateCareEventDependenc
       throw new Error('Only the original caregiver can delete this event');
     }
     const now = dependencies.clock.now();
+    if (now < event.updatedAt) {
+      throw new Error('System clock moved behind the last care event update');
+    }
     const deleted = {
       ...event,
       deletedAt: now,

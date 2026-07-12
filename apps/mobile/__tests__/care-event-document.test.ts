@@ -85,4 +85,56 @@ describe('Firebase care event document mapper', () => {
       }).occurredAt,
     ).toBe(14_000);
   });
+
+  it('rejects inconsistent deletion and audit metadata explicitly', () => {
+    for (const data of [
+      {...valid, isDeleted: true},
+      {...valid, deletedAt: 2_000},
+    ]) {
+      expect(() =>
+        decodeCareEventDocument({
+          documentId: 'event-1',
+          groupId: 'group-1',
+          data,
+        }),
+      ).toThrow(/deletion state/);
+    }
+    expect(() =>
+      decodeCareEventDocument({
+        documentId: 'event-1',
+        groupId: 'group-1',
+        data: {...valid, updatedAt: 1_999},
+      }),
+    ).toThrow(/updatedAt/);
+    expect(() =>
+      decodeCareEventDocument({
+        documentId: 'event-1',
+        groupId: 'group-1',
+        data: {
+          ...valid,
+          updatedAt: 3_000,
+          deletedAt: 2_500,
+          isDeleted: true,
+          revision: 2,
+        },
+      }),
+    ).toThrow(/deletedAt/);
+  });
+
+  it('rejects invalid revision and occurrence audit boundaries', () => {
+    expect(() =>
+      decodeCareEventDocument({
+        documentId: 'event-1',
+        groupId: 'group-1',
+        data: {...valid, revision: 0},
+      }),
+    ).toThrow(/revision/);
+    expect(() =>
+      decodeCareEventDocument({
+        documentId: 'event-1',
+        groupId: 'group-1',
+        data: {...valid, occurredAt: 302_001},
+      }),
+    ).toThrow(/future/);
+  });
 });

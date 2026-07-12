@@ -63,3 +63,29 @@ it('recovers a stale sleep session by capping it at 48 hours', async () => {
   assert.equal(ended.endedAt, startedAt + 48 * 60 * 60 * 1_000);
   assert.equal(ended.updatedAt, startedAt + 48 * 60 * 60 * 1_000 + 1);
 });
+
+it('refuses to end sleep when the system clock moved behind the last update', async () => {
+  const active = createCareEvent(
+    {
+      groupId: groupId('group-1'),
+      babyId: babyId('baby-1'),
+      caregiverId: userId('caregiver-1'),
+      kind: 'sleep',
+      sleepType: 'nap',
+      startedAt: 10_000,
+    },
+    {id: eventId('sleep-clock-rollback'), now: 20_000},
+  );
+  const repository = new InMemoryCareEventRepository([active]);
+  const endSleep = createEndSleepSession({
+    repository,
+    clock: {now: () => 15_000},
+    analytics: {track: async () => undefined},
+  });
+
+  await assert.rejects(
+    endSleep({groupId: active.groupId, eventId: active.id}),
+    /clock moved/,
+  );
+  assert.equal((await repository.findById(active.groupId, active.id))?.revision, 1);
+});

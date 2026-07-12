@@ -53,6 +53,12 @@ describe('Firebase group document decoders', () => {
     };
     expect(decodeBaby('group-1', 'baby-1', baby).name).toBe('지안');
     expect(() => decodeBaby('group-1', 'baby-1', {...baby, birthDate: 'April'})).toThrow(/birthDate/);
+    expect(() => decodeBaby('group-1', 'baby-1', {...baby, dueDate: 20260419})).toThrow(
+      /dueDate/,
+    );
+    expect(() => decodeBaby('group-1', 'baby-1', {...baby, poisoned: true})).toThrow(
+      /unexpected/,
+    );
     expect(() =>
       decodeBaby('group-1', 'baby-1', {...baby, birthDate: '2026-02-29'}),
     ).toThrow(/birthDate/);
@@ -63,6 +69,18 @@ describe('Firebase group document decoders', () => {
       decodeBaby('group-1', 'baby-1', {
         ...baby,
         avatarStoragePath: 'https://example.com/public.png',
+      }),
+    ).toThrow(/avatarStoragePath/);
+    expect(() =>
+      decodeBaby('group-1', 'baby-1', {
+        ...baby,
+        avatarStoragePath: 'groups/group-1/babies/baby-2/avatar.png',
+      }),
+    ).toThrow(/avatarStoragePath/);
+    expect(() =>
+      decodeBaby('group-1', 'baby-1', {
+        ...baby,
+        avatarStoragePath: 'groups/group-1/babies/baby-1/../baby-2/avatar.png',
       }),
     ).toThrow(/avatarStoragePath/);
   });

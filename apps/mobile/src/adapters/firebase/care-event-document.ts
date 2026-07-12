@@ -172,14 +172,20 @@ export function decodeCareEventDocument(input: {
   const revision = numberField(data, 'revision');
   const deletedAt = optionalTimestamp(data, 'deletedAt');
   const isDeleted = data.isDeleted;
-  if (typeof isDeleted !== 'boolean' || isDeleted !== (deletedAt !== undefined)) {
+  if (updatedAt < createdAt) {
+    throw new Error('Care event updatedAt must not precede createdAt');
+  }
+  if (typeof isDeleted !== 'boolean') {
+    throw new Error('Care event isDeleted must be a boolean');
+  }
+  if (isDeleted !== (deletedAt !== undefined)) {
     throw new Error('Care event deletion state is invalid');
   }
   if (!Number.isInteger(revision) || revision < 1) {
     throw new Error('Care event revision must be a positive integer');
   }
-  if (updatedAt < createdAt || (deletedAt !== undefined && deletedAt !== updatedAt)) {
-    throw new Error('Care event audit timestamps are invalid');
+  if (deletedAt !== undefined && deletedAt !== updatedAt) {
+    throw new Error('Care event deletedAt must equal updatedAt');
   }
 
   // occurredAt is editable after creation. Revalidate it against the update

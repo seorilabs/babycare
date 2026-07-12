@@ -10,6 +10,7 @@
   },
   "scripts": {
     "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
+    "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:functions && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
     "test:core": "bash scripts/test_core.sh",
     "test:mobile": "pnpm --dir apps/mobile test",
     "test:firebase": "firebase emulators:exec --config firebase/firebase.json --project babycare-rules-test --only firestore,storage \"node --test --test-concurrency=1 firebase/tests/security-rules.test.mjs\"",

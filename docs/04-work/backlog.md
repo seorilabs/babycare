@@ -6,7 +6,7 @@
 
 | 상태 | 작업 | 완료 증거 / Blocker |
 | --- | --- | --- |
-| 구현·로컬 검증 완료 | platform-independent product core와 순수 테스트 | 수유·기저귀·수면·집계, 모유 좌·우 독립 시간, 날짜/ID 경계, 48시간 수면 복구와 로컬 active sleep 단일화. core 23건·architecture gate 통과 |
+| 구현·로컬 검증 완료 | platform-independent product core와 순수 테스트 | 수유·기저귀·수면·집계, 모유 좌·우 독립 시간, 날짜/ID·시계 역행 경계, 48시간 수면 복구와 로컬 active sleep 단일화. core 25건·architecture gate 통과 |
 | 로컬 구현·native smoke 완료 | Android/iOS 로컬 UX 세로 슬라이스 | 온보딩·기록·홈·타임라인·통계·AsyncStorage 구현. Android JDK 21 build/실기기 process, iOS RNFirebase build와 light/dark Simulator first-screen 통과 |
 | 로컬 검증 완료·실제 project 대기 | Firestore/Storage Rules와 Emulator 회귀 테스트 | 멤버십, 표시문자/달력 날짜, event schema/soft delete/close-only, Storage 크기·권한 18건 통과. 실제 project 통합 검증 필요 |
 | 대기 | Firebase non-production/prod project 전략과 client app 등록 | 실제 project ID와 환경별 config `확정 필요` |

@@ -23,6 +23,9 @@ export function createEndSleepSession(dependencies: EndSleepSessionDependencies)
       throw new Error('Sleep session has already ended');
     }
     const now = dependencies.clock.now();
+    if (now < event.updatedAt) {
+      throw new Error('System clock moved behind the last care event update');
+    }
     if (now <= event.startedAt) {
       throw new Error('Sleep session cannot end before it starts');
     }

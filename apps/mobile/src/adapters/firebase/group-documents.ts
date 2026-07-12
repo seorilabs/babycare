@@ -34,6 +34,20 @@ function text(data: Record<string, unknown>, key: string): string {
   return value;
 }
 
+function optionalText(
+  data: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = data[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${key} must be a non-empty string`);
+  }
+  return value;
+}
+
 function time(data: Record<string, unknown>, key: string): number {
   const value = data[key];
   if (!Number.isSafeInteger(value) || (value as number) < 0) {
@@ -121,7 +135,13 @@ export function decodeBaby(groupDocumentId: string, babyDocumentId: string, valu
     ['id', 'groupId', 'name', 'birthDate', 'sex', 'dueDate', 'avatarStoragePath', 'createdAt', 'updatedAt'],
     'Baby',
   );
-  if (text(data, 'groupId') !== groupDocumentId || text(data, 'id') !== babyDocumentId) {
+  const documentBabyId = babyId(babyDocumentId);
+  const dataBabyId = babyId(text(data, 'id'));
+  if (
+    documentBabyId !== babyDocumentId ||
+    text(data, 'groupId') !== groupDocumentId ||
+    dataBabyId !== documentBabyId
+  ) {
     throw new Error('Baby identity does not match its path');
   }
   const sex = text(data, 'sex');
@@ -132,26 +152,26 @@ export function decodeBaby(groupDocumentId: string, babyDocumentId: string, valu
   if (name.length > 80) {
     throw new Error('Baby name must be at most 80 characters');
   }
-  const avatarStoragePath = data.avatarStoragePath;
+  const dueDate = optionalText(data, 'dueDate');
+  const avatarStoragePath = optionalText(data, 'avatarStoragePath');
+  const avatarPrefix = `groups/${groupDocumentId}/babies/${documentBabyId}/`;
+  const avatarSuffix = avatarStoragePath?.slice(avatarPrefix.length);
   if (
     avatarStoragePath !== undefined &&
-    (typeof avatarStoragePath !== 'string' ||
-      !avatarStoragePath.startsWith(
-        `groups/${groupDocumentId}/babies/${babyDocumentId}/`,
-      ))
+    (!avatarStoragePath.startsWith(avatarPrefix) ||
+      !avatarSuffix ||
+      avatarSuffix.split('/').some(segment => !segment || segment === '.' || segment === '..'))
   ) {
     throw new Error('Baby avatarStoragePath is invalid');
   }
   return validateBaby({
-    id: babyId(babyDocumentId),
+    id: documentBabyId,
     groupId: groupId(groupDocumentId),
     name,
     birthDate: text(data, 'birthDate'),
     sex: sex as Baby['sex'],
-    ...(typeof data.dueDate === 'string' ? {dueDate: data.dueDate} : {}),
-    ...(typeof avatarStoragePath === 'string'
-      ? {avatarStoragePath}
-      : {}),
+    ...(dueDate !== undefined ? {dueDate} : {}),
+    ...(avatarStoragePath !== undefined ? {avatarStoragePath} : {}),
     createdAt: time(data, 'createdAt'),
     updatedAt: time(data, 'updatedAt'),
   });
