@@ -60,6 +60,7 @@ export async function createCareEventContainer(
   );
   let lifecycle: CareSessionLifecycle;
   let timelineFeed: CareEventTimelineFeed | undefined;
+  let stopTimelineOwner: () => void = () => undefined;
   const repository = new LocalFirstCareEventRepository(
     local,
     dependencies.remote,
@@ -69,6 +70,8 @@ export async function createCareEventContainer(
     },
   );
   const closeTimelineFeed = () => {
+    stopTimelineOwner();
+    stopTimelineOwner = () => undefined;
     timelineFeed?.close();
   };
   const purge = async () => {
@@ -103,7 +106,7 @@ export async function createCareEventContainer(
     });
     // Exactly one page owner is started per authenticated scope. UI callers
     // add presentation listeners to this instance instead of creating feeds.
-    timelineFeed.start(() => undefined);
+    stopTimelineOwner = timelineFeed.start(() => undefined);
   } catch (error) {
     stopSessionLifecycle?.();
     closeTimelineFeed();

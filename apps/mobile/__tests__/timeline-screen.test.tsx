@@ -94,10 +94,9 @@ describe('TimelineScreen bounded feed', () => {
     });
     const list = renderer.root.findByType(SectionList);
 
-    await ReactTestRenderer.act(async () => {
+    ReactTestRenderer.act(() => {
       list.props.onEndReached();
       list.props.onEndReached();
-      await Promise.resolve();
     });
 
     expect(onLoadMore).toHaveBeenCalledTimes(1);
@@ -105,10 +104,10 @@ describe('TimelineScreen bounded feed', () => {
     await ReactTestRenderer.act(async () => {
       resolveLoad?.();
       await Promise.resolve();
-    });
-    await ReactTestRenderer.act(async () => {
-      list.props.onEndReached();
       await Promise.resolve();
+    });
+    ReactTestRenderer.act(() => {
+      list.props.onEndReached();
     });
     expect(onLoadMore).toHaveBeenCalledTimes(2);
     await ReactTestRenderer.act(async () => {
@@ -137,10 +136,9 @@ describe('TimelineScreen bounded feed', () => {
     const retry = renderer.root.findByProps({
       accessibilityLabel: '이전 기록 다시 불러오기',
     });
-    await ReactTestRenderer.act(async () => {
+    ReactTestRenderer.act(() => {
       retry.props.onPress();
       retry.props.onPress();
-      await Promise.resolve();
     });
     expect(onRetryLoadMore).toHaveBeenCalledTimes(1);
     await ReactTestRenderer.act(async () => {
