@@ -30,6 +30,23 @@ service cloud.firestore {
       return /databases/$(database)/documents/groups/$(groupId)/babies/$(babyId);
     }
 
+    function eventPath(groupId, eventId) {
+      return /databases/$(database)/documents/groups/$(groupId)/events/$(eventId);
+    }
+
+    function activeSleepPath(groupId, babyId) {
+      return /databases/$(database)/documents/groups/$(groupId)/activeSleeps/$(babyId);
+    }
+
+    function mutationReceiptPath(groupId, receiptId) {
+      return /databases/$(database)/documents/groups/$(groupId)/eventMutationReceipts/$(receiptId);
+    }
+
+    function validMutationReceiptId(receiptId) {
+      return receiptId is string
+        && receiptId.matches('^.+@[1-9][0-9]*@[0-9a-f]{64}$');
+    }
+
     function groupExists(groupId) {
       return exists(groupPath(groupId));
     }
@@ -67,6 +84,16 @@ service cloud.firestore {
         && value.matches('^[^\\x{0000}-\\x{001F}\\x{007F}-\\x{009F}\\x{061C}\\x{200E}\\x{200F}\\x{202A}-\\x{202E}\\x{2066}-\\x{2069}]*$');
     }
 
+    function validDocumentId(value) {
+      return value is string
+        && value.size() > 0
+        && value.size() <= 128
+        && value != '.'
+        && value != '..'
+        && value.matches('^(\\S.*\\S|\\S)$')
+        && value.matches('^[^/\\x{0000}-\\x{001F}\\x{007F}-\\x{009F}\\x{061C}\\x{200E}\\x{200F}\\x{202A}-\\x{202E}\\x{2066}-\\x{2069}]*$');
+    }
+
     function validGroup(data, groupId) {
       return data.keys().hasAll([
           'id',
@@ -84,14 +111,13 @@ service cloud.firestore {
           'createdAt',
           'updatedAt'
         ])
+        && validDocumentId(groupId)
         && data.id == groupId
         && validDisplayText(data.name)
-        && data.ownerId is string
-        && data.ownerId.size() > 0
+        && validDocumentId(data.ownerId)
         && data.babyIds is list
         && data.babyIds.size() == 1
-        && data.babyIds[0] is string
-        && data.babyIds[0].size() > 0
+        && validDocumentId(data.babyIds[0])
         && existsAfter(babyPath(groupId, data.babyIds[0]))
         && data.createdAt is int
         && data.createdAt >= 0
@@ -120,6 +146,8 @@ service cloud.firestore {
           'color',
           'joinedAt'
         ])
+        && validDocumentId(groupId)
+        && validDocumentId(uid)
         && data.userId == uid
         && data.groupId == groupId
         && data.caregiverRole in ['parent', 'grandparent', 'sitter', 'teacher', 'other']
@@ -164,6 +192,8 @@ service cloud.firestore {
           'createdAt',
           'updatedAt'
         ])
+        && validDocumentId(groupId)
+        && validDocumentId(babyId)
         && data.id == babyId
         && data.groupId == groupId
         && validDisplayText(data.name)
@@ -202,14 +232,16 @@ service cloud.firestore {
           'createdAt',
           'updatedAt',
           'revision',
-          'isDeleted'
+          'isDeleted',
+          'lastMutationId',
+          'payloadHash'
         ])
+        && validDocumentId(groupId)
+        && validDocumentId(eventId)
         && data.id == eventId
         && data.groupId == groupId
-        && data.babyId is string
-        && data.babyId.size() > 0
-        && data.caregiverId is string
-        && data.caregiverId.size() > 0
+        && validDocumentId(data.babyId)
+        && validDocumentId(data.caregiverId)
         && data.occurredAt is int
         && data.occurredAt >= 0
         && isNotTooFarInFuture(data.occurredAt)
@@ -219,8 +251,12 @@ service cloud.firestore {
         && data.updatedAt is int
         && data.updatedAt >= data.createdAt
         && isNotTooFarInFuture(data.updatedAt)
+        && data.occurredAt <= data.updatedAt + 300000
         && data.revision is int
         && data.revision >= 1
+        && data.payloadHash is string
+        && data.payloadHash.matches('^[0-9a-f]{64}$')
+        && data.lastMutationId == eventId + '@' + string(data.revision) + '@' + data.payloadHash
         && data.isDeleted is bool
         && data.isDeleted == ('deletedAt' in data)
         && validOptionalEventFields(data);
@@ -240,6 +276,8 @@ service cloud.firestore {
           'updatedAt',
           'revision',
           'isDeleted',
+          'lastMutationId',
+          'payloadHash',
           'note',
           'deletedAt',
           'feedingType',
@@ -287,6 +325,8 @@ service cloud.firestore {
           'updatedAt',
           'revision',
           'isDeleted',
+          'lastMutationId',
+          'payloadHash',
           'note',
           'deletedAt',
           'diaperType'
@@ -308,6 +348,8 @@ service cloud.firestore {
           'updatedAt',
           'revision',
           'isDeleted',
+          'lastMutationId',
+          'payloadHash',
           'note',
           'deletedAt',
           'sleepType',
@@ -332,6 +374,154 @@ service cloud.firestore {
           || validSleepEvent(data));
     }
 
+    function isActiveSleep(data) {
+      return data.kind == 'sleep'
+        && !('endedAt' in data)
+        && !('deletedAt' in data)
+        && data.isDeleted == false;
+    }
+
+    function validActiveSleepLock(data, groupId, babyId) {
+      return data.keys().hasAll([
+          'groupId',
+          'babyId',
+          'eventId',
+          'caregiverId',
+          'startedAt',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'groupId',
+          'babyId',
+          'eventId',
+          'caregiverId',
+          'startedAt',
+          'createdAt'
+        ])
+        && validDocumentId(groupId)
+        && validDocumentId(babyId)
+        && data.groupId == groupId
+        && data.babyId == babyId
+        && validDocumentId(data.eventId)
+        && validDocumentId(data.caregiverId)
+        && data.startedAt is int
+        && data.startedAt >= 0
+        && data.createdAt is int
+        && data.createdAt >= 0;
+    }
+
+    function activeSleepLockMatchesEvent(data, event, eventId) {
+      return data.eventId == eventId
+        && data.groupId == event.groupId
+        && data.babyId == event.babyId
+        && data.caregiverId == event.caregiverId
+        && data.startedAt == event.startedAt
+        && data.createdAt == event.createdAt;
+    }
+
+    function hasMatchingActiveSleepAfter(groupId, eventId, event) {
+      return existsAfter(activeSleepPath(groupId, event.babyId))
+        && activeSleepLockMatchesEvent(
+          getAfter(activeSleepPath(groupId, event.babyId)).data,
+          event,
+          eventId
+        );
+    }
+
+    function hasMatchingActiveSleepBefore(groupId, eventId, event) {
+      return exists(activeSleepPath(groupId, event.babyId))
+        && activeSleepLockMatchesEvent(
+          get(activeSleepPath(groupId, event.babyId)).data,
+          event,
+          eventId
+        );
+    }
+
+    function validActiveSleepUpdate(groupId, eventId) {
+      return isActiveSleep(resource.data)
+        ? exists(activeSleepPath(groupId, resource.data.babyId))
+          && get(activeSleepPath(groupId, resource.data.babyId)).data.eventId == eventId
+          && (isActiveSleep(request.resource.data)
+            ? existsAfter(activeSleepPath(groupId, resource.data.babyId))
+              && getAfter(activeSleepPath(groupId, resource.data.babyId)).data.eventId == eventId
+              && request.resource.data.startedAt == resource.data.startedAt
+              && request.resource.data.occurredAt == resource.data.occurredAt
+            : !existsAfter(activeSleepPath(groupId, resource.data.babyId)))
+        : !isActiveSleep(request.resource.data);
+    }
+
+    function validMutationReceipt(data, groupId, receiptId) {
+      return data.keys().hasAll([
+          'id',
+          'groupId',
+          'babyId',
+          'eventId',
+          'revision',
+          'payloadHash',
+          'kind',
+          'actorUid',
+          'appliedAt',
+          'payload'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'groupId',
+          'babyId',
+          'eventId',
+          'revision',
+          'payloadHash',
+          'kind',
+          'actorUid',
+          'appliedAt',
+          'payload'
+        ])
+        && data.id == receiptId
+        && receiptId == data.eventId + '@' + string(data.revision) + '@' + data.payloadHash
+        && validDocumentId(groupId)
+        && data.groupId == groupId
+        && validDocumentId(data.babyId)
+        && validDocumentId(data.eventId)
+        && data.revision is int
+        && data.revision >= 1
+        && data.payloadHash is string
+        && data.payloadHash.matches('^[0-9a-f]{64}$')
+        && data.kind in ['create', 'update', 'end_sleep', 'soft_delete']
+        && data.actorUid == request.auth.uid
+        && data.appliedAt == request.time
+        && data.payload is map
+        && existsAfter(eventPath(groupId, data.eventId))
+        && data.payload == getAfter(eventPath(groupId, data.eventId)).data
+        && getAfter(eventPath(groupId, data.eventId)).data.groupId == groupId
+        && getAfter(eventPath(groupId, data.eventId)).data.babyId == data.babyId
+        && getAfter(eventPath(groupId, data.eventId)).data.revision == data.revision
+        && getAfter(eventPath(groupId, data.eventId)).data.lastMutationId == receiptId
+        && getAfter(eventPath(groupId, data.eventId)).data.payloadHash == data.payloadHash
+        // A receipt is accepted only with the exact event revision transition.
+        // This prevents a standalone future receipt from preclaiming a retry ID.
+        && (
+          (!exists(eventPath(groupId, data.eventId)) && data.revision == 1)
+          || (exists(eventPath(groupId, data.eventId))
+            && get(eventPath(groupId, data.eventId)).data.revision == data.revision - 1)
+        );
+    }
+
+    function hasMatchingMutationReceiptAfter(data, groupId, eventId, kind) {
+      let receipt = getAfter(
+        mutationReceiptPath(groupId, data.lastMutationId)
+      ).data;
+      return existsAfter(mutationReceiptPath(groupId, data.lastMutationId))
+        && receipt.id == data.lastMutationId
+        && receipt.groupId == groupId
+        && receipt.babyId == data.babyId
+        && receipt.eventId == eventId
+        && receipt.revision == data.revision
+        && receipt.payloadHash == data.payloadHash
+        && receipt.kind == kind
+        && receipt.actorUid == request.auth.uid
+        && receipt.appliedAt == request.time
+        && receipt.payload == data;
+    }
+
     function eventIdentityIsImmutable() {
       return request.resource.data.id == resource.data.id
         && request.resource.data.groupId == resource.data.groupId
@@ -347,6 +537,8 @@ service cloud.firestore {
           'occurredAt',
           'updatedAt',
           'revision',
+          'lastMutationId',
+          'payloadHash',
           'isDeleted',
           'note',
           'feedingType',
@@ -368,7 +560,9 @@ service cloud.firestore {
           'deletedAt',
           'isDeleted',
           'updatedAt',
-          'revision'
+          'revision',
+          'lastMutationId',
+          'payloadHash'
         ]);
     }
 
@@ -382,8 +576,16 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'endedAt',
           'updatedAt',
-          'revision'
+          'revision',
+          'lastMutationId',
+          'payloadHash'
         ]);
+    }
+
+    function eventUpdateMutationKind() {
+      return isSoftDeleteEventUpdate()
+        ? 'soft_delete'
+        : (isMemberClosingActiveSleep() ? 'end_sleep' : 'update');
     }
 
     match /groups/{groupId} {
@@ -456,6 +658,39 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      match /activeSleeps/{babyId} {
+        allow read: if isGroupMember(groupId);
+        allow create: if isGroupMember(groupId)
+          && validActiveSleepLock(request.resource.data, groupId, babyId)
+          && existsAfter(eventPath(groupId, request.resource.data.eventId))
+          && isActiveSleep(
+            getAfter(eventPath(groupId, request.resource.data.eventId)).data
+          )
+          && activeSleepLockMatchesEvent(
+            request.resource.data,
+            getAfter(eventPath(groupId, request.resource.data.eventId)).data,
+            request.resource.data.eventId
+          );
+        allow update: if false;
+        allow delete: if isGroupMember(groupId)
+          && validActiveSleepLock(resource.data, groupId, babyId)
+          && existsAfter(eventPath(groupId, resource.data.eventId))
+          && !isActiveSleep(
+            getAfter(eventPath(groupId, resource.data.eventId)).data
+          );
+      }
+
+      match /eventMutationReceipts/{receiptId} {
+        allow get: if isGroupMember(groupId)
+          && validMutationReceiptId(receiptId)
+          && (!exists(mutationReceiptPath(groupId, receiptId))
+            || resource.data.actorUid == request.auth.uid);
+        allow list: if false;
+        allow create: if isGroupMember(groupId)
+          && validMutationReceipt(request.resource.data, groupId, receiptId);
+        allow update, delete: if false;
+      }
+
       match /events/{eventId} {
         allow read: if isGroupMember(groupId);
         allow create: if isGroupMember(groupId)
@@ -465,12 +700,31 @@ service cloud.firestore {
           && request.resource.data.isDeleted == false
           && request.resource.data.createdAt == request.resource.data.updatedAt
           && request.resource.data.revision == 1
+          && (!isActiveSleep(request.resource.data)
+            || hasMatchingActiveSleepAfter(
+              groupId,
+              eventId,
+              request.resource.data
+            ))
+          && hasMatchingMutationReceiptAfter(
+            request.resource.data,
+            groupId,
+            eventId,
+            'create'
+          )
           && validEvent(request.resource.data, groupId, eventId);
         allow update: if isGroupMember(groupId)
           && !('deletedAt' in resource.data)
           && eventIdentityIsImmutable()
           && request.resource.data.updatedAt >= resource.data.updatedAt
           && request.resource.data.revision == resource.data.revision + 1
+          && validActiveSleepUpdate(groupId, eventId)
+          && hasMatchingMutationReceiptAfter(
+            request.resource.data,
+            groupId,
+            eventId,
+            eventUpdateMutationKind()
+          )
           && validEvent(request.resource.data, groupId, eventId)
           && (
             (resource.data.caregiverId == request.auth.uid

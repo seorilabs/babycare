@@ -48,6 +48,13 @@ describe('isPersistedCareEvent', () => {
       }),
     ).toBe(false);
     expect(isPersistedCareEvent({...feeding, updatedAt: Number.NaN})).toBe(false);
+    expect(isPersistedCareEvent({...feeding, id: 'event/escape'})).toBe(false);
+    expect(
+      isPersistedCareEvent({...feeding, caregiverId: `user\u202Eevil`}),
+    ).toBe(false);
+    expect(isPersistedCareEvent({...feeding, babyId: 'b'.repeat(129)})).toBe(
+      false,
+    );
   });
 
   it('rejects impossible sleep audit ranges', () => {

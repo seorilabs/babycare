@@ -1,5 +1,7 @@
 import {
+  getIdToken,
   onAuthStateChanged,
+  reload,
   signInAnonymously,
   signOut,
   type Auth,
@@ -18,6 +20,20 @@ function toIdentity(user: User | null): AuthIdentity | undefined {
   };
 }
 
+function isRevokedIdentityError(error: unknown): boolean {
+  const code =
+    error && typeof error === 'object' && 'code' in error
+      ? String(error.code)
+      : '';
+  return [
+    'auth/id-token-revoked',
+    'auth/invalid-user-token',
+    'auth/user-disabled',
+    'auth/user-not-found',
+    'auth/user-token-expired',
+  ].some(value => code.endsWith(value));
+}
+
 export class FirebaseAuthAdapter implements AuthPort {
   readonly #auth: Auth;
 
@@ -26,6 +42,23 @@ export class FirebaseAuthAdapter implements AuthPort {
   }
 
   async currentUser(): Promise<AuthIdentity | undefined> {
+    return toIdentity(this.#auth.currentUser);
+  }
+
+  async verifyCurrentUser(): Promise<AuthIdentity | undefined> {
+    const current = this.#auth.currentUser;
+    if (!current) {
+      return undefined;
+    }
+    try {
+      await reload(current);
+      await getIdToken(current, true);
+    } catch (error) {
+      if (isRevokedIdentityError(error)) {
+        return undefined;
+      }
+      throw error;
+    }
     return toIdentity(this.#auth.currentUser);
   }
 

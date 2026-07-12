@@ -11,11 +11,11 @@ import {
   collection,
   collectionGroup,
   deleteDoc,
-  deleteField,
   doc,
   getDoc,
   getDocs,
   query,
+  serverTimestamp,
   setLogLevel,
   setDoc,
   updateDoc,
@@ -153,6 +153,53 @@ function sleepEventFixture() {
   };
 }
 
+const TEST_PAYLOAD_HASH = 'a'.repeat(64);
+
+function eventWithMutationMetadata(event, payloadHash = TEST_PAYLOAD_HASH) {
+  return {
+    ...event,
+    payloadHash,
+    lastMutationId: `${event.id}@${event.revision}@${payloadHash}`,
+  };
+}
+
+function addEventMutation(
+  batch,
+  db,
+  event,
+  kind,
+  actorUid = event.caregiverId,
+  payloadHash = TEST_PAYLOAD_HASH,
+) {
+  const persistedEvent = eventWithMutationMetadata(event, payloadHash);
+  batch.set(
+    doc(db, 'groups', GROUP_ID, 'events', event.id),
+    persistedEvent,
+  );
+  batch.set(
+    doc(
+      db,
+      'groups',
+      GROUP_ID,
+      'eventMutationReceipts',
+      persistedEvent.lastMutationId,
+    ),
+    {
+      id: persistedEvent.lastMutationId,
+      groupId: GROUP_ID,
+      babyId: event.babyId,
+      eventId: event.id,
+      revision: event.revision,
+      payloadHash,
+      kind,
+      actorUid,
+      appliedAt: serverTimestamp(),
+      payload: persistedEvent,
+    },
+  );
+  return persistedEvent;
+}
+
 function firestoreFor(uid) {
   return testEnv.authenticatedContext(uid).firestore();
 }
@@ -243,49 +290,46 @@ test('그룹 멤버는 민감 그룹 데이터를 읽고 자기 명의의 돌봄
   const babySnapshot = await assertSucceeds(
     getDoc(doc(memberDb, 'groups', GROUP_ID, 'babies', BABY_ID)),
   );
-  await assertSucceeds(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', event.id),
-      event,
-    ),
-  );
-  await assertSucceeds(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', feedingEvent.id),
-      feedingEvent,
-    ),
-  );
-  await assertSucceeds(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', sleepEvent.id),
-      sleepEvent,
-    ),
-  );
+  for (const careEvent of [event, feedingEvent, sleepEvent]) {
+    const batch = writeBatch(memberDb);
+    addEventMutation(batch, memberDb, careEvent, 'create');
+    await assertSucceeds(batch.commit());
+  }
 
   assert.equal(groupSnapshot.data().ownerId, OWNER_ID);
   assert.equal(babySnapshot.data().name, '하루');
 
-  await assertFails(
-    setDoc(
-      doc(outsiderDb, 'groups', GROUP_ID, 'events', 'event-outsider'),
-      diaperEventFixture({ id: 'event-outsider', caregiverId: OUTSIDER_ID }),
-    ),
+  const outsiderBatch = writeBatch(outsiderDb);
+  addEventMutation(
+    outsiderBatch,
+    outsiderDb,
+    diaperEventFixture({ id: 'event-outsider', caregiverId: OUTSIDER_ID }),
+    'create',
+    OUTSIDER_ID,
   );
-  await assertFails(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', 'event-forged-author'),
-      diaperEventFixture({ id: 'event-forged-author', caregiverId: OWNER_ID }),
-    ),
+  await assertFails(outsiderBatch.commit());
+
+  const forgedAuthorBatch = writeBatch(memberDb);
+  addEventMutation(
+    forgedAuthorBatch,
+    memberDb,
+    diaperEventFixture({ id: 'event-forged-author', caregiverId: OWNER_ID }),
+    'create',
+    MEMBER_ID,
   );
-  await assertFails(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', 'event-extra-field'),
-      diaperEventFixture({
-        id: 'event-extra-field',
-        diagnosis: 'client가 임의로 추가한 field',
-      }),
-    ),
+  await assertFails(forgedAuthorBatch.commit());
+
+  const extraFieldBatch = writeBatch(memberDb);
+  addEventMutation(
+    extraFieldBatch,
+    memberDb,
+    diaperEventFixture({
+      id: 'event-extra-field',
+      diagnosis: 'client가 임의로 추가한 field',
+    }),
+    'create',
   );
+  await assertFails(extraFieldBatch.commit());
 });
 
 test('사용자는 collectionGroup query로 자기 멤버십만 조회할 수 있다', async () => {
@@ -536,40 +580,84 @@ test('이벤트 작성자만 수정할 수 있고 identity 필드는 바꿀 수 
     'event-diaper-1',
   );
 
-  await assertFails(
-    updateDoc(
-      doc(ownerDb, 'groups', GROUP_ID, 'events', 'event-diaper-1'),
-      { note: '작성자가 아닌 수정', revision: 2, updatedAt: NOW + 1 },
-    ),
-  );
-  await assertSucceeds(
-    updateDoc(eventRefForMember, {
-      note: '기저귀 교체 완료',
+  const unauthorizedBatch = writeBatch(ownerDb);
+  addEventMutation(
+    unauthorizedBatch,
+    ownerDb,
+    diaperEventFixture({
+      note: '작성자가 아닌 수정',
       revision: 2,
       updatedAt: NOW + 1,
     }),
+    'update',
+    OWNER_ID,
   );
-  await assertFails(
-    updateDoc(eventRefForMember, {
+  await assertFails(unauthorizedBatch.commit());
+
+  const updatedEvent = diaperEventFixture({
+    note: '기저귀 교체 완료',
+    revision: 2,
+    updatedAt: NOW + 1,
+  });
+  const updateBatch = writeBatch(memberDb);
+  addEventMutation(
+    updateBatch,
+    memberDb,
+    updatedEvent,
+    'update',
+  );
+  await assertSucceeds(updateBatch.commit());
+
+  const caregiverBatch = writeBatch(memberDb);
+  addEventMutation(
+    caregiverBatch,
+    memberDb,
+    {
+      ...updatedEvent,
       caregiverId: OWNER_ID,
       revision: 3,
       updatedAt: NOW + 2,
-    }),
+    },
+    'update',
+    MEMBER_ID,
   );
-  await assertFails(
-    updateDoc(eventRefForMember, {
+  await assertFails(caregiverBatch.commit());
+
+  const babyBatch = writeBatch(memberDb);
+  addEventMutation(
+    babyBatch,
+    memberDb,
+    {
+      ...updatedEvent,
       babyId: 'another-baby',
       revision: 3,
       updatedAt: NOW + 2,
-    }),
+    },
+    'update',
   );
-  await assertFails(
-    updateDoc(eventRefForMember, {
+  await assertFails(babyBatch.commit());
+
+  const { diaperType: _diaperType, ...eventWithoutSubtype } = updatedEvent;
+  const kindBatch = writeBatch(memberDb);
+  addEventMutation(
+    kindBatch,
+    memberDb,
+    {
+      ...eventWithoutSubtype,
       kind: 'feeding',
+      feedingType: 'formula',
+      volumeMl: 90,
       revision: 3,
       updatedAt: NOW + 2,
-    }),
+    },
+    'update',
   );
+  await assertFails(kindBatch.commit());
+
+  const persisted = await assertSucceeds(getDoc(eventRefForMember));
+  assert.equal(persisted.data().caregiverId, MEMBER_ID);
+  assert.equal(persisted.data().babyId, BABY_ID);
+  assert.equal(persisted.data().kind, 'diaper');
 });
 
 test('다른 그룹 멤버는 active sleep을 close-only transition으로 종료할 수 있다', async () => {
@@ -582,57 +670,118 @@ test('다른 그룹 멤버는 active sleep을 close-only transition으로 종료
   };
   const { endedAt: _endedAt, ...activeSleep } = activeSleepWithEnd;
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(
-      doc(context.firestore(), 'groups', GROUP_ID, 'events', activeSleep.id),
-      activeSleep,
-    );
+    const db = context.firestore();
+    await setDoc(doc(db, 'groups', GROUP_ID, 'events', activeSleep.id), activeSleep);
+    await setDoc(doc(db, 'groups', GROUP_ID, 'activeSleeps', BABY_ID), {
+      groupId: GROUP_ID,
+      babyId: BABY_ID,
+      eventId: activeSleep.id,
+      caregiverId: activeSleep.caregiverId,
+      startedAt: activeSleep.startedAt,
+      createdAt: activeSleep.createdAt,
+    });
   });
 
-  const memberEventRef = doc(
-    firestoreFor(MEMBER_ID),
-    'groups',
-    GROUP_ID,
-    'events',
-    activeSleep.id,
-  );
+  const memberDb = firestoreFor(MEMBER_ID);
   const closedAt = NOW + 1;
+  const closedSleep = {
+    ...activeSleep,
+    endedAt: closedAt,
+    updatedAt: closedAt,
+    revision: 2,
+  };
 
-  await assertFails(
-    updateDoc(memberEventRef, {
-      endedAt: closedAt,
+  const payloadMutationBatch = writeBatch(memberDb);
+  addEventMutation(
+    payloadMutationBatch,
+    memberDb,
+    {
+      ...closedSleep,
       note: '종료 외 payload 변조',
-      updatedAt: closedAt,
-      revision: 2,
-    }),
+    },
+    'update',
+    MEMBER_ID,
   );
-  await assertFails(
-    updateDoc(memberEventRef, {
+  payloadMutationBatch.delete(
+    doc(memberDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID),
+  );
+  await assertFails(payloadMutationBatch.commit());
+
+  const invalidEndBatch = writeBatch(memberDb);
+  addEventMutation(
+    invalidEndBatch,
+    memberDb,
+    {
+      ...closedSleep,
       endedAt: closedAt + 1,
-      updatedAt: closedAt,
-      revision: 2,
-    }),
+    },
+    'update',
+    MEMBER_ID,
   );
-  await assertSucceeds(
-    updateDoc(memberEventRef, {
-      endedAt: closedAt,
-      updatedAt: closedAt,
-      revision: 2,
-    }),
+  invalidEndBatch.delete(
+    doc(memberDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID),
   );
-  await assertFails(
-    updateDoc(memberEventRef, {
+  await assertFails(invalidEndBatch.commit());
+
+  const eventOnlyCloseBatch = writeBatch(memberDb);
+  addEventMutation(
+    eventOnlyCloseBatch,
+    memberDb,
+    closedSleep,
+    'end_sleep',
+    MEMBER_ID,
+  );
+  await assertFails(eventOnlyCloseBatch.commit());
+
+  const closeBatch = writeBatch(memberDb);
+  addEventMutation(
+    closeBatch,
+    memberDb,
+    closedSleep,
+    'end_sleep',
+    MEMBER_ID,
+  );
+  closeBatch.delete(
+    doc(
+      memberDb,
+      'groups',
+      GROUP_ID,
+      'activeSleeps',
+      BABY_ID,
+    ),
+  );
+  await assertSucceeds(closeBatch.commit());
+
+  const recloseBatch = writeBatch(memberDb);
+  addEventMutation(
+    recloseBatch,
+    memberDb,
+    {
+      ...closedSleep,
       endedAt: closedAt + 1,
       updatedAt: closedAt + 1,
       revision: 3,
-    }),
+    },
+    'update',
+    MEMBER_ID,
   );
-  await assertFails(
-    updateDoc(memberEventRef, {
+  await assertFails(recloseBatch.commit());
+
+  const otherMemberDeleteBatch = writeBatch(memberDb);
+  addEventMutation(
+    otherMemberDeleteBatch,
+    memberDb,
+    {
+      ...closedSleep,
       deletedAt: closedAt + 1,
+      isDeleted: true,
       updatedAt: closedAt + 1,
       revision: 3,
-    }),
+    },
+    'soft_delete',
+    MEMBER_ID,
   );
+  await assertFails(otherMemberDeleteBatch.commit());
 
   const staleStartedAt = NOW - 49 * 60 * 60 * 1_000;
   const staleSleep = {
@@ -642,25 +791,408 @@ test('다른 그룹 멤버는 active sleep을 close-only transition으로 종료
     startedAt: staleStartedAt,
   };
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(
-      doc(context.firestore(), 'groups', GROUP_ID, 'events', staleSleep.id),
-      staleSleep,
-    );
+    const db = context.firestore();
+    await setDoc(doc(db, 'groups', GROUP_ID, 'events', staleSleep.id), staleSleep);
+    await setDoc(doc(db, 'groups', GROUP_ID, 'activeSleeps', BABY_ID), {
+      groupId: GROUP_ID,
+      babyId: BABY_ID,
+      eventId: staleSleep.id,
+      caregiverId: staleSleep.caregiverId,
+      startedAt: staleSleep.startedAt,
+      createdAt: staleSleep.createdAt,
+    });
   });
-  await assertSucceeds(
-    updateDoc(
+  const staleDb = firestoreFor(MEMBER_ID);
+  const staleBatch = writeBatch(staleDb);
+  addEventMutation(staleBatch, staleDb, {
+    ...staleSleep,
+    endedAt: staleStartedAt + 48 * 60 * 60 * 1_000,
+    updatedAt: NOW + 2,
+    revision: 2,
+  }, 'end_sleep', MEMBER_ID);
+  staleBatch.delete(
+    doc(staleDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID),
+  );
+  await assertSucceeds(staleBatch.commit());
+});
+
+test('진행 중 수면은 lock 시각을 유지하면서 note만 수정할 수 있다', async () => {
+  await seedBase();
+
+  const activeSleepWithEnd = {
+    ...sleepEventFixture(),
+    id: 'event-active-update',
+    caregiverId: OWNER_ID,
+  };
+  const { endedAt: _endedAt, ...activeSleep } = activeSleepWithEnd;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, 'groups', GROUP_ID, 'events', activeSleep.id), activeSleep);
+    await setDoc(doc(db, 'groups', GROUP_ID, 'activeSleeps', BABY_ID), {
+      groupId: GROUP_ID,
+      babyId: BABY_ID,
+      eventId: activeSleep.id,
+      caregiverId: activeSleep.caregiverId,
+      startedAt: activeSleep.startedAt,
+      createdAt: activeSleep.createdAt,
+    });
+  });
+
+  const ownerDb = firestoreFor(OWNER_ID);
+  const noteUpdated = {
+    ...activeSleep,
+    note: '잠든 장소 확인',
+    updatedAt: NOW + 1,
+    revision: 2,
+  };
+  const noteBatch = writeBatch(ownerDb);
+  addEventMutation(noteBatch, ownerDb, noteUpdated, 'update', OWNER_ID);
+  await assertSucceeds(noteBatch.commit());
+
+  const shiftedStart = activeSleep.startedAt + 60_000;
+  const shiftedBatch = writeBatch(ownerDb);
+  addEventMutation(
+    shiftedBatch,
+    ownerDb,
+    {
+      ...noteUpdated,
+      occurredAt: shiftedStart,
+      startedAt: shiftedStart,
+      updatedAt: NOW + 2,
+      revision: 3,
+    },
+    'update',
+    OWNER_ID,
+  );
+  await assertFails(shiftedBatch.commit());
+
+  const [eventSnapshot, lockSnapshot] = await Promise.all([
+    getDoc(doc(ownerDb, 'groups', GROUP_ID, 'events', activeSleep.id)),
+    getDoc(doc(ownerDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID)),
+  ]);
+  assert.equal(eventSnapshot.data().note, '잠든 장소 확인');
+  assert.equal(eventSnapshot.data().startedAt, activeSleep.startedAt);
+  assert.equal(lockSnapshot.data().startedAt, activeSleep.startedAt);
+});
+
+test('active sleep event와 baby singleton lock은 원자적으로 생성되고 동시 시작은 하나만 성공한다', async () => {
+  await seedBase();
+
+  const memberDb = firestoreFor(MEMBER_ID);
+  const eventOnlyWithEnd = {
+    ...sleepEventFixture(),
+    id: 'event-active-without-lock',
+    caregiverId: MEMBER_ID,
+  };
+  const { endedAt: _eventOnlyEnd, ...eventOnly } = eventOnlyWithEnd;
+  const eventOnlyBatch = writeBatch(memberDb);
+  addEventMutation(
+    eventOnlyBatch,
+    memberDb,
+    eventOnly,
+    'create',
+    MEMBER_ID,
+  );
+  await assertFails(eventOnlyBatch.commit());
+  await assertFails(
+    setDoc(doc(memberDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID), {
+      groupId: GROUP_ID,
+      babyId: BABY_ID,
+      eventId: 'missing-active-event',
+      caregiverId: MEMBER_ID,
+      startedAt: NOW - 1_000,
+      createdAt: NOW,
+    }),
+  );
+
+  const mismatchedLockEvent = {
+    ...eventOnly,
+    id: 'event-active-lock-mismatch',
+  };
+  const mismatchedLockBatch = writeBatch(memberDb);
+  addEventMutation(
+    mismatchedLockBatch,
+    memberDb,
+    mismatchedLockEvent,
+    'create',
+    MEMBER_ID,
+  );
+  mismatchedLockBatch.set(
+    doc(memberDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID),
+    {
+      groupId: GROUP_ID,
+      babyId: BABY_ID,
+      eventId: mismatchedLockEvent.id,
+      caregiverId: mismatchedLockEvent.caregiverId,
+      startedAt: mismatchedLockEvent.startedAt + 1,
+      createdAt: mismatchedLockEvent.createdAt,
+    },
+  );
+  await assertFails(mismatchedLockBatch.commit());
+
+  const ownerDb = firestoreFor(OWNER_ID);
+  const first = {
+    ...eventOnly,
+    id: 'event-active-race-member',
+    caregiverId: MEMBER_ID,
+  };
+  const second = {
+    ...eventOnly,
+    id: 'event-active-race-owner',
+    caregiverId: OWNER_ID,
+  };
+  const firstBatch = writeBatch(memberDb);
+  addEventMutation(firstBatch, memberDb, first, 'create', MEMBER_ID);
+  firstBatch.set(doc(memberDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID), {
+    groupId: GROUP_ID,
+    babyId: BABY_ID,
+    eventId: first.id,
+    caregiverId: first.caregiverId,
+    startedAt: first.startedAt,
+    createdAt: first.createdAt,
+  });
+  const secondBatch = writeBatch(ownerDb);
+  addEventMutation(secondBatch, ownerDb, second, 'create', OWNER_ID);
+  secondBatch.set(doc(ownerDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID), {
+    groupId: GROUP_ID,
+    babyId: BABY_ID,
+    eventId: second.id,
+    caregiverId: second.caregiverId,
+    startedAt: second.startedAt,
+    createdAt: second.createdAt,
+  });
+
+  const results = await Promise.allSettled([
+    firstBatch.commit(),
+    secondBatch.commit(),
+  ]);
+  assert.equal(
+    results.filter(result => result.status === 'fulfilled').length,
+    1,
+  );
+  const [firstSnapshot, secondSnapshot, lockSnapshot] = await Promise.all([
+    getDoc(doc(memberDb, 'groups', GROUP_ID, 'events', first.id)),
+    getDoc(doc(memberDb, 'groups', GROUP_ID, 'events', second.id)),
+    getDoc(doc(memberDb, 'groups', GROUP_ID, 'activeSleeps', BABY_ID)),
+  ]);
+  assert.equal(Number(firstSnapshot.exists()) + Number(secondSnapshot.exists()), 1);
+  assert.equal(
+    lockSnapshot.data().eventId,
+    firstSnapshot.exists() ? first.id : second.id,
+  );
+});
+
+test('event mutation receipt는 event/revision/hash/payload에 결합된 원자 전이만 허용한다', async () => {
+  await seedBase({ includeEvent: true });
+
+  const memberDb = firestoreFor(MEMBER_ID);
+  const payloadHash = 'a'.repeat(64);
+  const futurePayloadHash = 'b'.repeat(64);
+  const eventRef = doc(
+    memberDb,
+    'groups',
+    GROUP_ID,
+    'events',
+    'event-diaper-1',
+  );
+  const receiptRef = doc(
+    memberDb,
+    'groups',
+    GROUP_ID,
+    'eventMutationReceipts',
+    `event-diaper-1@2@${payloadHash}`,
+  );
+
+  // A malicious client cannot preclaim a receipt for a future revision.
+  await assertFails(
+    setDoc(
       doc(
-        firestoreFor(MEMBER_ID),
+        memberDb,
         'groups',
         GROUP_ID,
-        'events',
-        staleSleep.id,
+        'eventMutationReceipts',
+        `event-diaper-1@2@${futurePayloadHash}`,
       ),
       {
-        endedAt: staleStartedAt + 48 * 60 * 60 * 1_000,
-        updatedAt: NOW + 2,
+        id: `event-diaper-1@2@${futurePayloadHash}`,
+        groupId: GROUP_ID,
+        babyId: BABY_ID,
+        eventId: 'event-diaper-1',
         revision: 2,
+        payloadHash: futurePayloadHash,
+        kind: 'update',
+        actorUid: MEMBER_ID,
+        appliedAt: serverTimestamp(),
+        payload: eventWithMutationMetadata(
+          diaperEventFixture({revision: 2, updatedAt: NOW + 1}),
+          futurePayloadHash,
+        ),
       },
+    ),
+  );
+
+  // A receipt cannot be attached to an already-existing current revision.
+  await assertFails(
+    setDoc(
+      doc(
+        memberDb,
+        'groups',
+        GROUP_ID,
+        'eventMutationReceipts',
+        `event-diaper-1@1@${payloadHash}`,
+      ),
+      {
+        id: `event-diaper-1@1@${payloadHash}`,
+        groupId: GROUP_ID,
+        babyId: BABY_ID,
+        eventId: 'event-diaper-1',
+        revision: 1,
+        payloadHash,
+        kind: 'create',
+        actorUid: MEMBER_ID,
+        appliedAt: serverTimestamp(),
+        payload: eventWithMutationMetadata(diaperEventFixture(), payloadHash),
+      },
+    ),
+  );
+
+  const updatedEvent = eventWithMutationMetadata(
+    diaperEventFixture({
+      revision: 2,
+      updatedAt: NOW + 1,
+      diaperType: 'dirty',
+    }),
+    payloadHash,
+  );
+  await assertFails(setDoc(eventRef, updatedEvent));
+
+  const invalidPathBatch = writeBatch(memberDb);
+  invalidPathBatch.set(eventRef, updatedEvent);
+  invalidPathBatch.set(
+    doc(
+      memberDb,
+      'groups',
+      GROUP_ID,
+      'eventMutationReceipts',
+      `event-diaper-1@2@${futurePayloadHash}`,
+    ),
+    {
+      id: `event-diaper-1@2@${payloadHash}`,
+      groupId: GROUP_ID,
+      babyId: BABY_ID,
+      eventId: 'event-diaper-1',
+      revision: 2,
+      payloadHash,
+      kind: 'update',
+      actorUid: MEMBER_ID,
+      appliedAt: serverTimestamp(),
+      payload: updatedEvent,
+    },
+  );
+  await assertFails(invalidPathBatch.commit());
+
+  const mismatchedPayloadBatch = writeBatch(memberDb);
+  mismatchedPayloadBatch.set(eventRef, updatedEvent);
+  mismatchedPayloadBatch.set(receiptRef, {
+    id: `event-diaper-1@2@${payloadHash}`,
+    groupId: GROUP_ID,
+    babyId: BABY_ID,
+    eventId: 'event-diaper-1',
+    revision: 2,
+    payloadHash,
+    kind: 'update',
+    actorUid: MEMBER_ID,
+    appliedAt: serverTimestamp(),
+    payload: {...updatedEvent, diaperType: 'wet'},
+  });
+  await assertFails(mismatchedPayloadBatch.commit());
+
+  const validBatch = writeBatch(memberDb);
+  validBatch.set(eventRef, updatedEvent);
+  validBatch.set(receiptRef, {
+    id: `event-diaper-1@2@${payloadHash}`,
+    groupId: GROUP_ID,
+    babyId: BABY_ID,
+    eventId: 'event-diaper-1',
+    revision: 2,
+    payloadHash,
+    kind: 'update',
+    actorUid: MEMBER_ID,
+    appliedAt: serverTimestamp(),
+    payload: updatedEvent,
+  });
+  await assertSucceeds(
+    validBatch.commit(),
+  );
+  await assertSucceeds(getDoc(receiptRef));
+  await assertFails(
+    getDoc(
+      doc(
+        firestoreFor(OWNER_ID),
+        'groups',
+        GROUP_ID,
+        'eventMutationReceipts',
+        `event-diaper-1@2@${payloadHash}`,
+      ),
+    ),
+  );
+  const missingReceipt = await assertSucceeds(
+    getDoc(
+      doc(
+        memberDb,
+        'groups',
+        GROUP_ID,
+        'eventMutationReceipts',
+        `event-missing@99@${futurePayloadHash}`,
+      ),
+    ),
+  );
+  assert.equal(missingReceipt.exists(), false);
+  await assertFails(
+    getDoc(
+      doc(
+        memberDb,
+        'groups',
+        GROUP_ID,
+        'eventMutationReceipts',
+        'invalid-receipt-id',
+      ),
+    ),
+  );
+  await assertFails(
+    getDocs(
+      collection(
+        memberDb,
+        'groups',
+        GROUP_ID,
+        'eventMutationReceipts',
+      ),
+    ),
+  );
+  await assertFails(
+    getDocs(
+      query(
+        collection(
+          memberDb,
+          'groups',
+          GROUP_ID,
+          'eventMutationReceipts',
+        ),
+        where('actorUid', '==', MEMBER_ID),
+      ),
+    ),
+  );
+  await assertFails(updateDoc(receiptRef, {kind: 'update'}));
+  await assertFails(deleteDoc(receiptRef));
+  await assertFails(
+    getDoc(
+      doc(
+        firestoreFor(OUTSIDER_ID),
+        'groups',
+        GROUP_ID,
+        'eventMutationReceipts',
+        `event-diaper-1@2@${payloadHash}`,
+      ),
     ),
   );
 });
@@ -679,55 +1211,79 @@ test('이벤트는 hard delete·undelete를 막고 작성자의 단일 soft dele
   );
 
   await assertFails(deleteDoc(eventRef));
-  await assertFails(
-    updateDoc(
-      doc(ownerDb, 'groups', GROUP_ID, 'events', 'event-diaper-1'),
-      { deletedAt: NOW + 1, updatedAt: NOW + 1, revision: 2 },
-    ),
+  const deletedEvent = diaperEventFixture({
+    deletedAt: NOW + 1,
+    isDeleted: true,
+    updatedAt: NOW + 1,
+    revision: 2,
+  });
+
+  const unauthorizedDeleteBatch = writeBatch(ownerDb);
+  addEventMutation(
+    unauthorizedDeleteBatch,
+    ownerDb,
+    deletedEvent,
+    'soft_delete',
+    OWNER_ID,
   );
-  await assertFails(
-    updateDoc(eventRef, {
-      deletedAt: NOW + 1,
+  await assertFails(unauthorizedDeleteBatch.commit());
+
+  const mixedDeleteBatch = writeBatch(memberDb);
+  addEventMutation(
+    mixedDeleteBatch,
+    memberDb,
+    {
+      ...deletedEvent,
       note: '삭제와 내용 변경을 동시에 시도',
-      updatedAt: NOW + 1,
-      revision: 2,
-    }),
+    },
+    'update',
   );
-  await assertSucceeds(
-    updateDoc(eventRef, {
-      deletedAt: NOW + 1,
-      isDeleted: true,
-      updatedAt: NOW + 1,
-      revision: 2,
-    }),
+  await assertFails(mixedDeleteBatch.commit());
+
+  const deleteBatch = writeBatch(memberDb);
+  addEventMutation(
+    deleteBatch,
+    memberDb,
+    deletedEvent,
+    'soft_delete',
   );
-  await assertFails(
-    updateDoc(eventRef, {
-      deletedAt: deleteField(),
-      isDeleted: false,
+  await assertSucceeds(deleteBatch.commit());
+
+  const undeleteBatch = writeBatch(memberDb);
+  addEventMutation(
+    undeleteBatch,
+    memberDb,
+    diaperEventFixture({
       updatedAt: NOW + 2,
       revision: 3,
     }),
+    'update',
   );
-  await assertFails(
-    updateDoc(eventRef, {
+  await assertFails(undeleteBatch.commit());
+
+  const postDeleteUpdateBatch = writeBatch(memberDb);
+  addEventMutation(
+    postDeleteUpdateBatch,
+    memberDb,
+    {
+      ...deletedEvent,
       note: '삭제 후 재수정',
+      deletedAt: NOW + 2,
       updatedAt: NOW + 2,
       revision: 3,
-    }),
+    },
+    'update',
   );
+  await assertFails(postDeleteUpdateBatch.commit());
 
   const preDeleted = diaperEventFixture({
     id: 'event-predeleted',
     deletedAt: NOW,
     isDeleted: true,
   });
-  await assertFails(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', preDeleted.id),
-      preDeleted,
-    ),
-  );
+  const preDeletedBatch = writeBatch(memberDb);
+  addEventMutation(preDeletedBatch, memberDb, preDeleted, 'create');
+  await assertFails(preDeletedBatch.commit());
 });
 
 test('악성 client가 미래 timestamp로 타임라인과 revision을 오염시킬 수 없다', async () => {
@@ -740,34 +1296,74 @@ test('악성 client가 미래 timestamp로 타임라인과 revision을 오염시
     occurredAt: future,
   });
 
-  await assertFails(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', futureEvent.id),
-      futureEvent,
-    ),
+  const futureCreateBatch = writeBatch(memberDb);
+  addEventMutation(
+    futureCreateBatch,
+    memberDb,
+    futureEvent,
+    'create',
   );
-  await assertFails(
-    updateDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', 'event-diaper-1'),
-      { note: '먼 미래 revision 고정', updatedAt: future, revision: 2 },
-    ),
+  await assertFails(futureCreateBatch.commit());
+
+  const futureUpdateBatch = writeBatch(memberDb);
+  addEventMutation(
+    futureUpdateBatch,
+    memberDb,
+    diaperEventFixture({
+      note: '먼 미래 revision 고정',
+      updatedAt: future,
+      revision: 2,
+    }),
+    'update',
   );
+  await assertFails(futureUpdateBatch.commit());
 
   const startedAt = Date.now();
-  const nearFuture = Date.now() + 60 * 1_000;
   const futureSleep = {
     ...sleepEventFixture(),
     id: 'event-future-sleep-end',
     occurredAt: startedAt,
     startedAt,
-    endedAt: nearFuture,
+    endedAt: future,
+    createdAt: future,
+    updatedAt: future,
   };
-  await assertFails(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', futureSleep.id),
-      futureSleep,
-    ),
+  const futureSleepBatch = writeBatch(memberDb);
+  addEventMutation(
+    futureSleepBatch,
+    memberDb,
+    futureSleep,
+    'create',
   );
+  await assertFails(futureSleepBatch.commit());
+});
+
+test('event timestamp 관계와 document ID는 client decoder 경계와 일치한다', async () => {
+  await seedBase();
+  const memberDb = firestoreFor(MEMBER_ID);
+
+  const skewedBatch = writeBatch(memberDb);
+  addEventMutation(
+    skewedBatch,
+    memberDb,
+    diaperEventFixture({
+      id: 'event-skewed',
+      createdAt: 0,
+      updatedAt: 0,
+      occurredAt: NOW,
+    }),
+    'create',
+  );
+  await assertFails(skewedBatch.commit());
+
+  const unsafeIdBatch = writeBatch(memberDb);
+  addEventMutation(
+    unsafeIdBatch,
+    memberDb,
+    diaperEventFixture({id: ' event-space '}),
+    'create',
+  );
+  await assertFails(unsafeIdBatch.commit());
 });
 
 test('feeding·sleep subtype의 필수 field와 범위를 Rules에서 재검증한다', async () => {
@@ -786,19 +1382,50 @@ test('feeding·sleep subtype의 필수 field와 범위를 Rules에서 재검증�
     startedAt: NOW - 49 * 60 * 60 * 1_000,
     endedAt: NOW,
   };
+  const {
+    feedingType: _feedingType,
+    ...missingFeedingType
+  } = feedingEventFixture();
+  const {
+    sleepType: _sleepType,
+    ...missingSleepType
+  } = sleepEventFixture();
 
-  await assertFails(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', invalidFeeding.id),
-      invalidFeeding,
-    ),
+  const invalidFeedingBatch = writeBatch(memberDb);
+  addEventMutation(
+    invalidFeedingBatch,
+    memberDb,
+    invalidFeeding,
+    'create',
   );
-  await assertFails(
-    setDoc(
-      doc(memberDb, 'groups', GROUP_ID, 'events', tooLongSleep.id),
-      tooLongSleep,
-    ),
+  await assertFails(invalidFeedingBatch.commit());
+
+  const tooLongSleepBatch = writeBatch(memberDb);
+  addEventMutation(
+    tooLongSleepBatch,
+    memberDb,
+    tooLongSleep,
+    'create',
   );
+  await assertFails(tooLongSleepBatch.commit());
+
+  const missingFeedingTypeBatch = writeBatch(memberDb);
+  addEventMutation(
+    missingFeedingTypeBatch,
+    memberDb,
+    {...missingFeedingType, id: 'event-missing-feeding-type'},
+    'create',
+  );
+  await assertFails(missingFeedingTypeBatch.commit());
+
+  const missingSleepTypeBatch = writeBatch(memberDb);
+  addEventMutation(
+    missingSleepTypeBatch,
+    memberDb,
+    {...missingSleepType, id: 'event-missing-sleep-type'},
+    'create',
+  );
+  await assertFails(missingSleepTypeBatch.commit());
 });
 
 test('invites 문서는 모든 client 직접 read/write를 거부한다', async () => {

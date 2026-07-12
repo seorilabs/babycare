@@ -5,6 +5,7 @@ import {
   groupId,
   userId,
   type CareEvent,
+  type CareEventMutation,
   type CareEventQuery,
   type CreateCareEventInput,
 } from '@babycare/product-core';
@@ -29,6 +30,8 @@ const BASE_FIELDS = [
   'isDeleted',
   'note',
   'deletedAt',
+  'lastMutationId',
+  'payloadHash',
 ] as const;
 
 const MAX_OCCURRED_AT_CLOCK_SKEW_MS = 5 * 60 * 1_000;
@@ -209,17 +212,39 @@ export function decodeCareEventDocument(input: {
   // occurredAt is editable after creation. Revalidate it against the update
   // timestamp instead of the immutable creation timestamp.
   const validated = createCareEvent(createInput(data), {id, now: updatedAt});
-  return {
+  const event: CareEvent = {
     ...validated,
     createdAt,
     updatedAt,
     revision,
     ...(deletedAt !== undefined ? {deletedAt} : {}),
   };
+  const lastMutationId = data.lastMutationId;
+  const payloadHash = data.payloadHash;
+  if (lastMutationId !== undefined || payloadHash !== undefined) {
+    if (
+      typeof lastMutationId !== 'string' ||
+      typeof payloadHash !== 'string' ||
+      !/^[0-9a-f]{64}$/.test(payloadHash) ||
+      lastMutationId !== `${event.id}@${event.revision}@${payloadHash}`
+    ) {
+      throw new Error('Care event mutation metadata is invalid');
+    }
+  }
+  return event;
 }
 
-export function encodeCareEventDocument(event: CareEvent): Record<string, unknown> {
-  return {...event, isDeleted: event.deletedAt !== undefined};
+export function encodeCareEventDocument(
+  event: CareEvent,
+  mutation?: Pick<CareEventMutation, 'id' | 'payloadHash'>,
+): Record<string, unknown> {
+  return {
+    ...event,
+    isDeleted: event.deletedAt !== undefined,
+    ...(mutation
+      ? {lastMutationId: mutation.id, payloadHash: mutation.payloadHash}
+      : {}),
+  };
 }
 
 export function selectCareEventQueryResults(

@@ -111,9 +111,9 @@ flowchart LR
 
 | 영역 | 현재 구현 | MVP까지 남은 핵심 |
 | --- | --- | --- |
-| product core | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, `CareEvent`; 모유 좌·우 독립 시간, 수유·기저귀·수면 validation; 기록·수면종료·soft delete·대시보드 use case; Auth/그룹/아기/초대/기록 port | cross-device active sleep 단일성·동기화 충돌 정책과 실제 adapter 계약 검증 |
-| mobile | 로컬 온보딩, 홈, 빠른 기록, 타임라인, 기본 통계, 다크모드, AsyncStorage persistence. RNFirebase Auth/Firestore/Functions 기반 그룹·아기·기록·초대 adapter와 문서 decoder 구현 | 기본 composition은 여전히 로컬. Firebase project/client config, production Auth provider, 실제 session/group flow, 동기화 상태, 2인 흐름과 cache purge 연결 필요 |
-| Firebase | version-controlled Firestore/Storage Rules·indexes, `createInvite`/`acceptInvite` Functions와 로컬 Emulator 테스트 코드 | 최종 전체 게이트 재실행, 실제 non-production project, App Check·Secret Manager·IAM·client composition 통합 검증 |
+| product core | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, `CareEvent`; 기록·수면종료·soft delete·대시보드 use case; Auth/그룹/아기/초대/기록·remote mutation·string storage port | 실제 Auth/group boot composition과 2인 use-case 검증 |
+| mobile | 기존 로컬 UX에 더해 인증 context assertion, scoped event+outbox envelope, local-first coordinator, 독립 sync status/retry component 계약, membership/auth cache purge lifecycle과 RNFirebase transaction adapter 구현 | 기본 composition은 여전히 local preview. Firebase project/client config, production Auth provider, 실제 session/group/invite UI·sync banner와 2인 흐름 연결 필요 |
+| Firebase | 기존 Rules/Functions에 payload-bound mutation receipt와 baby별 active-sleep singleton lock을 추가. Rules 22건에서 event/receipt/lock 원자성·receipt exact-get/list 경계·미래 receipt 선점 차단·동시 시작 1건만 성공 검증 | 실제 non-production project, App Check·Secret Manager·IAM·client composition 통합 검증 |
 | AppsInToss | 문서와 example만 있고 Granite target은 미초기화 | 정책 적합성·영구 `appName`, Granite+TDS 초기화, auth/storage/realtime adapter, sandbox QA |
 | release | 3마켓 문서 구조 | 제품명·프로덕션 ID·서명·정책 답변·자산·콘솔 등록·사람 QA |
 
