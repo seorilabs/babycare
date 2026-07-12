@@ -153,10 +153,7 @@ function BabyCareApp() {
               locallyDeletedEventIds.current.add(deleted.id);
               setOverview(current => ({
                 events: current.events.filter(item => item.id !== deleted.id),
-                activeSleep:
-                  current.activeSleep?.id === deleted.id
-                    ? undefined
-                    : current.activeSleep,
+                activeSleep: current.activeSleep,
               }));
               setSavedMessage('기록을 삭제했어요');
             } catch (error) {

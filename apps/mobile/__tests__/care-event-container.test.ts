@@ -485,7 +485,10 @@ describe('createCareEventContainer', () => {
 
     expect(remote.fetchCount).toBeGreaterThan(fetchCount);
     expect(remote.projectionFetchCount).toBeGreaterThan(projectionFetchCount);
-    expect(remote.pageListeners.size).toBeGreaterThan(0);
+    expect(remote.pageListeners.size).toBe(1);
+    expect(remote.windowListeners.size).toBe(1);
+    expect(remote.latestListeners.size).toBe(3);
+    expect(remote.activeSleepListeners.size).toBe(1);
     expect(onError).not.toHaveBeenCalled();
     await container.dispose();
     expect(remote.listeners.size).toBe(0);
@@ -523,7 +526,10 @@ describe('createCareEventContainer', () => {
 
     expect(remote.fetchCount).toBeGreaterThan(fetchCount);
     expect(remote.projectionFetchCount).toBeGreaterThan(projectionFetchCount);
-    expect(remote.pageListeners.size).toBeGreaterThan(0);
+    expect(remote.pageListeners.size).toBe(1);
+    expect(remote.windowListeners.size).toBe(1);
+    expect(remote.latestListeners.size).toBe(3);
+    expect(remote.activeSleepListeners.size).toBe(1);
     expect(onRevoked).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     await container.dispose();

@@ -127,12 +127,16 @@ function careEvents(count: number): readonly CareEvent[] {
 function mockLoadedSession(
   events: readonly CareEvent[],
   activeSleep?: SleepEvent,
+  captureListener?: (
+    listener: Parameters<typeof appContainer.observeOverview>[1],
+  ) => void,
 ): jest.Mock {
   const stopObserve = jest.fn();
   jest.spyOn(appContainer.sessionRepository, 'load').mockResolvedValue(session);
   jest
     .spyOn(appContainer, 'observeOverview')
     .mockImplementation((_query, listener) => {
+      captureListener?.(listener);
       listener({events, activeSleep});
       return stopObserve;
     });
@@ -248,7 +252,12 @@ test('uses the explicit active-sleep overview projection independently of the ev
     },
     {id: eventId('app-active-sleep'), now},
   ) as SleepEvent;
-  const stopObserve = mockLoadedSession([], activeSleep);
+  let emitOverview:
+    | Parameters<typeof appContainer.observeOverview>[1]
+    | undefined;
+  const stopObserve = mockLoadedSession([], activeSleep, listener => {
+    emitOverview = listener;
+  });
 
   const renderer = await renderLoadedApp();
 
@@ -256,6 +265,15 @@ test('uses the explicit active-sleep overview projection independently of the ev
   expect(textOf(renderer.root)).toContain('지금 종료');
   unmountRenderer(renderer);
   expect(stopObserve).toHaveBeenCalledTimes(1);
+  const staleSnapshot = {} as Parameters<
+    Parameters<typeof appContainer.observeOverview>[1]
+  >[0];
+  Object.defineProperty(staleSnapshot, 'events', {
+    get() {
+      throw new Error('stale overview snapshot was read after stop');
+    },
+  });
+  expect(() => emitOverview?.(staleSnapshot)).not.toThrow();
 });
 
 test('releases the underlying local overview listener exactly once', () => {
