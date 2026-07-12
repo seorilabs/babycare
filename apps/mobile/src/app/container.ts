@@ -26,6 +26,36 @@ export interface CareEventOverviewSnapshot {
   readonly activeSleep: SleepEvent | undefined;
 }
 
+/**
+ * Hides only snapshots that still contain a locally deleted row. Once an ID
+ * disappears from the complete source, its temporary stale-snapshot marker is
+ * removed so a later, different active singleton is never suppressed.
+ */
+export function selectVisibleCareEventOverview(
+  snapshot: CareEventOverviewSnapshot,
+  pendingDeletedEventIds: Set<string>,
+): CareEventOverviewSnapshot {
+  const visibleEvents = snapshot.events.filter(
+    event => !pendingDeletedEventIds.has(event.id),
+  );
+  const activeSleep =
+    snapshot.activeSleep && !pendingDeletedEventIds.has(snapshot.activeSleep.id)
+      ? snapshot.activeSleep
+      : undefined;
+  const observedIds = new Set<string>(
+    snapshot.events.map(event => event.id),
+  );
+  if (snapshot.activeSleep) {
+    observedIds.add(snapshot.activeSleep.id);
+  }
+  for (const id of pendingDeletedEventIds) {
+    if (!observedIds.has(id)) {
+      pendingDeletedEventIds.delete(id);
+    }
+  }
+  return {events: visibleEvents, activeSleep};
+}
+
 export const appContainer = {
   repository,
   sessionRepository: new LocalSessionRepository(),
@@ -38,9 +68,19 @@ export const appContainer = {
     query: CareEventQuery,
     listener: (snapshot: CareEventOverviewSnapshot) => void,
   ) {
-    return repository.observe(query, events =>
-      listener({events, activeSleep: events.find(isActiveSleep)}),
-    );
+    let active = true;
+    const stop = repository.observe(query, events => {
+      if (active) {
+        listener({events, activeSleep: events.find(isActiveSleep)});
+      }
+    });
+    return () => {
+      if (!active) {
+        return;
+      }
+      active = false;
+      stop();
+    };
   },
   recordCareEvent: createRecordCareEvent({
     repository,

@@ -6,6 +6,7 @@ import {type CareEventKind} from '@babycare/product-core';
 import {LocalSessionHydrationError} from './src/adapters/local/local-session-repository';
 import {
   appContainer,
+  selectVisibleCareEventOverview,
   type CareEventOverviewSnapshot,
 } from './src/app/container';
 import {createLocalSession, domainContext, type LocalSession} from './src/app/session';
@@ -80,22 +81,28 @@ function BabyCareApp() {
       return undefined;
     }
     const context = domainContext(session);
-    return appContainer.observeOverview(
+    let subscriptionActive = true;
+    const stopOverview = appContainer.observeOverview(
       {groupId: context.groupId, babyId: context.babyId},
       snapshot => {
-        const visibleEvents = snapshot.events.filter(
-          event => !locallyDeletedEventIds.current.has(event.id),
+        if (!subscriptionActive) {
+          return;
+        }
+        setOverview(
+          selectVisibleCareEventOverview(
+            snapshot,
+            locallyDeletedEventIds.current,
+          ),
         );
-        setOverview({
-          events: visibleEvents,
-          activeSleep:
-            snapshot.activeSleep &&
-            !locallyDeletedEventIds.current.has(snapshot.activeSleep.id)
-              ? snapshot.activeSleep
-              : undefined,
-        });
       },
     );
+    return () => {
+      if (!subscriptionActive) {
+        return;
+      }
+      subscriptionActive = false;
+      stopOverview();
+    };
   }, [session]);
 
   useEffect(() => {

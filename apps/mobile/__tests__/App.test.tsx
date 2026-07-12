@@ -16,7 +16,10 @@ import {
 } from '@babycare/product-core';
 
 import App from '../App';
-import {appContainer} from '../src/app/container';
+import {
+  appContainer,
+  selectVisibleCareEventOverview,
+} from '../src/app/container';
 import type {LocalSession} from '../src/app/session';
 import * as localTimelinePagination from '../src/app/use-local-timeline-pagination';
 import type {LocalTimelinePaginationState} from '../src/app/use-local-timeline-pagination';
@@ -253,4 +256,70 @@ test('uses the explicit active-sleep overview projection independently of the ev
   expect(textOf(renderer.root)).toContain('지금 종료');
   unmountRenderer(renderer);
   expect(stopObserve).toHaveBeenCalledTimes(1);
+});
+
+test('releases the underlying local overview listener exactly once', () => {
+  const underlyingStop = jest.fn();
+  jest
+    .spyOn(appContainer.repository, 'observe')
+    .mockImplementation((_query, listener) => {
+      listener([]);
+      return underlyingStop;
+    });
+  const listener = jest.fn();
+
+  const stop = appContainer.observeOverview(
+    {groupId: groupId(session.groupId), babyId: babyId(session.babyId)},
+    listener,
+  );
+  stop();
+  stop();
+
+  expect(listener).toHaveBeenCalledWith({
+    events: [],
+    activeSleep: undefined,
+  });
+  expect(underlyingStop).toHaveBeenCalledTimes(1);
+});
+
+test('drops a resolved delete marker without suppressing a later active sleep', () => {
+  const deleted = createCareEvent(
+    {
+      groupId: groupId(session.groupId),
+      babyId: babyId(session.babyId),
+      caregiverId: userId(session.caregiverId),
+      kind: 'sleep',
+      sleepType: 'night',
+      startedAt: now - 120_000,
+    },
+    {id: eventId('deleted-active-sleep'), now},
+  ) as SleepEvent;
+  const replacement = createCareEvent(
+    {
+      groupId: groupId(session.groupId),
+      babyId: babyId(session.babyId),
+      caregiverId: userId(session.caregiverId),
+      kind: 'sleep',
+      sleepType: 'night',
+      startedAt: now - 60_000,
+    },
+    {id: eventId('replacement-active-sleep'), now},
+  ) as SleepEvent;
+  const pendingDeletedIds = new Set<string>([deleted.id]);
+
+  expect(
+    selectVisibleCareEventOverview(
+      {events: [deleted], activeSleep: deleted},
+      pendingDeletedIds,
+    ),
+  ).toEqual({events: [], activeSleep: undefined});
+  expect(pendingDeletedIds.has(deleted.id)).toBe(true);
+
+  expect(
+    selectVisibleCareEventOverview(
+      {events: [replacement], activeSleep: replacement},
+      pendingDeletedIds,
+    ),
+  ).toEqual({events: [replacement], activeSleep: replacement});
+  expect(pendingDeletedIds.has(deleted.id)).toBe(false);
 });
