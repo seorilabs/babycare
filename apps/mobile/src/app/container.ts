@@ -2,7 +2,11 @@ import {
   createEndSleepSession,
   createRecordCareEvent,
   createSoftDeleteCareEvent,
+  isActiveSleep,
   type AnalyticsPort,
+  type CareEvent,
+  type CareEventQuery,
+  type SleepEvent,
 } from '@babycare/product-core';
 
 import {PersistentCareEventRepository} from '../adapters/local/persistent-care-event-repository';
@@ -17,9 +21,27 @@ const analytics: AnalyticsPort = {
   },
 };
 
+export interface CareEventOverviewSnapshot {
+  readonly events: readonly CareEvent[];
+  readonly activeSleep: SleepEvent | undefined;
+}
+
 export const appContainer = {
   repository,
   sessionRepository: new LocalSessionRepository(),
+  /**
+   * Complete-snapshot source for the Firebase-free local preview only.
+   * Authenticated composition supplies the same shape from overviewFeed.start,
+   * where active sleep comes from the independent singleton projection.
+   */
+  observeOverview(
+    query: CareEventQuery,
+    listener: (snapshot: CareEventOverviewSnapshot) => void,
+  ) {
+    return repository.observe(query, events =>
+      listener({events, activeSleep: events.find(isActiveSleep)}),
+    );
+  },
   recordCareEvent: createRecordCareEvent({
     repository,
     clock,

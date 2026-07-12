@@ -12,6 +12,7 @@ import {
   groupId,
   userId,
   type CareEvent,
+  type SleepEvent,
 } from '@babycare/product-core';
 
 import App from '../App';
@@ -105,13 +106,16 @@ function careEvents(count: number): readonly CareEvent[] {
   );
 }
 
-function mockLoadedSession(events: readonly CareEvent[]): jest.Mock {
+function mockLoadedSession(
+  events: readonly CareEvent[],
+  activeSleep?: SleepEvent,
+): jest.Mock {
   const stopObserve = jest.fn();
   jest.spyOn(appContainer.sessionRepository, 'load').mockResolvedValue(session);
   jest
-    .spyOn(appContainer.repository, 'observe')
+    .spyOn(appContainer, 'observeOverview')
     .mockImplementation((_query, listener) => {
-      listener(events);
+      listener({events, activeSleep});
       return stopObserve;
     });
   return stopObserve;
@@ -209,6 +213,28 @@ test('maps an injected paging error and retry through App to TimelineScreen', as
     ),
   ).toHaveLength(0);
 
+  ReactTestRenderer.act(() => renderer.unmount());
+  expect(stopObserve).toHaveBeenCalledTimes(1);
+});
+
+test('uses the explicit active-sleep overview projection independently of the event list', async () => {
+  const activeSleep = createCareEvent(
+    {
+      groupId: groupId(session.groupId),
+      babyId: babyId(session.babyId),
+      caregiverId: userId(session.caregiverId),
+      kind: 'sleep',
+      sleepType: 'night',
+      startedAt: now - 60_000,
+    },
+    {id: eventId('app-active-sleep'), now},
+  ) as SleepEvent;
+  const stopObserve = mockLoadedSession([], activeSleep);
+
+  const renderer = await renderLoadedApp();
+
+  expect(textOf(renderer.root)).toContain('기상');
+  expect(textOf(renderer.root)).toContain('지금 종료');
   ReactTestRenderer.act(() => renderer.unmount());
   expect(stopObserve).toHaveBeenCalledTimes(1);
 });

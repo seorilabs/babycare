@@ -1,14 +1,13 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Alert, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
-import {
-  isActiveSleep,
-  type CareEvent,
-  type CareEventKind,
-} from '@babycare/product-core';
+import {type CareEventKind} from '@babycare/product-core';
 
 import {LocalSessionHydrationError} from './src/adapters/local/local-session-repository';
-import {appContainer} from './src/app/container';
+import {
+  appContainer,
+  type CareEventOverviewSnapshot,
+} from './src/app/container';
 import {createLocalSession, domainContext, type LocalSession} from './src/app/session';
 import {createTheme} from './src/app/theme';
 import {useLocalTimelinePagination} from './src/app/use-local-timeline-pagination';
@@ -38,7 +37,11 @@ function BabyCareApp() {
   const theme = useMemo(() => createTheme(dark), [dark]);
   const [loaded, setLoaded] = useState(false);
   const [session, setSession] = useState<LocalSession>();
-  const [events, setEvents] = useState<readonly CareEvent[]>([]);
+  const [overview, setOverview] = useState<CareEventOverviewSnapshot>({
+    events: [],
+    activeSleep: undefined,
+  });
+  const events = overview.events;
   const [tab, setTab] = useState<AppTab>('home');
   const [recording, setRecording] = useState<CareEventKind>();
   const [now, setNow] = useState(Date.now());
@@ -73,18 +76,25 @@ function BabyCareApp() {
   useEffect(() => {
     locallyDeletedEventIds.current.clear();
     if (!session) {
-      setEvents([]);
+      setOverview({events: [], activeSleep: undefined});
       return undefined;
     }
     const context = domainContext(session);
-    return appContainer.repository.observe(
+    return appContainer.observeOverview(
       {groupId: context.groupId, babyId: context.babyId},
-      nextEvents =>
-        setEvents(
-          nextEvents.filter(
-            event => !locallyDeletedEventIds.current.has(event.id),
-          ),
-        ),
+      snapshot => {
+        const visibleEvents = snapshot.events.filter(
+          event => !locallyDeletedEventIds.current.has(event.id),
+        );
+        setOverview({
+          events: visibleEvents,
+          activeSleep:
+            snapshot.activeSleep &&
+            !locallyDeletedEventIds.current.has(snapshot.activeSleep.id)
+              ? snapshot.activeSleep
+              : undefined,
+        });
+      },
     );
   }, [session]);
 
@@ -134,7 +144,13 @@ function BabyCareApp() {
                 requestedBy: context.caregiverId,
               });
               locallyDeletedEventIds.current.add(deleted.id);
-              setEvents(current => current.filter(item => item.id !== deleted.id));
+              setOverview(current => ({
+                events: current.events.filter(item => item.id !== deleted.id),
+                activeSleep:
+                  current.activeSleep?.id === deleted.id
+                    ? undefined
+                    : current.activeSleep,
+              }));
               setSavedMessage('기록을 삭제했어요');
             } catch (error) {
               Alert.alert('삭제할 수 없어요', error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.');
@@ -158,7 +174,7 @@ function BabyCareApp() {
             await appContainer.sessionRepository.clear();
             locallyDeletedEventIds.current.clear();
             setSession(undefined);
-            setEvents([]);
+            setOverview({events: [], activeSleep: undefined});
             setTab('home');
           }}
           session={session}
@@ -168,7 +184,7 @@ function BabyCareApp() {
     }
     return (
       <HomeScreen
-        activeSleep={events.find(isActiveSleep)}
+        activeSleep={overview.activeSleep}
         caregiverNames={caregiverNames}
         events={events}
         now={now}

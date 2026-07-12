@@ -13,7 +13,7 @@ Google Play와 Apple App Store용 Community CLI 기반 bare React Native target�
 - 인증 user/group/baby별 durable event+outbox, local-first coordinator, sync 상태 banner와 권한 회수 cache purge lifecycle.
 - server-only 기간 window·종류별 latest·active-sleep singleton read와 이를 소유하는 `CareEventOverviewFeed`.
 
-현재 기본 `App.tsx` composition은 **로컬 개발 모드**다. `LocalSessionRepository`와 `PersistentCareEventRepository`가 기기 AsyncStorage를 사용하고 analytics는 no-op이다. cloud용 `care-event-container.ts`는 인증 scope마다 timeline과 overview feed를 각각 하나씩 시작하고 반환하지만, 실제 project/client config와 production Auth/group/baby UI root가 없어 `src/app/container.ts`에서 선택하지 않는다. 화면의 초대 코드는 미리보기일 뿐 다른 기기와 연결되지 않는다.
+현재 기본 `App.tsx` composition은 **로컬 개발 모드**다. `LocalSessionRepository`와 `PersistentCareEventRepository`가 기기 AsyncStorage를 사용하고 analytics는 no-op이다. 로컬 전체 snapshot도 `{events, activeSleep}` overview source로 화면에 전달해 Home이 event 목록에서 진행 중 수면을 다시 추론하지 않는다. cloud용 `care-event-container.ts`는 인증 scope마다 timeline과 overview feed를 각각 하나씩 시작하고 반환하지만, 실제 project/client config와 production Auth/group/baby UI root가 없어 `src/app/container.ts`에서 선택하지 않는다. 화면의 초대 코드는 미리보기일 뿐 다른 기기와 연결되지 않는다.
 
 아직 제공하지 않는 것:
 
