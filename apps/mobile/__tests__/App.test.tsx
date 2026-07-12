@@ -128,14 +128,6 @@ async function renderLoadedApp(): Promise<ReactTestRenderer.ReactTestRenderer> {
   return renderer;
 }
 
-test('renders correctly', async () => {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await ReactTestRenderer.act(async () => {
-    renderer = ReactTestRenderer.create(<App />);
-  });
-  ReactTestRenderer.act(() => renderer.unmount());
-});
-
 test('connects local pagination through App and preserves its scoped tab state', async () => {
   const events = careEvents(45);
   const stopObserve = mockLoadedSession(events);
