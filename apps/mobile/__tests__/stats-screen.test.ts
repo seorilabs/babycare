@@ -36,7 +36,7 @@ describe('buildStatsBuckets', () => {
   });
 
   it('keeps the current calendar bucket empty at exact midnight', () => {
-    const now = new Date('2026-07-12T00:00:00+09:00').getTime();
+    const now = new Date(2026, 6, 12, 0, 0, 0, 0).getTime();
 
     const buckets = buildStatsBuckets([], now, '7d');
 
