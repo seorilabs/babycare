@@ -12,6 +12,7 @@ export * from './ports/care-group-repository.ts';
 export * from './ports/clock.ts';
 export * from './ports/id-generator.ts';
 export * from './ports/invite-service.ts';
+export * from './ports/string-storage.ts';
 export * from './use_cases/dashboard.ts';
 export * from './use_cases/end-sleep-session.ts';
 export * from './use_cases/record-care-event.ts';

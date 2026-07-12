@@ -2,9 +2,9 @@
 
 ## Scope
 
-이 문서는 MVP의 `groups`, `members`, `babies`, `events`, `invites`, 아기 이미지 Storage 경계를 다룬다. 앱의 직접 사용자는 성인 양육자지만 저장 대상에는 아동의 식별·돌봄·건강·사진 정보가 포함되므로 기본 공개나 추측 가능한 링크 공유를 허용하지 않는다.
+이 문서는 MVP의 `groups`, `members`, `babies`, `events`, `activeSleeps`, `eventMutationReceipts`, `invites`, 아기 이미지 Storage 경계를 다룬다. 앱의 직접 사용자는 성인 양육자지만 저장 대상에는 아동의 식별·돌봄·건강·사진 정보가 포함되므로 기본 공개나 추측 가능한 링크 공유를 허용하지 않는다.
 
-현재 증거는 로컬 Rules 테스트와 Functions 순수 unit/Firestore Admin transaction Emulator 테스트까지다. 실제 Firebase project, Auth provider, callable transport, App Check, Secret Manager, IAM, 계정 삭제 workflow는 아직 배포·검증하지 않았다.
+현재 증거는 로컬 Rules 테스트, client transaction adapter Jest, Functions 순수 unit/Firestore Admin transaction Emulator 테스트까지다. 실제 Firebase project, Auth provider, callable transport, App Check, Secret Manager, IAM, 계정 삭제 workflow는 아직 배포·검증하지 않았다.
 
 ## Data Classification
 
@@ -40,10 +40,15 @@ flowchart LR
 | 다른 양육자 명의로 event 위조 | create 시 `caregiverId == request.auth.uid` | forged author deny 테스트 | Admin 기록 생성 시 audit actor 설계 |
 | 작성자·아기·그룹·종류를 바꿔 기록 출처 세탁 | event identity와 createdAt 불변, revision 단조 증가 | identity 변조 deny 테스트 | server-side export에 revision 포함 |
 | 교대 양육자의 sleep 종료 권한으로 원 기록 변조 | active sleep에 한해 `endedAt <= updatedAt`, 최대 48시간인 close-only 전이만 허용 | 타 작성자 sleep close allow와 timestamp 불일치/payload/delete/reclose deny 테스트 | offline client가 선택한 과거 종료시각 신뢰와 종료자 audit actor 표시 검토 |
+| 서로 다른 기기가 active sleep을 동시에 시작 | `activeSleeps/{babyId}` singleton을 event와 같은 transaction에 생성·종료하고 단독 event/lock write를 Rules에서 거부 | 동시 batch 2건 중 정확히 1건 성공, 원자 close 테스트 | 실제 2기기 loser conflict UX |
+| Firestore commit 응답 유실 후 mutation 중복·오판 | canonical SHA-256·actor·전체 transport payload가 결합된 immutable receipt를 event metadata와 원자 기록. 기존 receipt exact get은 actor만 허용하고 list/query는 거부한다 | divergent same-revision conflict, later-revision lost-ack adapter 테스트와 event↔receipt 양방향·missing/existing get Rules 테스트 | 실제 network cut/reconnect smoke, 유효 ID existence oracle, PII 중복 receipt retention/cleanup 정책 |
 | 기록 hard delete/undelete로 감사 흔적 제거 | client hard delete 금지, 작성자의 1회 soft delete만 허용 | delete, mixed mutation, undelete, post-delete update deny 테스트 | retention/완전 삭제 정책과 server cleanup |
 | group 문서만 삭제한 뒤 동일 ID를 재사용해 orphan 문서·사진 탈취 | client group delete 금지, server-only tombstone ID 재사용 거부 | owner group delete와 tombstoned ID create deny 테스트 | server recursive delete가 tombstone을 먼저 기록하도록 구현 |
 | baby 문서 삭제·동일 ID 재생성으로 과거 사진 재연결 | client baby delete 금지, server-only baby tombstone | owner baby delete와 tombstoned ID create deny 테스트 | server가 Storage/event 정리 후 tombstone 유지 |
 | 미래 event/update timestamp로 타임라인·revision 오염 | server Rules 평가 시각 +5분 상한 | future create/update/sleep-end deny 테스트 | device clock 오류 UX와 server timestamp 전략 |
+| listener error를 빈 server snapshot으로 오인해 로컬 기록 소실 | cache/pending snapshot은 무시하고 server-confirmed snapshot과 typed error를 분리 | adapter metadata/error Jest, local error snapshot 보존 테스트 | 실제 permission revoke 재현 |
+| 로그아웃·멤버 제거 뒤 내려받은 아동 데이터 잔존 | Auth/membership/event observer 중단→in-flight sync generation 무효화→scoped envelope purge→revoked 상태 순서. concurrent close보다 purge가 우선되고 replacement writer는 보호한다 | sign-out, identity 변경, server-only membership 재확인, in-flight push·observer·close/purge race Jest | native Firestore disk persistence OFF와 실제 기기 purge 확인 |
+| disabled/deleted/revoked-token 계정의 local Auth identity 잔존 | Auth observer와 remote unauthenticated 오류를 함께 처리하고 `reload`+강제 ID-token refresh로 서버 identity를 검증한다 | revoked error mapping, identity 변경, 반복 401·teardown recovery 차단 Jest | 실제 production provider에서 disabled/deleted/revoked-token별 purge smoke |
 | 초대 raw code 유출·재사용·임의 membership 생성 | raw 미저장, HMAC hash, current owner, expiry, single-use transaction, 7-field Admin membership | unit + Firestore Emulator owner/expiry/concurrent accept/audit 테스트 | 실제 callable Auth/App Check/Secret Manager smoke |
 | 6자리 code online brute force | 유효 형식 실패도 먼저 커밋되는 UID별 rate limit, accept 상태 oracle 통합 | UID rate threshold Emulator 테스트 | verified Auth, anonymous UID 정책, App Check 강제 |
 | HMAC key 유출·rotation으로 기존 초대 무효화 | deploy-time secret, 최소 32 bytes fail-closed, 24h 기본 TTL, previous key 없이 active invite 무효화+재발급 | unit secret/hash 테스트 | Secret Manager IAM과 owner 재발급 안내 운영 검증 |
@@ -71,6 +76,7 @@ flowchart LR
 - 계정/그룹 완전 삭제, 데이터 export, owner 이전의 재인증·권한 설계
 - 멤버 제거/로그아웃 시 mobile·AIT 로컬 캐시 purge 검증
 - Auth provider와 계정 복구·탈퇴 정책
+- production Auth provider에서 remote unauthenticated 후 disabled/deleted/revoked-token 분류와 실제 cache purge 검증
 - App Check mobile 적용 및 AppsInToss 호환성 검증
 - Storage EXIF 처리와 사진 보존 기간 결정
 - 실제 non-production project에서 Rules, indexes, Storage↔Firestore IAM 통합 검증

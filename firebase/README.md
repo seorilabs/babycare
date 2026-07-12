@@ -4,12 +4,12 @@ Firebase Rules, indexes, Emulator 테스트와 privileged Functions를 둔다. �
 
 ## 구조
 
-- `firestore.rules`: 그룹 멤버십 기반 Firestore 접근 통제
+- `firestore.rules`: 그룹 멤버십, event revision, active-sleep singleton lock, mutation receipt 접근 통제
 - `firestore.indexes.json`: 아기별/종류별 event 타임라인 index
 - `storage.rules`: 그룹-scoped 아기 이미지 접근 통제
 - `firebase.json`: Firestore/Storage/Functions Emulator와 Node.js 22 runtime 설정
 - `firebase.functions-test.json`: 연속 실행 port race를 피하는 Functions transaction 전용 Firestore 8086 설정
-- `tests/security-rules.test.mjs`: client Rules allow/deny 회귀 테스트
+- `tests/security-rules.test.mjs`: client Rules allow/deny와 active-sleep 동시 시작 경쟁 회귀 테스트
 - `functions/src/`: `createInvite`, `acceptInvite`, HMAC/rate-limit/transaction 구현
 - `functions/tests/`: 순수 unit 및 Firestore Emulator transaction 테스트
 - `.firebaserc.example`: 실제 project 확정 전 placeholder
@@ -23,6 +23,8 @@ pnpm run test:functions:emulator
 ```
 
 `babycare-rules-test`, `babycare-functions-test`는 로컬 Emulator 전용 project ID다. 이 명령들은 production resource를 만들거나 deploy하지 않는다.
+
+돌봄 기록 remote adapter는 `setDoc` offline queue를 UI completion으로 사용하지 않는다. user/group/baby scoped custom outbox가 revision mutation을 보존하고, online Firestore transaction이 event와 `eventMutationReceipts/{eventId@revision@payloadHash}`를 원자 적용한다. Rules는 event의 마지막 mutation metadata와 receipt를 양방향 결합하며 active sleep은 `activeSleeps/{babyId}` lock을 같은 transaction에서 만들고 제거한다. 실제 composition에서는 Firestore native disk persistence를 꺼 custom outbox를 유일한 durable queue로 유지해야 한다.
 
 BabyCare Firestore Emulator는 다른 로컬 앱/Metro와 충돌하지 않도록 Rules 8085, Functions transaction 8086을 사용한다.
 

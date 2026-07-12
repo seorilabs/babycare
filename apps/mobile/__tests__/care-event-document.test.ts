@@ -1,4 +1,9 @@
 import {
+  careEventMutationId,
+  careEventPayloadHash,
+} from '@babycare/product-data';
+
+import {
   decodeCareEventDocument,
   encodeCareEventDocument,
   selectCareEventQueryResults,
@@ -28,6 +33,50 @@ describe('Firebase care event document mapper', () => {
     });
     expect(event.kind).toBe('feeding');
     expect(encodeCareEventDocument(event)).toMatchObject(valid);
+  });
+
+  it('keeps path-bound mutation metadata without trusting client hash content', () => {
+    const event = decodeCareEventDocument({
+      documentId: 'event-1',
+      groupId: 'group-1',
+      data: valid,
+    });
+    const mutation = {
+      id: careEventMutationId(event),
+      payloadHash: careEventPayloadHash(event),
+    };
+    const encoded = encodeCareEventDocument(event, mutation);
+
+    expect(encoded).toMatchObject({
+      lastMutationId: mutation.id,
+      payloadHash: mutation.payloadHash,
+    });
+    expect(
+      decodeCareEventDocument({
+        documentId: 'event-1',
+        groupId: 'group-1',
+        data: encoded,
+      }),
+    ).toEqual(event);
+    const arbitraryHash = '0'.repeat(64);
+    expect(
+      decodeCareEventDocument({
+        documentId: 'event-1',
+        groupId: 'group-1',
+        data: {
+          ...encoded,
+          payloadHash: arbitraryHash,
+          lastMutationId: `event-1@1@${arbitraryHash}`,
+        },
+      }),
+    ).toEqual(event);
+    expect(() =>
+      decodeCareEventDocument({
+        documentId: 'event-1',
+        groupId: 'group-1',
+        data: {...encoded, payloadHash: '0'.repeat(64)},
+      }),
+    ).toThrow(/mutation metadata/);
   });
 
   it('rejects identity and schema poisoning before it reaches product core', () => {

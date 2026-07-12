@@ -10,7 +10,7 @@
 - Region: `확정 필요`
 - Billing plan: `확정 필요`
 - Production project provisioning/deploy: deployment approval 전 금지
-- Functions invite slice: 로컬 구현·unit/Firestore Emulator 테스트 코드 추가, 현재 변경 snapshot 재실행과 실제 callable deploy 미실행
+- Functions invite slice: 로컬 구현 완료. unit 10건·Firestore transaction Emulator 5건 통과, 실제 callable deploy 미실행
 
 로컬 규칙 검증은 실제 project나 자격증명 없이 `babycare-rules-test`라는 Emulator 전용 project ID로만 실행한다.
 
@@ -37,6 +37,8 @@ erDiagram
   GROUP ||--o{ BABY : contains
   GROUP ||--o{ CARE_EVENT : records
   BABY ||--o{ CARE_EVENT : relates_to
+  BABY ||--o| ACTIVE_SLEEP : has_current
+  CARE_EVENT ||--o{ MUTATION_RECEIPT : proves_revision
   USER ||--o{ MEMBERSHIP : joins
   USER ||--o{ CARE_EVENT : authors
   INVITE }o--|| GROUP : targets
@@ -74,6 +76,20 @@ erDiagram
     boolean isDeleted
     int deletedAt
   }
+  ACTIVE_SLEEP {
+    string groupId
+    string babyId
+    string eventId
+    int startedAt
+  }
+  MUTATION_RECEIPT {
+    string id
+    string eventId
+    int revision
+    string payloadHash
+    string actorUid
+    map payload
+  }
   INVITE {
     string groupId
     string codeHash
@@ -90,6 +106,8 @@ groups/{groupId}/members/{uid}
 groups/{groupId}/babies/{babyId}
 groups/{groupId}/babyTombstones/{babyId} # privileged server-only, baby ID 재사용 방지
 groups/{groupId}/events/{eventId}
+groups/{groupId}/activeSleeps/{babyId} # 진행 중 수면 singleton lock
+groups/{groupId}/eventMutationReceipts/{mutationId} # immutable revision receipt
 invites/{inviteId}
 groupTombstones/{groupId}            # privileged server-only, group ID 재사용 방지
 functionRateLimits/{uid}/actions/{action} # server-only 고정 window rate limit
@@ -99,6 +117,8 @@ auditLogs/{auditId}                  # server-only actor/action audit
 - `groups/{groupId}/members/{uid}` 존재 여부가 유일한 client access 권위 원장이다. `groups`의 배열이나 client claim을 권한 판정에 사용하지 않는다.
 - 시간은 `packages/product-core`와 동일하게 epoch milliseconds 정수로 저장한다.
 - `events`는 `feeding | diaper | sleep` subtype별 허용 field와 값 범위를 Rules에서 재검증한다.
+- `events`의 마지막 mutation metadata와 `eventMutationReceipts`는 같은 transaction에서만 생성·갱신된다. receipt ID는 event ID·revision·client canonical SHA-256에 결합한다. Rules는 hash를 직접 계산하지 않고 receipt가 보존한 전체 event payload를 같은 transaction의 event map과 비교하며 actor·kind·revision을 검증한다.
+- `activeSleeps/{babyId}`는 baby별 진행 중 수면 1건을 강제하며 event 생성·종료와 같은 transaction에서 생성·삭제한다.
 - 모유 수유는 `leftDurationSeconds`, `rightDurationSeconds`를 독립 저장하고 합계 12시간 이하를 검증한다. 삭제 여부는 query 가능한 `isDeleted`와 선택 `deletedAt`의 존재가 반드시 일치해야 한다.
 - `avatarStoragePath`에는 `groups/{groupId}/babies/{babyId}/...` object path만 저장하며 공개 download token URL은 금지한다.
 - `invites`는 client SDK가 직접 읽거나 쓰지 못한다. Functions가 HMAC hash lookup, 만료, 1회 사용 transaction을 검증하고 Admin SDK로 7-field 멤버십을 생성한다.
@@ -117,6 +137,8 @@ auditLogs/{auditId}                  # server-only actor/action audit
 | event 일반 update | 거부 | 원 작성자만. 단 active sleep 종료는 모든 멤버 close-only 허용 | 동일 | 감사 workflow |
 | event soft delete | 거부 | 원 작성자만 | 원 작성자인 경우만 | 보존·삭제 workflow |
 | event hard delete | 거부 | 거부 | 거부 | 보존/삭제 정책에 따른 batch cleanup |
+| active sleep lock | 거부 | event와 원자 create/delete만 | 동일 | 복구 workflow |
+| mutation receipt | 거부 | event와 원자 create. 미존재 valid ID get과 자기 actor의 기존 exact get만 허용, list/query·update/delete 거부 | 동일 | retention/cleanup workflow |
 | group hard delete | 거부 | 거부 | 거부 | recursive delete + tombstone workflow |
 | 최초 owner membership 생성 | 거부 | 거부 | 자기 자신만 group과 atomic batch 생성 | 필요 시 복구 workflow |
 | 초대 멤버 membership 생성 | 거부 | 거부 | client 직접 생성 거부 | 초대 수락 transaction만 |
@@ -132,14 +154,14 @@ auditLogs/{auditId}                  # server-only actor/action audit
 
 `apps/mobile/src/adapters/firebase/`에 다음 client 구현이 있다.
 
-- `FirebaseAuthAdapter`: RNFirebase Auth 상태·anonymous sign-in transport. anonymous를 production provider로 승인한 것은 아니다.
-- `FirebaseCareGroupRepository`, `FirebaseBabyRepository`: group/membership/baby 문서와 atomic owner setup.
-- `FirebaseCareEventRemoteStore`: realtime listener, `isDeleted == false` query, strict path/schema decoder와 server-ack `push` transport.
+- `FirebaseAuthAdapter`: RNFirebase Auth 상태·anonymous sign-in transport와 `reload`+강제 ID-token refresh 검증. anonymous를 production provider로 승인한 것은 아니다.
+- `FirebaseCareGroupRepository`, `FirebaseBabyRepository`: group/membership/baby 문서와 atomic owner setup. 권한 오류 뒤 membership 재확인은 server-only query를 사용한다.
+- `FirebaseCareEventRemoteStore`: server-confirmed realtime listener, strict path/schema decoder, revision transaction·payload receipt·active-sleep lock transport.
 - `FirebaseInviteService`: `createInvite`/`acceptInvite` callable과 응답 actor/path 검증.
 
 현재 `apps/mobile/src/app/container.ts`는 AsyncStorage 기반 local adapter를 사용한다. Firebase client config, production Auth provider와 app-level session/group 흐름이 확정되기 전에는 위 코드가 실제 화면의 cloud data path가 아니다.
 
-`FirebaseCareEventRemoteStore.push`는 server acknowledgement까지 기다리는 원격 계약이다. 이를 `CareEventRepositoryPort` 대신 화면 use case에 직접 주입하면 offline 저장 UI가 완료되지 않을 수 있으므로 금지한다. production composition은 local durable repository/outbox에 먼저 저장하고, 원격 전송과 pending/failed/synced 상태를 별도 coordinator에서 관리해야 한다.
+`FirebaseCareEventRemoteStore.push`는 server acknowledgement까지 기다리는 원격 계약이다. 이를 `CareEventRepositoryPort` 대신 화면 use case에 직접 주입하면 offline 저장 UI가 완료되지 않을 수 있으므로 금지한다. `care-event-container.ts`는 `packages/product-data`의 scoped durable envelope/outbox에 먼저 저장하고 remote mutation을 revision 순서로 drain하며 pending/failed/conflict 상태를 노출한다. 실제 Firebase project/Auth session/navigation에는 아직 연결하지 않았다.
 
 ## Invite Callable Contract
 
@@ -205,7 +227,7 @@ pnpm run test:functions
 pnpm run test:functions:emulator
 ```
 
-Rules 테스트는 비멤버 차단, 멤버 read/record, 자기 membership collection-group query, owner-only membership 관리, 작성자/identity 불변, soft delete, invite 직접 접근 차단, Storage 멤버 접근·크기 제한과 멤버 제거 후 즉시 차단을 다룬다. Functions 테스트는 HMAC/raw-code 비저장, owner gate, expiry, UID rate limit, audit actor, idempotent replay, 동시 accept single-use를 다룬다. 현재 변경 세트의 최종 PASS 수치는 전체 게이트 재실행 뒤 기록한다.
+Rules 22건은 비멤버 차단, 멤버 read/record, 자기 membership query, owner-only 관리, event/receipt/active-lock 원자성, receipt missing/existing exact-get·list/query 경계, soft delete, invite 차단, Storage 권한을 다룬다. Functions unit 10건과 transaction Emulator 5건은 HMAC/raw-code 비저장, owner gate, expiry, UID rate limit, audit actor, idempotent replay와 동시 accept single-use를 다룬다. 실제 project/callable/App Check/IAM 검증은 별도다.
 
 ## Deployment Gates
 
@@ -216,6 +238,7 @@ Rules 테스트는 비멤버 차단, 멤버 read/record, 자기 membership colle
 - `ENFORCE_APP_CHECK=false`는 AppsInToss 호환 검증용 임시값이다. 실제 Functions/Auth emulator callable protocol, App Check, Secret Manager binding, IAM은 non-production smoke 전 release-ready가 아니다.
 - Storage Rules가 Firestore membership을 조회하므로 실제 project에서 두 서비스 연결용 IAM 설정을 확인한다.
 - 계정 삭제, 그룹/아기 recursive delete+tombstone, export, 소유권 이전, 제거된 멤버의 로컬 캐시 삭제는 server/app workflow 구현 전 release blocker다. 삭제 workflow는 membership부터 회수한 뒤 파일·하위 문서·상위 문서를 정리하고 ID 재사용을 막아야 한다.
+- mutation receipt가 revision 당시 event payload를 중복 보존하므로 offline retry window와 충돌하지 않는 보존 기간·cleanup/export/완전 삭제 정책을 실제 project 배포 전에 확정한다. 신규 transaction을 위한 미존재 valid-ID get은 허용하므로 exact ID 존재 여부 oracle도 abuse 검토에 포함한다.
 - App Check를 강제하기 전 AppsInToss 실기기 호환성과 복구 절차를 검증한다.
 
 상세 위협과 잔여 위험은 `docs/03-architecture/security-threat-model.md`를 따른다.

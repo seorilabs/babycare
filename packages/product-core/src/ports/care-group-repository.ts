@@ -8,10 +8,20 @@ export interface CareGroupSetup {
   readonly baby: Baby;
 }
 
+export type MembershipObservation =
+  | {readonly kind: 'server_value'; readonly membership: Membership | undefined}
+  | {readonly kind: 'error'; readonly error: Error};
+
 export interface CareGroupRepositoryPort {
   createOwnerGroup(setup: CareGroupSetup): Promise<void>;
   findById(groupId: GroupId): Promise<CareGroup | undefined>;
+  /** Authoritative membership-backed group list; do not satisfy from stale cache. */
   listForUser(userId: UserId): Promise<readonly CareGroup[]>;
   findMembership(groupId: GroupId, userId: UserId): Promise<Membership | undefined>;
+  observeMembership(
+    groupId: GroupId,
+    userId: UserId,
+    listener: (observation: MembershipObservation) => void,
+  ): () => void;
   listMemberships(groupId: GroupId): Promise<readonly Membership[]>;
 }

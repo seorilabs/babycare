@@ -8,15 +8,15 @@
 | --- | --- | --- |
 | 구현·로컬 검증 완료 | platform-independent product core와 순수 테스트 | 수유·기저귀·수면·집계, 모유 좌·우 독립 시간, 날짜/ID·시계 역행 경계, 48시간 수면 복구와 로컬 active sleep 단일화. core 25건·architecture gate 통과 |
 | 로컬 구현·native smoke 완료 | Android/iOS 로컬 UX 세로 슬라이스 | 온보딩·기록·홈·타임라인·통계·AsyncStorage 구현. Android JDK 21 build/실기기 process, iOS RNFirebase build와 light/dark Simulator first-screen 통과 |
-| 로컬 검증 완료·실제 project 대기 | Firestore/Storage Rules와 Emulator 회귀 테스트 | 멤버십, 표시문자/달력 날짜, event schema/soft delete/close-only, Storage 크기·권한 18건 통과. 실제 project 통합 검증 필요 |
+| 로컬 검증 완료·실제 project 대기 | Firestore/Storage Rules와 Emulator 회귀 테스트 | 멤버십, 표시문자/달력 날짜, event schema/soft delete/close-only, active-sleep lock·receipt exact-get/list 경계, Storage 크기·권한 22건 통과. 실제 project 통합 검증 필요 |
 | 대기 | Firebase non-production/prod project 전략과 client app 등록 | 실제 project ID와 환경별 config `확정 필요` |
 | adapter 구현·composition 대기 | Firebase Auth와 실제 session/group/baby 생성 | RNFirebase Auth/그룹/아기 adapter는 구현. production 로그인 provider, account recovery/deletion 정책, app composition 연결은 `확정 필요` |
-| 원격 transport 구현·local-first coordinator 대기 | Firestore realtime/offline 동기화 | strict decoder와 `isDeleted` query, server-ack `CareEventRemoteStorePort` 구현. local durable outbox, pending/failed/synced UI와 실제 project의 재시작·중복·충돌·재연결 검증 필요. remote store를 화면 repository로 직접 구성하지 않음 |
+| local-first 구현·실제 project composition 대기 | Firestore realtime/offline 동기화 | 인증 user/group/baby scoped 단일 envelope에 event+revision별 outbox를 원자 저장하고 pending/failed/conflict·retry UI 계약을 구현. transaction receipt로 lost-ack 멱등성, server-confirmed snapshot만 merge하는 adapter/Jest 검증 완료. 실제 project 재연결·2기기 QA 필요 |
 | 로컬 구현·검증 완료·실제 통합 대기 | 초대 발급/수락 Functions와 client callable adapter | HMAC, 만료, single-use, rate limit, audit unit 10건과 transaction Emulator 검증. 실제 verified Auth/callable/App Check/Secret Manager/IAM 통합 필요 |
 | 대기 | 두 계정·두 기기 공동 기록 end-to-end | 초대→합류→실시간 반영→오프라인 복귀→멤버 제거 통과 |
-| 대기 | cross-device active sleep 단일성 | 현재 local process 직렬화만 구현. 두 기기 동시 시작을 막는 atomic server-side 경로 필요 |
-| 대기 | 로컬 cache purge와 오류/동기화 상태 UX | 로그아웃·멤버 제거·계정 삭제 후 RNFirebase/AsyncStorage 민감 데이터 제거 검증 |
-| 대기 | bounded query와 timeline pagination | Firebase composition 전 홈/통계 range query와 timeline cursor pagination을 분리해 장기 누적 계정의 read 비용·메모리·재집계 jank를 제한 |
+| Rules/transaction 구현·실제 project 대기 | cross-device active sleep 단일성 | `activeSleeps/{babyId}` singleton lock을 event와 원자 생성·종료하고 동시 시작 2건 중 1건만 허용하는 Emulator 경쟁 테스트 통과. 실제 두 기기 conflict UX 검증 필요 |
+| lifecycle 구현·실제 Auth composition 대기 | 로컬 cache purge와 오류/동기화 상태 UX | Auth sign-out·identity 변경·확인된 membership 제거, 강제 token refresh, 반복 401 차단, concurrent close/purge와 replacement-writer 보호를 Jest로 검증. RNFirebase disk persistence 비활성화와 실제 제거 QA 필요 |
+| 대기 | bounded query와 timeline pagination | 현재 correctness를 위해 baby 전체 remote feed를 관찰한다. Firebase 기본 composition 전 cursor-aware page reconcile을 추가해 범위 밖 이동 stale cache 없이 read 비용·메모리·재집계 jank를 제한 |
 
 ## P0 — AppsInToss
 

@@ -9,13 +9,13 @@
 | Layer | 목적 | 명령/위치 | 현재 범위 |
 | --- | --- | --- | --- |
 | Core unit | domain/use case 순수 로직 | `pnpm run test:core` | 모유 좌·우 독립 시간, 수유·기저귀·수면 validation, 자정 경계 집계, 시간/단위, 기록·수면종료·로컬 active sleep 단일화 |
-| Firebase Rules | 그룹 접근·이벤트 불변·soft delete·Storage 권한 | `pnpm run test:firebase` | Firestore/Storage Emulator allow/deny |
+| Firebase Rules | 그룹 접근·이벤트 불변·soft delete·active-sleep singleton·receipt·Storage 권한 | `pnpm run test:firebase` | Firestore/Storage Emulator allow/deny와 동시 시작 경쟁 |
 | Functions unit | HMAC·입력·Auth·rate/error mapping 순수 검증 | `pnpm run test:functions` | callable boundary와 invite service |
 | Functions transaction | owner·expiry·single-use·audit·rate limit | `pnpm run test:functions:emulator` | Firestore Admin transaction Emulator |
-| TypeScript | workspace compile contract | `pnpm run typecheck` | core와 mobile의 `tsc --noEmit` |
-| Architecture | core import/runtime dependency boundary | `pnpm run check:architecture` | core의 RN/Firebase/AIT/native/network 의존 탐지 |
+| TypeScript | workspace compile contract | `pnpm run typecheck` | core, product-data, mobile, Functions의 `tsc --noEmit` |
+| Architecture | core/data import·runtime dependency boundary | `pnpm run check:architecture` | core와 product-data의 RN/Firebase/AIT/native 의존 탐지 |
 | Docs | docs source-of-truth 구조 | `pnpm run check:docs` | 필수 planning/architecture/market/release/QA 문서 |
-| Mobile unit/adapter | RN root와 Firebase document boundary | `pnpm --filter @babycare/mobile test` | root render, care event/group/baby/membership/invite callable decoder와 path/schema 위조 거부 |
+| Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, transaction receipt·active lock, server snapshot metadata, sync status UI, document decoder |
 | Mobile lint | RN source 정적 검사 | `pnpm --filter @babycare/mobile lint` | mobile source |
 | Mobile target | RN Android/iOS target과 iOS launch | `pnpm run check:mobile` | native project 존재, framework launch 문구 탐지 |
 | AIT target | Granite target 초기화 | `pnpm run check:ait` | 현재 미초기화라 실패가 정상 |
@@ -42,6 +42,8 @@ pnpm run test
 - 비로그인·비멤버 read/write deny와 멤버 read/record allow를 모두 둔다.
 - owner/member 권한, owner 불변, 초대 client 직접 접근 금지를 검증한다.
 - event identity/revision, 작성자 soft delete, 다른 멤버의 active sleep close-only 전이를 검증한다.
+- active sleep event/lock 단독 write를 거부하고 원자 start/close와 동시 시작 2건 중 1건만 성공함을 검증한다.
+- mutation receipt는 event ID·revision·payload hash·actor에 결합하고 event write와 양방향 원자 결합하며 client update/delete를 거부한다.
 - group/baby hard delete와 tombstoned ID 재사용, 미래 timestamp를 거부한다.
 - Storage는 group/baby membership, image MIME/size, unscoped path, 멤버 제거 후 접근 회수를 검증한다.
 - Emulator 통과 뒤 실제 non-production project에서 Auth, Rules, indexes, Storage↔Firestore, App Check/IAM 통합 smoke를 별도 수행한다.
@@ -56,7 +58,7 @@ pnpm run test
 
 ## Adapter / Sync Test 기준
 
-현재 화면 composition의 `PersistentCareEventRepository`는 AsyncStorage 기반 개발 adapter다. RNFirebase의 `FirebaseCareEventRemoteStore`는 server acknowledgement transport이며 실제 project와 화면에는 연결하지 않았다. production에서는 이를 화면 repository로 직접 바꾸지 않고 durable local repository/outbox/coordinator 앞에 둔다. 아래 계약을 target별 Firestore/AIT adapter에 동일하게 적용하고 실제 환경에서 다시 검증한다.
+현재 화면 composition의 `PersistentCareEventRepository`는 AsyncStorage 기반 local preview adapter다. 별도 인증 context factory는 주입형 `StringStoragePort`와 `PersistentCareEventSyncStore`, `LocalFirstCareEventRepository`, RNFirebase transaction transport를 조립한다. Jest에서는 local durable commit, revision chain, restart, retry, conflict, lost-ack receipt, active lock, server-only snapshot과 purge lifecycle을 검증했지만 실제 Firebase project와 기본 화면에는 아직 연결하지 않았다. 아래 계약을 실제 Firestore/AIT adapter 환경에서 다시 검증한다.
 
 | 시나리오 | 기대 결과 |
 | --- | --- |
@@ -66,7 +68,7 @@ pnpm run test
 | 온라인 복귀 | 같은 event ID로 서버에 한 번 반영됨 |
 | 두 기기 동시 기록 | 두 event 모두 보존되고 순서가 일관됨 |
 | active sleep 동시 종료 | 허용된 단일 close 전이만 남음 |
-| 멤버 제거·로그아웃 | 새 server 요청 실패, 민감 cache purge |
+| 멤버 제거·로그아웃 | observer/in-flight sync 중단, 새 server 요청 실패, 민감 cache purge |
 | 손상된 local cache | crash하지 않고 안전한 복구/오류 상태 제공 |
 
 ## Mobile Device QA

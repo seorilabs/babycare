@@ -10,15 +10,16 @@ Google Play와 Apple App Store용 Community CLI 기반 bare React Native target�
 - 본인 기록 soft delete, 시스템 dark mode, AsyncStorage 재실행 보존.
 - iOS/Android 제품형 native launch surface.
 - RNFirebase Auth, Firestore 그룹·아기·돌봄 기록, Functions invite callable adapter와 외부 문서 decoder.
+- 인증 user/group/baby별 durable event+outbox, local-first coordinator, sync 상태 banner와 권한 회수 cache purge lifecycle.
 
-현재 실행 composition은 **로컬 개발 모드**다. `LocalSessionRepository`와 `PersistentCareEventRepository`가 기기 AsyncStorage를 사용하고 analytics는 no-op이다. Firebase adapter 파일은 있지만 실제 project/client config와 production Auth provider가 없고 `src/app/container.ts`에서 선택하지 않는다. `FirebaseCareEventRemoteStore`는 server-ack transport라 화면 repository로 직접 사용할 수 없으며 local-first outbox/coordinator가 아직 필요하다. 화면의 초대 코드는 미리보기일 뿐 다른 기기와 연결되지 않는다.
+현재 실행 composition은 **로컬 개발 모드**다. `LocalSessionRepository`와 `PersistentCareEventRepository`가 기기 AsyncStorage를 사용하고 analytics는 no-op이다. cloud용 `care-event-container.ts`와 `packages/product-data` 기반 local-first 경로는 구현했지만 실제 project/client config와 production Auth provider가 없어 `src/app/container.ts`에서 선택하지 않는다. 화면의 초대 코드는 미리보기일 뿐 다른 기기와 연결되지 않는다.
 
 아직 제공하지 않는 것:
 
 - production Auth 계정/provider와 실제 session/group/baby 화면 흐름.
-- Firebase adapter의 production composition, Firestore 실시간 공동 기록, cloud backup과 pending/retry 상태.
-- 실제 project의 초대 발급·수락 callable, 멤버 제거와 RNFirebase/AsyncStorage cache purge.
-- 서로 다른 기기의 active sleep 동시 시작을 막는 atomic server-side 경로.
+- Firebase adapter의 기본 화면 composition, 실제 Firestore 공동 기록과 cloud 복구.
+- 실제 project의 초대 발급·수락 callable과 멤버 제거/cache purge 실기기 검증.
+- 서로 다른 기기의 active sleep 충돌 UX와 실제 project 검증.
 - Firebase Analytics/Crashlytics/App Check/FCM.
 - production signing과 마켓용 ID·아이콘.
 
@@ -27,17 +28,19 @@ Google Play와 Apple App Store용 Community CLI 기반 bare React Native target�
 ```text
 App.tsx                         # target delivery/UI composition
 src/app/container.ts            # core use case + adapter composition root
+src/app/care-event-container.ts # 인증된 cloud sync composition factory
 src/app/session.ts              # local development session mapping
 src/screens/                    # home/timeline/stats/more/onboarding
-src/components/                 # quick record modal, tab bar
+src/components/                 # quick record modal, tab bar, sync status banner
 src/adapters/local/             # AsyncStorage development adapters
 src/adapters/firebase/          # RNFirebase port adapters + document decoders
 src/adapters/system/            # target system adapters
+../../packages/product-data/    # target 공용 local-first store/coordinator
 android/                        # com.seorilabs.babycare.dev
 ios/BabyCare/                   # com.seorilabs.babycare.dev
 ```
 
-`packages/product-core`의 use case와 port만 import한다. Firebase/AsyncStorage/native API 구현은 adapter 또는 app layer에 두고 core로 올리지 않는다.
+`packages/product-core`의 use case/port와 `packages/product-data`의 target 공용 동기화 정책을 import한다. Firebase/AsyncStorage/native API 구현은 adapter 또는 app layer에 두고 core/data package로 올리지 않는다.
 
 ## 요구 환경
 
@@ -93,7 +96,7 @@ pnpm --filter @babycare/mobile test
 pnpm run check:mobile
 ```
 
-현재 Jest는 root render, local session/event cache hydration, 날짜·통계 경계와 Firebase care event/group/baby/membership/invite 응답 decoder의 schema/path 검증을 포함한다. 빠른 기록 interaction, Firestore outbox/coordinator의 emulator contract와 실제 project integration은 추가 검증이 필요하다. Android/iOS device QA와 두 계정 공동 기록 기준은 [`docs/07-qa/test-strategy.md`](../../docs/07-qa/test-strategy.md)를 따른다.
+현재 Jest는 root render, local session/event cache hydration, 날짜·통계 경계, Firebase document decoder뿐 아니라 durable outbox 재시작·revision 충돌·remote snapshot, Auth/membership cache purge lifecycle과 sync banner 계약을 포함한다. Firestore transaction/Rules는 별도 Emulator 테스트가 있고, 실제 project integration과 빠른 기록 interaction은 추가 검증이 필요하다. Android/iOS device QA와 두 계정 공동 기록 기준은 [`docs/07-qa/test-strategy.md`](../../docs/07-qa/test-strategy.md)를 따른다.
 
 ## Native identity와 launch
 
@@ -112,8 +115,8 @@ pnpm run check:mobile
 1. non-production Firebase project와 Android/iOS dev app 등록.
 2. production Auth provider, 계정 recovery/deletion 정책 확정.
 3. composition root에서 Auth/그룹/아기/기록/invite adapter와 app session 흐름 연결.
-4. pending/retry/error 상태와 cross-device active sleep atomic 경로 구현.
-5. Emulator 테스트 후 실제 project에서 두 계정·두 기기 초대·실시간·offline·접근 회수 QA.
-6. PII-free Analytics allowlist, App Check와 로그아웃·멤버 제거 cache purge 검증.
+4. 인증된 app session/navigation에 cloud factory와 pending/retry/conflict UI 연결.
+5. Emulator 테스트 후 실제 project에서 두 계정·두 기기 초대·실시간·offline·active sleep 충돌·접근 회수 QA.
+6. PII-free Analytics allowlist, App Check와 native Firestore persistence OFF·로그아웃·멤버 제거 purge 실기기 검증.
 
 Firebase client config를 추가해도 service account, private key와 Admin SDK는 이 target에 포함하지 않는다.

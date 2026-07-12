@@ -4,6 +4,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  getDocsFromServer,
+  onSnapshot,
   query,
   where,
   writeBatch,
@@ -15,6 +17,7 @@ import type {
   CareGroupSetup,
   GroupId,
   Membership,
+  MembershipObservation,
   UserId,
 } from '@babycare/product-core';
 
@@ -58,7 +61,8 @@ export class FirebaseCareGroupRepository implements CareGroupRepositoryPort {
   }
 
   async listForUser(user: UserId): Promise<readonly CareGroup[]> {
-    const memberships = await getDocs(
+    // Permission-error recovery must not accept a stale membership cache.
+    const memberships = await getDocsFromServer(
       query(collectionGroup(this.#firestore, 'members'), where('userId', '==', user)),
     );
     const groups = await Promise.all(
@@ -77,6 +81,39 @@ export class FirebaseCareGroupRepository implements CareGroupRepositoryPort {
     return snapshot.exists()
       ? decodeMembership(group, snapshot.id, snapshot.data())
       : undefined;
+  }
+
+  observeMembership(
+    group: GroupId,
+    user: UserId,
+    listener: (observation: MembershipObservation) => void,
+  ): () => void {
+    return onSnapshot(
+      doc(this.#firestore, 'groups', group, 'members', user),
+      {includeMetadataChanges: true},
+      snapshot => {
+        if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) {
+          return;
+        }
+        try {
+          listener({
+            kind: 'server_value',
+            membership: snapshot.exists()
+              ? decodeMembership(group, snapshot.id, snapshot.data())
+              : undefined,
+          });
+        } catch (error) {
+          listener({
+            kind: 'error',
+            error:
+              error instanceof Error
+                ? error
+                : new Error('Membership document is invalid'),
+          });
+        }
+      },
+      error => listener({kind: 'error', error}),
+    );
   }
 
   async listMemberships(group: GroupId): Promise<readonly Membership[]> {
