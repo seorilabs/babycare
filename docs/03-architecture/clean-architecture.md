@@ -94,7 +94,8 @@ MVP에 필요한 외부 기능만 port로 추가한다.
 | 그룹·아기 | `CareGroupRepositoryPort`, `BabyRepositoryPort` | mobile Firestore adapter 구현 / AIT adapter 미구현 |
 | 초대 | `InviteServicePort` | client adapter → privileged Functions |
 | 돌봄 기록 | `CareEventRepositoryPort` | AsyncStorage 개발 adapter. 화면이 기다리는 local durable write 계약 |
-| 원격 기록 transport | `CareEventRemoteStorePort` | revision mutation/result/error/server snapshot 계약. transaction receipt와 active-sleep lock을 쓰며 화면 repository로 직접 구성 금지 |
+| 원격 기록 transport | `CareEventRemoteStorePort` | revision mutation/result/error와 server-only raw page 계약. transaction receipt와 active-sleep lock을 쓰며 화면 repository로 직접 구성 금지 |
+| 타임라인 페이지 | `CareEventCursor`, `CareEventPageRequest` | `(occurredAt DESC, documentId DESC)` scalar cursor와 pure ordering/page 계약. Firebase SDK type 금지 |
 | 문자열 저장 | `StringStoragePort` | mobile AsyncStorage / 향후 AIT Storage. sync store에 주입하며 core는 SDK를 모름 |
 | 분석 | 기존 `AnalyticsPort` | PII-free Firebase/AIT analytics adapter |
 | 시간·ID | 기존 `ClockPort`, `IdGeneratorPort` | target별 system adapter |
@@ -112,7 +113,11 @@ MVP에 필요한 외부 기능만 port로 추가한다.
 - Firestore transaction은 canonical payload SHA-256으로 이름 붙인 immutable mutation receipt를 event revision과 원자 기록한다. Rules는 path의 event ID·revision·hash 형식뿐 아니라 receipt의 전체 transport payload가 같은 write의 event map과 일치하는지 양방향 검증한다. adapter는 receipt payload를 canonical domain event·actor와 다시 대조한다.
 - active sleep 시작은 `activeSleeps/{babyId}` singleton lock과 event를 같은 transaction에 만들고, 종료·active soft delete는 lock을 함께 제거한다. Rules Emulator 경쟁 테스트에서 동시 시작 2건 중 정확히 1건만 성공한다.
 - 원격 cache/pending snapshot과 listener error를 실제 빈 server snapshot으로 취급하지 않는다. `fromCache=false`, `hasPendingWrites=false`인 snapshot만 reconcile한다.
-- cursor-aware page reconciliation 전에는 remote listener가 baby 전체 event feed를 관찰한다. 화면의 local filter/limit를 remote snapshot에 적용하면 다른 기기에서 범위 밖으로 이동한 기록이 stale projection으로 남기 때문이다. 장기 계정의 bounded pagination은 Firebase 기본 composition 전 backlog다.
+- 타임라인은 soft-delete tombstone을 포함한 server raw page를 `(occurredAt DESC, documentId DESC)`로 조회한다. cache/pending snapshot은 무시하며 `pageSize + 1` lookahead로 `hasMore`를 계산한다. 로드된 각 page listener의 server signature가 바뀌면 page 하나만 patch하지 않고 현재 로드 깊이만큼 HEAD부터 재조회해 envelope v2의 authoritative prefix를 한 번에 교체한다.
+- prefix 교체는 authoritative coverage 밖의 synced row를 제거하고 pending/failed/conflict overlay와 active-sleep singleton projection은 보존한다. raw tombstone은 cursor를 전진시키지만 UI에서는 숨긴다. `maxCachedEvents`에 도달하면 timeline을 capped 상태로 종료한다. Home/Stats와 active-sleep 판단은 bounded timeline의 완전성을 전제로 하지 않고 별도 projection/singleton을 사용한다.
+- cloud composition은 `LocalFirstCareEventRepository`를 `external_pages` mode로 구성하고 인증 scope마다 명시적 config의 `CareEventTimelineFeed` 정확히 하나를 즉시 시작한다. generic `observe()`는 local projection만 배달하고 이 coordinator가 server read/reconnect 신호를 독점한다. server-confirmed page 뒤 retryable/unauthenticated mutation retry/flush를 요청하고, 확인된 Auth/membership 복구 뒤 HEAD를 다시 bind한다. legacy `full_snapshot` mode는 bounded feed와 같은 scope에서 함께 사용하지 않는다.
+- 활성 page listener가 terminal retryable error를 내면 현재 epoch의 모든 page를 중단하고 HEAD server fetch를 한 번 재시도한다. fetch도 실패하면 head recovery listener를 남겨 다음 server-confirmed page가 사용자 조작 없이 전체 rebase를 재개하게 하되, 연속 terminal error를 tight loop로 재설치하지 않는다.
+- v1 또는 더 큰 이전 cache bound를 offline으로 연 경우 UI는 새 `maxCachedEvents`까지만 노출하되, cursor를 추측해 로컬 데이터를 파괴하지 않는다. 첫 server-confirmed HEAD rebase에서 envelope까지 새 bound로 정리한다.
 - sign-out·identity 변경·membership 제거가 확인되면 observer를 먼저 중단하고 scoped cache를 purge한 뒤 revoked UI state를 통지한다. permission listener 오류의 membership 재확인은 native cache가 아닌 server-only query를 사용한다. 실제 RNFirebase composition에서는 native disk persistence를 끄고 custom envelope를 유일한 durable queue로 사용해야 한다.
 - 정상 UI teardown은 event sync를 `quiesce()`하고 pending Auth/membership 검증을 drain한 뒤 store를 `close()`해 cache는 보존하고 single-writer claim만 해제한다. revocation `clear()`와 경쟁하면 privacy purge가 우선되며, 완료된 close 뒤 purge도 scoped claim을 다시 획득해야 한다. revocation과 정상 unmount를 같은 동작으로 취급하지 않는다.
 - Analytics에는 event type 같은 allowlist만 보내고 기록 값·메모·아기 식별자는 보내지 않는다.

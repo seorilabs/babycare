@@ -7,6 +7,7 @@ import {LocalSessionHydrationError} from './src/adapters/local/local-session-rep
 import {appContainer} from './src/app/container';
 import {createLocalSession, domainContext, type LocalSession} from './src/app/session';
 import {createTheme} from './src/app/theme';
+import {useLocalTimelinePagination} from './src/app/use-local-timeline-pagination';
 import {QuickRecordModal} from './src/components/QuickRecordModal';
 import {TabBar, type AppTab} from './src/components/TabBar';
 import {HomeScreen} from './src/screens/HomeScreen';
@@ -39,6 +40,10 @@ function BabyCareApp() {
   const [now, setNow] = useState(Date.now());
   const [savedMessage, setSavedMessage] = useState<string>();
   const locallyDeletedEventIds = useRef(new Set<string>());
+  const localTimeline = useLocalTimelinePagination(
+    events,
+    session ? `${session.groupId}/${session.babyId}` : 'no-local-session',
+  );
 
   useEffect(() => {
     appContainer.sessionRepository
@@ -110,8 +115,12 @@ function BabyCareApp() {
     if (tab === 'timeline') {
       return (
         <TimelineScreen
-          events={events}
+          capped={localTimeline.capped}
+          events={localTimeline.events}
           caregiverNames={caregiverNames}
+          hasMore={localTimeline.hasMore}
+          loadingMore={localTimeline.loadingMore}
+          loadMoreError={localTimeline.loadMoreError}
           now={now}
           onDelete={async event => {
             try {
@@ -127,6 +136,8 @@ function BabyCareApp() {
               Alert.alert('삭제할 수 없어요', error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.');
             }
           }}
+          onLoadMore={localTimeline.loadMore}
+          onRetryLoadMore={localTimeline.retryLoadMore}
           session={session}
           theme={theme}
         />

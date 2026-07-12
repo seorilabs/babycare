@@ -96,7 +96,7 @@ pnpm --filter @babycare/mobile test
 pnpm run check:mobile
 ```
 
-현재 Jest는 root render, local session/event cache hydration, 날짜·통계 경계, Firebase document decoder뿐 아니라 durable outbox 재시작·revision 충돌·remote snapshot, Auth/membership cache purge lifecycle과 sync banner 계약을 포함한다. Firestore transaction/Rules는 별도 Emulator 테스트가 있고, 실제 project integration과 빠른 기록 interaction은 추가 검증이 필요하다. Android/iOS device QA와 두 계정 공동 기록 기준은 [`docs/07-qa/test-strategy.md`](../../docs/07-qa/test-strategy.md)를 따른다.
+현재 Jest는 root render, local session/event cache hydration, 날짜·통계 경계, Firebase document decoder뿐 아니라 durable outbox 재시작·revision 충돌, server-only raw page, bounded timeline prefix rebase/load-more, Auth/membership cache purge lifecycle과 sync banner 계약을 포함한다. Firestore transaction/Rules는 별도 Emulator 테스트가 있고, 실제 project integration과 빠른 기록 interaction은 추가 검증이 필요하다. Android/iOS device QA와 두 계정 공동 기록 기준은 [`docs/07-qa/test-strategy.md`](../../docs/07-qa/test-strategy.md)를 따른다.
 
 ## Native identity와 launch
 

@@ -1,14 +1,17 @@
 import {
   collection,
+  documentId,
   doc,
   getDoc,
   getDocs,
+  getDocsFromServer,
   limit as limitQuery,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   serverTimestamp,
+  startAfter,
   where,
   type DocumentData,
   type Firestore,
@@ -22,11 +25,15 @@ import type {
   CareEventRemoteError,
   CareEventRemoteStorePort,
   CareEventPushResult,
+  CareEventPageRequest,
   EventId,
   GroupId,
   SleepEvent,
   UserId,
+  CareEventRemotePage,
+  CareEventRemotePageObservation,
 } from '@babycare/product-core';
+import {validateCareEventPageRequest} from '@babycare/product-core';
 import {
   careEventMutationId,
   careEventPayloadHash,
@@ -242,6 +249,36 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
     return result;
   }
 
+  #pageQuery(
+    request: CareEventPageRequest,
+  ): Query<DocumentData, DocumentData> {
+    validateCareEventPageRequest(request);
+    let result: Query<DocumentData, DocumentData> = this.#collection(
+      request.groupId,
+    );
+    result = query(result, where('babyId', '==', request.babyId));
+    if (request.from !== undefined) {
+      result = query(result, where('occurredAt', '>=', request.from));
+    }
+    if (request.to !== undefined) {
+      result = query(result, where('occurredAt', '<', request.to));
+    }
+    if (request.kinds?.length === 1) {
+      result = query(result, where('kind', '==', request.kinds[0]));
+    } else if (request.kinds && request.kinds.length > 1) {
+      result = query(result, where('kind', 'in', [...request.kinds]));
+    }
+    result = query(result, orderBy('occurredAt', 'desc'));
+    result = query(result, orderBy(documentId(), 'desc'));
+    if (request.after) {
+      result = query(
+        result,
+        startAfter(request.after.occurredAt, request.after.eventId),
+      );
+    }
+    return query(result, limitQuery(request.pageSize + 1));
+  }
+
   #decode(
     snapshot: QueryDocumentSnapshot<DocumentData, DocumentData>,
     group: GroupId,
@@ -251,6 +288,31 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
       groupId: group,
       data: snapshot.data(),
     });
+  }
+
+  #decodePage(
+    snapshots: readonly QueryDocumentSnapshot<DocumentData, DocumentData>[],
+    request: CareEventPageRequest,
+  ): CareEventRemotePage {
+    let decoded: readonly CareEvent[];
+    try {
+      // Decode the lookahead row too. A poisoned document must fail the whole
+      // page rather than silently turning it into a shorter partial snapshot.
+      decoded = snapshots.map(snapshot =>
+        this.#decode(snapshot, request.groupId),
+      );
+    } catch (error) {
+      throw this.#report(error);
+    }
+    const events = decoded.slice(0, request.pageSize);
+    const last = events.at(-1);
+    return {
+      events,
+      hasMore: decoded.length > request.pageSize,
+      ...(last
+        ? {endCursor: {occurredAt: last.occurredAt, eventId: last.id}}
+        : {}),
+    };
   }
 
   #report(error: unknown): Error {
@@ -404,6 +466,67 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
       groupId: group,
       data: snapshot.data(),
     });
+  }
+
+  async fetchPage(request: CareEventPageRequest): Promise<CareEventRemotePage> {
+    try {
+      validateCareEventPageRequest(request);
+      if (request.kinds?.length === 0) {
+        return {events: [], hasMore: false};
+      }
+      const snapshot = await getDocsFromServer(this.#pageQuery(request));
+      return this.#decodePage(snapshot.docs, request);
+    } catch (error) {
+      if (error instanceof CareEventRemoteStoreError) {
+        throw error;
+      }
+      throw new CareEventRemoteStoreError(normalizeCareEventRemoteError(error));
+    }
+  }
+
+  observePage(
+    request: CareEventPageRequest,
+    listener: (observation: CareEventRemotePageObservation) => void,
+  ): () => void {
+    let pageQuery: Query<DocumentData, DocumentData>;
+    try {
+      validateCareEventPageRequest(request);
+      if (request.kinds?.length === 0) {
+        listener({kind: 'server_page', page: {events: [], hasMore: false}});
+        return () => undefined;
+      }
+      pageQuery = this.#pageQuery(request);
+    } catch (error) {
+      listener({
+        kind: 'error',
+        error: {code: 'invalid', cause: error},
+      });
+      return () => undefined;
+    }
+    return onSnapshot(
+      pageQuery,
+      {includeMetadataChanges: true},
+      snapshot => {
+        if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) {
+          return;
+        }
+        try {
+          listener({
+            kind: 'server_page',
+            page: this.#decodePage(snapshot.docs, request),
+          });
+        } catch (error) {
+          listener({
+            kind: 'error',
+            error: {code: 'invalid', cause: error},
+          });
+        }
+      },
+      error => {
+        this.#report(error);
+        listener({kind: 'error', error: normalizeCareEventRemoteError(error)});
+      },
+    );
   }
 
   async list(criteria: CareEventQuery): Promise<readonly CareEvent[]> {

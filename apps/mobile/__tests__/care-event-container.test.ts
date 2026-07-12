@@ -10,8 +10,11 @@ import {
   type CareEvent,
   type CareEventMutation,
   type CareEventPushResult,
+  type CareEventPageRequest,
   type CareEventQuery,
   type CareEventRemoteObservation,
+  type CareEventRemotePage,
+  type CareEventRemotePageObservation,
   type CareEventRemoteStorePort,
   type CareGroup,
   type EventId,
@@ -66,6 +69,11 @@ const context: AuthenticatedCareContext = {
   membership,
   baby,
 };
+const timelineConfig = {
+  pageSize: 20,
+  maxCachedEvents: 100,
+  maxScanPagesPerLoad: 3,
+} as const;
 
 class FakeAuth implements AuthPort {
   readonly listeners = new Set<
@@ -122,6 +130,10 @@ class FakeRemote implements CareEventRemoteStorePort {
   readonly listeners = new Set<
     (observation: CareEventRemoteObservation) => void
   >();
+  readonly pageListeners = new Set<
+    (observation: CareEventRemotePageObservation) => void
+  >();
+  fetchCount = 0;
 
   async push(mutation: CareEventMutation): Promise<CareEventPushResult> {
     return {kind: 'applied', remote: mutation.event};
@@ -132,6 +144,21 @@ class FakeRemote implements CareEventRemoteStorePort {
     _eventId: EventId,
   ): Promise<CareEvent | undefined> {
     return undefined;
+  }
+
+  async fetchPage(
+    _request: CareEventPageRequest,
+  ): Promise<CareEventRemotePage> {
+    this.fetchCount += 1;
+    return {events: [], hasMore: false};
+  }
+
+  observePage(
+    _request: CareEventPageRequest,
+    listener: (observation: CareEventRemotePageObservation) => void,
+  ): () => void {
+    this.pageListeners.add(listener);
+    return () => this.pageListeners.delete(listener);
   }
 
   async list(_query: CareEventQuery): Promise<readonly CareEvent[]> {
@@ -148,6 +175,12 @@ class FakeRemote implements CareEventRemoteStorePort {
 
   emit(observation: CareEventRemoteObservation): void {
     for (const listener of this.listeners) {
+      listener(observation);
+    }
+  }
+
+  emitPage(observation: CareEventRemotePageObservation): void {
+    for (const listener of this.pageListeners) {
       listener(observation);
     }
   }
@@ -170,6 +203,7 @@ describe('createCareEventContainer', () => {
       groups,
       context,
       remote,
+      timeline: timelineConfig,
       clock: {now: () => 1_000},
       idGenerator: {nextEventId: () => eventId('generated')},
       analytics: {track: async () => undefined},
@@ -180,18 +214,22 @@ describe('createCareEventContainer', () => {
       {groupId: group.id, babyId: baby.id},
       () => undefined,
     );
+    const stopTimeline = container.timelineFeed.start(() => undefined);
+    await container.timelineFeed.refresh();
 
-    remote.emit({kind: 'error', error: {code: 'permission_denied'}});
+    remote.emitPage({kind: 'error', error: {code: 'permission_denied'}});
     await container.whenSessionSettled();
 
     expect(onRevoked).toHaveBeenCalledWith('membership_removed');
     expect(onError).not.toHaveBeenCalled();
     expect(AsyncStorage.removeItem).toHaveBeenCalledTimes(1);
     expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
     expect(auth.listeners.size).toBe(0);
     expect(groups.listeners.size).toBe(0);
 
     stopEvents();
+    stopTimeline();
     container.stopSessionLifecycle();
   });
 
@@ -205,6 +243,7 @@ describe('createCareEventContainer', () => {
       groups,
       context,
       remote: new FakeRemote(),
+      timeline: timelineConfig,
       clock: {now: () => 1_000},
       idGenerator: {nextEventId: () => eventId('generated')},
       analytics: {track: async () => undefined},
@@ -225,12 +264,74 @@ describe('createCareEventContainer', () => {
     await restarted.purge();
   });
 
+  it('rebinds the page owner after verified Auth recovery', async () => {
+    const remote = new FakeRemote();
+    const onError = jest.fn();
+    const container = await createCareEventContainer({
+      auth: new FakeAuth(),
+      groups: new FakeGroups(),
+      context,
+      remote,
+      timeline: timelineConfig,
+      clock: {now: () => 1_000},
+      idGenerator: {nextEventId: () => eventId('generated')},
+      analytics: {track: async () => undefined},
+      onRevoked: jest.fn(),
+      onError,
+    });
+    await container.timelineFeed.refresh();
+    const fetchCount = remote.fetchCount;
+
+    remote.emitPage({kind: 'error', error: {code: 'unauthenticated'}});
+    await container.whenSessionSettled();
+
+    expect(remote.fetchCount).toBeGreaterThan(fetchCount);
+    expect(remote.pageListeners.size).toBeGreaterThan(0);
+    expect(onError).not.toHaveBeenCalled();
+    await container.dispose();
+    expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
+  });
+
+  it('rebinds the page owner when membership remains authorized', async () => {
+    const remote = new FakeRemote();
+    const onError = jest.fn();
+    const onRevoked = jest.fn();
+    const container = await createCareEventContainer({
+      auth: new FakeAuth(),
+      groups: new FakeGroups(),
+      context,
+      remote,
+      timeline: timelineConfig,
+      clock: {now: () => 1_000},
+      idGenerator: {nextEventId: () => eventId('generated')},
+      analytics: {track: async () => undefined},
+      onRevoked,
+      onError,
+    });
+    await container.timelineFeed.refresh();
+    const fetchCount = remote.fetchCount;
+
+    remote.emitPage({kind: 'error', error: {code: 'permission_denied'}});
+    await container.whenSessionSettled();
+
+    expect(remote.fetchCount).toBeGreaterThan(fetchCount);
+    expect(remote.pageListeners.size).toBeGreaterThan(0);
+    expect(onRevoked).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    await container.dispose();
+    expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
+  });
+
   it('releases the scoped writer on normal teardown without purging cache', async () => {
+    const remote = new FakeRemote();
     const dependencies = {
       auth: new FakeAuth(),
       groups: new FakeGroups(),
       context,
-      remote: new FakeRemote(),
+      remote,
+      timeline: timelineConfig,
       clock: {now: () => 1_000},
       idGenerator: {nextEventId: () => eventId('generated')},
       analytics: {track: async () => undefined},
@@ -242,8 +343,12 @@ describe('createCareEventContainer', () => {
     await first.dispose();
 
     expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
+    expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
     const replacement = await createCareEventContainer(dependencies);
     await replacement.dispose();
+    expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
   });
 
   it('drains a pending revocation check before normal teardown closes storage', async () => {
@@ -267,6 +372,7 @@ describe('createCareEventContainer', () => {
       groups,
       context,
       remote,
+      timeline: timelineConfig,
       clock: {now: () => 1_000},
       idGenerator: {nextEventId: () => eventId('generated')},
       analytics: {track: async () => undefined},
@@ -277,8 +383,10 @@ describe('createCareEventContainer', () => {
       {groupId: group.id, babyId: baby.id},
       () => undefined,
     );
+    const stopTimeline = container.timelineFeed.start(() => undefined);
+    await container.timelineFeed.refresh();
 
-    remote.emit({kind: 'error', error: {code: 'permission_denied'}});
+    remote.emitPage({kind: 'error', error: {code: 'permission_denied'}});
     await verificationStarted;
     const disposing = container.dispose();
     resolveGroups?.([]);
@@ -287,5 +395,8 @@ describe('createCareEventContainer', () => {
     expect(onRevoked).toHaveBeenCalledWith('membership_removed');
     expect(AsyncStorage.removeItem).toHaveBeenCalledTimes(1);
     stopEvents();
+    stopTimeline();
+    expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
   });
 });

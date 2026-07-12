@@ -1,5 +1,11 @@
 import {
+  documentId,
+  getDocsFromServer,
+  limit as limitQuery,
   onSnapshot,
+  orderBy,
+  startAfter,
+  where,
 } from '@react-native-firebase/firestore';
 import {
   babyId,
@@ -58,20 +64,35 @@ jest.mock('@react-native-firebase/firestore', () => ({
   collection: (parent: unknown, ...segments: string[]) => ({
     path: mockReferencePath(parent, segments),
   }),
+  documentId: jest.fn(() => '__name__'),
   doc: (parent: unknown, ...segments: string[]) => ({
     path: mockReferencePath(parent, segments),
   }),
   getDoc: jest.fn(),
   getDocs: jest.fn(),
-  limit: jest.fn(value => value),
+  getDocsFromServer: jest.fn(),
+  limit: jest.fn(value => ({kind: 'limit', value})),
   onSnapshot: jest.fn(() => jest.fn()),
-  orderBy: jest.fn(value => value),
-  query: jest.fn(value => value),
+  orderBy: jest.fn((field, direction) => ({
+    kind: 'orderBy',
+    field,
+    direction,
+  })),
+  query: jest.fn((base, ...constraints) => ({
+    ...base,
+    constraints: [...(base.constraints ?? []), ...constraints],
+  })),
   runTransaction: jest.fn(async (_firestore, callback) =>
     callback(mockTransaction),
   ),
   serverTimestamp: jest.fn(() => ({__serverTimestamp: true})),
-  where: jest.fn(value => value),
+  startAfter: jest.fn((...values) => ({kind: 'startAfter', values})),
+  where: jest.fn((field, operator, value) => ({
+    kind: 'where',
+    field,
+    operator,
+    value,
+  })),
 }));
 
 const ids = {
@@ -85,6 +106,27 @@ function diaper(): Extract<CareEvent, {kind: 'diaper'}> {
     {...ids, kind: 'diaper', diaperType: 'wet', occurredAt: 1_000},
     {id: eventId('event-diaper'), now: 2_000},
   ) as Extract<CareEvent, {kind: 'diaper'}>;
+}
+
+function diaperAt(
+  id: string,
+  occurredAt: number,
+  deleted = false,
+): Extract<CareEvent, {kind: 'diaper'}> {
+  const event = createCareEvent(
+    {...ids, kind: 'diaper', diaperType: 'wet', occurredAt},
+    {id: eventId(id), now: occurredAt + 1_000},
+  ) as Extract<CareEvent, {kind: 'diaper'}>;
+  return deleted
+    ? {...event, deletedAt: occurredAt + 2_000, updatedAt: occurredAt + 2_000, revision: 2}
+    : event;
+}
+
+function queryDocument(event: CareEvent) {
+  return {
+    id: event.id,
+    data: () => encodeCareEventDocument(event),
+  };
 }
 
 function sleep(id: string): Extract<CareEvent, {kind: 'sleep'}> {
@@ -107,16 +149,17 @@ function mutation(
   };
 }
 
-function remoteStore() {
+function remoteStore(onDecodeError: (error: Error) => void = jest.fn()) {
   return new FirebaseCareEventRemoteStore(
     {} as never,
     ids.caregiverId,
-    jest.fn(),
+    onDecodeError,
   );
 }
 
 describe('Firebase care event remote transaction', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     mockDocuments.clear();
     mockWrites.length = 0;
   });
@@ -327,6 +370,153 @@ describe('Firebase care event remote transaction', () => {
       operation: 'delete',
       path: `groups/${ids.groupId}/activeSleeps/${ids.babyId}`,
     });
+  });
+
+  it('fetches a raw server page with stable equal-timestamp ordering and lookahead', async () => {
+    const newestById = diaperAt('event-z', 4_000);
+    const deletedMiddle = diaperAt('event-y', 4_000, true);
+    const lookahead = diaperAt('event-x', 4_000);
+    const getDocsFromServerMock = getDocsFromServer as jest.Mock;
+    getDocsFromServerMock.mockResolvedValue({
+      docs: [
+        queryDocument(newestById),
+        queryDocument(deletedMiddle),
+        queryDocument(lookahead),
+      ],
+    });
+
+    await expect(
+      remoteStore().fetchPage({
+        ...ids,
+        from: 1_000,
+        to: 5_000,
+        kinds: ['diaper'],
+        pageSize: 2,
+      }),
+    ).resolves.toEqual({
+      events: [newestById, deletedMiddle],
+      endCursor: {occurredAt: 4_000, eventId: deletedMiddle.id},
+      hasMore: true,
+    });
+
+    expect(getDocsFromServerMock).toHaveBeenCalledTimes(1);
+    expect(where).toHaveBeenNthCalledWith(1, 'babyId', '==', ids.babyId);
+    expect(where).toHaveBeenNthCalledWith(2, 'occurredAt', '>=', 1_000);
+    expect(where).toHaveBeenNthCalledWith(3, 'occurredAt', '<', 5_000);
+    expect(where).toHaveBeenNthCalledWith(4, 'kind', '==', 'diaper');
+    expect(orderBy).toHaveBeenNthCalledWith(1, 'occurredAt', 'desc');
+    expect(documentId).toHaveBeenCalledTimes(1);
+    expect(orderBy).toHaveBeenNthCalledWith(2, '__name__', 'desc');
+    expect(startAfter).not.toHaveBeenCalled();
+    expect(limitQuery).toHaveBeenCalledWith(3);
+  });
+
+  it('applies the scalar cursor after both stable ordering fields', async () => {
+    const getDocsFromServerMock = getDocsFromServer as jest.Mock;
+    getDocsFromServerMock.mockResolvedValue({docs: []});
+    const cursor = {occurredAt: 4_000, eventId: eventId('event-y')};
+
+    await expect(
+      remoteStore().fetchPage({
+        ...ids,
+        pageSize: 20,
+        after: cursor,
+      }),
+    ).resolves.toEqual({events: [], hasMore: false});
+
+    expect(orderBy).toHaveBeenNthCalledWith(1, 'occurredAt', 'desc');
+    expect(orderBy).toHaveBeenNthCalledWith(2, '__name__', 'desc');
+    expect(startAfter).toHaveBeenCalledWith(4_000, cursor.eventId);
+    expect(limitQuery).toHaveBeenCalledWith(21);
+  });
+
+  it('returns typed one-shot errors and never returns a partial poisoned page', async () => {
+    const getDocsFromServerMock = getDocsFromServer as jest.Mock;
+    getDocsFromServerMock.mockRejectedValueOnce({
+      code: 'firestore/unavailable',
+    });
+
+    await expect(
+      remoteStore().fetchPage({...ids, pageSize: 10}),
+    ).rejects.toMatchObject({remoteError: {code: 'retryable'}});
+
+    const valid = diaperAt('event-valid', 4_000);
+    const onDecodeError = jest.fn();
+    getDocsFromServerMock.mockResolvedValueOnce({
+      docs: [
+        queryDocument(valid),
+        {id: 'event-poisoned', data: () => ({kind: 'diaper'})},
+      ],
+    });
+    await expect(
+      remoteStore(onDecodeError).fetchPage({...ids, pageSize: 10}),
+    ).rejects.toMatchObject({remoteError: {code: 'invalid'}});
+    expect(onDecodeError).toHaveBeenCalledTimes(1);
+  });
+
+  it('observes only server-confirmed pages and reports typed transport errors', () => {
+    const first = diaperAt('event-z', 4_000);
+    const lookahead = diaperAt('event-y', 4_000);
+    const observations: unknown[] = [];
+    remoteStore().observePage(
+      {...ids, pageSize: 1},
+      observation => observations.push(observation),
+    );
+    const onSnapshotMock = onSnapshot as jest.MockedFunction<typeof onSnapshot>;
+    const call = onSnapshotMock.mock.calls.at(-1)!;
+    const onNext = call[2] as (snapshot: unknown) => void;
+    const onError = call[3] as (error: unknown) => void;
+    const docs = [queryDocument(first), queryDocument(lookahead)];
+
+    onNext({metadata: {fromCache: true, hasPendingWrites: false}, docs});
+    onNext({metadata: {fromCache: false, hasPendingWrites: true}, docs});
+    expect(observations).toEqual([]);
+
+    onNext({metadata: {fromCache: false, hasPendingWrites: false}, docs});
+    expect(observations).toEqual([
+      {
+        kind: 'server_page',
+        page: {
+          events: [first],
+          endCursor: {occurredAt: first.occurredAt, eventId: first.id},
+          hasMore: true,
+        },
+      },
+    ]);
+
+    onError({code: 'firestore/permission-denied'});
+    expect(observations.at(-1)).toMatchObject({
+      kind: 'error',
+      error: {code: 'permission_denied'},
+    });
+  });
+
+  it('reports an invalid observed document without emitting a partial page', () => {
+    const valid = diaperAt('event-valid', 4_000);
+    const onDecodeError = jest.fn();
+    const observations: unknown[] = [];
+    remoteStore(onDecodeError).observePage(
+      {...ids, pageSize: 10},
+      observation => observations.push(observation),
+    );
+    const onSnapshotMock = onSnapshot as jest.MockedFunction<typeof onSnapshot>;
+    const call = onSnapshotMock.mock.calls.at(-1)!;
+    const onNext = call[2] as (snapshot: unknown) => void;
+
+    onNext({
+      metadata: {fromCache: false, hasPendingWrites: false},
+      docs: [
+        queryDocument(valid),
+        {id: 'event-poisoned', data: () => ({kind: 'diaper'})},
+      ],
+    });
+
+    expect(observations).toHaveLength(1);
+    expect(observations[0]).toMatchObject({
+      kind: 'error',
+      error: {code: 'invalid'},
+    });
+    expect(onDecodeError).toHaveBeenCalledTimes(1);
   });
 
   it('reconciles only server-confirmed snapshots and reports errors separately', () => {

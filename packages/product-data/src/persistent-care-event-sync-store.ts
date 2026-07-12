@@ -1,12 +1,18 @@
 import type {
   BabyId,
   CareEvent,
+  CareEventCursor,
   CareEventMutationKind,
   CareEventQuery,
   EventId,
   GroupId,
   StringStoragePort,
   UserId,
+} from '@babycare/product-core';
+import {
+  careEventCursorFromEvent,
+  compareCareEventNewestFirst,
+  eventId as parseEventId,
 } from '@babycare/product-core';
 
 import {
@@ -95,6 +101,18 @@ export interface CareEventSyncIssue {
   readonly remote: CareEvent;
 }
 
+/**
+ * Raw server rows covered by the currently cached authoritative prefix.
+ * Tombstones remain in `remoteEventIds` even though normal list queries hide
+ * them, because pagination cursors must advance over raw rows.
+ */
+export interface CareEventTimelineCoverage {
+  readonly remoteEventIds: readonly EventId[];
+  readonly endCursor?: CareEventCursor;
+  readonly hasMore: boolean;
+  readonly loadedRawCount: number;
+}
+
 export interface CareEventSyncLocalStorePort {
   saveAndEnqueue(event: CareEvent): Promise<void>;
   findById(groupId: GroupId, eventId: EventId): Promise<CareEvent | undefined>;
@@ -104,6 +122,11 @@ export interface CareEventSyncLocalStorePort {
     listener: (events: readonly CareEvent[]) => void,
   ): () => void;
   mergeRemoteEvents(events: readonly CareEvent[]): Promise<void>;
+  getTimelineCoverage(): Promise<CareEventTimelineCoverage>;
+  replaceRemoteTimelinePrefix(
+    events: readonly CareEvent[],
+    coverage: CareEventTimelineCoverage,
+  ): Promise<void>;
   nextPending(): Promise<CareEventOutboxEntry | undefined>;
   markAttemptStarted(id: string): Promise<CareEventOutboxEntry | undefined>;
   markFailed(id: string, kind: CareEventSyncFailureKind): Promise<void>;
@@ -120,13 +143,24 @@ export interface CareEventSyncLocalStorePort {
   close(): Promise<void>;
 }
 
-interface PersistedCareEventSyncState {
+interface PersistedCareEventSyncStateV1 {
   readonly version: 1;
   readonly scope: CareEventSyncScope;
   readonly events: readonly CareEvent[];
   readonly outbox: readonly CareEventOutboxEntry[];
   readonly issues: readonly CareEventSyncIssue[];
 }
+
+interface PersistedCareEventSyncStateV2 {
+  readonly version: 2;
+  readonly scope: CareEventSyncScope;
+  readonly events: readonly CareEvent[];
+  readonly outbox: readonly CareEventOutboxEntry[];
+  readonly issues: readonly CareEventSyncIssue[];
+  readonly timelineCoverage: CareEventTimelineCoverage;
+}
+
+type PersistedCareEventSyncState = PersistedCareEventSyncStateV2;
 
 function hasOnlyKeys(
   value: Record<string, unknown>,
@@ -236,6 +270,100 @@ function decodeSyncIssue(value: unknown): CareEventSyncIssue | undefined {
   };
 }
 
+function decodeTimelineCursor(value: unknown): CareEventCursor | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const cursor = value as Record<string, unknown>;
+  if (
+    !hasOnlyKeys(cursor, ['occurredAt', 'eventId']) ||
+    !Number.isSafeInteger(cursor.occurredAt) ||
+    (cursor.occurredAt as number) < 0 ||
+    typeof cursor.eventId !== 'string'
+  ) {
+    return undefined;
+  }
+  try {
+    const canonicalEventId = parseEventId(cursor.eventId);
+    if (canonicalEventId !== cursor.eventId) {
+      return undefined;
+    }
+    return {
+      occurredAt: cursor.occurredAt as number,
+      eventId: canonicalEventId,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function decodeTimelineCoverage(
+  value: unknown,
+  events: ReadonlyMap<EventId, CareEvent>,
+): CareEventTimelineCoverage | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const coverage = value as Record<string, unknown>;
+  if (
+    !hasOnlyKeys(coverage, [
+      'remoteEventIds',
+      'endCursor',
+      'hasMore',
+      'loadedRawCount',
+    ]) ||
+    !Array.isArray(coverage.remoteEventIds) ||
+    typeof coverage.hasMore !== 'boolean' ||
+    !Number.isSafeInteger(coverage.loadedRawCount) ||
+    coverage.loadedRawCount !== coverage.remoteEventIds.length
+  ) {
+    return undefined;
+  }
+
+  const remoteEventIds: EventId[] = [];
+  const seen = new Set<EventId>();
+  for (const valueEventId of coverage.remoteEventIds) {
+    if (typeof valueEventId !== 'string') {
+      return undefined;
+    }
+    try {
+      const canonicalEventId = parseEventId(valueEventId);
+      if (
+        canonicalEventId !== valueEventId ||
+        seen.has(canonicalEventId) ||
+        !events.has(canonicalEventId)
+      ) {
+        return undefined;
+      }
+      seen.add(canonicalEventId);
+      remoteEventIds.push(canonicalEventId);
+    } catch {
+      return undefined;
+    }
+  }
+
+  const endCursor =
+    coverage.endCursor === undefined
+      ? undefined
+      : decodeTimelineCursor(coverage.endCursor);
+  if (
+    (coverage.endCursor !== undefined && !endCursor) ||
+    (remoteEventIds.length === 0 && endCursor !== undefined) ||
+    (remoteEventIds.length > 0 && endCursor === undefined) ||
+    (endCursor !== undefined &&
+      endCursor.eventId !== remoteEventIds.at(-1))
+  ) {
+    return undefined;
+  }
+
+  return {
+    remoteEventIds,
+    ...(endCursor ? {endCursor} : {}),
+    hasMore: coverage.hasMore,
+    loadedRawCount: coverage.loadedRawCount as number,
+  };
+}
+
 function decodeState(
   value: unknown,
   expectedScope: CareEventSyncScope,
@@ -244,9 +372,14 @@ function decodeState(
     return undefined;
   }
   const state = value as Record<string, unknown>;
+  const isV1 = state.version === 1;
+  const isV2 = state.version === 2;
+  const allowedKeys = isV2
+    ? ['version', 'scope', 'events', 'outbox', 'issues', 'timelineCoverage']
+    : ['version', 'scope', 'events', 'outbox', 'issues'];
   if (
-    !hasOnlyKeys(state, ['version', 'scope', 'events', 'outbox', 'issues']) ||
-    state.version !== 1 ||
+    (!isV1 && !isV2) ||
+    !hasOnlyKeys(state, allowedKeys) ||
     !state.scope ||
     typeof state.scope !== 'object' ||
     Array.isArray(state.scope) ||
@@ -311,12 +444,47 @@ function decodeState(
     issues.set(issue.id, issue);
   }
 
+  let timelineCoverage: CareEventTimelineCoverage;
+  if (isV2) {
+    const decodedCoverage = decodeTimelineCoverage(
+      state.timelineCoverage,
+      events,
+    );
+    if (!decodedCoverage) {
+      return undefined;
+    }
+    timelineCoverage = decodedCoverage;
+  } else {
+    const pendingEventIds = new Set(
+      [...outbox.values()].map(entry => entry.event.id),
+    );
+    const issueEventIds = new Set(
+      [...issues.values()].map(issue => issue.eventId),
+    );
+    const migratedRemoteEvents = [...events.values()]
+      .filter(
+        event =>
+          !pendingEventIds.has(event.id) && !issueEventIds.has(event.id),
+      )
+      .sort(compareCareEventNewestFirst);
+    const last = migratedRemoteEvents.at(-1);
+    timelineCoverage = {
+      remoteEventIds: migratedRemoteEvents.map(event => event.id),
+      ...(last ? {endCursor: careEventCursorFromEvent(last)} : {}),
+      // V1 stored no bounded-window completeness proof. Force a head refresh
+      // before the migrated cursor can be trusted as an exhaustive timeline.
+      hasMore: true,
+      loadedRawCount: migratedRemoteEvents.length,
+    };
+  }
+
   return {
-    version: 1,
+    version: 2,
     scope: expectedScope,
     events: [...events.values()],
     outbox: [...outbox.values()],
     issues: [...issues.values()],
+    timelineCoverage,
   };
 }
 
@@ -351,6 +519,11 @@ export class PersistentCareEventSyncStore
   readonly #events = new Map<EventId, CareEvent>();
   readonly #outbox = new Map<string, CareEventOutboxEntry>();
   readonly #issues = new Map<string, CareEventSyncIssue>();
+  #timelineCoverage: CareEventTimelineCoverage = {
+    remoteEventIds: [],
+    hasMore: true,
+    loadedRawCount: 0,
+  };
   readonly #subscriptions = new Set<{
     readonly query: CareEventQuery;
     readonly listener: (events: readonly CareEvent[]) => void;
@@ -412,6 +585,7 @@ export class PersistentCareEventSyncStore
           for (const issue of state.issues) {
             this.#issues.set(issue.id, issue);
           }
+          this.#timelineCoverage = state.timelineCoverage;
           return;
         }
       } catch {
@@ -424,11 +598,12 @@ export class PersistentCareEventSyncStore
 
   #persistedState(): PersistedCareEventSyncState {
     return {
-      version: 1,
+      version: 2,
       scope: this.#scope,
       events: [...this.#events.values()],
       outbox: [...this.#outbox.values()].sort(sortOutbox),
       issues: [...this.#issues.values()],
+      timelineCoverage: this.#timelineCoverage,
     };
   }
 
@@ -449,7 +624,7 @@ export class PersistentCareEventSyncStore
       .filter(event => query.from === undefined || event.occurredAt >= query.from)
       .filter(event => query.to === undefined || event.occurredAt < query.to)
       .filter(event => !query.kinds || query.kinds.includes(event.kind))
-      .sort((left, right) => right.occurredAt - left.occurredAt);
+      .sort(compareCareEventNewestFirst);
     return query.limit === undefined ? events : events.slice(0, query.limit);
   }
 
@@ -528,6 +703,7 @@ export class PersistentCareEventSyncStore
       const previousEvents = new Map(this.#events);
       const previousOutbox = new Map(this.#outbox);
       const previousIssues = new Map(this.#issues);
+      const previousTimelineCoverage = this.#timelineCoverage;
       try {
         mutation();
         await this.#persist();
@@ -544,6 +720,7 @@ export class PersistentCareEventSyncStore
         for (const [id, issue] of previousIssues) {
           this.#issues.set(id, issue);
         }
+        this.#timelineCoverage = previousTimelineCoverage;
         throw error;
       }
       this.#emit();
@@ -695,66 +872,172 @@ export class PersistentCareEventSyncStore
     }
   }
 
+  #assertRemoteEvent(remote: CareEvent): void {
+    if (!isPersistedCareEvent(remote)) {
+      throw new Error('Remote care event is not canonical');
+    }
+    if (
+      remote.groupId !== this.#scope.groupId ||
+      remote.babyId !== this.#scope.babyId
+    ) {
+      throw new Error('Remote care event is outside the sync scope');
+    }
+  }
+
+  #applyRemoteEvent(remote: CareEvent): void {
+    this.#assertRemoteEvent(remote);
+    const local = this.#events.get(remote.id);
+    if (!local) {
+      this.#events.set(remote.id, remote);
+      return;
+    }
+    if (!careEventIdentityMatches(local, remote)) {
+      this.#markEventConflict(remote.id);
+      return;
+    }
+    if (remote.revision > local.revision) {
+      this.#events.set(remote.id, remote);
+      if (
+        [...this.#outbox.values()].some(
+          entry => entry.event.id === remote.id,
+        )
+      ) {
+        this.#markEventConflict(remote.id);
+      } else {
+        this.#removeAcknowledged(remote);
+      }
+      return;
+    }
+    if (remote.revision === local.revision) {
+      if (careEventsEqual(local, remote)) {
+        this.#removeAcknowledged(remote);
+      } else if (
+        [...this.#outbox.values()].some(
+          entry =>
+            entry.event.id === remote.id &&
+            entry.event.revision === remote.revision,
+        )
+      ) {
+        this.#markEventConflict(remote.id);
+        this.#events.set(remote.id, remote);
+      } else {
+        this.#events.set(remote.id, remote);
+      }
+      return;
+    }
+
+    const matchingMutation = this.#outbox.get(careEventMutationId(remote));
+    if (
+      matchingMutation &&
+      careEventsEqual(matchingMutation.event, remote)
+    ) {
+      this.#outbox.delete(matchingMutation.id);
+    }
+  }
+
+  #assertTimelinePrefix(
+    events: readonly CareEvent[],
+    coverage: CareEventTimelineCoverage,
+  ): void {
+    if (
+      !Number.isSafeInteger(coverage.loadedRawCount) ||
+      coverage.loadedRawCount < 0 ||
+      typeof coverage.hasMore !== 'boolean' ||
+      coverage.loadedRawCount !== events.length ||
+      coverage.remoteEventIds.length !== events.length
+    ) {
+      throw new Error('Timeline coverage raw count does not match its events');
+    }
+    const seen = new Set<EventId>();
+    for (let index = 0; index < events.length; index += 1) {
+      const event = events[index]!;
+      this.#assertRemoteEvent(event);
+      if (seen.has(event.id) || coverage.remoteEventIds[index] !== event.id) {
+        throw new Error(
+          'Timeline coverage IDs must exactly match unique raw events',
+        );
+      }
+      if (
+        index > 0 &&
+        compareCareEventNewestFirst(events[index - 1]!, event) >= 0
+      ) {
+        throw new Error(
+          'Timeline prefix must use strict newest-first cursor order',
+        );
+      }
+      seen.add(event.id);
+    }
+
+    const last = events.at(-1);
+    if (!last) {
+      if (coverage.endCursor !== undefined) {
+        throw new Error('An empty timeline prefix cannot have an end cursor');
+      }
+      return;
+    }
+    const expectedCursor = careEventCursorFromEvent(last);
+    if (
+      coverage.endCursor?.occurredAt !== expectedCursor.occurredAt ||
+      coverage.endCursor.eventId !== expectedCursor.eventId
+    ) {
+      throw new Error('Timeline coverage cursor must match its final raw row');
+    }
+  }
+
+  #hasProtectedOverlay(id: EventId): boolean {
+    const event = this.#events.get(id);
+    return (
+      (event?.kind === 'sleep' &&
+        event.endedAt === undefined &&
+        event.deletedAt === undefined) ||
+      [...this.#outbox.values()].some(entry => entry.event.id === id) ||
+      [...this.#issues.values()].some(issue => issue.eventId === id)
+    );
+  }
+
   async mergeRemoteEvents(events: readonly CareEvent[]): Promise<void> {
     await this.#commit(() => {
       for (const remote of events) {
-        if (!isPersistedCareEvent(remote)) {
-          throw new Error('Remote care event is not canonical');
-        }
-        if (
-          remote.groupId !== this.#scope.groupId ||
-          remote.babyId !== this.#scope.babyId
-        ) {
-          throw new Error('Remote care event is outside the sync scope');
-        }
-        const local = this.#events.get(remote.id);
-        if (!local) {
-          this.#events.set(remote.id, remote);
-          continue;
-        }
-        if (!careEventIdentityMatches(local, remote)) {
-          this.#markEventConflict(remote.id);
-          continue;
-        }
-        if (remote.revision > local.revision) {
-          this.#events.set(remote.id, remote);
-          if (
-            [...this.#outbox.values()].some(
-              entry => entry.event.id === remote.id,
-            )
-          ) {
-            this.#markEventConflict(remote.id);
-          } else {
-            this.#removeAcknowledged(remote);
-          }
-          continue;
-        }
-        if (remote.revision === local.revision) {
-          if (careEventsEqual(local, remote)) {
-            this.#removeAcknowledged(remote);
-          } else if (
-            [...this.#outbox.values()].some(
-              entry =>
-                entry.event.id === remote.id &&
-                entry.event.revision === remote.revision,
-            )
-          ) {
-            this.#markEventConflict(remote.id);
-            this.#events.set(remote.id, remote);
-          } else {
-            this.#events.set(remote.id, remote);
-          }
-          continue;
-        }
+        this.#applyRemoteEvent(remote);
+      }
+    });
+  }
 
-        const matchingMutation = this.#outbox.get(careEventMutationId(remote));
-        if (
-          matchingMutation &&
-          careEventsEqual(matchingMutation.event, remote)
-        ) {
-          this.#outbox.delete(matchingMutation.id);
+  async getTimelineCoverage(): Promise<CareEventTimelineCoverage> {
+    return this.#read(() => ({
+      remoteEventIds: [...this.#timelineCoverage.remoteEventIds],
+      ...(this.#timelineCoverage.endCursor
+        ? {endCursor: {...this.#timelineCoverage.endCursor}}
+        : {}),
+      hasMore: this.#timelineCoverage.hasMore,
+      loadedRawCount: this.#timelineCoverage.loadedRawCount,
+    }));
+  }
+
+  async replaceRemoteTimelinePrefix(
+    events: readonly CareEvent[],
+    coverage: CareEventTimelineCoverage,
+  ): Promise<void> {
+    await this.#commit(() => {
+      this.#assertTimelinePrefix(events, coverage);
+      const nextRemoteIds = new Set(coverage.remoteEventIds);
+
+      for (const remote of events) {
+        this.#applyRemoteEvent(remote);
+      }
+      for (const id of [...this.#events.keys()]) {
+        if (!nextRemoteIds.has(id) && !this.#hasProtectedOverlay(id)) {
+          this.#events.delete(id);
         }
       }
+      this.#timelineCoverage = {
+        remoteEventIds: [...coverage.remoteEventIds],
+        ...(coverage.endCursor
+          ? {endCursor: {...coverage.endCursor}}
+          : {}),
+        hasMore: coverage.hasMore,
+        loadedRawCount: coverage.loadedRawCount,
+      };
     });
   }
 
@@ -1032,6 +1315,11 @@ export class PersistentCareEventSyncStore
         this.#events.clear();
         this.#outbox.clear();
         this.#issues.clear();
+        this.#timelineCoverage = {
+          remoteEventIds: [],
+          hasMore: true,
+          loadedRawCount: 0,
+        };
 
         let persistError: unknown;
         let removeError: unknown;

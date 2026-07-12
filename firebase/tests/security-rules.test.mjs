@@ -12,12 +12,16 @@ import {
   collectionGroup,
   deleteDoc,
   doc,
+  documentId,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
   query,
   serverTimestamp,
   setLogLevel,
   setDoc,
+  startAfter,
   updateDoc,
   where,
   writeBatch,
@@ -330,6 +334,66 @@ test('그룹 멤버는 민감 그룹 데이터를 읽고 자기 명의의 돌봄
     'create',
   );
   await assertFails(extraFieldBatch.commit());
+});
+
+test('멤버 raw timeline query는 같은 시각 document ID cursor를 중복 없이 넘긴다', async () => {
+  await seedBase();
+  const occurredAt = NOW - 60_000;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    for (const [id, isDeleted] of [
+      ['same-a', false],
+      ['same-d', false],
+      ['same-b', false],
+      ['same-c', true],
+    ]) {
+      const event = diaperEventFixture({
+        id,
+        occurredAt,
+        ...(isDeleted
+          ? {isDeleted: true, deletedAt: NOW, updatedAt: NOW}
+          : {}),
+      });
+      await setDoc(
+        doc(db, 'groups', GROUP_ID, 'events', id),
+        eventWithMutationMetadata(event),
+      );
+    }
+  });
+
+  const memberDb = firestoreFor(MEMBER_ID);
+  const timeline = collection(memberDb, 'groups', GROUP_ID, 'events');
+  const first = await assertSucceeds(
+    getDocs(
+      query(
+        timeline,
+        where('babyId', '==', BABY_ID),
+        orderBy('occurredAt', 'desc'),
+        orderBy(documentId(), 'desc'),
+        limit(3),
+      ),
+    ),
+  );
+  assert.deepEqual(first.docs.map(snapshot => snapshot.id), [
+    'same-d',
+    'same-c',
+    'same-b',
+  ]);
+  assert.equal(first.docs[1].data().isDeleted, true);
+
+  const second = await assertSucceeds(
+    getDocs(
+      query(
+        timeline,
+        where('babyId', '==', BABY_ID),
+        orderBy('occurredAt', 'desc'),
+        orderBy(documentId(), 'desc'),
+        startAfter(occurredAt, 'same-b'),
+        limit(3),
+      ),
+    ),
+  );
+  assert.deepEqual(second.docs.map(snapshot => snapshot.id), ['same-a']);
 });
 
 test('사용자는 collectionGroup query로 자기 멤버십만 조회할 수 있다', async () => {

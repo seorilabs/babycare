@@ -16,6 +16,11 @@ import type {
 
 export interface LocalFirstCareEventRepositoryOptions {
   readonly onRemoteError?: (error: CareEventRemoteError) => void;
+  /**
+   * `external_pages` makes observe local-only. A bounded page coordinator then
+   * owns every server read, preventing a simultaneous full-feed listener.
+   */
+  readonly remoteObservationMode?: 'full_snapshot' | 'external_pages';
 }
 
 function thrownRemoteError(error: unknown): CareEventRemoteError {
@@ -47,6 +52,7 @@ export class LocalFirstCareEventRepository
   readonly #local: CareEventSyncLocalStorePort;
   readonly #remote: CareEventRemoteStorePort;
   readonly #onRemoteError: (error: CareEventRemoteError) => void;
+  readonly #remoteObservationMode: 'full_snapshot' | 'external_pages';
   readonly #observationStops = new Set<() => void>();
   #flushTail: Promise<void> = Promise.resolve();
   #clearPromise: Promise<void> | undefined;
@@ -62,6 +68,8 @@ export class LocalFirstCareEventRepository
     this.#local = local;
     this.#remote = remote;
     this.#onRemoteError = options.onRemoteError ?? (() => undefined);
+    this.#remoteObservationMode =
+      options.remoteObservationMode ?? 'full_snapshot';
   }
 
   async save(event: CareEvent): Promise<void> {
@@ -94,9 +102,28 @@ export class LocalFirstCareEventRepository
   ): () => void {
     const generation = this.#activeGeneration();
     const stopLocal = this.#local.observe(query, listener);
-    // Until cursor-aware page reconciliation exists, observe the complete baby
-    // feed. A filtered Firestore snapshot cannot distinguish a moved-out event
-    // from a deletion and would leave a stale local projection behind.
+    if (this.#remoteObservationMode === 'external_pages') {
+      let stopped = false;
+      const stop = () => {
+        if (stopped) {
+          return;
+        }
+        stopped = true;
+        this.#observationStops.delete(stop);
+        stopLocal();
+      };
+      this.#observationStops.add(stop);
+      this.syncNow().catch(error => {
+        if (this.#isActive(generation)) {
+          this.#onRemoteError({code: 'invalid', cause: error});
+        }
+      });
+      return stop;
+    }
+
+    // Legacy/full-projection mode remains available for non-bounded owners.
+    // A filtered remote snapshot cannot prove whether a moved-out event was
+    // deleted, so this mode always observes the complete baby feed.
     const remoteQuery: CareEventQuery = {
       groupId: query.groupId,
       babyId: query.babyId,
