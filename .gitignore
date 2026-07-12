@@ -9,6 +9,7 @@ android/.gradle/
 android/app/build/
 ios/Pods/
 ios/build/
+*.xcworkspace/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 
@@ -28,9 +29,14 @@ coverage/
 .env.*
 !.env.example
 .firebaserc
+.firebase/
 firebase-debug.log
 firestore-debug.log
+storage-debug.log
 ui-debug.log
+firebase/functions/lib/
+firebase/functions/.secret.local
+firebase/functions/.secret.*
 google-services.json
 GoogleService-Info.plist
 *.p8

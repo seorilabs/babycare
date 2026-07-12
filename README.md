@@ -1,42 +1,92 @@
-# Seorilabs Starter Template App
+# BabyCare (가칭)
 
-Seorilabs 비게임 앱을 Google Play, Apple App Store, AppsInToss까지 확장하기 위한 React Native 멀티마켓 템플릿이다.
+여러 성인 양육자가 한 아기의 수유·기저귀·수면 기록을 함께 남기고 확인하는 클라우드 육아 케어 앱이다. 의료 진단·처방 도구가 아니라 돌봄 정보 공유·기록 도구이며, 기존 로컬 전용 `BabyCareApp`을 새 구조로 재구축한다.
 
-제품별 값을 임의로 채우지 않는다. 새 프로젝트를 만들면 `docs/01-planning/`, `docs/05-markets/`, `AGENTS.local.md`에서 `확정 필요` 항목을 먼저 정리한다.
+## 현재 상태
 
-## Stack Decision
+| 항목 | 상태 |
+| --- | --- |
+| Lifecycle | `build` |
+| Planning approval | `approved` (2026-07-12) |
+| Deployment approval | **미승인** — 제출·프로덕션 배포 금지 |
+| 출시 목표 | Google Play, Apple App Store, AppsInToss |
+| 모바일 개발 ID | Android/iOS `com.seorilabs.babycare.dev` |
+| 제품 이름·프로덕션 ID | `확정 필요` |
 
-- Google Play / App Store: Community CLI 기반 bare React Native target인 `apps/mobile`.
-- AppsInToss: Granite React Native target인 `apps/ait`.
-- Backend 기본값: Firebase. 단, 로컬 전용 MVP면 Firebase 코드를 미리 붙이지 않는다.
-- 공통 제품 로직: `packages/product-core`에서 platform SDK import 없이 관리한다.
-- 네이티브 런치/스플래시는 release asset이다. React Native 템플릿 화면을 숨기지 말고 제품 브랜딩 화면으로 교체한다.
+현재 `apps/mobile`은 로컬 개발 세로 슬라이스다. 온보딩, 수유·기저귀·수면 기록, 수면 종료, 홈 요약, 타임라인, 기본 통계와 기기 로컬 저장을 확인할 수 있다. 계정, 그룹 초대, 실시간 공동 기록, 클라우드 복구는 Firebase adapter가 연결된 뒤 제공된다. `apps/ait`은 AppsInToss 정책 적합성과 영구 `appName`을 확정한 뒤 초기화한다.
 
-React Native 공식 문서는 새 앱 경험에는 Framework 사용을 권장하지만, 이 템플릿은 native Firebase, Play Billing, StoreKit, Crashlytics, App Check, FCM, signing, App Store/Xcode build 제어가 필요한 Seorilabs 멀티마켓 운영을 기본 전제로 한다. 그래서 `apps/mobile`은 bare RN을 선택하고, AppsInToss는 Granite RN으로 분리한다.
+## MVP
+
+- 계정 생성/로그인 → 돌봄 그룹과 아기 생성 → 다른 양육자 초대
+- 수유·기저귀·수면 원터치 기록과 수면 세션 종료
+- 홈의 마지막 기록·오늘 요약, 기록자 표시 타임라인, 기본 통계
+- 두 기기 간 실시간 공동 기록, 오프라인 기록 후 재연결 동기화
+- 초대된 그룹 멤버만 접근 가능한 Firestore/Storage 경계
+- Google Play, App Store, AppsInToss에서 동일한 핵심 흐름 제공
+
+성장·투약·예방접종, 알림, 다둥이, 내보내기, 구독, 광고, 위젯·워치·AI 예측은 MVP 밖이다. 상세 기준은 [제품 명세](docs/01-planning/product-spec.md)와 [백로그](docs/04-work/backlog.md)를 따른다.
+
+## 식별자
+
+| 용도 | 값 |
+| --- | --- |
+| repo/app id | `babycare` |
+| 현재 native target/display name | `BabyCare` (개발용, 최종 제품명 아님) |
+| Android development application ID | `com.seorilabs.babycare.dev` |
+| iOS development bundle ID | `com.seorilabs.babycare.dev` |
+| 한국어/영어 제품명 | `확정 필요` (`함께봄` / `BabyNest`는 후보) |
+| Android production package | `확정 필요` |
+| iOS production bundle ID | `확정 필요` |
+| AppsInToss `appName` | `확정 필요` |
 
 ## 구조
 
 ```text
-docs/                  # 기획, 의사결정, 작업, 마켓, 릴리스 원장
-apps/mobile/           # Android/iOS React Native target
-apps/ait/              # AppsInToss Granite React Native target
-packages/product-core/ # platform 독립 도메인/유스케이스/포트
-firebase/              # Firebase rules/indexes/functions 자리
-play-store/            # Google Play registration/release metadata
-app-store/             # App Store registration/release metadata
-apps-in-toss/          # AppsInToss console/release metadata
-scripts/               # local/CI quality gates
+docs/                  # 제품·의사결정·작업·마켓·QA 실행 원장
+apps/mobile/           # Google Play/App Store bare React Native target
+apps/ait/              # AppsInToss Granite RN + TDS target (초기화 전)
+packages/product-core/ # 플랫폼 독립 도메인·유스케이스·포트·순수 테스트
+firebase/              # Security Rules/indexes와 향후 privileged server 구현
+play-store/            # Google Play 등록·릴리스 원장
+app-store/             # App Store 등록·릴리스 원장
+apps-in-toss/          # AppsInToss 등록·릴리스 원장
+scripts/               # 로컬/CI 품질 게이트
 ```
 
-## 기본 명령
+`packages/product-core`는 React Native, Firebase, AppsInToss 또는 마켓 SDK를 import하지 않는다. `apps/mobile/src/app/container.ts`가 core 유스케이스와 현재 로컬 adapter를 조립한다. Firestore는 server-ack 원격 transport port로 분리했으며 production 연결 전 durable outbox/coordinator가 필요하다. AppsInToss도 같은 안쪽 계약을 target 밖에서 구현한다. 자세한 경계는 [Clean Architecture](docs/03-architecture/clean-architecture.md)를 참고한다.
+
+## 개발
+
+루트에서 Node 24~26, pnpm 11을 사용한다.
+
+```bash
+pnpm install
+pnpm run test
+pnpm run check:mobile
+pnpm --filter @babycare/mobile start
+pnpm --filter @babycare/mobile android
+pnpm --filter @babycare/mobile ios
+```
+
+세부 게이트:
 
 ```bash
 pnpm run test:core
+pnpm run test:firebase
+pnpm run typecheck
 pnpm run check:architecture
 pnpm run check:docs
+pnpm run check:ait
 pnpm run check:release
-pnpm run bootstrap:mobile -- <AppName>
-pnpm run bootstrap:ait -- <app-name>
 ```
 
-`check:release`는 템플릿 placeholder가 남아 있으면 실패한다. 릴리스 직전 blocker inventory 용도다.
+`check:release`는 제품명, 프로덕션 ID, 마켓 config와 정책·자산 blocker가 남아 있어 현재 실패하는 것이 정상이다. `.aab`, archive 또는 `.ait` 생성만으로 release-ready가 되지 않으며, 별도 deployment approval 전에는 제출·프로덕션 승격을 수행하지 않는다.
+
+## 문서 원장
+
+- [제품 명세](docs/01-planning/product-spec.md)
+- [출시 타깃](docs/01-planning/release-targets.md)
+- [Clean Architecture](docs/03-architecture/clean-architecture.md)
+- [보안 위협 모델](docs/03-architecture/security-threat-model.md)
+- [작업 백로그](docs/04-work/backlog.md)
+- [테스트 전략](docs/07-qa/test-strategy.md)

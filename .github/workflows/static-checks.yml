@@ -25,4 +25,42 @@ jobs:
       package_manager: pnpm
       install_command: "pnpm install --ignore-scripts --frozen-lockfile=false"
       check_command: |
-        pnpm run test
+        pnpm run test:static
+
+  firebase-emulator:
+    name: Firebase emulator
+    runs-on: ${{ github.event.repository.private && 'seorilabs-rpi-arm64' || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          check-latest: false
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Enable pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.12.0 --activate
+
+      - name: Install dependencies
+        shell: bash
+        run: pnpm install --ignore-scripts --frozen-lockfile=false
+
+      - name: Run Firebase emulator tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm run test:firebase
+          pnpm run test:functions:emulator

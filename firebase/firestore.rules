@@ -2,6 +2,502 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isNotTooFarInFuture(timestampMs) {
+      return timestampMs <= request.time.toMillis() + 300000;
+    }
+
+    function groupPath(groupId) {
+      return /databases/$(database)/documents/groups/$(groupId);
+    }
+
+    function memberPath(groupId, uid) {
+      return /databases/$(database)/documents/groups/$(groupId)/members/$(uid);
+    }
+
+    function groupTombstonePath(groupId) {
+      return /databases/$(database)/documents/groupTombstones/$(groupId);
+    }
+
+    function babyTombstonePath(groupId, babyId) {
+      return /databases/$(database)/documents/groups/$(groupId)/babyTombstones/$(babyId);
+    }
+
+    function babyPath(groupId, babyId) {
+      return /databases/$(database)/documents/groups/$(groupId)/babies/$(babyId);
+    }
+
+    function groupExists(groupId) {
+      return exists(groupPath(groupId));
+    }
+
+    function isGroupMember(groupId) {
+      return signedIn()
+        && groupExists(groupId)
+        && exists(memberPath(groupId, request.auth.uid));
+    }
+
+    function isDeclaredGroupOwnerAfterWrite(groupId) {
+      return signedIn()
+        && existsAfter(groupPath(groupId))
+        && getAfter(groupPath(groupId)).data.ownerId == request.auth.uid;
+    }
+
+    function isGroupOwnerAfterWrite(groupId) {
+      return signedIn()
+        && existsAfter(groupPath(groupId))
+        && existsAfter(memberPath(groupId, request.auth.uid))
+        && getAfter(groupPath(groupId)).data.ownerId == request.auth.uid
+        && getAfter(memberPath(groupId, request.auth.uid)).data.membershipRole == 'owner';
+    }
+
+    function isGroupOwner(groupId) {
+      return isGroupMember(groupId)
+        && get(groupPath(groupId)).data.ownerId == request.auth.uid
+        && get(memberPath(groupId, request.auth.uid)).data.membershipRole == 'owner';
+    }
+
+    function validDisplayText(value) {
+      return value is string
+        && value.size() > 0
+        && value.size() <= 80
+        && value.matches('^[^\\x{0000}-\\x{001F}\\x{007F}-\\x{009F}\\x{061C}\\x{200E}\\x{200F}\\x{202A}-\\x{202E}\\x{2066}-\\x{2069}]*$');
+    }
+
+    function validGroup(data, groupId) {
+      return data.keys().hasAll([
+          'id',
+          'name',
+          'ownerId',
+          'babyIds',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'name',
+          'ownerId',
+          'babyIds',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == groupId
+        && validDisplayText(data.name)
+        && data.ownerId is string
+        && data.ownerId.size() > 0
+        && data.babyIds is list
+        && data.babyIds.size() == 1
+        && data.babyIds[0] is string
+        && data.babyIds[0].size() > 0
+        && existsAfter(babyPath(groupId, data.babyIds[0]))
+        && data.createdAt is int
+        && data.createdAt >= 0
+        && isNotTooFarInFuture(data.createdAt)
+        && data.updatedAt is int
+        && data.updatedAt >= data.createdAt
+        && isNotTooFarInFuture(data.updatedAt);
+    }
+
+    function validMembership(data, groupId, uid) {
+      return data.keys().hasAll([
+          'userId',
+          'groupId',
+          'caregiverRole',
+          'membershipRole',
+          'displayName',
+          'color',
+          'joinedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'groupId',
+          'caregiverRole',
+          'membershipRole',
+          'displayName',
+          'color',
+          'joinedAt'
+        ])
+        && data.userId == uid
+        && data.groupId == groupId
+        && data.caregiverRole in ['parent', 'grandparent', 'sitter', 'teacher', 'other']
+        && data.membershipRole in ['owner', 'member']
+        && (
+          (data.membershipRole == 'owner'
+            && uid == getAfter(groupPath(groupId)).data.ownerId)
+          || (data.membershipRole == 'member'
+            && uid != getAfter(groupPath(groupId)).data.ownerId)
+        )
+        && validDisplayText(data.displayName)
+        && data.color is string
+        && data.color.matches('^#[0-9A-Fa-f]{6}$')
+        && data.joinedAt is int
+        && data.joinedAt >= 0
+        && isNotTooFarInFuture(data.joinedAt);
+    }
+
+    function validIsoCalendarDate(value) {
+      return value is string
+        && value.matches('^((19|20)[0-9]{2}-((0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01])|(0[469]|11)-(0[1-9]|[12][0-9]|30)|02-(0[1-9]|1[0-9]|2[0-8]))|(19(0[48]|[2468][048]|[13579][26])|2000|20(0[48]|[2468][048]|[13579][26]))-02-29)$');
+    }
+
+    function validBaby(data, groupId, babyId) {
+      return data.keys().hasAll([
+          'id',
+          'groupId',
+          'name',
+          'birthDate',
+          'sex',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'groupId',
+          'name',
+          'birthDate',
+          'sex',
+          'dueDate',
+          'avatarStoragePath',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == babyId
+        && data.groupId == groupId
+        && validDisplayText(data.name)
+        && validIsoCalendarDate(data.birthDate)
+        && data.sex in ['female', 'male', 'unspecified']
+        && (!('dueDate' in data)
+          || validIsoCalendarDate(data.dueDate))
+        && (!('avatarStoragePath' in data)
+          || (data.avatarStoragePath is string
+            && data.avatarStoragePath.matches('^groups/' + groupId + '/babies/' + babyId + '/.+')))
+        && data.createdAt is int
+        && data.createdAt >= 0
+        && isNotTooFarInFuture(data.createdAt)
+        && data.updatedAt is int
+        && data.updatedAt >= data.createdAt
+        && isNotTooFarInFuture(data.updatedAt);
+    }
+
+    function validOptionalEventFields(data) {
+      return (!('note' in data)
+          || (data.note is string && data.note.size() <= 500))
+        && (!('deletedAt' in data)
+          || (data.deletedAt is int
+            && data.deletedAt >= data.createdAt
+            && data.deletedAt == data.updatedAt));
+    }
+
+    function validEventBase(data, groupId, eventId) {
+      return data.keys().hasAll([
+          'id',
+          'groupId',
+          'babyId',
+          'caregiverId',
+          'kind',
+          'occurredAt',
+          'createdAt',
+          'updatedAt',
+          'revision',
+          'isDeleted'
+        ])
+        && data.id == eventId
+        && data.groupId == groupId
+        && data.babyId is string
+        && data.babyId.size() > 0
+        && data.caregiverId is string
+        && data.caregiverId.size() > 0
+        && data.occurredAt is int
+        && data.occurredAt >= 0
+        && isNotTooFarInFuture(data.occurredAt)
+        && data.createdAt is int
+        && data.createdAt >= 0
+        && isNotTooFarInFuture(data.createdAt)
+        && data.updatedAt is int
+        && data.updatedAt >= data.createdAt
+        && isNotTooFarInFuture(data.updatedAt)
+        && data.revision is int
+        && data.revision >= 1
+        && data.isDeleted is bool
+        && data.isDeleted == ('deletedAt' in data)
+        && validOptionalEventFields(data);
+    }
+
+    function validFeedingEvent(data) {
+      return data.kind == 'feeding'
+        && data.keys().hasAll(['feedingType'])
+        && data.keys().hasOnly([
+          'id',
+          'groupId',
+          'babyId',
+          'caregiverId',
+          'kind',
+          'occurredAt',
+          'createdAt',
+          'updatedAt',
+          'revision',
+          'isDeleted',
+          'note',
+          'deletedAt',
+          'feedingType',
+          'volumeMl',
+          'leftDurationSeconds',
+          'rightDurationSeconds'
+        ])
+        && data.feedingType in ['breast', 'bottle_breastmilk', 'formula', 'solid']
+        && (!('volumeMl' in data)
+          || (data.volumeMl is number
+            && data.volumeMl > 0
+            && data.volumeMl <= 2000))
+        && (!('leftDurationSeconds' in data)
+          || (data.leftDurationSeconds is number
+            && data.leftDurationSeconds > 0
+            && data.leftDurationSeconds <= 43200))
+        && (!('rightDurationSeconds' in data)
+          || (data.rightDurationSeconds is number
+            && data.rightDurationSeconds > 0
+            && data.rightDurationSeconds <= 43200))
+        && (
+          (data.feedingType == 'breast'
+            && !('volumeMl' in data)
+            && ('leftDurationSeconds' in data || 'rightDurationSeconds' in data)
+            && (('leftDurationSeconds' in data ? data.leftDurationSeconds : 0)
+              + ('rightDurationSeconds' in data ? data.rightDurationSeconds : 0)) <= 43200)
+          || (data.feedingType != 'breast'
+            && 'volumeMl' in data
+            && !('leftDurationSeconds' in data)
+            && !('rightDurationSeconds' in data))
+        );
+    }
+
+    function validDiaperEvent(data) {
+      return data.kind == 'diaper'
+        && data.keys().hasAll(['diaperType'])
+        && data.keys().hasOnly([
+          'id',
+          'groupId',
+          'babyId',
+          'caregiverId',
+          'kind',
+          'occurredAt',
+          'createdAt',
+          'updatedAt',
+          'revision',
+          'isDeleted',
+          'note',
+          'deletedAt',
+          'diaperType'
+        ])
+        && data.diaperType in ['wet', 'dirty', 'mixed'];
+    }
+
+    function validSleepEvent(data) {
+      return data.kind == 'sleep'
+        && data.keys().hasAll(['sleepType', 'startedAt'])
+        && data.keys().hasOnly([
+          'id',
+          'groupId',
+          'babyId',
+          'caregiverId',
+          'kind',
+          'occurredAt',
+          'createdAt',
+          'updatedAt',
+          'revision',
+          'isDeleted',
+          'note',
+          'deletedAt',
+          'sleepType',
+          'startedAt',
+          'endedAt'
+        ])
+        && data.sleepType in ['nap', 'night']
+        && data.startedAt is int
+        && data.startedAt == data.occurredAt
+        && (!('endedAt' in data)
+          || (data.endedAt is int
+            && data.endedAt > data.startedAt
+            && data.endedAt <= data.updatedAt
+            && isNotTooFarInFuture(data.endedAt)
+            && data.endedAt - data.startedAt <= 172800000));
+    }
+
+    function validEvent(data, groupId, eventId) {
+      return validEventBase(data, groupId, eventId)
+        && (validFeedingEvent(data)
+          || validDiaperEvent(data)
+          || validSleepEvent(data));
+    }
+
+    function eventIdentityIsImmutable() {
+      return request.resource.data.id == resource.data.id
+        && request.resource.data.groupId == resource.data.groupId
+        && request.resource.data.babyId == resource.data.babyId
+        && request.resource.data.caregiverId == resource.data.caregiverId
+        && request.resource.data.kind == resource.data.kind
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isNormalEventUpdate() {
+      return !('deletedAt' in request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'occurredAt',
+          'updatedAt',
+          'revision',
+          'isDeleted',
+          'note',
+          'feedingType',
+          'volumeMl',
+          'leftDurationSeconds',
+          'rightDurationSeconds',
+          'diaperType',
+          'sleepType',
+          'startedAt',
+          'endedAt'
+        ]);
+    }
+
+    function isSoftDeleteEventUpdate() {
+      return 'deletedAt' in request.resource.data
+        && request.resource.data.isDeleted == true
+        && request.resource.data.deletedAt == request.resource.data.updatedAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'deletedAt',
+          'isDeleted',
+          'updatedAt',
+          'revision'
+        ]);
+    }
+
+    function isMemberClosingActiveSleep() {
+      return resource.data.kind == 'sleep'
+        && !('endedAt' in resource.data)
+        && 'endedAt' in request.resource.data
+        && request.resource.data.endedAt <= request.resource.data.updatedAt
+        && request.resource.data.isDeleted == false
+        && !('deletedAt' in request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'endedAt',
+          'updatedAt',
+          'revision'
+        ]);
+    }
+
+    match /groups/{groupId} {
+      allow create: if signedIn()
+        && !exists(groupTombstonePath(groupId))
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.createdAt == request.resource.data.updatedAt
+        && validGroup(request.resource.data, groupId);
+      allow read: if isGroupMember(groupId);
+      allow update: if isGroupOwner(groupId)
+        && validGroup(request.resource.data, groupId)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt >= resource.data.updatedAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name',
+          'babyIds',
+          'updatedAt'
+        ]);
+      // 하위 문서와 Storage를 남긴 채 group ID가 재사용되는 것을 막는다.
+      // 그룹 삭제는 privileged server의 recursive-delete/tombstone workflow만 담당한다.
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isGroupMember(groupId);
+        allow create: if isDeclaredGroupOwnerAfterWrite(groupId)
+          && uid == request.auth.uid
+          && request.resource.data.membershipRole == 'owner'
+          && validMembership(request.resource.data, groupId, uid);
+        allow update: if isGroupOwner(groupId)
+          && validMembership(request.resource.data, groupId, uid)
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.groupId == resource.data.groupId
+          && request.resource.data.joinedAt == resource.data.joinedAt
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'caregiverRole',
+            'membershipRole',
+            'displayName',
+            'color'
+          ]);
+        allow delete: if isGroupOwner(groupId)
+          && uid != get(groupPath(groupId)).data.ownerId;
+      }
+
+      match /babies/{babyId} {
+        allow read: if isGroupMember(groupId);
+        allow create: if isGroupOwnerAfterWrite(groupId)
+          && !exists(babyTombstonePath(groupId, babyId))
+          && request.resource.data.createdAt == request.resource.data.updatedAt
+          && validBaby(request.resource.data, groupId, babyId);
+        allow update: if isGroupOwner(groupId)
+          && validBaby(request.resource.data, groupId, babyId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.groupId == resource.data.groupId
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.updatedAt >= resource.data.updatedAt
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name',
+            'birthDate',
+            'sex',
+            'dueDate',
+            'avatarStoragePath',
+            'updatedAt'
+          ]);
+        // Storage object와 이벤트 참조를 남긴 ID 재사용을 막기 위해 server-only로 둔다.
+        allow delete: if false;
+      }
+
+      match /babyTombstones/{babyId} {
+        allow read, write: if false;
+      }
+
+      match /events/{eventId} {
+        allow read: if isGroupMember(groupId);
+        allow create: if isGroupMember(groupId)
+          && request.resource.data.caregiverId == request.auth.uid
+          && exists(/databases/$(database)/documents/groups/$(groupId)/babies/$(request.resource.data.babyId))
+          && !('deletedAt' in request.resource.data)
+          && request.resource.data.isDeleted == false
+          && request.resource.data.createdAt == request.resource.data.updatedAt
+          && request.resource.data.revision == 1
+          && validEvent(request.resource.data, groupId, eventId);
+        allow update: if isGroupMember(groupId)
+          && !('deletedAt' in resource.data)
+          && eventIdentityIsImmutable()
+          && request.resource.data.updatedAt >= resource.data.updatedAt
+          && request.resource.data.revision == resource.data.revision + 1
+          && validEvent(request.resource.data, groupId, eventId)
+          && (
+            (resource.data.caregiverId == request.auth.uid
+              && (isNormalEventUpdate() || isSoftDeleteEventUpdate()))
+            || isMemberClosingActiveSleep()
+          );
+        allow delete: if false;
+      }
+    }
+
+    // A collection-group query needs a recursive-wildcard rule. The client
+    // discovers groups only through membership documents whose userId equals
+    // the authenticated UID; querying another user's memberships is denied.
+    match /{path=**}/members/{uid} {
+      allow list: if signedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // 초대 생성·조회·수락은 Admin SDK를 사용하는 privileged server 경로만 담당한다.
+    match /invites/{inviteId} {
+      allow read, write: if false;
+    }
+
+    match /groupTombstones/{groupId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -1,0 +1,12 @@
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <item name="android:windowSplashScreenBackground">@color/babycare_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/babycare_sprout</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/babycare_background</item>
+        <item name="android:windowSplashScreenAnimationDuration">200</item>
+        <item name="android:navigationBarColor">@color/babycare_background</item>
+        <item name="android:statusBarColor">@color/babycare_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

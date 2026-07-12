@@ -1,9 +1,12 @@
 packages:
   - apps/*
+  - firebase/functions
   - packages/*
 
 allowBuilds:
+  '@firebase/util': true
   '@sentry/cli': true
   '@swc/core': true
   esbuild: true
   protobufjs: true
+  re2: true

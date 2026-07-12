@@ -1,16 +1,23 @@
 {
-  "name": "seorilabs-starter-template-app",
+  "name": "@seorilabs/babycare",
   "version": "0.1.0",
   "private": true,
-  "description": "Seorilabs React Native multimarket app template for Google Play, App Store, and AppsInToss.",
-  "packageManager": "pnpm@11.3.0",
+  "description": "여러 양육자가 실시간으로 함께 쓰는 아기 돌봄 기록 앱",
+  "packageManager": "pnpm@11.12.0",
   "engines": {
     "node": ">=24 <27",
     "pnpm": ">=11 <12"
   },
   "scripts": {
-    "test": "pnpm run test:core && pnpm run check:architecture && pnpm run check:docs",
+    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
+    "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:functions && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
     "test:core": "bash scripts/test_core.sh",
+    "test:mobile": "pnpm --dir apps/mobile test",
+    "test:firebase": "firebase emulators:exec --config firebase/firebase.json --project babycare-rules-test --only firestore,storage \"node --test --test-concurrency=1 firebase/tests/security-rules.test.mjs\"",
+    "test:functions": "pnpm --dir firebase/functions test",
+    "test:functions:emulator": "pnpm --dir firebase/functions build && firebase emulators:exec --config firebase/firebase.functions-test.json --project babycare-functions-test --only firestore \"pnpm --dir firebase/functions test:emulator\"",
+    "typecheck": "pnpm --recursive --if-present run typecheck",
+    "lint": "pnpm --recursive --if-present run lint",
     "check:architecture": "bash scripts/check_architecture.sh",
     "check:docs": "bash scripts/check_docs.sh",
     "check:release": "bash scripts/check_release_readiness.sh",
@@ -18,5 +25,12 @@
     "check:ait": "bash scripts/check_ait_target.sh",
     "bootstrap:mobile": "bash scripts/bootstrap_mobile.sh",
     "bootstrap:ait": "bash scripts/bootstrap_ait.sh"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.1",
+    "@types/node": "24.13.3",
+    "firebase": "12.16.0",
+    "firebase-tools": "15.23.0",
+    "typescript": "6.0.3"
   }
 }

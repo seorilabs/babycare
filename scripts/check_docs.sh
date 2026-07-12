@@ -8,6 +8,7 @@ required_files=(
   "docs/02-decisions/0001-docs-as-source-of-truth.md"
   "docs/02-decisions/0002-react-native-framework-choice.md"
   "docs/03-architecture/clean-architecture.md"
+  "docs/03-architecture/security-threat-model.md"
   "docs/05-markets/google-play.md"
   "docs/05-markets/app-store.md"
   "docs/05-markets/apps-in-toss.md"
