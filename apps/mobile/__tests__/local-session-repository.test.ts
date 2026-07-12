@@ -70,6 +70,7 @@ describe('LocalSessionRepository', () => {
     ['a non-string caregiver ID', {caregiverId: 1}],
     ['an ambiguous invite code', {inviteCode: 'AB10IO'}],
     ['a lowercase invite code', {inviteCode: 'ab23cd'}],
+    ['an unknown field', {unexpected: true}],
   ])('purges and reports a session with %s', async (_label, patch) => {
     await expect(load({...validSession, ...patch})).rejects.toBeInstanceOf(
       LocalSessionHydrationError,
@@ -84,5 +85,11 @@ describe('LocalSessionRepository', () => {
       LocalSessionHydrationError,
     );
     expect(removeItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves a field-specific reason for recovery UI', async () => {
+    await expect(load({...validSession, caregiverName: '   '})).rejects.toThrow(
+      /양육자 이름/,
+    );
   });
 });

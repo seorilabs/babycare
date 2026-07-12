@@ -80,7 +80,8 @@ describe('Firebase group document decoders', () => {
     expect(() =>
       decodeBaby('group-1', 'baby-1', {
         ...baby,
-        avatarStoragePath: 'groups/group-1/babies/baby-1/../baby-2/avatar.png',
+        avatarStoragePath:
+          'groups/group-1/babies/baby-1/../../babies/baby-2/avatar.png',
       }),
     ).toThrow(/avatarStoragePath/);
   });

@@ -31,6 +31,8 @@ const BASE_FIELDS = [
   'deletedAt',
 ] as const;
 
+const MAX_OCCURRED_AT_CLOCK_SKEW_MS = 5 * 60 * 1_000;
+
 function onlyKeys(data: Record<string, unknown>, allowed: readonly string[]): void {
   if (Object.keys(data).some(key => !allowed.includes(key))) {
     throw new Error('Care event document contains an unexpected field');
@@ -78,6 +80,41 @@ function optionalString(data: Record<string, unknown>, key: string): string | un
     throw new Error(`Care event ${key} must be a string`);
   }
   return value;
+}
+
+function decodeAuditMetadata(data: Record<string, unknown>) {
+  const occurredAt = timestampField(data, 'occurredAt');
+  const createdAt = timestampField(data, 'createdAt');
+  const updatedAt = timestampField(data, 'updatedAt');
+  const revision = numberField(data, 'revision');
+  const deletedAt = optionalTimestamp(data, 'deletedAt');
+  const isDeleted = data.isDeleted;
+
+  if (updatedAt < createdAt) {
+    throw new Error('Care event updatedAt must not precede createdAt');
+  }
+  if (occurredAt > updatedAt + MAX_OCCURRED_AT_CLOCK_SKEW_MS) {
+    throw new Error('Care event occurredAt is too far ahead of updatedAt');
+  }
+  if (typeof isDeleted !== 'boolean') {
+    throw new Error('Care event isDeleted must be a boolean');
+  }
+  if (isDeleted !== (deletedAt !== undefined)) {
+    throw new Error('Care event deletion state is invalid');
+  }
+  if (!Number.isInteger(revision) || revision < 1) {
+    throw new Error('Care event revision must be a positive integer');
+  }
+  if (revision === 1 && (createdAt !== updatedAt || isDeleted)) {
+    throw new Error('Care event initial revision metadata is invalid');
+  }
+  if (deletedAt !== undefined && (revision < 2 || deletedAt !== updatedAt)) {
+    throw new Error('Care event deletedAt must equal updatedAt on a later revision');
+  }
+
+  // Cross-version monotonicity needs the prior snapshot and is enforced by
+  // Firestore Rules (revision + 1, immutable createdAt, nondecreasing updatedAt).
+  return {createdAt, updatedAt, revision, deletedAt};
 }
 
 function createInput(data: Record<string, unknown>): CreateCareEventInput {
@@ -167,26 +204,7 @@ export function decodeCareEventDocument(input: {
   if (id !== input.documentId || documentGroupId !== input.groupId) {
     throw new Error('Care event document identity does not match its path');
   }
-  const createdAt = timestampField(data, 'createdAt');
-  const updatedAt = timestampField(data, 'updatedAt');
-  const revision = numberField(data, 'revision');
-  const deletedAt = optionalTimestamp(data, 'deletedAt');
-  const isDeleted = data.isDeleted;
-  if (updatedAt < createdAt) {
-    throw new Error('Care event updatedAt must not precede createdAt');
-  }
-  if (typeof isDeleted !== 'boolean') {
-    throw new Error('Care event isDeleted must be a boolean');
-  }
-  if (isDeleted !== (deletedAt !== undefined)) {
-    throw new Error('Care event deletion state is invalid');
-  }
-  if (!Number.isInteger(revision) || revision < 1) {
-    throw new Error('Care event revision must be a positive integer');
-  }
-  if (deletedAt !== undefined && deletedAt !== updatedAt) {
-    throw new Error('Care event deletedAt must equal updatedAt');
-  }
+  const {createdAt, updatedAt, revision, deletedAt} = decodeAuditMetadata(data);
 
   // occurredAt is editable after creation. Revalidate it against the update
   // timestamp instead of the immutable creation timestamp.

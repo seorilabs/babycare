@@ -30,6 +30,7 @@ export class FirebaseAuthAdapter implements AuthPort {
   }
 
   async signInAnonymously(): Promise<AuthIdentity> {
+    // RNFirebase 25 modular functions intentionally receive the Auth instance.
     const credential = await signInAnonymously(this.#auth);
     return toIdentity(credential.user)!;
   }

@@ -119,6 +119,13 @@ describe('Firebase care event document mapper', () => {
         },
       }),
     ).toThrow(/deletedAt/);
+    expect(() =>
+      decodeCareEventDocument({
+        documentId: 'event-1',
+        groupId: 'group-1',
+        data: {...valid, updatedAt: 3_000},
+      }),
+    ).toThrow(/initial revision/);
   });
 
   it('rejects invalid revision and occurrence audit boundaries', () => {
@@ -135,6 +142,6 @@ describe('Firebase care event document mapper', () => {
         groupId: 'group-1',
         data: {...valid, occurredAt: 302_001},
       }),
-    ).toThrow(/future/);
+    ).toThrow(/ahead/);
   });
 });

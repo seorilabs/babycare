@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {Alert, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import type {CareEvent, CareEventKind} from '@babycare/product-core';
@@ -38,6 +38,7 @@ function BabyCareApp() {
   const [recording, setRecording] = useState<CareEventKind>();
   const [now, setNow] = useState(Date.now());
   const [savedMessage, setSavedMessage] = useState<string>();
+  const locallyDeletedEventIds = useRef(new Set<string>());
 
   useEffect(() => {
     appContainer.sessionRepository
@@ -48,7 +49,7 @@ function BabyCareApp() {
         if (error instanceof LocalSessionHydrationError) {
           Alert.alert(
             '로컬 정보를 복구할 수 없어요',
-            '손상되었거나 이전 형식인 로컬 정보를 지웠습니다. 돌봄 정보를 다시 입력해 주세요.',
+            `${error.message}. 로컬 정보를 지웠습니다. 돌봄 정보를 다시 입력해 주세요.`,
           );
         }
       })
@@ -61,6 +62,7 @@ function BabyCareApp() {
   }, []);
 
   useEffect(() => {
+    locallyDeletedEventIds.current.clear();
     if (!session) {
       setEvents([]);
       return undefined;
@@ -68,7 +70,12 @@ function BabyCareApp() {
     const context = domainContext(session);
     return appContainer.repository.observe(
       {groupId: context.groupId, babyId: context.babyId},
-      setEvents,
+      nextEvents =>
+        setEvents(
+          nextEvents.filter(
+            event => !locallyDeletedEventIds.current.has(event.id),
+          ),
+        ),
     );
   }, [session]);
 
@@ -113,6 +120,7 @@ function BabyCareApp() {
                 eventId: event.id,
                 requestedBy: context.caregiverId,
               });
+              locallyDeletedEventIds.current.add(deleted.id);
               setEvents(current => current.filter(item => item.id !== deleted.id));
               setSavedMessage('기록을 삭제했어요');
             } catch (error) {
@@ -133,6 +141,7 @@ function BabyCareApp() {
           onReset={async () => {
             await appContainer.repository.clear();
             await appContainer.sessionRepository.clear();
+            locallyDeletedEventIds.current.clear();
             setSession(undefined);
             setEvents([]);
             setTab('home');

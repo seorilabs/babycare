@@ -9,6 +9,20 @@ import {
   type Membership,
 } from '@babycare/product-core';
 
+const BABY_DOCUMENT_FIELD_SET = {
+  id: true,
+  groupId: true,
+  name: true,
+  birthDate: true,
+  sex: true,
+  dueDate: true,
+  avatarStoragePath: true,
+  createdAt: true,
+  updatedAt: true,
+} as const satisfies Record<keyof Baby, true>;
+
+const BABY_DOCUMENT_FIELDS = Object.keys(BABY_DOCUMENT_FIELD_SET);
+
 function record(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${label} must be an object`);
@@ -54,6 +68,23 @@ function time(data: Record<string, unknown>, key: string): number {
     throw new Error(`${key} must be a valid timestamp`);
   }
   return value as number;
+}
+
+function isCanonicalAvatarStoragePath(
+  value: string,
+  expectedGroupId: string,
+  expectedBabyId: string,
+): boolean {
+  const [root, pathGroupId, babies, pathBabyId, ...objectSegments] =
+    value.split('/');
+  return (
+    root === 'groups' &&
+    pathGroupId === expectedGroupId &&
+    babies === 'babies' &&
+    pathBabyId === expectedBabyId &&
+    objectSegments.length > 0 &&
+    objectSegments.every(segment => segment && segment !== '.' && segment !== '..')
+  );
 }
 
 export function decodeCareGroup(documentId: string, value: unknown): CareGroup {
@@ -130,11 +161,7 @@ export function decodeMembership(
 
 export function decodeBaby(groupDocumentId: string, babyDocumentId: string, value: unknown): Baby {
   const data = record(value, 'Baby');
-  onlyKeys(
-    data,
-    ['id', 'groupId', 'name', 'birthDate', 'sex', 'dueDate', 'avatarStoragePath', 'createdAt', 'updatedAt'],
-    'Baby',
-  );
+  onlyKeys(data, BABY_DOCUMENT_FIELDS, 'Baby');
   const documentBabyId = babyId(babyDocumentId);
   const dataBabyId = babyId(text(data, 'id'));
   if (
@@ -154,13 +181,13 @@ export function decodeBaby(groupDocumentId: string, babyDocumentId: string, valu
   }
   const dueDate = optionalText(data, 'dueDate');
   const avatarStoragePath = optionalText(data, 'avatarStoragePath');
-  const avatarPrefix = `groups/${groupDocumentId}/babies/${documentBabyId}/`;
-  const avatarSuffix = avatarStoragePath?.slice(avatarPrefix.length);
   if (
     avatarStoragePath !== undefined &&
-    (!avatarStoragePath.startsWith(avatarPrefix) ||
-      !avatarSuffix ||
-      avatarSuffix.split('/').some(segment => !segment || segment === '.' || segment === '..'))
+    !isCanonicalAvatarStoragePath(
+      avatarStoragePath,
+      groupDocumentId,
+      dataBabyId,
+    )
   ) {
     throw new Error('Baby avatarStoragePath is invalid');
   }
