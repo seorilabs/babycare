@@ -84,7 +84,7 @@ test('renders correctly', async () => {
   ReactTestRenderer.act(() => renderer.unmount());
 });
 
-test('connects local pagination through App to TimelineScreen', async () => {
+test('connects local pagination through App and preserves its scoped tab state', async () => {
   const now = new Date(2026, 6, 13, 12).getTime();
   const session: LocalSession = {
     groupId: 'group-1',
@@ -127,12 +127,19 @@ test('connects local pagination through App to TimelineScreen', async () => {
 
   pressTab(renderer, '타임라인');
   expect(timelineRowCount(renderer)).toBe(20);
+  expect(
+    renderer.root.findAll(
+      node => node.props.accessibilityLabel === '이전 기록 다시 불러오기',
+    ),
+  ).toHaveLength(0);
 
   await ReactTestRenderer.act(async () => {
     await renderer.root.findByType(SectionList).props.onEndReached();
   });
   expect(timelineRowCount(renderer)).toBe(40);
 
+  // Tab navigation does not change group/baby scope, so its loaded page stays.
+  // The hook suite separately verifies reset when that scope key changes.
   pressTab(renderer, '통계');
   pressTab(renderer, '타임라인');
   expect(timelineRowCount(renderer)).toBe(40);

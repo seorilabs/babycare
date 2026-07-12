@@ -62,6 +62,8 @@ describe('useLocalTimelinePagination', () => {
 
     expect(latest.events).toHaveLength(LOCAL_TIMELINE_PAGE_SIZE);
     expect(latest.hasMore).toBe(true);
+    expect(latest.loadingMore).toBe(false);
+    expect(latest.loadMoreError).toBeUndefined();
     let first!: Promise<void>;
     let duplicate!: Promise<void>;
     await ReactTestRenderer.act(async () => {
@@ -76,6 +78,8 @@ describe('useLocalTimelinePagination', () => {
     await ReactTestRenderer.act(async () => latest.retryLoadMore());
     expect(latest.events).toHaveLength(45);
     expect(latest.hasMore).toBe(false);
+    expect(latest.loadingMore).toBe(false);
+    expect(latest.loadMoreError).toBeUndefined();
     expect(allEvents).toHaveLength(45);
     await ReactTestRenderer.act(async () => renderer.unmount());
   });

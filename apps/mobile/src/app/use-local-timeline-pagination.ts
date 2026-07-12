@@ -20,7 +20,9 @@ export interface LocalTimelinePaginationState {
 /**
  * Presentation-only pagination for the AsyncStorage preview composition.
  * Home/Stats still receive the complete local event array. The authenticated
- * cloud composition uses `CareEventTimelineFeed` instead.
+ * cloud composition uses `CareEventTimelineFeed` instead. Local paging only
+ * slices an in-memory array, so it cannot produce a load error; the remote
+ * feed owns loadMoreError/retry transitions.
  */
 export function useLocalTimelinePagination(
   events: readonly CareEvent[],

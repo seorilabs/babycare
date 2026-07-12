@@ -289,6 +289,7 @@ describe('createCareEventContainer', () => {
     expect(remote.pageListeners.size).toBeGreaterThan(0);
     expect(onError).not.toHaveBeenCalled();
     await container.dispose();
+    expect(remote.listeners.size).toBe(0);
     expect(remote.pageListeners.size).toBe(0);
   });
 
@@ -319,15 +320,17 @@ describe('createCareEventContainer', () => {
     expect(onRevoked).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     await container.dispose();
+    expect(remote.listeners.size).toBe(0);
     expect(remote.pageListeners.size).toBe(0);
   });
 
   it('releases the scoped writer on normal teardown without purging cache', async () => {
+    const remote = new FakeRemote();
     const dependencies = {
       auth: new FakeAuth(),
       groups: new FakeGroups(),
       context,
-      remote: new FakeRemote(),
+      remote,
       timeline: timelineConfig,
       clock: {now: () => 1_000},
       idGenerator: {nextEventId: () => eventId('generated')},
@@ -340,8 +343,12 @@ describe('createCareEventContainer', () => {
     await first.dispose();
 
     expect(AsyncStorage.removeItem).not.toHaveBeenCalled();
+    expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
     const replacement = await createCareEventContainer(dependencies);
     await replacement.dispose();
+    expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
   });
 
   it('drains a pending revocation check before normal teardown closes storage', async () => {
@@ -387,8 +394,9 @@ describe('createCareEventContainer', () => {
 
     expect(onRevoked).toHaveBeenCalledWith('membership_removed');
     expect(AsyncStorage.removeItem).toHaveBeenCalledTimes(1);
-    expect(remote.pageListeners.size).toBe(0);
     stopEvents();
     stopTimeline();
+    expect(remote.listeners.size).toBe(0);
+    expect(remote.pageListeners.size).toBe(0);
   });
 });
