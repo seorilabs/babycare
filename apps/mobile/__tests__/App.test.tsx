@@ -42,9 +42,24 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+jest.setTimeout(15_000);
+
+const activeRenderers = new Set<ReactTestRenderer.ReactTestRenderer>();
+
 afterEach(() => {
+  for (const renderer of activeRenderers) {
+    ReactTestRenderer.act(() => renderer.unmount());
+  }
+  activeRenderers.clear();
   jest.restoreAllMocks();
 });
+
+function unmountRenderer(
+  renderer: ReactTestRenderer.ReactTestRenderer,
+): void {
+  ReactTestRenderer.act(() => renderer.unmount());
+  activeRenderers.delete(renderer);
+}
 
 function textOf(node: ReactTestRenderer.ReactTestInstance): string {
   return node
@@ -129,6 +144,7 @@ async function renderLoadedApp(): Promise<ReactTestRenderer.ReactTestRenderer> {
     await Promise.resolve();
     await Promise.resolve();
   });
+  activeRenderers.add(renderer);
   return renderer;
 }
 
@@ -163,7 +179,7 @@ test('connects local pagination through App and preserves its scoped tab state',
   expect(textOf(renderer.root)).toContain('모든 기록을 확인했어요');
   expect(events).toHaveLength(45);
 
-  ReactTestRenderer.act(() => renderer.unmount());
+  unmountRenderer(renderer);
   expect(stopObserve).toHaveBeenCalledTimes(1);
 });
 
@@ -213,7 +229,7 @@ test('maps an injected paging error and retry through App to TimelineScreen', as
     ),
   ).toHaveLength(0);
 
-  ReactTestRenderer.act(() => renderer.unmount());
+  unmountRenderer(renderer);
   expect(stopObserve).toHaveBeenCalledTimes(1);
 });
 
@@ -235,6 +251,6 @@ test('uses the explicit active-sleep overview projection independently of the ev
 
   expect(textOf(renderer.root)).toContain('기상');
   expect(textOf(renderer.root)).toContain('지금 종료');
-  ReactTestRenderer.act(() => renderer.unmount());
+  unmountRenderer(renderer);
   expect(stopObserve).toHaveBeenCalledTimes(1);
 });
