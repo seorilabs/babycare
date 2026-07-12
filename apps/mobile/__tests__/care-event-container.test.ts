@@ -289,6 +289,7 @@ describe('createCareEventContainer', () => {
     expect(remote.pageListeners.size).toBeGreaterThan(0);
     expect(onError).not.toHaveBeenCalled();
     await container.dispose();
+    expect(remote.pageListeners.size).toBe(0);
   });
 
   it('rebinds the page owner when membership remains authorized', async () => {
@@ -318,6 +319,7 @@ describe('createCareEventContainer', () => {
     expect(onRevoked).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     await container.dispose();
+    expect(remote.pageListeners.size).toBe(0);
   });
 
   it('releases the scoped writer on normal teardown without purging cache', async () => {
@@ -385,6 +387,7 @@ describe('createCareEventContainer', () => {
 
     expect(onRevoked).toHaveBeenCalledWith('membership_removed');
     expect(AsyncStorage.removeItem).toHaveBeenCalledTimes(1);
+    expect(remote.pageListeners.size).toBe(0);
     stopEvents();
     stopTimeline();
   });

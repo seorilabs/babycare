@@ -94,27 +94,18 @@ describe('TimelineScreen bounded feed', () => {
     });
     const list = renderer.root.findByType(SectionList);
 
-    ReactTestRenderer.act(() => {
-      list.props.onEndReached();
-      list.props.onEndReached();
-    });
+    const firstRun = list.props.onEndReached() as Promise<void>;
+    const duplicateRun = list.props.onEndReached() as Promise<void>;
 
     expect(onLoadMore).toHaveBeenCalledTimes(1);
+    resolveLoad?.();
+    await Promise.all([firstRun, duplicateRun]);
 
-    await ReactTestRenderer.act(async () => {
-      resolveLoad?.();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    ReactTestRenderer.act(() => {
-      list.props.onEndReached();
-    });
+    const secondRun = list.props.onEndReached() as Promise<void>;
     expect(onLoadMore).toHaveBeenCalledTimes(2);
-    await ReactTestRenderer.act(async () => {
-      resolveLoad?.();
-      await Promise.resolve();
-    });
-    await ReactTestRenderer.act(async () => renderer.unmount());
+    resolveLoad?.();
+    await secondRun;
+    ReactTestRenderer.act(() => renderer.unmount());
   });
 
   it('renders error/retry, loading, and end-of-feed footer states', async () => {
@@ -136,15 +127,11 @@ describe('TimelineScreen bounded feed', () => {
     const retry = renderer.root.findByProps({
       accessibilityLabel: '이전 기록 다시 불러오기',
     });
-    ReactTestRenderer.act(() => {
-      retry.props.onPress();
-      retry.props.onPress();
-    });
+    const firstRetry = retry.props.onPress() as Promise<void>;
+    const duplicateRetry = retry.props.onPress() as Promise<void>;
     expect(onRetryLoadMore).toHaveBeenCalledTimes(1);
-    await ReactTestRenderer.act(async () => {
-      resolveRetry?.();
-      await Promise.resolve();
-    });
+    resolveRetry?.();
+    await Promise.all([firstRetry, duplicateRetry]);
 
     await ReactTestRenderer.act(async () => {
       renderer.update(screen({loadingMore: true}));

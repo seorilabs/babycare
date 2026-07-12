@@ -13,7 +13,7 @@
 
 검증 상태:
 
-- core 30건, mobile Jest 139건, Firestore/Storage Rules 23건, Functions unit 10건, transaction Emulator 5건이 통과했다.
+- core 30건, mobile Jest 140건, Firestore/Storage Rules 23건, Functions unit 10건, transaction Emulator 5건이 통과했다. 실제 `App → useLocalTimelinePagination → TimelineScreen` 연결은 45건 fixture의 20→40→45 확장과 탭 재진입 상태 유지로 검증한다.
 - 실제 Firestore Emulator에서 동일 timestamp 4건과 soft-delete tombstone을 `documentId DESC` cursor로 `d,c,b → a` 순서로 조회해 중복·누락이 없음을 확인했다.
 - workspace typecheck/lint, architecture/docs gate와 `git diff --check`가 통과했다.
 
