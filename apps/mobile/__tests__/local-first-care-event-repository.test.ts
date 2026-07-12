@@ -8,8 +8,11 @@ import {
   type CareEvent,
   type CareEventMutation,
   type CareEventPushResult,
+  type CareEventPageRequest,
   type CareEventQuery,
   type CareEventRemoteObservation,
+  type CareEventRemotePage,
+  type CareEventRemotePageObservation,
   type CareEventRemoteStorePort,
   type EventId,
   type GroupId,
@@ -103,6 +106,19 @@ class ScriptedRemoteStore implements CareEventRemoteStorePort {
     _eventId: EventId,
   ): Promise<CareEvent | undefined> {
     return undefined;
+  }
+
+  async fetchPage(
+    _request: CareEventPageRequest,
+  ): Promise<CareEventRemotePage> {
+    return {events: [], hasMore: false};
+  }
+
+  observePage(
+    _request: CareEventPageRequest,
+    _listener: (observation: CareEventRemotePageObservation) => void,
+  ): () => void {
+    return () => undefined;
   }
 
   async list(_query: CareEventQuery): Promise<readonly CareEvent[]> {

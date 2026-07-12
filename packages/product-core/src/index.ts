@@ -8,6 +8,7 @@ export * from './ports/auth.ts';
 export * from './ports/baby-repository.ts';
 export * from './ports/care-event-repository.ts';
 export * from './ports/care-event-remote-store.ts';
+export * from './ports/care-event-timeline.ts';
 export * from './ports/care-group-repository.ts';
 export * from './ports/clock.ts';
 export * from './ports/id-generator.ts';

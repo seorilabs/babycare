@@ -110,8 +110,11 @@ function BabyCareApp() {
     if (tab === 'timeline') {
       return (
         <TimelineScreen
+          capped={false}
           events={events}
           caregiverNames={caregiverNames}
+          hasMore={false}
+          loadingMore={false}
           now={now}
           onDelete={async event => {
             try {
@@ -127,6 +130,8 @@ function BabyCareApp() {
               Alert.alert('삭제할 수 없어요', error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.');
             }
           }}
+          onLoadMore={async () => undefined}
+          onRetryLoadMore={() => undefined}
           session={session}
           theme={theme}
         />

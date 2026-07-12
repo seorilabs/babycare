@@ -208,6 +208,8 @@ sequenceDiagram
 
 `firebase/firestore.indexes.json`에 다음 그룹별 타임라인 query를 둔다.
 
+- `events`: `babyId ASC, occurredAt DESC` (raw bounded timeline; document ID tie-break는 implicit ordering)
+- `events`: `babyId ASC, kind ASC, occurredAt DESC`
 - `events`: `babyId ASC, isDeleted ASC, occurredAt DESC`
 - `events`: `babyId ASC, isDeleted ASC, kind ASC, occurredAt DESC`
 
@@ -227,7 +229,7 @@ pnpm run test:functions
 pnpm run test:functions:emulator
 ```
 
-Rules 22건은 비멤버 차단, 멤버 read/record, 자기 membership query, owner-only 관리, event/receipt/active-lock 원자성, receipt missing/existing exact-get·list/query 경계, soft delete, invite 차단, Storage 권한을 다룬다. Functions unit 10건과 transaction Emulator 5건은 HMAC/raw-code 비저장, owner gate, expiry, UID rate limit, audit actor, idempotent replay와 동시 accept single-use를 다룬다. 실제 project/callable/App Check/IAM 검증은 별도다.
+Rules 23건은 비멤버 차단, 멤버 read/record, 동일 timestamp raw timeline cursor, 자기 membership query, owner-only 관리, event/receipt/active-lock 원자성, receipt missing/existing exact-get·list/query 경계, soft delete, invite 차단, Storage 권한을 다룬다. Functions unit 10건과 transaction Emulator 5건은 HMAC/raw-code 비저장, owner gate, expiry, UID rate limit, audit actor, idempotent replay와 동시 accept single-use를 다룬다. 실제 project/callable/App Check/IAM 검증은 별도다.
 
 ## Deployment Gates
 

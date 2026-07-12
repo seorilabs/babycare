@@ -54,7 +54,7 @@ apps-in-toss/          # AppsInToss 등록·릴리스 원장
 scripts/               # 로컬/CI 품질 게이트
 ```
 
-`packages/product-core`는 React Native, Firebase, AppsInToss 또는 마켓 SDK를 import하지 않는다. `apps/mobile/src/app/container.ts`는 현재 로컬 preview를 조립한다. 별도의 인증 컨텍스트 factory는 user/group/baby scoped durable envelope, revision별 outbox, pending/failed/conflict 상태, Firestore transaction·mutation receipt, active-sleep singleton lock과 cache purge lifecycle을 조립한다. 실제 Firebase project와 로그인 제공자가 확정되기 전에는 이 cloud factory를 기본 실행 경로로 바꾸거나 local preview 데이터를 자동 이관하지 않는다. AppsInToss도 같은 port와 주입형 string storage 계약을 target 밖에서 구현한다. 자세한 경계는 [Clean Architecture](docs/03-architecture/clean-architecture.md)를 참고한다.
+`packages/product-core`는 React Native, Firebase, AppsInToss 또는 마켓 SDK를 import하지 않는다. `apps/mobile/src/app/container.ts`는 현재 로컬 preview를 조립한다. 별도의 인증 컨텍스트 factory는 user/group/baby scoped durable envelope, revision별 outbox, pending/failed/conflict 상태, Firestore transaction·mutation receipt, active-sleep singleton lock, server-only bounded timeline과 cache purge lifecycle을 조립한다. 실제 Firebase project와 로그인 제공자가 확정되기 전에는 이 cloud factory를 기본 실행 경로로 바꾸거나 local preview 데이터를 자동 이관하지 않는다. AppsInToss도 같은 port와 주입형 string storage 계약을 target 밖에서 구현한다. 자세한 경계는 [Clean Architecture](docs/03-architecture/clean-architecture.md)를 참고한다.
 
 ## 개발
 

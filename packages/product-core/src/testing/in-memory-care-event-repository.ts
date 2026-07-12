@@ -4,8 +4,17 @@ import type {
   CareEventQuery,
   CareEventRepositoryPort,
 } from '../ports/care-event-repository.ts';
+import {
+  compareCareEventNewestFirst,
+  paginateCareEvents,
+  type CareEventPage,
+  type CareEventPageRepositoryPort,
+  type CareEventPageRequest,
+} from '../ports/care-event-timeline.ts';
 
-export class InMemoryCareEventRepository implements CareEventRepositoryPort {
+export class InMemoryCareEventRepository
+  implements CareEventRepositoryPort, CareEventPageRepositoryPort
+{
   readonly #events = new Map<EventId, CareEvent>();
   readonly #listeners = new Set<{
     readonly query: CareEventQuery;
@@ -25,20 +34,32 @@ export class InMemoryCareEventRepository implements CareEventRepositoryPort {
     }
   }
 
-  async findById(groupId: GroupId, eventId: EventId): Promise<CareEvent | undefined> {
+  async findById(
+    groupId: GroupId,
+    eventId: EventId,
+  ): Promise<CareEvent | undefined> {
     const event = this.#events.get(eventId);
     return event?.groupId === groupId ? event : undefined;
   }
 
   async list(query: CareEventQuery): Promise<readonly CareEvent[]> {
     const result = [...this.#events.values()]
-      .filter((event) => event.groupId === query.groupId && event.babyId === query.babyId)
+      .filter(
+        (event) =>
+          event.groupId === query.groupId && event.babyId === query.babyId,
+      )
       .filter((event) => query.includeDeleted || event.deletedAt === undefined)
-      .filter((event) => query.from === undefined || event.occurredAt >= query.from)
+      .filter(
+        (event) => query.from === undefined || event.occurredAt >= query.from,
+      )
       .filter((event) => query.to === undefined || event.occurredAt < query.to)
       .filter((event) => !query.kinds || query.kinds.includes(event.kind))
-      .sort((left, right) => right.occurredAt - left.occurredAt);
+      .sort(compareCareEventNewestFirst);
     return query.limit === undefined ? result : result.slice(0, query.limit);
+  }
+
+  async listPage(request: CareEventPageRequest): Promise<CareEventPage> {
+    return paginateCareEvents([...this.#events.values()], request);
   }
 
   observe(

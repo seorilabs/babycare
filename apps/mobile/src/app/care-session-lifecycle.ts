@@ -25,6 +25,7 @@ export interface CareSessionLifecycleDependencies {
   readonly context: AuthenticatedCareContext;
   readonly purge: () => Promise<void>;
   readonly onAuthenticationRestored: () => Promise<void>;
+  readonly onMembershipRestored?: () => Promise<void>;
   readonly onRevoked: (reason: CareSessionRevocationReason) => void;
   readonly onError: (error: Error) => void;
 }
@@ -221,6 +222,20 @@ export class CareSessionLifecycle {
             : new Error('Membership verification failed'),
         );
         return;
+      }
+      if (this.#started && this.#dependencies.onMembershipRestored) {
+        try {
+          await this.#dependencies.onMembershipRestored();
+        } catch (recoveryError) {
+          if (!this.#revoking && this.#started) {
+            this.#dependencies.onError(
+              recoveryError instanceof Error
+                ? recoveryError
+                : new Error('Membership recovery failed'),
+            );
+          }
+          return;
+        }
       }
       if (this.#started) {
         this.#dependencies.onError(originalError);
