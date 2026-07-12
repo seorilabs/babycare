@@ -6,6 +6,7 @@ import type {
   CareEventQuery,
   EventId,
   GroupId,
+  SleepEvent,
   StringStoragePort,
   UserId,
 } from '@babycare/product-core';
@@ -113,6 +114,23 @@ export interface CareEventTimelineCoverage {
   readonly loadedRawCount: number;
 }
 
+export type CareEventActiveSleepProjection =
+  | {readonly status: 'unknown'}
+  | {readonly status: 'confirmed_none'}
+  | {readonly status: 'active'; readonly eventId: EventId};
+
+/**
+ * Explicit references owned by read models outside the bounded timeline.
+ *
+ * `unknown` is intentionally different from `confirmed_none`: migrated or
+ * not-yet-refreshed caches may still contain an active sleep row, while a
+ * server-confirmed empty lock must not keep an arbitrary stale active row.
+ */
+export interface CareEventProjectionCoverage {
+  readonly overviewEventIds: readonly EventId[];
+  readonly activeSleep: CareEventActiveSleepProjection;
+}
+
 export interface CareEventSyncLocalStorePort {
   saveAndEnqueue(event: CareEvent): Promise<void>;
   findById(groupId: GroupId, eventId: EventId): Promise<CareEvent | undefined>;
@@ -123,9 +141,16 @@ export interface CareEventSyncLocalStorePort {
   ): () => void;
   mergeRemoteEvents(events: readonly CareEvent[]): Promise<void>;
   getTimelineCoverage(): Promise<CareEventTimelineCoverage>;
+  getProjectionCoverage(): Promise<CareEventProjectionCoverage>;
   replaceRemoteTimelinePrefix(
     events: readonly CareEvent[],
     coverage: CareEventTimelineCoverage,
+  ): Promise<void>;
+  /** Replaces the coupled overview and active-sleep read models atomically. */
+  replaceRemoteProjections(
+    overview: readonly CareEvent[],
+    active: SleepEvent | undefined,
+    reconciled?: CareEvent,
   ): Promise<void>;
   nextPending(): Promise<CareEventOutboxEntry | undefined>;
   markAttemptStarted(id: string): Promise<CareEventOutboxEntry | undefined>;
@@ -160,7 +185,17 @@ interface PersistedCareEventSyncStateV2 {
   readonly timelineCoverage: CareEventTimelineCoverage;
 }
 
-type PersistedCareEventSyncState = PersistedCareEventSyncStateV2;
+interface PersistedCareEventSyncStateV3 {
+  readonly version: 3;
+  readonly scope: CareEventSyncScope;
+  readonly events: readonly CareEvent[];
+  readonly outbox: readonly CareEventOutboxEntry[];
+  readonly issues: readonly CareEventSyncIssue[];
+  readonly timelineCoverage: CareEventTimelineCoverage;
+  readonly projectionCoverage: CareEventProjectionCoverage;
+}
+
+type PersistedCareEventSyncState = PersistedCareEventSyncStateV3;
 
 function hasOnlyKeys(
   value: Record<string, unknown>,
@@ -364,6 +399,85 @@ function decodeTimelineCoverage(
   };
 }
 
+function decodeProjectionCoverage(
+  value: unknown,
+  events: ReadonlyMap<EventId, CareEvent>,
+): CareEventProjectionCoverage | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const coverage = value as Record<string, unknown>;
+  if (
+    !hasOnlyKeys(coverage, ['overviewEventIds', 'activeSleep']) ||
+    !Array.isArray(coverage.overviewEventIds) ||
+    !coverage.activeSleep ||
+    typeof coverage.activeSleep !== 'object' ||
+    Array.isArray(coverage.activeSleep)
+  ) {
+    return undefined;
+  }
+
+  const overviewEventIds: EventId[] = [];
+  const seen = new Set<EventId>();
+  for (const valueEventId of coverage.overviewEventIds) {
+    if (typeof valueEventId !== 'string') {
+      return undefined;
+    }
+    try {
+      const canonicalEventId = parseEventId(valueEventId);
+      if (
+        canonicalEventId !== valueEventId ||
+        seen.has(canonicalEventId) ||
+        !events.has(canonicalEventId)
+      ) {
+        return undefined;
+      }
+      seen.add(canonicalEventId);
+      overviewEventIds.push(canonicalEventId);
+    } catch {
+      return undefined;
+    }
+  }
+
+  const activeSleep = coverage.activeSleep as Record<string, unknown>;
+  if (
+    (activeSleep.status === 'unknown' ||
+      activeSleep.status === 'confirmed_none') &&
+    hasOnlyKeys(activeSleep, ['status'])
+  ) {
+    return {
+      overviewEventIds,
+      activeSleep: {status: activeSleep.status},
+    };
+  }
+  if (
+    activeSleep.status !== 'active' ||
+    !hasOnlyKeys(activeSleep, ['status', 'eventId']) ||
+    typeof activeSleep.eventId !== 'string'
+  ) {
+    return undefined;
+  }
+  try {
+    const canonicalEventId = parseEventId(activeSleep.eventId);
+    const activeEvent = events.get(canonicalEventId);
+    if (
+      canonicalEventId !== activeSleep.eventId ||
+      !activeEvent ||
+      activeEvent.kind !== 'sleep' ||
+      activeEvent.endedAt !== undefined ||
+      activeEvent.deletedAt !== undefined
+    ) {
+      return undefined;
+    }
+    return {
+      overviewEventIds,
+      activeSleep: {status: 'active', eventId: canonicalEventId},
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 function decodeState(
   value: unknown,
   expectedScope: CareEventSyncScope,
@@ -374,11 +488,22 @@ function decodeState(
   const state = value as Record<string, unknown>;
   const isV1 = state.version === 1;
   const isV2 = state.version === 2;
-  const allowedKeys = isV2
+  const isV3 = state.version === 3;
+  const allowedKeys = isV3
+    ? [
+        'version',
+        'scope',
+        'events',
+        'outbox',
+        'issues',
+        'timelineCoverage',
+        'projectionCoverage',
+      ]
+    : isV2
     ? ['version', 'scope', 'events', 'outbox', 'issues', 'timelineCoverage']
     : ['version', 'scope', 'events', 'outbox', 'issues'];
   if (
-    (!isV1 && !isV2) ||
+    (!isV1 && !isV2 && !isV3) ||
     !hasOnlyKeys(state, allowedKeys) ||
     !state.scope ||
     typeof state.scope !== 'object' ||
@@ -445,7 +570,7 @@ function decodeState(
   }
 
   let timelineCoverage: CareEventTimelineCoverage;
-  if (isV2) {
+  if (isV2 || isV3) {
     const decodedCoverage = decodeTimelineCoverage(
       state.timelineCoverage,
       events,
@@ -478,13 +603,31 @@ function decodeState(
     };
   }
 
+  let projectionCoverage: CareEventProjectionCoverage;
+  if (isV3) {
+    const decodedCoverage = decodeProjectionCoverage(
+      state.projectionCoverage,
+      events,
+    );
+    if (!decodedCoverage) {
+      return undefined;
+    }
+    projectionCoverage = decodedCoverage;
+  } else {
+    projectionCoverage = {
+      overviewEventIds: [],
+      activeSleep: {status: 'unknown'},
+    };
+  }
+
   return {
-    version: 2,
+    version: 3,
     scope: expectedScope,
     events: [...events.values()],
     outbox: [...outbox.values()],
     issues: [...issues.values()],
     timelineCoverage,
+    projectionCoverage,
   };
 }
 
@@ -523,6 +666,10 @@ export class PersistentCareEventSyncStore
     remoteEventIds: [],
     hasMore: true,
     loadedRawCount: 0,
+  };
+  #projectionCoverage: CareEventProjectionCoverage = {
+    overviewEventIds: [],
+    activeSleep: {status: 'unknown'},
   };
   readonly #subscriptions = new Set<{
     readonly query: CareEventQuery;
@@ -586,6 +733,7 @@ export class PersistentCareEventSyncStore
             this.#issues.set(issue.id, issue);
           }
           this.#timelineCoverage = state.timelineCoverage;
+          this.#projectionCoverage = state.projectionCoverage;
           return;
         }
       } catch {
@@ -598,12 +746,13 @@ export class PersistentCareEventSyncStore
 
   #persistedState(): PersistedCareEventSyncState {
     return {
-      version: 2,
+      version: 3,
       scope: this.#scope,
       events: [...this.#events.values()],
       outbox: [...this.#outbox.values()].sort(sortOutbox),
       issues: [...this.#issues.values()],
       timelineCoverage: this.#timelineCoverage,
+      projectionCoverage: this.#projectionCoverage,
     };
   }
 
@@ -620,6 +769,7 @@ export class PersistentCareEventSyncStore
         event =>
           event.groupId === query.groupId && event.babyId === query.babyId,
       )
+      .filter(event => !this.#isHiddenByActiveProjection(event))
       .filter(event => query.includeDeleted || event.deletedAt === undefined)
       .filter(event => query.from === undefined || event.occurredAt >= query.from)
       .filter(event => query.to === undefined || event.occurredAt < query.to)
@@ -662,8 +812,8 @@ export class PersistentCareEventSyncStore
       ...(conflict?.failureKind
         ? {failureKind: conflict.failureKind}
         : failed?.failureKind
-          ? {failureKind: failed.failureKind}
-          : {}),
+        ? {failureKind: failed.failureKind}
+        : {}),
     };
   }
 
@@ -704,6 +854,7 @@ export class PersistentCareEventSyncStore
       const previousOutbox = new Map(this.#outbox);
       const previousIssues = new Map(this.#issues);
       const previousTimelineCoverage = this.#timelineCoverage;
+      const previousProjectionCoverage = this.#projectionCoverage;
       try {
         mutation();
         await this.#persist();
@@ -721,6 +872,7 @@ export class PersistentCareEventSyncStore
           this.#issues.set(id, issue);
         }
         this.#timelineCoverage = previousTimelineCoverage;
+        this.#projectionCoverage = previousProjectionCoverage;
         throw error;
       }
       this.#emit();
@@ -742,6 +894,20 @@ export class PersistentCareEventSyncStore
     return result as T;
   }
 
+  #setEvent(event: CareEvent): void {
+    this.#events.set(event.id, event);
+    if (
+      this.#projectionCoverage.activeSleep.status === 'active' &&
+      this.#projectionCoverage.activeSleep.eventId === event.id &&
+      !this.#isActiveSleepEvent(event)
+    ) {
+      this.#projectionCoverage = {
+        overviewEventIds: this.#projectionCoverage.overviewEventIds,
+        activeSleep: {status: 'unknown'},
+      };
+    }
+  }
+
   #applyLocalEvent(event: CareEvent): boolean {
     if (!isPersistedCareEvent(event)) {
       throw new Error('Care event is not canonical and cannot be persisted');
@@ -759,7 +925,7 @@ export class PersistentCareEventSyncStore
           'A new local care event must start at revision 1',
         );
       }
-      this.#events.set(event.id, event);
+      this.#setEvent(event);
       return true;
     }
     if (!careEventIdentityMatches(current, event)) {
@@ -780,7 +946,7 @@ export class PersistentCareEventSyncStore
         'Local care event revisions must be contiguous',
       );
     }
-    this.#events.set(event.id, event);
+    this.#setEvent(event);
     return true;
   }
 
@@ -795,13 +961,13 @@ export class PersistentCareEventSyncStore
       const kind: CareEventMutationKind = !current
         ? 'create'
         : event.deletedAt !== undefined && current.deletedAt === undefined
-          ? 'soft_delete'
-          : event.kind === 'sleep' &&
-              current.kind === 'sleep' &&
-              event.endedAt !== undefined &&
-              current.endedAt === undefined
-            ? 'end_sleep'
-            : 'update';
+        ? 'soft_delete'
+        : event.kind === 'sleep' &&
+          current.kind === 'sleep' &&
+          event.endedAt !== undefined &&
+          current.endedAt === undefined
+        ? 'end_sleep'
+        : 'update';
       this.#outbox.set(id, {
         id,
         kind,
@@ -888,15 +1054,20 @@ export class PersistentCareEventSyncStore
     this.#assertRemoteEvent(remote);
     const local = this.#events.get(remote.id);
     if (!local) {
-      this.#events.set(remote.id, remote);
+      this.#setEvent(remote);
       return;
     }
     if (!careEventIdentityMatches(local, remote)) {
-      this.#markEventConflict(remote.id);
-      return;
+      if (this.#hasMutationOrIssueOverlay(remote.id)) {
+        this.#markEventConflict(remote.id);
+        return;
+      }
+      throw new CareEventRevisionConflictError(
+        'Synced care event identity differs from the remote event',
+      );
     }
     if (remote.revision > local.revision) {
-      this.#events.set(remote.id, remote);
+      this.#setEvent(remote);
       if (
         [...this.#outbox.values()].some(
           entry => entry.event.id === remote.id,
@@ -919,9 +1090,11 @@ export class PersistentCareEventSyncStore
         )
       ) {
         this.#markEventConflict(remote.id);
-        this.#events.set(remote.id, remote);
+        this.#setEvent(remote);
       } else {
-        this.#events.set(remote.id, remote);
+        throw new CareEventRevisionConflictError(
+          'Synced care event content differs at the current revision',
+        );
       }
       return;
     }
@@ -984,14 +1157,68 @@ export class PersistentCareEventSyncStore
     }
   }
 
-  #hasProtectedOverlay(id: EventId): boolean {
-    const event = this.#events.get(id);
+  #hasMutationOrIssueOverlay(id: EventId): boolean {
     return (
-      (event?.kind === 'sleep' &&
-        event.endedAt === undefined &&
-        event.deletedAt === undefined) ||
       [...this.#outbox.values()].some(entry => entry.event.id === id) ||
       [...this.#issues.values()].some(issue => issue.eventId === id)
+    );
+  }
+
+  #isActiveSleepEvent(event: CareEvent | undefined): event is SleepEvent {
+    return (
+      event?.kind === 'sleep' &&
+      event.endedAt === undefined &&
+      event.deletedAt === undefined
+    );
+  }
+
+  #isHiddenByActiveProjection(event: CareEvent): boolean {
+    if (
+      !this.#isActiveSleepEvent(event) ||
+      this.#hasMutationOrIssueOverlay(event.id) ||
+      this.#projectionCoverage.activeSleep.status === 'unknown'
+    ) {
+      return false;
+    }
+    return (
+      this.#projectionCoverage.activeSleep.status === 'confirmed_none' ||
+      this.#projectionCoverage.activeSleep.eventId !== event.id
+    );
+  }
+
+  #isExplicitProjectionReference(id: EventId): boolean {
+    return (
+      this.#projectionCoverage.overviewEventIds.includes(id) ||
+      (this.#projectionCoverage.activeSleep.status === 'active' &&
+        this.#projectionCoverage.activeSleep.eventId === id)
+    );
+  }
+
+  #shouldPreserveOutsideTimeline(id: EventId): boolean {
+    return (
+      this.#hasMutationOrIssueOverlay(id) ||
+      this.#isExplicitProjectionReference(id) ||
+      (this.#projectionCoverage.activeSleep.status === 'unknown' &&
+        this.#isActiveSleepEvent(this.#events.get(id)))
+    );
+  }
+
+  #isReferencedOutsideOverview(id: EventId): boolean {
+    return (
+      this.#timelineCoverage.remoteEventIds.includes(id) ||
+      this.#hasMutationOrIssueOverlay(id) ||
+      (this.#projectionCoverage.activeSleep.status === 'active' &&
+        this.#projectionCoverage.activeSleep.eventId === id) ||
+      (this.#projectionCoverage.activeSleep.status === 'unknown' &&
+        this.#isActiveSleepEvent(this.#events.get(id)))
+    );
+  }
+
+  #isReferencedOutsideActive(id: EventId): boolean {
+    return (
+      this.#timelineCoverage.remoteEventIds.includes(id) ||
+      this.#projectionCoverage.overviewEventIds.includes(id) ||
+      this.#hasMutationOrIssueOverlay(id)
     );
   }
 
@@ -1014,6 +1241,16 @@ export class PersistentCareEventSyncStore
     }));
   }
 
+  async getProjectionCoverage(): Promise<CareEventProjectionCoverage> {
+    return this.#read(() => ({
+      overviewEventIds: [...this.#projectionCoverage.overviewEventIds],
+      activeSleep:
+        this.#projectionCoverage.activeSleep.status === 'active'
+          ? {...this.#projectionCoverage.activeSleep}
+          : {status: this.#projectionCoverage.activeSleep.status},
+    }));
+  }
+
   async replaceRemoteTimelinePrefix(
     events: readonly CareEvent[],
     coverage: CareEventTimelineCoverage,
@@ -1026,7 +1263,10 @@ export class PersistentCareEventSyncStore
         this.#applyRemoteEvent(remote);
       }
       for (const id of [...this.#events.keys()]) {
-        if (!nextRemoteIds.has(id) && !this.#hasProtectedOverlay(id)) {
+        if (
+          !nextRemoteIds.has(id) &&
+          !this.#shouldPreserveOutsideTimeline(id)
+        ) {
           this.#events.delete(id);
         }
       }
@@ -1038,6 +1278,174 @@ export class PersistentCareEventSyncStore
         hasMore: coverage.hasMore,
         loadedRawCount: coverage.loadedRawCount,
       };
+    });
+  }
+
+  #replaceRemoteOverviewInMemory(events: readonly CareEvent[]): void {
+    const nextIds = new Set<EventId>();
+    for (const remote of events) {
+      this.#assertRemoteEvent(remote);
+      if (nextIds.has(remote.id)) {
+        throw new Error('Overview projection events must have unique IDs');
+      }
+      nextIds.add(remote.id);
+    }
+
+    const previousIds = this.#projectionCoverage.overviewEventIds;
+    for (const remote of events) {
+      this.#applyRemoteEvent(remote);
+    }
+    this.#projectionCoverage = {
+      overviewEventIds: [...nextIds],
+      activeSleep: this.#projectionCoverage.activeSleep,
+    };
+
+    for (const id of previousIds) {
+      if (!nextIds.has(id) && !this.#isReferencedOutsideOverview(id)) {
+        this.#events.delete(id);
+      }
+    }
+  }
+
+  /** @internal Projection migration and focused store tests only. */
+  async replaceRemoteOverview(events: readonly CareEvent[]): Promise<void> {
+    await this.#commit(() => this.#replaceRemoteOverviewInMemory(events));
+  }
+
+  #replaceRemoteActiveSleepInMemory(
+    active: SleepEvent | undefined,
+    reconciled?: CareEvent,
+    previousActiveId?: EventId,
+  ): void {
+    if (
+      previousActiveId !== undefined &&
+      previousActiveId !== active?.id &&
+      reconciled === undefined
+    ) {
+      throw new Error(
+        'Active sleep projection transition must reconcile its previous event',
+      );
+    }
+    if (active !== undefined) {
+      this.#assertRemoteEvent(active);
+      if (!this.#isActiveSleepEvent(active)) {
+        throw new Error(
+          'Active sleep projection must contain an active sleep event',
+        );
+      }
+    }
+    if (reconciled !== undefined) {
+      this.#assertRemoteEvent(reconciled);
+      if (
+        reconciled.kind !== 'sleep' ||
+        (reconciled.endedAt === undefined && reconciled.deletedAt === undefined)
+      ) {
+        throw new Error(
+          'Active sleep reconciliation must contain an ended or deleted sleep event',
+        );
+      }
+      if (active?.id === reconciled.id) {
+        throw new Error(
+          'Active and reconciled sleep projections cannot reference the same event',
+        );
+      }
+      if (
+        previousActiveId !== undefined &&
+        reconciled.id !== previousActiveId
+      ) {
+        throw new Error(
+          'Active sleep reconciliation must match the previous projected event',
+        );
+      }
+    }
+
+    if (reconciled) {
+      this.#applyRemoteEvent(reconciled);
+    }
+    let activeCoverage: CareEventActiveSleepProjection = {
+      status: 'confirmed_none',
+    };
+    if (active) {
+      this.#applyRemoteEvent(active);
+      const storedActive = this.#events.get(active.id);
+      const newerLocalOverlay =
+        storedActive !== undefined &&
+        careEventIdentityMatches(storedActive, active) &&
+        storedActive.revision > active.revision &&
+        this.#hasMutationOrIssueOverlay(active.id);
+      if (this.#isActiveSleepEvent(storedActive)) {
+        if (!careEventsEqual(storedActive, active) && !newerLocalOverlay) {
+          throw new CareEventRevisionConflictError(
+            'Active sleep projection conflicts with the stored event revision',
+          );
+        }
+        activeCoverage = {status: 'active', eventId: active.id};
+      } else if (newerLocalOverlay) {
+        activeCoverage = {status: 'unknown'};
+      } else {
+        throw new CareEventRevisionConflictError(
+          'Active sleep projection conflicts with the stored event revision',
+        );
+      }
+    }
+    this.#projectionCoverage = {
+      overviewEventIds: this.#projectionCoverage.overviewEventIds,
+      activeSleep: activeCoverage,
+    };
+
+    const removalCandidates = new Set<EventId>();
+    if (previousActiveId && previousActiveId !== active?.id) {
+      removalCandidates.add(previousActiveId);
+    }
+    for (const [id, event] of this.#events) {
+      if (this.#isActiveSleepEvent(event) && id !== active?.id) {
+        removalCandidates.add(id);
+      }
+    }
+    for (const id of removalCandidates) {
+      if (
+        this.#isActiveSleepEvent(this.#events.get(id)) &&
+        !this.#isReferencedOutsideActive(id)
+      ) {
+        this.#events.delete(id);
+      }
+    }
+  }
+
+  /** @internal Projection migration and focused store tests only. */
+  async replaceRemoteActiveSleep(
+    active: SleepEvent | undefined,
+    reconciled?: CareEvent,
+  ): Promise<void> {
+    await this.#commit(() => {
+      const previousActiveId =
+        this.#projectionCoverage.activeSleep.status === 'active'
+          ? this.#projectionCoverage.activeSleep.eventId
+          : undefined;
+      this.#replaceRemoteActiveSleepInMemory(
+        active,
+        reconciled,
+        previousActiveId,
+      );
+    });
+  }
+
+  async replaceRemoteProjections(
+    overview: readonly CareEvent[],
+    active: SleepEvent | undefined,
+    reconciled?: CareEvent,
+  ): Promise<void> {
+    await this.#commit(() => {
+      const previousActiveId =
+        this.#projectionCoverage.activeSleep.status === 'active'
+          ? this.#projectionCoverage.activeSleep.eventId
+          : undefined;
+      this.#replaceRemoteOverviewInMemory(overview);
+      this.#replaceRemoteActiveSleepInMemory(
+        active,
+        reconciled,
+        previousActiveId,
+      );
     });
   }
 
@@ -1089,7 +1497,24 @@ export class PersistentCareEventSyncStore
 
   async markSynced(id: string): Promise<void> {
     await this.#commit(() => {
+      const acknowledged = this.#outbox.get(id);
       this.#outbox.delete(id);
+      if (
+        acknowledged !== undefined &&
+        this.#isActiveSleepEvent(acknowledged.event) &&
+        this.#isActiveSleepEvent(this.#events.get(acknowledged.event.id))
+      ) {
+        // The acknowledged active mutation proves the remote singleton existed
+        // at commit time. Keep it visible until the independent projection
+        // listener confirms the next active/none generation.
+        this.#projectionCoverage = {
+          overviewEventIds: this.#projectionCoverage.overviewEventIds,
+          activeSleep: {
+            status: 'active',
+            eventId: acknowledged.event.id,
+          },
+        };
+      }
     });
   }
 
@@ -1116,8 +1541,16 @@ export class PersistentCareEventSyncStore
           this.#outbox.delete(mutationKey);
         }
       }
-      this.#events.delete(entry.event.id);
-      this.#events.set(remote.id, remote);
+      if (!this.#timelineCoverage.remoteEventIds.includes(entry.event.id)) {
+        this.#events.delete(entry.event.id);
+      }
+      this.#setEvent(remote);
+      this.#projectionCoverage = {
+        overviewEventIds: this.#projectionCoverage.overviewEventIds.filter(
+          eventId => eventId !== entry.event.id,
+        ),
+        activeSleep: {status: 'active', eventId: remote.id},
+      };
       const issue: CareEventSyncIssue = {
         id: `${careEventMutationId(entry.event)}:active_sleep_conflict`,
         eventId: entry.event.id,
@@ -1319,6 +1752,10 @@ export class PersistentCareEventSyncStore
           remoteEventIds: [],
           hasMore: true,
           loadedRawCount: 0,
+        };
+        this.#projectionCoverage = {
+          overviewEventIds: [],
+          activeSleep: {status: 'unknown'},
         };
 
         let persistError: unknown;

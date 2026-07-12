@@ -1,4 +1,7 @@
-import type { SleepEvent } from '../domain/care-event.ts';
+import {
+  MAX_SLEEP_DURATION_MS,
+  type SleepEvent,
+} from '../domain/care-event.ts';
 import type { EventId, GroupId } from '../domain/ids.ts';
 import type { AnalyticsPort } from '../ports/analytics.ts';
 import type { CareEventRepositoryPort } from '../ports/care-event-repository.ts';
@@ -29,7 +32,7 @@ export function createEndSleepSession(dependencies: EndSleepSessionDependencies)
     if (now <= event.startedAt) {
       throw new Error('Sleep session cannot end before it starts');
     }
-    const endedAt = Math.min(now, event.startedAt + 48 * 60 * 60 * 1_000);
+    const endedAt = Math.min(now, event.startedAt + MAX_SLEEP_DURATION_MS);
     const ended: SleepEvent = {
       ...event,
       endedAt,

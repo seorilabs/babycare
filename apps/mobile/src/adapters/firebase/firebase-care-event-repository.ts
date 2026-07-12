@@ -2,7 +2,7 @@ import {
   collection,
   documentId,
   doc,
-  getDoc,
+  getDocFromServer,
   getDocs,
   getDocsFromServer,
   limit as limitQuery,
@@ -32,8 +32,21 @@ import type {
   UserId,
   CareEventRemotePage,
   CareEventRemotePageObservation,
+  CareEventProjectionRemotePort,
+  CareEventProjectionScope,
+  CareEventWindowObservation,
+  CareEventWindowRequest,
+  LatestCareEventObservation,
+  LatestCareEventRequest,
+  ActiveSleepObservation,
 } from '@babycare/product-core';
-import {validateCareEventPageRequest} from '@babycare/product-core';
+import {
+  compareCareEventNewestFirst,
+  validateCareEventPageRequest,
+  validateCareEventProjectionScope,
+  validateCareEventWindowRequest,
+  validateLatestCareEventRequest,
+} from '@babycare/product-core';
 import {
   careEventMutationId,
   careEventPayloadHash,
@@ -72,9 +85,16 @@ export function normalizeCareEventRemoteError(
     return {code: 'permission_denied', cause: error};
   }
   if (
-    ['aborted', 'cancelled', 'deadline-exceeded', 'internal', 'network-request-failed', 'resource-exhausted', 'unavailable', 'unknown'].some(
-      value => code.endsWith(value),
-    )
+    [
+      'aborted',
+      'cancelled',
+      'deadline-exceeded',
+      'internal',
+      'network-request-failed',
+      'resource-exhausted',
+      'unavailable',
+      'unknown',
+    ].some(value => code.endsWith(value))
   ) {
     return {code: 'retryable', cause: error};
   }
@@ -193,7 +213,9 @@ function receiptPayloadMatchesMutation(
  * Firestore write promises resolve on server acknowledgement, so production
  * composition must place a durable local repository/outbox in front of it.
  */
-export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
+export class FirebaseCareEventRemoteStore
+  implements CareEventRemoteStorePort, CareEventProjectionRemotePort
+{
   readonly #firestore: Firestore;
   readonly #actorUserId: UserId;
   readonly #onDecodeError: (error: Error) => void;
@@ -226,7 +248,9 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
   }
 
   #query(criteria: CareEventQuery): Query<DocumentData, DocumentData> {
-    let result: Query<DocumentData, DocumentData> = this.#collection(criteria.groupId);
+    let result: Query<DocumentData, DocumentData> = this.#collection(
+      criteria.groupId,
+    );
     result = query(result, where('babyId', '==', criteria.babyId));
     if (!criteria.includeDeleted) {
       result = query(result, where('isDeleted', '==', false));
@@ -249,9 +273,7 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
     return result;
   }
 
-  #pageQuery(
-    request: CareEventPageRequest,
-  ): Query<DocumentData, DocumentData> {
+  #pageQuery(request: CareEventPageRequest): Query<DocumentData, DocumentData> {
     validateCareEventPageRequest(request);
     let result: Query<DocumentData, DocumentData> = this.#collection(
       request.groupId,
@@ -277,6 +299,42 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
       );
     }
     return query(result, limitQuery(request.pageSize + 1));
+  }
+
+  #windowQuery(
+    request: CareEventWindowRequest,
+  ): Query<DocumentData, DocumentData> {
+    validateCareEventWindowRequest(request);
+    let result: Query<DocumentData, DocumentData> = this.#collection(
+      request.groupId,
+    );
+    result = query(result, where('babyId', '==', request.babyId));
+    result = query(result, where('occurredAt', '>=', request.from));
+    if (request.to !== undefined) {
+      result = query(result, where('occurredAt', '<', request.to));
+    }
+    if (request.kinds?.length === 1) {
+      result = query(result, where('kind', '==', request.kinds[0]));
+    } else if (request.kinds && request.kinds.length > 1) {
+      result = query(result, where('kind', 'in', [...request.kinds]));
+    }
+    result = query(result, orderBy('occurredAt', 'desc'));
+    return query(result, orderBy(documentId(), 'desc'));
+  }
+
+  #latestQuery(
+    request: LatestCareEventRequest,
+  ): Query<DocumentData, DocumentData> {
+    validateLatestCareEventRequest(request);
+    let result: Query<DocumentData, DocumentData> = this.#collection(
+      request.groupId,
+    );
+    result = query(result, where('babyId', '==', request.babyId));
+    result = query(result, where('isDeleted', '==', false));
+    result = query(result, where('kind', '==', request.kind));
+    result = query(result, orderBy('occurredAt', 'desc'));
+    result = query(result, orderBy(documentId(), 'desc'));
+    return query(result, limitQuery(1));
   }
 
   #decode(
@@ -313,6 +371,71 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
         ? {endCursor: {occurredAt: last.occurredAt, eventId: last.id}}
         : {}),
     };
+  }
+
+  #decodeProjectionSnapshot(
+    snapshots: readonly QueryDocumentSnapshot<DocumentData, DocumentData>[],
+    scope: CareEventProjectionScope,
+    accepts: (event: CareEvent) => boolean,
+  ): readonly CareEvent[] {
+    try {
+      const events = snapshots.map(snapshot =>
+        this.#decode(snapshot, scope.groupId),
+      );
+      for (const [index, event] of events.entries()) {
+        if (
+          event.groupId !== scope.groupId ||
+          event.babyId !== scope.babyId ||
+          !accepts(event)
+        ) {
+          throw new Error('Care event projection document is out of scope');
+        }
+        const previous = events[index - 1];
+        if (previous && compareCareEventNewestFirst(previous, event) >= 0) {
+          throw new Error(
+            'Care event projection snapshot is not strictly ordered',
+          );
+        }
+      }
+      return events;
+    } catch (error) {
+      throw this.#report(error);
+    }
+  }
+
+  #decodeActiveSleepEvent(
+    snapshot: {
+      readonly id: string;
+      exists(): boolean;
+      data(): DocumentData | undefined;
+    },
+    scope: CareEventProjectionScope,
+    lock: ActiveSleepLock,
+  ): SleepEvent {
+    try {
+      if (!snapshot.exists()) {
+        throw new Error('Active sleep lock points to a missing event');
+      }
+      const event = decodeCareEventDocument({
+        documentId: snapshot.id,
+        groupId: scope.groupId,
+        data: snapshot.data(),
+      });
+      if (
+        !isActiveSleepEvent(event) ||
+        event.groupId !== scope.groupId ||
+        event.babyId !== scope.babyId ||
+        event.id !== lock.eventId ||
+        event.caregiverId !== lock.caregiverId ||
+        event.startedAt !== lock.startedAt ||
+        event.createdAt !== lock.createdAt
+      ) {
+        throw new Error('Active sleep lock does not match its event');
+      }
+      return event;
+    } catch (error) {
+      throw this.#report(error);
+    }
   }
 
   #report(error: unknown): Error {
@@ -431,10 +554,7 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
             startedAt: event.startedAt,
             createdAt: event.createdAt,
           });
-        } else if (
-          lock?.eventId === event.id &&
-          !isActiveSleepEvent(event)
-        ) {
+        } else if (lock?.eventId === event.id && !isActiveSleepEvent(event)) {
           transaction.delete(activeSleepReference);
         }
         transaction.set(receiptReference, {
@@ -457,15 +577,333 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
   }
 
   async findById(group: GroupId, id: EventId): Promise<CareEvent | undefined> {
-    const snapshot = await getDoc(doc(this.#collection(group), id));
-    if (!snapshot.exists()) {
-      return undefined;
+    try {
+      const snapshot = await getDocFromServer(doc(this.#collection(group), id));
+      if (!snapshot.exists()) {
+        return undefined;
+      }
+      return decodeCareEventDocument({
+        documentId: snapshot.id,
+        groupId: group,
+        data: snapshot.data(),
+      });
+    } catch (error) {
+      if (error instanceof CareEventRemoteStoreError) {
+        throw error;
+      }
+      throw new CareEventRemoteStoreError(normalizeCareEventRemoteError(error));
     }
-    return decodeCareEventDocument({
-      documentId: snapshot.id,
-      groupId: group,
-      data: snapshot.data(),
-    });
+  }
+
+  async fetchWindow(
+    request: CareEventWindowRequest,
+  ): Promise<readonly CareEvent[]> {
+    try {
+      validateCareEventWindowRequest(request);
+      if (request.kinds?.length === 0) {
+        return [];
+      }
+      const snapshot = await getDocsFromServer(this.#windowQuery(request));
+      return this.#decodeProjectionSnapshot(
+        snapshot.docs,
+        request,
+        event =>
+          event.occurredAt >= request.from &&
+          (request.to === undefined || event.occurredAt < request.to) &&
+          (!request.kinds || request.kinds.includes(event.kind)),
+      );
+    } catch (error) {
+      if (error instanceof CareEventRemoteStoreError) {
+        throw error;
+      }
+      throw new CareEventRemoteStoreError(normalizeCareEventRemoteError(error));
+    }
+  }
+
+  observeWindow(
+    request: CareEventWindowRequest,
+    listener: (observation: CareEventWindowObservation) => void,
+  ): () => void {
+    let windowQuery: Query<DocumentData, DocumentData>;
+    try {
+      validateCareEventWindowRequest(request);
+      if (request.kinds?.length === 0) {
+        listener({kind: 'server_value', events: []});
+        return () => undefined;
+      }
+      windowQuery = this.#windowQuery(request);
+    } catch (error) {
+      listener({kind: 'error', error: {code: 'invalid', cause: error}});
+      return () => undefined;
+    }
+    try {
+      return onSnapshot(
+        windowQuery,
+        {includeMetadataChanges: true},
+        snapshot => {
+          if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) {
+            return;
+          }
+          try {
+            listener({
+              kind: 'server_value',
+              events: this.#decodeProjectionSnapshot(
+                snapshot.docs,
+                request,
+                event =>
+                  event.occurredAt >= request.from &&
+                  (request.to === undefined || event.occurredAt < request.to) &&
+                  (!request.kinds || request.kinds.includes(event.kind)),
+              ),
+            });
+          } catch (error) {
+            listener({kind: 'error', error: {code: 'invalid', cause: error}});
+          }
+        },
+        error => {
+          this.#report(error);
+          listener({
+            kind: 'error',
+            error: normalizeCareEventRemoteError(error),
+          });
+        },
+      );
+    } catch (error) {
+      this.#report(error);
+      listener({kind: 'error', error: normalizeCareEventRemoteError(error)});
+      return () => undefined;
+    }
+  }
+
+  async fetchLatest(
+    request: LatestCareEventRequest,
+  ): Promise<CareEvent | undefined> {
+    try {
+      validateLatestCareEventRequest(request);
+      const snapshot = await getDocsFromServer(this.#latestQuery(request));
+      return this.#decodeProjectionSnapshot(
+        snapshot.docs,
+        request,
+        event => event.kind === request.kind && event.deletedAt === undefined,
+      )[0];
+    } catch (error) {
+      if (error instanceof CareEventRemoteStoreError) {
+        throw error;
+      }
+      throw new CareEventRemoteStoreError(normalizeCareEventRemoteError(error));
+    }
+  }
+
+  observeLatest(
+    request: LatestCareEventRequest,
+    listener: (observation: LatestCareEventObservation) => void,
+  ): () => void {
+    let latestQuery: Query<DocumentData, DocumentData>;
+    try {
+      latestQuery = this.#latestQuery(request);
+    } catch (error) {
+      listener({kind: 'error', error: {code: 'invalid', cause: error}});
+      return () => undefined;
+    }
+    try {
+      return onSnapshot(
+        latestQuery,
+        {includeMetadataChanges: true},
+        snapshot => {
+          if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) {
+            return;
+          }
+          try {
+            const events = this.#decodeProjectionSnapshot(
+              snapshot.docs,
+              request,
+              event =>
+                event.kind === request.kind && event.deletedAt === undefined,
+            );
+            listener({kind: 'server_value', event: events[0]});
+          } catch (error) {
+            listener({kind: 'error', error: {code: 'invalid', cause: error}});
+          }
+        },
+        error => {
+          this.#report(error);
+          listener({
+            kind: 'error',
+            error: normalizeCareEventRemoteError(error),
+          });
+        },
+      );
+    } catch (error) {
+      this.#report(error);
+      listener({kind: 'error', error: normalizeCareEventRemoteError(error)});
+      return () => undefined;
+    }
+  }
+
+  async fetchActiveSleep(
+    scope: CareEventProjectionScope,
+  ): Promise<SleepEvent | undefined> {
+    try {
+      validateCareEventProjectionScope(scope);
+      const lockSnapshot = await getDocFromServer(
+        doc(this.#activeSleepCollection(scope.groupId), scope.babyId),
+      );
+      if (!lockSnapshot.exists()) {
+        return undefined;
+      }
+      let lock: ActiveSleepLock;
+      try {
+        lock = decodeActiveSleepLock(lockSnapshot.data(), scope);
+      } catch (error) {
+        throw this.#report(error);
+      }
+      const eventSnapshot = await getDocFromServer(
+        doc(this.#collection(scope.groupId), lock.eventId),
+      );
+      return this.#decodeActiveSleepEvent(eventSnapshot, scope, lock);
+    } catch (error) {
+      if (error instanceof CareEventRemoteStoreError) {
+        throw error;
+      }
+      throw new CareEventRemoteStoreError(normalizeCareEventRemoteError(error));
+    }
+  }
+
+  observeActiveSleep(
+    scope: CareEventProjectionScope,
+    listener: (observation: ActiveSleepObservation) => void,
+  ): () => void {
+    try {
+      validateCareEventProjectionScope(scope);
+    } catch (error) {
+      listener({kind: 'error', error: {code: 'invalid', cause: error}});
+      return () => undefined;
+    }
+
+    let active = true;
+    let epoch = 0;
+    let stopEvent: (() => void) | undefined;
+    const stopCurrentEvent = () => {
+      const stop = stopEvent;
+      stopEvent = undefined;
+      stop?.();
+    };
+    const lockReference = doc(
+      this.#activeSleepCollection(scope.groupId),
+      scope.babyId,
+    );
+    let stopLock: () => void;
+    try {
+      stopLock = onSnapshot(
+        lockReference,
+        {includeMetadataChanges: true},
+        lockSnapshot => {
+          if (
+            !active ||
+            lockSnapshot.metadata.fromCache ||
+            lockSnapshot.metadata.hasPendingWrites
+          ) {
+            return;
+          }
+          const eventEpoch = ++epoch;
+          stopCurrentEvent();
+          if (!lockSnapshot.exists()) {
+            listener({kind: 'server_value', event: undefined});
+            return;
+          }
+
+          let lock: ActiveSleepLock;
+          try {
+            lock = decodeActiveSleepLock(lockSnapshot.data(), scope);
+          } catch (error) {
+            const normalized = this.#report(error);
+            listener({
+              kind: 'error',
+              error: {code: 'invalid', cause: normalized},
+            });
+            return;
+          }
+
+          try {
+            stopEvent = onSnapshot(
+              doc(this.#collection(scope.groupId), lock.eventId),
+              {includeMetadataChanges: true},
+              eventSnapshot => {
+                if (
+                  !active ||
+                  eventEpoch !== epoch ||
+                  eventSnapshot.metadata.fromCache ||
+                  eventSnapshot.metadata.hasPendingWrites
+                ) {
+                  return;
+                }
+                try {
+                  listener({
+                    kind: 'server_value',
+                    event: this.#decodeActiveSleepEvent(
+                      eventSnapshot,
+                      scope,
+                      lock,
+                    ),
+                  });
+                } catch (error) {
+                  listener({
+                    kind: 'error',
+                    error: {code: 'invalid', cause: error},
+                  });
+                }
+              },
+              error => {
+                if (!active || eventEpoch !== epoch) {
+                  return;
+                }
+                this.#report(error);
+                listener({
+                  kind: 'error',
+                  error: normalizeCareEventRemoteError(error),
+                });
+              },
+            );
+          } catch (error) {
+            if (!active || eventEpoch !== epoch) {
+              return;
+            }
+            this.#report(error);
+            listener({
+              kind: 'error',
+              error: normalizeCareEventRemoteError(error),
+            });
+          }
+        },
+        error => {
+          if (!active) {
+            return;
+          }
+          ++epoch;
+          stopCurrentEvent();
+          this.#report(error);
+          listener({
+            kind: 'error',
+            error: normalizeCareEventRemoteError(error),
+          });
+        },
+      );
+    } catch (error) {
+      active = false;
+      this.#report(error);
+      listener({kind: 'error', error: normalizeCareEventRemoteError(error)});
+      return () => undefined;
+    }
+
+    return () => {
+      if (!active) {
+        return;
+      }
+      active = false;
+      ++epoch;
+      stopLock();
+      stopCurrentEvent();
+    };
   }
 
   async fetchPage(request: CareEventPageRequest): Promise<CareEventRemotePage> {
@@ -524,7 +962,10 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
       },
       error => {
         this.#report(error);
-        listener({kind: 'error', error: normalizeCareEventRemoteError(error)});
+        listener({
+          kind: 'error',
+          error: normalizeCareEventRemoteError(error),
+        });
       },
     );
   }
@@ -560,15 +1001,13 @@ export class FirebaseCareEventRemoteStore implements CareEventRemoteStorePort {
           return;
         }
         try {
-          listener(
-            {
-              kind: 'server_snapshot',
-              events: selectCareEventQueryResults(
-                snapshot.docs.map(item => this.#decode(item, criteria.groupId)),
-                criteria,
-              ),
-            },
-          );
+          listener({
+            kind: 'server_snapshot',
+            events: selectCareEventQueryResults(
+              snapshot.docs.map(item => this.#decode(item, criteria.groupId)),
+              criteria,
+            ),
+          });
         } catch (error) {
           // A poisoned or stale schema document must not silently lower
           // timeline/statistics totals by emitting a partial snapshot.

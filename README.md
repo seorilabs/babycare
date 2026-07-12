@@ -13,7 +13,7 @@
 | 모바일 개발 ID | Android/iOS `com.seorilabs.babycare.dev` |
 | 제품 이름·프로덕션 ID | `확정 필요` |
 
-현재 `apps/mobile`은 로컬 개발 세로 슬라이스다. 온보딩, 수유·기저귀·수면 기록, 수면 종료, 홈 요약, 타임라인, 기본 통계와 기기 로컬 저장을 확인할 수 있다. 계정, 그룹 초대, 실시간 공동 기록, 클라우드 복구는 Firebase adapter가 연결된 뒤 제공된다. `apps/ait`은 AppsInToss 정책 적합성과 영구 `appName`을 확정한 뒤 초기화한다.
+현재 `apps/mobile`의 기본 `App.tsx`는 로컬 개발 세로 슬라이스다. 온보딩, 수유·기저귀·수면 기록, 수면 종료, 홈 요약, 타임라인, 기본 통계와 기기 로컬 저장을 확인할 수 있다. 별도 인증 context factory에는 bounded timeline과 Home/Stats·active-sleep용 cloud projection 기반을 구현했지만, production Auth/group/baby UI root와 실제 Firebase project에는 아직 연결하지 않았다. `apps/ait`은 AppsInToss 정책 적합성과 영구 `appName`을 확정한 뒤 초기화한다.
 
 ## MVP
 
@@ -54,7 +54,7 @@ apps-in-toss/          # AppsInToss 등록·릴리스 원장
 scripts/               # 로컬/CI 품질 게이트
 ```
 
-`packages/product-core`는 React Native, Firebase, AppsInToss 또는 마켓 SDK를 import하지 않는다. `apps/mobile/src/app/container.ts`는 현재 로컬 preview를 조립한다. 별도의 인증 컨텍스트 factory는 user/group/baby scoped durable envelope, revision별 outbox, pending/failed/conflict 상태, Firestore transaction·mutation receipt, active-sleep singleton lock, server-only bounded timeline과 cache purge lifecycle을 조립한다. 실제 Firebase project와 로그인 제공자가 확정되기 전에는 이 cloud factory를 기본 실행 경로로 바꾸거나 local preview 데이터를 자동 이관하지 않는다. AppsInToss도 같은 port와 주입형 string storage 계약을 target 밖에서 구현한다. 자세한 경계는 [Clean Architecture](docs/03-architecture/clean-architecture.md)를 참고한다.
+`packages/product-core`는 React Native, Firebase, AppsInToss 또는 마켓 SDK를 import하지 않는다. `apps/mobile/src/app/container.ts`는 현재 로컬 preview를 조립한다. 별도의 인증 컨텍스트 factory는 user/group/baby scoped durable envelope v3, revision별 outbox, pending/failed/conflict 상태, Firestore transaction·mutation receipt, server-only bounded timeline과 독립 window/latest/active-sleep projection을 조립한다. timeline과 overview feed는 인증 scope마다 각각 단일 owner로 동작하고, overview/active coverage는 한 번의 atomic commit으로 교체된다. 실제 Firebase project와 로그인 제공자가 확정되기 전에는 이 cloud factory를 기본 실행 경로로 바꾸거나 local preview 데이터를 자동 이관하지 않는다. AppsInToss도 같은 port와 주입형 string storage 계약을 target 밖에서 구현한다. 자세한 경계는 [Clean Architecture](docs/03-architecture/clean-architecture.md)를 참고한다.
 
 ## 개발
 

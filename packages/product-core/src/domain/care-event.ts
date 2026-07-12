@@ -5,6 +5,8 @@ export type FeedingType = 'breast' | 'bottle_breastmilk' | 'formula' | 'solid';
 export type DiaperType = 'wet' | 'dirty' | 'mixed';
 export type SleepType = 'nap' | 'night';
 
+export const MAX_SLEEP_DURATION_MS = 48 * 60 * 60 * 1_000;
+
 interface CareEventBase {
   readonly id: EventId;
   readonly groupId: GroupId;
@@ -170,7 +172,10 @@ export function createCareEvent(
   if (input.endedAt !== undefined && input.endedAt > metadata.now) {
     throw new Error('Sleep endedAt must not be in the future');
   }
-  if (input.endedAt !== undefined && input.endedAt - input.startedAt > 48 * 60 * 60 * 1_000) {
+  if (
+    input.endedAt !== undefined &&
+    input.endedAt - input.startedAt > MAX_SLEEP_DURATION_MS
+  ) {
     throw new Error('Sleep session must not exceed 48 hours');
   }
 

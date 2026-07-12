@@ -6,7 +6,7 @@ import {
   userId,
 } from '@babycare/product-core';
 
-import {buildStatsBuckets} from '../src/screens/StatsScreen';
+import { buildStatsBuckets } from '../src/screens/StatsScreen';
 
 describe('buildStatsBuckets', () => {
   it('clips active sleep at the real current time in the rolling 12-hour range', () => {
@@ -20,7 +20,7 @@ describe('buildStatsBuckets', () => {
         sleepType: 'nap',
         startedAt: now - 3 * 60 * 60 * 1_000,
       },
-      {id: eventId('event-1'), now},
+      { id: eventId('event-1'), now },
     );
 
     const buckets = buildStatsBuckets([sleep], now, '12h');
@@ -33,5 +33,16 @@ describe('buildStatsBuckets', () => {
         0,
       ),
     ).toBe(3 * 60 * 60);
+  });
+
+  it('keeps the current calendar bucket empty at exact midnight', () => {
+    const now = new Date(2026, 6, 12, 0, 0, 0, 0).getTime();
+
+    const buckets = buildStatsBuckets([], now, '7d');
+
+    expect(buckets).toHaveLength(7);
+    expect(buckets.at(-1)?.from).toBe(now);
+    expect(buckets.at(-1)?.to).toBe(now);
+    expect(buckets.at(-1)?.summary.sleepDurationSeconds).toBe(0);
   });
 });

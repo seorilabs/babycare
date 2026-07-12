@@ -12,10 +12,14 @@ import {
   groupId,
   userId,
   type CareEvent,
+  type SleepEvent,
 } from '@babycare/product-core';
 
 import App from '../App';
-import {appContainer} from '../src/app/container';
+import {
+  appContainer,
+  selectVisibleCareEventOverview,
+} from '../src/app/container';
 import type {LocalSession} from '../src/app/session';
 import * as localTimelinePagination from '../src/app/use-local-timeline-pagination';
 import type {LocalTimelinePaginationState} from '../src/app/use-local-timeline-pagination';
@@ -41,9 +45,24 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+jest.setTimeout(15_000);
+
+const activeRenderers = new Set<ReactTestRenderer.ReactTestRenderer>();
+
 afterEach(() => {
+  for (const renderer of activeRenderers) {
+    ReactTestRenderer.act(() => renderer.unmount());
+  }
+  activeRenderers.clear();
   jest.restoreAllMocks();
 });
+
+function unmountRenderer(
+  renderer: ReactTestRenderer.ReactTestRenderer,
+): void {
+  ReactTestRenderer.act(() => renderer.unmount());
+  activeRenderers.delete(renderer);
+}
 
 function textOf(node: ReactTestRenderer.ReactTestInstance): string {
   return node
@@ -105,13 +124,20 @@ function careEvents(count: number): readonly CareEvent[] {
   );
 }
 
-function mockLoadedSession(events: readonly CareEvent[]): jest.Mock {
+function mockLoadedSession(
+  events: readonly CareEvent[],
+  activeSleep?: SleepEvent,
+  captureListener?: (
+    listener: Parameters<typeof appContainer.observeOverview>[1],
+  ) => void,
+): jest.Mock {
   const stopObserve = jest.fn();
   jest.spyOn(appContainer.sessionRepository, 'load').mockResolvedValue(session);
   jest
-    .spyOn(appContainer.repository, 'observe')
+    .spyOn(appContainer, 'observeOverview')
     .mockImplementation((_query, listener) => {
-      listener(events);
+      captureListener?.(listener);
+      listener({events, activeSleep});
       return stopObserve;
     });
   return stopObserve;
@@ -125,6 +151,7 @@ async function renderLoadedApp(): Promise<ReactTestRenderer.ReactTestRenderer> {
     await Promise.resolve();
     await Promise.resolve();
   });
+  activeRenderers.add(renderer);
   return renderer;
 }
 
@@ -159,7 +186,7 @@ test('connects local pagination through App and preserves its scoped tab state',
   expect(textOf(renderer.root)).toContain('모든 기록을 확인했어요');
   expect(events).toHaveLength(45);
 
-  ReactTestRenderer.act(() => renderer.unmount());
+  unmountRenderer(renderer);
   expect(stopObserve).toHaveBeenCalledTimes(1);
 });
 
@@ -209,6 +236,108 @@ test('maps an injected paging error and retry through App to TimelineScreen', as
     ),
   ).toHaveLength(0);
 
-  ReactTestRenderer.act(() => renderer.unmount());
+  unmountRenderer(renderer);
   expect(stopObserve).toHaveBeenCalledTimes(1);
+});
+
+test('uses the explicit active-sleep overview projection independently of the event list', async () => {
+  const activeSleep = createCareEvent(
+    {
+      groupId: groupId(session.groupId),
+      babyId: babyId(session.babyId),
+      caregiverId: userId(session.caregiverId),
+      kind: 'sleep',
+      sleepType: 'night',
+      startedAt: now - 60_000,
+    },
+    {id: eventId('app-active-sleep'), now},
+  ) as SleepEvent;
+  let emitOverview:
+    | Parameters<typeof appContainer.observeOverview>[1]
+    | undefined;
+  const stopObserve = mockLoadedSession([], activeSleep, listener => {
+    emitOverview = listener;
+  });
+
+  const renderer = await renderLoadedApp();
+
+  expect(textOf(renderer.root)).toContain('기상');
+  expect(textOf(renderer.root)).toContain('지금 종료');
+  unmountRenderer(renderer);
+  expect(stopObserve).toHaveBeenCalledTimes(1);
+  const staleSnapshot = {} as Parameters<
+    Parameters<typeof appContainer.observeOverview>[1]
+  >[0];
+  Object.defineProperty(staleSnapshot, 'events', {
+    get() {
+      throw new Error('stale overview snapshot was read after stop');
+    },
+  });
+  expect(() => emitOverview?.(staleSnapshot)).not.toThrow();
+});
+
+test('releases the underlying local overview listener exactly once', () => {
+  const underlyingStop = jest.fn();
+  jest
+    .spyOn(appContainer.repository, 'observe')
+    .mockImplementation((_query, listener) => {
+      listener([]);
+      return underlyingStop;
+    });
+  const listener = jest.fn();
+
+  const stop = appContainer.observeOverview(
+    {groupId: groupId(session.groupId), babyId: babyId(session.babyId)},
+    listener,
+  );
+  stop();
+  stop();
+
+  expect(listener).toHaveBeenCalledWith({
+    events: [],
+    activeSleep: undefined,
+  });
+  expect(underlyingStop).toHaveBeenCalledTimes(1);
+});
+
+test('drops a resolved delete marker without suppressing a later active sleep', () => {
+  const deleted = createCareEvent(
+    {
+      groupId: groupId(session.groupId),
+      babyId: babyId(session.babyId),
+      caregiverId: userId(session.caregiverId),
+      kind: 'sleep',
+      sleepType: 'night',
+      startedAt: now - 120_000,
+    },
+    {id: eventId('deleted-active-sleep'), now},
+  ) as SleepEvent;
+  const replacement = createCareEvent(
+    {
+      groupId: groupId(session.groupId),
+      babyId: babyId(session.babyId),
+      caregiverId: userId(session.caregiverId),
+      kind: 'sleep',
+      sleepType: 'night',
+      startedAt: now - 60_000,
+    },
+    {id: eventId('replacement-active-sleep'), now},
+  ) as SleepEvent;
+  const pendingDeletedIds = new Set<string>([deleted.id]);
+
+  expect(
+    selectVisibleCareEventOverview(
+      {events: [deleted], activeSleep: deleted},
+      pendingDeletedIds,
+    ),
+  ).toEqual({events: [], activeSleep: undefined});
+  expect(pendingDeletedIds.has(deleted.id)).toBe(true);
+
+  expect(
+    selectVisibleCareEventOverview(
+      {events: [replacement], activeSleep: replacement},
+      pendingDeletedIds,
+    ),
+  ).toEqual({events: [replacement], activeSleep: replacement});
+  expect(pendingDeletedIds.has(deleted.id)).toBe(false);
 });

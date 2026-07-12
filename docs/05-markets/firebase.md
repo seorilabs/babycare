@@ -156,12 +156,12 @@ auditLogs/{auditId}                  # server-only actor/action audit
 
 - `FirebaseAuthAdapter`: RNFirebase Auth 상태·anonymous sign-in transport와 `reload`+강제 ID-token refresh 검증. anonymous를 production provider로 승인한 것은 아니다.
 - `FirebaseCareGroupRepository`, `FirebaseBabyRepository`: group/membership/baby 문서와 atomic owner setup. 권한 오류 뒤 membership 재확인은 server-only query를 사용한다.
-- `FirebaseCareEventRemoteStore`: server-confirmed realtime listener, strict path/schema decoder, revision transaction·payload receipt·active-sleep lock transport.
+- `FirebaseCareEventRemoteStore`: strict path/schema decoder, revision transaction·payload receipt·active-sleep lock transport와 `CareEventProjectionRemotePort`의 server-only window/latest/active singleton fetch·observe.
 - `FirebaseInviteService`: `createInvite`/`acceptInvite` callable과 응답 actor/path 검증.
 
-현재 `apps/mobile/src/app/container.ts`는 AsyncStorage 기반 local adapter를 사용한다. Firebase client config, production Auth provider와 app-level session/group 흐름이 확정되기 전에는 위 코드가 실제 화면의 cloud data path가 아니다.
+현재 기본 `apps/mobile/src/app/container.ts`와 `App.tsx`는 AsyncStorage 기반 local adapter를 사용한다. 별도 인증 cloud factory는 timeline과 overview projection owner를 각각 하나씩 만들지만, Firebase client config, production Auth provider와 app-level session/group/baby UI 흐름이 확정되기 전에는 위 코드가 실제 화면의 cloud data path가 아니다.
 
-`FirebaseCareEventRemoteStore.push`는 server acknowledgement까지 기다리는 원격 계약이다. 이를 `CareEventRepositoryPort` 대신 화면 use case에 직접 주입하면 offline 저장 UI가 완료되지 않을 수 있으므로 금지한다. `care-event-container.ts`는 `packages/product-data`의 scoped durable envelope/outbox에 먼저 저장하고 remote mutation을 revision 순서로 drain하며 pending/failed/conflict 상태를 노출한다. 실제 Firebase project/Auth session/navigation에는 아직 연결하지 않았다.
+`FirebaseCareEventRemoteStore.push`는 server acknowledgement까지 기다리는 원격 계약이다. 이를 `CareEventRepositoryPort` 대신 화면 use case에 직접 주입하면 offline 저장 UI가 완료되지 않을 수 있으므로 금지한다. `care-event-container.ts`는 `packages/product-data`의 scoped durable envelope/outbox에 먼저 저장하고 remote mutation을 revision 순서로 drain하며 pending/failed/conflict 상태를 노출한다. `CareEventOverviewFeed`는 server-confirmed 기간 window, 종류별 latest와 `activeSleeps/{babyId}`→event singleton을 결합해 envelope v3의 named overview/active coverage를 atomic 교체한다. 실제 Firebase project/Auth session/navigation에는 아직 연결하지 않았다.
 
 ## Invite Callable Contract
 
@@ -206,12 +206,14 @@ sequenceDiagram
 
 ## Indexes
 
-`firebase/firestore.indexes.json`에 다음 그룹별 타임라인 query를 둔다.
+`firebase/firestore.indexes.json`에 다음 그룹별 timeline·overview query를 둔다.
 
 - `events`: `babyId ASC, occurredAt DESC` (raw bounded timeline; document ID tie-break는 implicit ordering)
-- `events`: `babyId ASC, kind ASC, occurredAt DESC`
-- `events`: `babyId ASC, isDeleted ASC, occurredAt DESC`
-- `events`: `babyId ASC, isDeleted ASC, kind ASC, occurredAt DESC`
+- `events`: `babyId ASC, kind ASC, occurredAt DESC` (종류별 window)
+- `events`: `babyId ASC, isDeleted ASC, occurredAt DESC` (legacy/filtered event query)
+- `events`: `babyId ASC, isDeleted ASC, kind ASC, occurredAt DESC` (종류별 latest)
+
+local adapter/Jest가 query shape와 server-confirmed filtering을 검증하지만 실제 project에서 index build, listener 재연결과 read 비용을 확인하기 전에는 통합 완료가 아니다.
 
 ## Rules와 Emulator 검증
 

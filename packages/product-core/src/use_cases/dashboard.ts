@@ -1,4 +1,9 @@
-import type { CareEvent, CareEventKind } from '../domain/care-event.ts';
+import {
+  MAX_SLEEP_DURATION_MS,
+  type CareEvent,
+  type CareEventKind,
+} from '../domain/care-event.ts';
+import {compareCareEventNewestFirst} from '../ports/care-event-timeline.ts';
 
 export interface DashboardSummary {
   readonly latest: Readonly<Partial<Record<CareEventKind, CareEvent>>>;
@@ -21,7 +26,7 @@ export function buildDashboardSummary(
   const active = events
     .filter((event) => event.deletedAt === undefined)
     .slice()
-    .sort((left, right) => right.occurredAt - left.occurredAt);
+    .sort(compareCareEventNewestFirst);
   const latest: Partial<Record<CareEventKind, CareEvent>> = {};
   for (const event of active) {
     latest[event.kind] ??= event;
@@ -43,7 +48,9 @@ export function buildDashboardSummary(
     if (event.kind !== 'sleep') {
       continue;
     }
-    const endedAt = Math.min(event.endedAt ?? now, range.to);
+    const effectiveEndedAt =
+      event.endedAt ?? Math.min(now, event.startedAt + MAX_SLEEP_DURATION_MS);
+    const endedAt = Math.min(effectiveEndedAt, range.to);
     const startedAt = Math.max(event.startedAt, range.from);
     sleepDurationSeconds += Math.max(0, endedAt - startedAt) / 1_000;
   }

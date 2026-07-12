@@ -7,6 +7,7 @@ import {
   createCareEvent,
   eventId,
   groupId,
+  MAX_SLEEP_DURATION_MS,
   userId,
 } from '../src/index.ts';
 
@@ -72,6 +73,62 @@ describe('buildDashboardSummary', () => {
     const summary = buildDashboardSummary([sleep], { from: 0, to: 100_000 }, 40_000);
 
     assert.equal(summary.sleepDurationSeconds, 30);
+  });
+
+  it('caps a stale active sleep session at the domain maximum', () => {
+    const startedAt = 10_000;
+    const sleep = createCareEvent(
+      {
+        ...base,
+        kind: 'sleep',
+        sleepType: 'night',
+        startedAt,
+      },
+      {id: eventId('stale-active-sleep'), now: startedAt},
+    );
+    const now = startedAt + MAX_SLEEP_DURATION_MS + 24 * 60 * 60 * 1_000;
+
+    const summary = buildDashboardSummary(
+      [sleep],
+      {from: startedAt, to: now},
+      now,
+    );
+
+    assert.equal(
+      summary.sleepDurationSeconds,
+      MAX_SLEEP_DURATION_MS / 1_000,
+    );
+  });
+
+  it('uses the canonical document ID tie-break for equally timed latest events', () => {
+    const first = createCareEvent(
+      {
+        ...base,
+        kind: 'feeding',
+        feedingType: 'formula',
+        volumeMl: 90,
+        occurredAt: 10_000,
+      },
+      {id: eventId('feed-a'), now: 10_000},
+    );
+    const second = createCareEvent(
+      {
+        ...base,
+        kind: 'feeding',
+        feedingType: 'formula',
+        volumeMl: 100,
+        occurredAt: 10_000,
+      },
+      {id: eventId('feed-b'), now: 10_000},
+    );
+
+    const summary = buildDashboardSummary(
+      [first, second],
+      {from: 0, to: 20_000},
+      20_000,
+    );
+
+    assert.equal(summary.latest.feeding?.id, eventId('feed-b'));
   });
 
   it('attributes the overlapping part of a prior sleep to the range', () => {

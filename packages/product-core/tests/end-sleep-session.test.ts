@@ -7,6 +7,7 @@ import {
   createEndSleepSession,
   eventId,
   groupId,
+  MAX_SLEEP_DURATION_MS,
   userId,
   type BabyCareAnalyticsEvent,
 } from '../src/index.ts';
@@ -55,13 +56,13 @@ it('recovers a stale sleep session by capping it at 48 hours', async () => {
   const repository = new InMemoryCareEventRepository([active]);
   const endSleep = createEndSleepSession({
     repository,
-    clock: {now: () => startedAt + 48 * 60 * 60 * 1_000 + 1},
+    clock: {now: () => startedAt + MAX_SLEEP_DURATION_MS + 1},
     analytics: {track: async () => undefined},
   });
 
   const ended = await endSleep({groupId: active.groupId, eventId: active.id});
-  assert.equal(ended.endedAt, startedAt + 48 * 60 * 60 * 1_000);
-  assert.equal(ended.updatedAt, startedAt + 48 * 60 * 60 * 1_000 + 1);
+  assert.equal(ended.endedAt, startedAt + MAX_SLEEP_DURATION_MS);
+  assert.equal(ended.updatedAt, startedAt + MAX_SLEEP_DURATION_MS + 1);
 });
 
 it('refuses to end sleep when the system clock moved behind the last update', async () => {

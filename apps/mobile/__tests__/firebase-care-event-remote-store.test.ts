@@ -1,5 +1,6 @@
 import {
   documentId,
+  getDocFromServer,
   getDocsFromServer,
   limit as limitQuery,
   onSnapshot,
@@ -33,7 +34,10 @@ const mockWrites: {
   data?: StoredDocument;
 }[] = [];
 
-function mockReferencePath(parent: unknown, segments: readonly string[]): string {
+function mockReferencePath(
+  parent: unknown,
+  segments: readonly string[],
+): string {
   const base =
     parent && typeof parent === 'object' && 'path' in parent
       ? String(parent.path)
@@ -68,7 +72,7 @@ jest.mock('@react-native-firebase/firestore', () => ({
   doc: (parent: unknown, ...segments: string[]) => ({
     path: mockReferencePath(parent, segments),
   }),
-  getDoc: jest.fn(),
+  getDocFromServer: jest.fn(),
   getDocs: jest.fn(),
   getDocsFromServer: jest.fn(),
   limit: jest.fn(value => ({kind: 'limit', value})),
@@ -118,7 +122,12 @@ function diaperAt(
     {id: eventId(id), now: occurredAt + 1_000},
   ) as Extract<CareEvent, {kind: 'diaper'}>;
   return deleted
-    ? {...event, deletedAt: occurredAt + 2_000, updatedAt: occurredAt + 2_000, revision: 2}
+    ? {
+        ...event,
+        deletedAt: occurredAt + 2_000,
+        updatedAt: occurredAt + 2_000,
+        revision: 2,
+      }
     : event;
 }
 
@@ -129,11 +138,59 @@ function queryDocument(event: CareEvent) {
   };
 }
 
+function documentSnapshot(
+  id: string,
+  data: StoredDocument | undefined,
+  metadata = {fromCache: false, hasPendingWrites: false},
+) {
+  return {
+    id,
+    exists: () => data !== undefined,
+    data: () => data,
+    metadata,
+  };
+}
+
 function sleep(id: string): Extract<CareEvent, {kind: 'sleep'}> {
   return createCareEvent(
     {...ids, kind: 'sleep', sleepType: 'night', startedAt: 1_000},
     {id: eventId(id), now: 2_000},
   ) as Extract<CareEvent, {kind: 'sleep'}>;
+}
+
+function activeSleepLock(
+  event: Extract<CareEvent, {kind: 'sleep'}>,
+  overrides: Partial<StoredDocument> = {},
+): StoredDocument {
+  return {
+    groupId: event.groupId,
+    babyId: event.babyId,
+    eventId: event.id,
+    caregiverId: event.caregiverId,
+    startedAt: event.startedAt,
+    createdAt: event.createdAt,
+    ...overrides,
+  };
+}
+
+function observedSnapshotCall(path: string) {
+  const onSnapshotMock = onSnapshot as jest.MockedFunction<typeof onSnapshot>;
+  for (
+    let index = onSnapshotMock.mock.calls.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const reference = onSnapshotMock.mock.calls[index]?.[0] as
+      | {readonly path?: string}
+      | undefined;
+    if (reference?.path === path) {
+      return {
+        call: onSnapshotMock.mock.calls[index]!,
+        stop: onSnapshotMock.mock.results[index]?.value as jest.Mock,
+      };
+    }
+  }
+  throw new Error(`Missing onSnapshot call for ${path}`);
 }
 
 function mutation(
@@ -166,14 +223,18 @@ describe('Firebase care event remote transaction', () => {
 
   it('atomically writes a new event and its deterministic receipt', async () => {
     const event = diaper();
-    await expect(remoteStore().push(mutation(event, 'create'))).resolves.toEqual({
+    await expect(
+      remoteStore().push(mutation(event, 'create')),
+    ).resolves.toEqual({
       kind: 'applied',
       remote: event,
     });
 
     expect(mockWrites.map(write => write.path)).toEqual([
       `groups/${ids.groupId}/events/${event.id}`,
-      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(event)}`,
+      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(
+        event,
+      )}`,
     ]);
     expect(mockWrites[0]?.data).toMatchObject({
       lastMutationId: careEventMutationId(event),
@@ -198,7 +259,9 @@ describe('Firebase care event remote transaction', () => {
       }),
     );
     mockDocuments.set(
-      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(first)}`,
+      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(
+        first,
+      )}`,
       {
         id: careEventMutationId(first),
         groupId: ids.groupId,
@@ -216,7 +279,9 @@ describe('Firebase care event remote transaction', () => {
       },
     );
 
-    await expect(remoteStore().push(mutation(first, 'create'))).resolves.toEqual({
+    await expect(
+      remoteStore().push(mutation(first, 'create')),
+    ).resolves.toEqual({
       kind: 'already_applied',
       remote: later,
     });
@@ -234,7 +299,9 @@ describe('Firebase care event remote transaction', () => {
       encodeCareEventDocument(divergent),
     );
     mockDocuments.set(
-      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(local)}`,
+      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(
+        local,
+      )}`,
       {
         id: careEventMutationId(local),
         groupId: ids.groupId,
@@ -252,9 +319,9 @@ describe('Firebase care event remote transaction', () => {
       },
     );
 
-    await expect(remoteStore().push(mutation(local, 'create'))).resolves.toEqual(
-      {kind: 'revision_conflict', remote: divergent},
-    );
+    await expect(
+      remoteStore().push(mutation(local, 'create')),
+    ).resolves.toEqual({kind: 'revision_conflict', remote: divergent});
     expect(mockWrites).toEqual([]);
   });
 
@@ -265,7 +332,9 @@ describe('Firebase care event remote transaction', () => {
       encodeCareEventDocument(event),
     );
     mockDocuments.set(
-      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(event)}`,
+      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(
+        event,
+      )}`,
       {
         id: careEventMutationId(event),
         groupId: ids.groupId,
@@ -283,9 +352,9 @@ describe('Firebase care event remote transaction', () => {
       },
     );
 
-    await expect(remoteStore().push(mutation(event, 'create'))).rejects.toMatchObject(
-      {remoteError: {code: 'invalid'}},
-    );
+    await expect(
+      remoteStore().push(mutation(event, 'create')),
+    ).rejects.toMatchObject({remoteError: {code: 'invalid'}});
     expect(mockWrites).toEqual([]);
   });
 
@@ -296,7 +365,9 @@ describe('Firebase care event remote transaction', () => {
       encodeCareEventDocument(event),
     );
 
-    await expect(remoteStore().push(mutation(event, 'create'))).resolves.toEqual({
+    await expect(
+      remoteStore().push(mutation(event, 'create')),
+    ).resolves.toEqual({
       kind: 'revision_conflict',
       remote: event,
     });
@@ -310,7 +381,9 @@ describe('Firebase care event remote transaction', () => {
     expect(mockWrites.map(write => write.path)).toEqual([
       `groups/${ids.groupId}/events/${event.id}`,
       `groups/${ids.groupId}/activeSleeps/${ids.babyId}`,
-      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(event)}`,
+      `groups/${ids.groupId}/eventMutationReceipts/${careEventMutationId(
+        event,
+      )}`,
     ]);
   });
 
@@ -321,19 +394,18 @@ describe('Firebase care event remote transaction', () => {
       `groups/${ids.groupId}/events/${server.id}`,
       encodeCareEventDocument(server),
     );
-    mockDocuments.set(
-      `groups/${ids.groupId}/activeSleeps/${ids.babyId}`,
-      {
-        groupId: ids.groupId,
-        babyId: ids.babyId,
-        eventId: server.id,
-        caregiverId: server.caregiverId,
-        startedAt: server.startedAt,
-        createdAt: server.createdAt,
-      },
-    );
+    mockDocuments.set(`groups/${ids.groupId}/activeSleeps/${ids.babyId}`, {
+      groupId: ids.groupId,
+      babyId: ids.babyId,
+      eventId: server.id,
+      caregiverId: server.caregiverId,
+      startedAt: server.startedAt,
+      createdAt: server.createdAt,
+    });
 
-    await expect(remoteStore().push(mutation(local, 'create'))).resolves.toEqual({
+    await expect(
+      remoteStore().push(mutation(local, 'create')),
+    ).resolves.toEqual({
       kind: 'active_sleep_conflict',
       remoteActiveSleep: server,
     });
@@ -352,17 +424,14 @@ describe('Firebase care event remote transaction', () => {
       `groups/${ids.groupId}/events/${started.id}`,
       encodeCareEventDocument(started),
     );
-    mockDocuments.set(
-      `groups/${ids.groupId}/activeSleeps/${ids.babyId}`,
-      {
-        groupId: ids.groupId,
-        babyId: ids.babyId,
-        eventId: started.id,
-        caregiverId: started.caregiverId,
-        startedAt: started.startedAt,
-        createdAt: started.createdAt,
-      },
-    );
+    mockDocuments.set(`groups/${ids.groupId}/activeSleeps/${ids.babyId}`, {
+      groupId: ids.groupId,
+      babyId: ids.babyId,
+      eventId: started.id,
+      caregiverId: started.caregiverId,
+      startedAt: started.startedAt,
+      createdAt: started.createdAt,
+    });
 
     await remoteStore().push(mutation(ended, 'end_sleep'));
 
@@ -458,9 +527,8 @@ describe('Firebase care event remote transaction', () => {
     const first = diaperAt('event-z', 4_000);
     const lookahead = diaperAt('event-y', 4_000);
     const observations: unknown[] = [];
-    remoteStore().observePage(
-      {...ids, pageSize: 1},
-      observation => observations.push(observation),
+    remoteStore().observePage({...ids, pageSize: 1}, observation =>
+      observations.push(observation),
     );
     const onSnapshotMock = onSnapshot as jest.MockedFunction<typeof onSnapshot>;
     const call = onSnapshotMock.mock.calls.at(-1)!;
@@ -548,14 +616,491 @@ describe('Firebase care event remote transaction', () => {
         },
       ],
     });
-    expect(observations).toEqual([
-      {kind: 'server_snapshot', events: [event]},
-    ]);
+    expect(observations).toEqual([{kind: 'server_snapshot', events: [event]}]);
 
     onError({code: 'firestore/permission-denied'});
     expect(observations.at(-1)).toMatchObject({
       kind: 'error',
       error: {code: 'permission_denied'},
+    });
+  });
+
+  it('fetches a raw server window in stable order including tombstones', async () => {
+    const newest = diaperAt('window-z', 4_000);
+    const deleted = diaperAt('window-y', 4_000, true);
+    const getDocsFromServerMock = getDocsFromServer as jest.Mock;
+    getDocsFromServerMock.mockResolvedValue({
+      docs: [queryDocument(newest), queryDocument(deleted)],
+    });
+
+    await expect(
+      remoteStore().fetchWindow({
+        ...ids,
+        from: 1_000,
+        to: 5_000,
+        kinds: ['diaper'],
+      }),
+    ).resolves.toEqual([newest, deleted]);
+
+    expect(getDocsFromServerMock).toHaveBeenCalledTimes(1);
+    expect(where).toHaveBeenNthCalledWith(1, 'babyId', '==', ids.babyId);
+    expect(where).toHaveBeenNthCalledWith(2, 'occurredAt', '>=', 1_000);
+    expect(where).toHaveBeenNthCalledWith(3, 'occurredAt', '<', 5_000);
+    expect(where).toHaveBeenNthCalledWith(4, 'kind', '==', 'diaper');
+    expect(where).not.toHaveBeenCalledWith('isDeleted', '==', false);
+    expect(orderBy).toHaveBeenNthCalledWith(1, 'occurredAt', 'desc');
+    expect(orderBy).toHaveBeenNthCalledWith(2, '__name__', 'desc');
+  });
+
+  it('short-circuits an explicitly empty projection kind set', async () => {
+    const observations: unknown[] = [];
+
+    await expect(
+      remoteStore().fetchWindow({...ids, from: 1_000, kinds: []}),
+    ).resolves.toEqual([]);
+    remoteStore().observeWindow(
+      {...ids, from: 1_000, kinds: []},
+      observation => observations.push(observation),
+    );
+
+    expect(observations).toEqual([{kind: 'server_value', events: []}]);
+    expect(getDocsFromServer).not.toHaveBeenCalled();
+    expect(onSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('fetches the latest nondeleted event through the indexed server query', async () => {
+    const latest = diaperAt('latest-z', 4_000);
+    const getDocsFromServerMock = getDocsFromServer as jest.Mock;
+    getDocsFromServerMock
+      .mockResolvedValueOnce({docs: [queryDocument(latest)]})
+      .mockResolvedValueOnce({docs: []});
+
+    await expect(
+      remoteStore().fetchLatest({...ids, kind: 'diaper'}),
+    ).resolves.toEqual(latest);
+    await expect(
+      remoteStore().fetchLatest({...ids, kind: 'sleep'}),
+    ).resolves.toBeUndefined();
+
+    expect(where).toHaveBeenNthCalledWith(1, 'babyId', '==', ids.babyId);
+    expect(where).toHaveBeenNthCalledWith(2, 'isDeleted', '==', false);
+    expect(where).toHaveBeenNthCalledWith(3, 'kind', '==', 'diaper');
+    expect(orderBy).toHaveBeenNthCalledWith(1, 'occurredAt', 'desc');
+    expect(orderBy).toHaveBeenNthCalledWith(2, '__name__', 'desc');
+    expect(limitQuery).toHaveBeenNthCalledWith(1, 1);
+  });
+
+  it('rejects an entire poisoned or non-strict projection snapshot', async () => {
+    const valid = diaperAt('projection-valid', 4_000);
+    const older = diaperAt('projection-older', 3_000);
+    const getDocsFromServerMock = getDocsFromServer as jest.Mock;
+    const onDecodeError = jest.fn();
+    getDocsFromServerMock
+      .mockResolvedValueOnce({
+        docs: [
+          queryDocument(valid),
+          {id: 'projection-poisoned', data: () => ({kind: 'diaper'})},
+        ],
+      })
+      .mockResolvedValueOnce({
+        docs: [queryDocument(older), queryDocument(valid)],
+      });
+
+    await expect(
+      remoteStore(onDecodeError).fetchWindow({...ids, from: 1_000}),
+    ).rejects.toMatchObject({remoteError: {code: 'invalid'}});
+    await expect(
+      remoteStore(onDecodeError).fetchWindow({...ids, from: 1_000}),
+    ).rejects.toMatchObject({remoteError: {code: 'invalid'}});
+    expect(onDecodeError).toHaveBeenCalledTimes(2);
+  });
+
+  it('observes only server-confirmed window and latest projection values', () => {
+    const first = diaperAt('observe-z', 4_000);
+    const deleted = diaperAt('observe-y', 4_000, true);
+    const windowValues: unknown[] = [];
+    remoteStore().observeWindow({...ids, from: 1_000}, observation =>
+      windowValues.push(observation),
+    );
+    const onSnapshotMock = onSnapshot as jest.MockedFunction<typeof onSnapshot>;
+    const windowCall = onSnapshotMock.mock.calls.at(-1)!;
+    const nextWindow = windowCall[2] as (snapshot: unknown) => void;
+    const windowDocs = [queryDocument(first), queryDocument(deleted)];
+
+    nextWindow({
+      metadata: {fromCache: true, hasPendingWrites: false},
+      docs: windowDocs,
+    });
+    nextWindow({
+      metadata: {fromCache: false, hasPendingWrites: true},
+      docs: windowDocs,
+    });
+    expect(windowValues).toEqual([]);
+    nextWindow({
+      metadata: {fromCache: false, hasPendingWrites: false},
+      docs: windowDocs,
+    });
+    expect(windowValues).toEqual([
+      {kind: 'server_value', events: [first, deleted]},
+    ]);
+
+    const latestValues: unknown[] = [];
+    remoteStore().observeLatest({...ids, kind: 'diaper'}, observation =>
+      latestValues.push(observation),
+    );
+    const latestCall = onSnapshotMock.mock.calls.at(-1)!;
+    const nextLatest = latestCall[2] as (snapshot: unknown) => void;
+    nextLatest({
+      metadata: {fromCache: true, hasPendingWrites: false},
+      docs: [queryDocument(first)],
+    });
+    nextLatest({
+      metadata: {fromCache: false, hasPendingWrites: true},
+      docs: [queryDocument(first)],
+    });
+    expect(latestValues).toEqual([]);
+    nextLatest({
+      metadata: {fromCache: false, hasPendingWrites: false},
+      docs: [queryDocument(first)],
+    });
+    expect(latestValues).toEqual([{kind: 'server_value', event: first}]);
+  });
+
+  it('reports synchronous window and latest listener registration failures as typed observations', () => {
+    const onSnapshotMock = onSnapshot as jest.Mock;
+    const onDecodeError = jest.fn();
+    const store = remoteStore(onDecodeError);
+    const windowValues: unknown[] = [];
+    onSnapshotMock.mockImplementationOnce(() => {
+      throw {code: 'firestore/permission-denied'};
+    });
+
+    const stopWindow = store.observeWindow(
+      {...ids, from: 1_000},
+      observation => windowValues.push(observation),
+    );
+    expect(windowValues).toEqual([
+      {
+        kind: 'error',
+        error: expect.objectContaining({code: 'permission_denied'}),
+      },
+    ]);
+    expect(stopWindow).not.toThrow();
+
+    const latestValues: unknown[] = [];
+    onSnapshotMock.mockImplementationOnce(() => {
+      throw {code: 'firestore/unavailable'};
+    });
+    const stopLatest = store.observeLatest(
+      {...ids, kind: 'diaper'},
+      observation => latestValues.push(observation),
+    );
+    expect(latestValues).toEqual([
+      {
+        kind: 'error',
+        error: expect.objectContaining({code: 'retryable'}),
+      },
+    ]);
+    expect(stopLatest).not.toThrow();
+    expect(onDecodeError).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses the authoritative server document source for findById', async () => {
+    const event = diaper();
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    getDocFromServerMock.mockResolvedValue(
+      documentSnapshot(event.id, encodeCareEventDocument(event)),
+    );
+
+    await expect(
+      remoteStore().findById(ids.groupId, event.id),
+    ).resolves.toEqual(event);
+    expect(getDocFromServerMock).toHaveBeenCalledWith({
+      path: `groups/${ids.groupId}/events/${event.id}`,
+    });
+  });
+
+  it('preserves typed authorization errors from exact event reads', async () => {
+    const event = diaper();
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    getDocFromServerMock.mockRejectedValueOnce({
+      code: 'firestore/permission-denied',
+    });
+
+    await expect(
+      remoteStore().findById(ids.groupId, event.id),
+    ).rejects.toMatchObject({remoteError: {code: 'permission_denied'}});
+  });
+
+  it('fetches a present active sleep through its exact singleton lock', async () => {
+    const event = sleep('active-present');
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    getDocFromServerMock
+      .mockResolvedValueOnce(
+        documentSnapshot(ids.babyId, activeSleepLock(event)),
+      )
+      .mockResolvedValueOnce(
+        documentSnapshot(event.id, encodeCareEventDocument(event)),
+      );
+
+    await expect(remoteStore().fetchActiveSleep(ids)).resolves.toEqual(event);
+    expect(
+      getDocFromServerMock.mock.calls.map(([reference]) => reference.path),
+    ).toEqual([
+      `groups/${ids.groupId}/activeSleeps/${ids.babyId}`,
+      `groups/${ids.groupId}/events/${event.id}`,
+    ]);
+  });
+
+  it('returns none only when the server active-sleep lock is absent', async () => {
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    getDocFromServerMock.mockResolvedValue(
+      documentSnapshot(ids.babyId, undefined),
+    );
+
+    await expect(remoteStore().fetchActiveSleep(ids)).resolves.toBeUndefined();
+    expect(getDocFromServerMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('observes none only from a server-confirmed absent active-sleep lock', () => {
+    const observations: unknown[] = [];
+    const stop = remoteStore().observeActiveSleep(
+      ids,
+      observation => observations.push(observation),
+    );
+    const lockListener = observedSnapshotCall(
+      `groups/${ids.groupId}/activeSleeps/${ids.babyId}`,
+    );
+    const nextLock = lockListener.call[2] as (snapshot: unknown) => void;
+
+    nextLock(
+      documentSnapshot(ids.babyId, undefined, {
+        fromCache: true,
+        hasPendingWrites: false,
+      }),
+    );
+    expect(observations).toEqual([]);
+    nextLock(documentSnapshot(ids.babyId, undefined));
+    expect(observations).toEqual([
+      {kind: 'server_value', event: undefined},
+    ]);
+
+    stop();
+    expect(lockListener.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects every active-sleep lock identity mismatch', async () => {
+    const event = sleep('active-mismatch');
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    const mismatchedEvents: readonly CareEvent[] = [
+      {...event, groupId: groupId('other-group')},
+      {...event, babyId: babyId('other-baby')},
+      {...event, caregiverId: userId('other-user')},
+      {...event, occurredAt: 1_500, startedAt: 1_500},
+      {...event, createdAt: 2_500, updatedAt: 2_500},
+    ];
+
+    for (const mismatched of mismatchedEvents) {
+      getDocFromServerMock
+        .mockResolvedValueOnce(
+          documentSnapshot(ids.babyId, activeSleepLock(event)),
+        )
+        .mockResolvedValueOnce(
+          documentSnapshot(
+            mismatched.id,
+            encodeCareEventDocument(mismatched),
+          ),
+        );
+
+      await expect(remoteStore().fetchActiveSleep(ids)).rejects.toMatchObject({
+        remoteError: {code: 'invalid'},
+      });
+    }
+  });
+
+  it('rejects a missing active-sleep event instead of returning none', async () => {
+    const event = sleep('active-missing');
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    getDocFromServerMock
+      .mockResolvedValueOnce(
+        documentSnapshot(ids.babyId, activeSleepLock(event)),
+      )
+      .mockResolvedValueOnce(documentSnapshot(event.id, undefined));
+
+    await expect(remoteStore().fetchActiveSleep(ids)).rejects.toMatchObject({
+      remoteError: {code: 'invalid'},
+    });
+  });
+
+  it('rejects an inactive event referenced by an active-sleep lock', async () => {
+    const started = sleep('active-ended');
+    const ended = {
+      ...started,
+      endedAt: 3_000,
+      updatedAt: 3_000,
+      revision: 2,
+    } satisfies CareEvent;
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    getDocFromServerMock
+      .mockResolvedValueOnce(
+        documentSnapshot(ids.babyId, activeSleepLock(started)),
+      )
+      .mockResolvedValueOnce(
+        documentSnapshot(ended.id, encodeCareEventDocument(ended)),
+      );
+
+    await expect(remoteStore().fetchActiveSleep(ids)).rejects.toMatchObject({
+      remoteError: {code: 'invalid'},
+    });
+  });
+
+  it('rejects a soft-deleted event referenced by an active-sleep lock', async () => {
+    const started = sleep('active-deleted');
+    const deleted = {
+      ...started,
+      deletedAt: 3_000,
+      updatedAt: 3_000,
+      revision: 2,
+    } satisfies CareEvent;
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    getDocFromServerMock
+      .mockResolvedValueOnce(
+        documentSnapshot(ids.babyId, activeSleepLock(started)),
+      )
+      .mockResolvedValueOnce(
+        documentSnapshot(deleted.id, encodeCareEventDocument(deleted)),
+      );
+
+    await expect(remoteStore().fetchActiveSleep(ids)).rejects.toMatchObject({
+      remoteError: {code: 'invalid'},
+    });
+  });
+
+  it('keeps active-sleep cache and pending snapshots out of server state', () => {
+    const event = sleep('active-observed');
+    const revised = {
+      ...event,
+      note: 'revision two',
+      revision: 2,
+      updatedAt: 2_500,
+    } satisfies CareEvent;
+    const observations: unknown[] = [];
+    const stop = remoteStore().observeActiveSleep(ids, observation =>
+      observations.push(observation),
+    );
+    const lockPath = `groups/${ids.groupId}/activeSleeps/${ids.babyId}`;
+    const lockListener = observedSnapshotCall(lockPath);
+    const nextLock = lockListener.call[2] as (snapshot: unknown) => void;
+
+    nextLock(
+      documentSnapshot(ids.babyId, activeSleepLock(event), {
+        fromCache: true,
+        hasPendingWrites: false,
+      }),
+    );
+    nextLock(
+      documentSnapshot(ids.babyId, activeSleepLock(event), {
+        fromCache: false,
+        hasPendingWrites: true,
+      }),
+    );
+    expect(onSnapshot).toHaveBeenCalledTimes(1);
+    expect(observations).toEqual([]);
+
+    nextLock(documentSnapshot(ids.babyId, activeSleepLock(event)));
+    const eventPath = `groups/${ids.groupId}/events/${event.id}`;
+    const eventListener = observedSnapshotCall(eventPath);
+    const nextEvent = eventListener.call[2] as (snapshot: unknown) => void;
+    nextEvent(
+      documentSnapshot(event.id, encodeCareEventDocument(event), {
+        fromCache: true,
+        hasPendingWrites: false,
+      }),
+    );
+    nextEvent(
+      documentSnapshot(event.id, encodeCareEventDocument(event), {
+        fromCache: false,
+        hasPendingWrites: true,
+      }),
+    );
+    expect(observations).toEqual([]);
+
+    nextEvent(documentSnapshot(event.id, encodeCareEventDocument(event)));
+    nextEvent(documentSnapshot(revised.id, encodeCareEventDocument(revised)));
+    expect(observations).toEqual([
+      {kind: 'server_value', event},
+      {kind: 'server_value', event: revised},
+    ]);
+
+    stop();
+    expect(lockListener.stop).toHaveBeenCalledTimes(1);
+    expect(eventListener.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('switches active-sleep event listeners and blocks stale callbacks', () => {
+    const first = sleep('active-first');
+    const second = sleep('active-second');
+    const observations: unknown[] = [];
+    const stop = remoteStore().observeActiveSleep(ids, observation =>
+      observations.push(observation),
+    );
+    const lockPath = `groups/${ids.groupId}/activeSleeps/${ids.babyId}`;
+    const lockListener = observedSnapshotCall(lockPath);
+    const nextLock = lockListener.call[2] as (snapshot: unknown) => void;
+
+    nextLock(documentSnapshot(ids.babyId, activeSleepLock(first)));
+    const firstListener = observedSnapshotCall(
+      `groups/${ids.groupId}/events/${first.id}`,
+    );
+    const nextFirst = firstListener.call[2] as (snapshot: unknown) => void;
+
+    nextLock(documentSnapshot(ids.babyId, activeSleepLock(second)));
+    expect(firstListener.stop).toHaveBeenCalledTimes(1);
+    const secondListener = observedSnapshotCall(
+      `groups/${ids.groupId}/events/${second.id}`,
+    );
+    const nextSecond = secondListener.call[2] as (snapshot: unknown) => void;
+
+    nextFirst(documentSnapshot(first.id, encodeCareEventDocument(first)));
+    expect(observations).toEqual([]);
+    nextSecond(documentSnapshot(second.id, encodeCareEventDocument(second)));
+    expect(observations).toEqual([{kind: 'server_value', event: second}]);
+
+    stop();
+    expect(lockListener.stop).toHaveBeenCalledTimes(1);
+    expect(secondListener.stop).toHaveBeenCalledTimes(1);
+    nextLock(documentSnapshot(ids.babyId, undefined));
+    nextSecond(documentSnapshot(second.id, encodeCareEventDocument(second)));
+    expect(observations).toEqual([{kind: 'server_value', event: second}]);
+  });
+
+  it('reports typed active-sleep errors without synthesizing none', async () => {
+    const getDocFromServerMock = getDocFromServer as jest.Mock;
+    getDocFromServerMock.mockRejectedValueOnce({
+      code: 'firestore/unavailable',
+    });
+    await expect(remoteStore().fetchActiveSleep(ids)).rejects.toMatchObject({
+      remoteError: {code: 'retryable'},
+    });
+
+    const observations: unknown[] = [];
+    remoteStore().observeActiveSleep(ids, observation =>
+      observations.push(observation),
+    );
+    const lockListener = observedSnapshotCall(
+      `groups/${ids.groupId}/activeSleeps/${ids.babyId}`,
+    );
+    const onError = lockListener.call[3] as (error: unknown) => void;
+    onError({code: 'firestore/permission-denied'});
+
+    expect(observations).toHaveLength(1);
+    expect(observations[0]).toMatchObject({
+      kind: 'error',
+      error: {code: 'permission_denied'},
+    });
+    expect(observations).not.toContainEqual({
+      kind: 'server_value',
+      event: undefined,
     });
   });
 });
