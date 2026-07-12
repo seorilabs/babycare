@@ -81,15 +81,9 @@ function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
 
 describe('TimelineScreen bounded feed', () => {
   it('allows only one onEndReached load at a time', async () => {
-    let resolveLoad: (() => void) | undefined;
-    const onLoadMore = jest.fn(
-      () =>
-        new Promise<void>(resolve => {
-          resolveLoad = resolve;
-        }),
-    );
+    const onLoadMore = jest.fn(async () => undefined);
     let renderer!: ReactTestRenderer.ReactTestRenderer;
-    await ReactTestRenderer.act(async () => {
+    ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(screen({onLoadMore}));
     });
     const list = renderer.root.findByType(SectionList);
@@ -98,26 +92,18 @@ describe('TimelineScreen bounded feed', () => {
     const duplicateRun = list.props.onEndReached() as Promise<void>;
 
     expect(onLoadMore).toHaveBeenCalledTimes(1);
-    resolveLoad?.();
     await Promise.all([firstRun, duplicateRun]);
 
     const secondRun = list.props.onEndReached() as Promise<void>;
     expect(onLoadMore).toHaveBeenCalledTimes(2);
-    resolveLoad?.();
     await secondRun;
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
   it('renders error/retry, loading, and end-of-feed footer states', async () => {
-    let resolveRetry: (() => void) | undefined;
-    const onRetryLoadMore = jest.fn(
-      () =>
-        new Promise<void>(resolve => {
-          resolveRetry = resolve;
-        }),
-    );
+    const onRetryLoadMore = jest.fn(async () => undefined);
     let renderer!: ReactTestRenderer.ReactTestRenderer;
-    await ReactTestRenderer.act(async () => {
+    ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         screen({loadMoreError: '이전 기록을 불러오지 못했어요', onRetryLoadMore}),
       );
@@ -130,7 +116,6 @@ describe('TimelineScreen bounded feed', () => {
     const firstRetry = retry.props.onPress() as Promise<void>;
     const duplicateRetry = retry.props.onPress() as Promise<void>;
     expect(onRetryLoadMore).toHaveBeenCalledTimes(1);
-    resolveRetry?.();
     await Promise.all([firstRetry, duplicateRetry]);
 
     await ReactTestRenderer.act(async () => {
