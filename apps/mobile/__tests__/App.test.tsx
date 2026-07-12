@@ -17,6 +17,8 @@ import {
 import App from '../App';
 import {appContainer} from '../src/app/container';
 import type {LocalSession} from '../src/app/session';
+import * as localTimelinePagination from '../src/app/use-local-timeline-pagination';
+import type {LocalTimelinePaginationState} from '../src/app/use-local-timeline-pagination';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(async () => null),
@@ -76,26 +78,19 @@ function timelineRowCount(
     );
 }
 
-test('renders correctly', async () => {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await ReactTestRenderer.act(async () => {
-    renderer = ReactTestRenderer.create(<App />);
-  });
-  ReactTestRenderer.act(() => renderer.unmount());
-});
+const now = new Date(2026, 6, 13, 12).getTime();
+const session: LocalSession = {
+  groupId: 'group-1',
+  babyId: 'baby-1',
+  caregiverId: 'owner-1',
+  caregiverName: '보호자',
+  babyName: '하루',
+  birthDate: '2026-01-01',
+  inviteCode: 'ABC234',
+};
 
-test('connects local pagination through App and preserves its scoped tab state', async () => {
-  const now = new Date(2026, 6, 13, 12).getTime();
-  const session: LocalSession = {
-    groupId: 'group-1',
-    babyId: 'baby-1',
-    caregiverId: 'owner-1',
-    caregiverName: '보호자',
-    babyName: '하루',
-    birthDate: '2026-01-01',
-    inviteCode: 'ABC234',
-  };
-  const events = Array.from({length: 45}, (_, index) =>
+function careEvents(count: number): readonly CareEvent[] {
+  return Array.from({length: count}, (_, index) =>
     createCareEvent(
       {
         groupId: groupId(session.groupId),
@@ -108,6 +103,9 @@ test('connects local pagination through App and preserves its scoped tab state',
       {id: eventId(`app-event-${index}`), now},
     ),
   );
+}
+
+function mockLoadedSession(events: readonly CareEvent[]): jest.Mock {
   const stopObserve = jest.fn();
   jest.spyOn(appContainer.sessionRepository, 'load').mockResolvedValue(session);
   jest
@@ -116,7 +114,10 @@ test('connects local pagination through App and preserves its scoped tab state',
       listener(events);
       return stopObserve;
     });
+  return stopObserve;
+}
 
+async function renderLoadedApp(): Promise<ReactTestRenderer.ReactTestRenderer> {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(<App />);
@@ -124,6 +125,21 @@ test('connects local pagination through App and preserves its scoped tab state',
     await Promise.resolve();
     await Promise.resolve();
   });
+  return renderer;
+}
+
+test('renders correctly', async () => {
+  let renderer!: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(<App />);
+  });
+  ReactTestRenderer.act(() => renderer.unmount());
+});
+
+test('connects local pagination through App and preserves its scoped tab state', async () => {
+  const events = careEvents(45);
+  const stopObserve = mockLoadedSession(events);
+  const renderer = await renderLoadedApp();
 
   pressTab(renderer, '타임라인');
   expect(timelineRowCount(renderer)).toBe(20);
@@ -150,6 +166,56 @@ test('connects local pagination through App and preserves its scoped tab state',
   expect(timelineRowCount(renderer)).toBe(45);
   expect(textOf(renderer.root)).toContain('모든 기록을 확인했어요');
   expect(events).toHaveLength(45);
+
+  ReactTestRenderer.act(() => renderer.unmount());
+  expect(stopObserve).toHaveBeenCalledTimes(1);
+});
+
+test('maps an injected paging error and retry through App to TimelineScreen', async () => {
+  const events = careEvents(40);
+  const stopObserve = mockLoadedSession(events);
+  const errorMessage = '이전 기록을 불러오지 못했어요';
+  let page: LocalTimelinePaginationState;
+  const retryLoadMore = jest.fn(async () => {
+    page = {
+      ...page,
+      events,
+      hasMore: false,
+      loadMoreError: undefined,
+    };
+  });
+  page = {
+    events: events.slice(0, 20),
+    hasMore: true,
+    capped: false,
+    loadingMore: false,
+    loadMoreError: errorMessage,
+    loadMore: jest.fn(async () => undefined),
+    retryLoadMore,
+  };
+  jest
+    .spyOn(localTimelinePagination, 'useLocalTimelinePagination')
+    .mockImplementation(() => page);
+
+  const renderer = await renderLoadedApp();
+  pressTab(renderer, '타임라인');
+  expect(timelineRowCount(renderer)).toBe(20);
+  expect(textOf(renderer.root)).toContain(errorMessage);
+
+  const retry = renderer.root.find(
+    node => node.props.accessibilityLabel === '이전 기록 다시 불러오기',
+  );
+  await ReactTestRenderer.act(async () => retry.props.onPress());
+  expect(retryLoadMore).toHaveBeenCalledTimes(1);
+
+  await ReactTestRenderer.act(async () => renderer.update(<App />));
+  expect(timelineRowCount(renderer)).toBe(40);
+  expect(textOf(renderer.root)).not.toContain(errorMessage);
+  expect(
+    renderer.root.findAll(
+      node => node.props.accessibilityLabel === '이전 기록 다시 불러오기',
+    ),
+  ).toHaveLength(0);
 
   ReactTestRenderer.act(() => renderer.unmount());
   expect(stopObserve).toHaveBeenCalledTimes(1);

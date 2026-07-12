@@ -187,8 +187,31 @@ class FakeRemote implements CareEventRemoteStorePort {
 }
 
 describe('createCareEventContainer', () => {
+  const activeStops = new Set<() => void>();
+
+  function trackStop(stop: () => void): () => void {
+    let active = true;
+    const tracked = () => {
+      if (!active) {
+        return;
+      }
+      active = false;
+      activeStops.delete(tracked);
+      stop();
+    };
+    activeStops.add(tracked);
+    return tracked;
+  }
+
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    for (const stop of [...activeStops]) {
+      stop();
+    }
+    expect(activeStops.size).toBe(0);
   });
 
   it('wires a remote permission denial to session purge and UI revocation', async () => {
@@ -210,11 +233,15 @@ describe('createCareEventContainer', () => {
       onRevoked,
       onError,
     });
-    const stopEvents = container.repository.observe(
-      {groupId: group.id, babyId: baby.id},
-      () => undefined,
+    const stopEvents = trackStop(
+      container.repository.observe(
+        {groupId: group.id, babyId: baby.id},
+        () => undefined,
+      ),
     );
-    const stopTimeline = container.timelineFeed.start(() => undefined);
+    const stopTimeline = trackStop(
+      container.timelineFeed.start(() => undefined),
+    );
     await container.timelineFeed.refresh();
 
     remote.emitPage({kind: 'error', error: {code: 'permission_denied'}});
@@ -379,11 +406,15 @@ describe('createCareEventContainer', () => {
       onRevoked,
       onError: jest.fn(),
     });
-    const stopEvents = container.repository.observe(
-      {groupId: group.id, babyId: baby.id},
-      () => undefined,
+    const stopEvents = trackStop(
+      container.repository.observe(
+        {groupId: group.id, babyId: baby.id},
+        () => undefined,
+      ),
     );
-    const stopTimeline = container.timelineFeed.start(() => undefined);
+    const stopTimeline = trackStop(
+      container.timelineFeed.start(() => undefined),
+    );
     await container.timelineFeed.refresh();
 
     remote.emitPage({kind: 'error', error: {code: 'permission_denied'}});
