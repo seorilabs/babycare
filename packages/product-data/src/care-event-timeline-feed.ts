@@ -61,10 +61,15 @@ interface PreparedPageObservers {
   readonly epoch: number;
   readonly stops: (() => void)[];
   readonly pendingErrors: CareEventRemoteError[];
+  readonly matchedPages: Set<number>;
+  readonly expectedPageCount: number;
+  phase: 'preparing' | 'activated' | 'stopped';
   pendingMismatch: boolean;
 }
 
 const LOAD_MORE_ERROR_MESSAGE = '이전 기록을 불러오지 못했어요.';
+const RECOVERY_RETRY_DELAY_MS = 1_000;
+const MAX_RECOVERY_RETRY_DELAY_MS = 30_000;
 
 class CareEventTimelineContractError extends Error {
   constructor(message: string) {
@@ -88,6 +93,10 @@ function normalizeRemoteError(error: unknown): CareEventRemoteError {
     code: error instanceof Error ? 'invalid' : 'retryable',
     cause: error,
   };
+}
+
+function shouldAutoRecover(error: CareEventRemoteError): boolean {
+  return error.code === 'retryable' || error.code === 'invalid';
 }
 
 function cursorEqual(
@@ -214,6 +223,7 @@ export class CareEventTimelineFeed {
   #stopLocal: (() => void) | undefined;
   #stopSyncState: (() => void) | undefined;
   #stopRemotePages: readonly (() => void)[] = [];
+  #preparedPageObserverSets = new Set<PreparedPageObservers>();
   #observerEpochCounter = 0;
   #activeObserverEpoch = 0;
   #operationTail: Promise<void> = Promise.resolve();
@@ -221,6 +231,8 @@ export class CareEventTimelineFeed {
   #refreshScheduled = false;
   #refreshAgain = false;
   #terminalRecoveryAttempts = 0;
+  #recoveryRebindAttempts = 0;
+  #recoveryRebindTimer: ReturnType<typeof setTimeout> | undefined;
   #lifecycleGeneration = 0;
   #started = false;
   #closed = false;
@@ -248,10 +260,16 @@ export class CareEventTimelineFeed {
     } catch {
       // Initial delivery follows the same presentation isolation as updates.
     }
+    if (this.#closed) {
+      return () => undefined;
+    }
     if (!this.#started) {
       this.#started = true;
       const generation = this.#lifecycleGeneration;
-      this.#stopLocal = this.#local.observe(
+      let stopLocal: (() => void) | undefined;
+      let stopSyncState: (() => void) | undefined;
+      try {
+        stopLocal = this.#local.observe(
         {
           groupId: this.#options.groupId,
           babyId: this.#options.babyId,
@@ -264,8 +282,13 @@ export class CareEventTimelineFeed {
             }
           }
         },
-      );
-      this.#stopSyncState = this.#local.observeSyncState(states => {
+        );
+        if (!this.#isActive(generation)) {
+          stopLocal();
+          return () => undefined;
+        }
+        this.#stopLocal = stopLocal;
+        stopSyncState = this.#local.observeSyncState(states => {
         if (!this.#isActive(generation)) {
           return;
         }
@@ -294,7 +317,31 @@ export class CareEventTimelineFeed {
         ) {
           this.#scheduleRefresh(generation);
         }
-      });
+        });
+        if (!this.#isActive(generation)) {
+          stopSyncState();
+          stopLocal();
+          this.#stopLocal = undefined;
+          return () => undefined;
+        }
+        this.#stopSyncState = stopSyncState;
+      } catch (error) {
+        try {
+          stopSyncState?.();
+        } catch {
+          // Preserve the subscription installation error.
+        }
+        try {
+          stopLocal?.();
+        } catch {
+          // Preserve the subscription installation error.
+        }
+        this.#stopLocal = undefined;
+        this.#stopSyncState = undefined;
+        this.#started = false;
+        this.#listeners.delete(listener);
+        throw error;
+      }
       void this.#hydrateCoverageAndRefresh(generation);
     }
 
@@ -399,7 +446,12 @@ export class CareEventTimelineFeed {
     this.#stopLocal = undefined;
     this.#stopSyncState?.();
     this.#stopSyncState = undefined;
+    this.#stopAllPreparedObservers();
     this.#replaceRemoteObservers([]);
+    if (this.#recoveryRebindTimer !== undefined) {
+      clearTimeout(this.#recoveryRebindTimer);
+      this.#recoveryRebindTimer = undefined;
+    }
     this.#listeners.clear();
   }
 
@@ -420,9 +472,12 @@ export class CareEventTimelineFeed {
       await this.refresh();
     } catch (error) {
       if (this.#isActive(generation)) {
-        this.#reportRemoteError(error);
+        const remoteError = normalizeRemoteError(error);
+        this.#deliverRemoteError(remoteError);
         this.#setState({loadMoreError: LOAD_MORE_ERROR_MESSAGE});
-        this.#installHeadRecoveryObserver(generation);
+        if (shouldAutoRecover(remoteError)) {
+          this.#installHeadRecoveryObserver(generation);
+        }
       }
     }
   }
@@ -452,7 +507,10 @@ export class CareEventTimelineFeed {
       prefix.pages,
       generation,
     );
-    if (!this.#isActive(generation)) {
+    if (
+      !this.#isActive(generation) ||
+      preparedObservers.epoch < this.#activeObserverEpoch
+    ) {
       this.#stopPreparedObservers(preparedObservers);
       return;
     }
@@ -468,7 +526,10 @@ export class CareEventTimelineFeed {
     } finally {
       this.#suppressLocalEmission = false;
     }
-    if (!this.#isActive(generation)) {
+    if (
+      !this.#isActive(generation) ||
+      preparedObservers.epoch < this.#activeObserverEpoch
+    ) {
       this.#stopPreparedObservers(preparedObservers);
       return;
     }
@@ -477,9 +538,11 @@ export class CareEventTimelineFeed {
       this.#stopPreparedObservers(preparedObservers);
       return;
     }
-    this.#terminalRecoveryAttempts = 0;
-    this.#activatePageObservers(preparedObservers, generation);
-    if (this.#options.onServerConfirmed) {
+    const observerHadTerminalError = this.#activatePageObservers(
+      preparedObservers,
+      generation,
+    );
+    if (!observerHadTerminalError && this.#options.onServerConfirmed) {
       try {
         void Promise.resolve(this.#options.onServerConfirmed()).catch(error => {
           if (this.#isActive(generation)) {
@@ -589,11 +652,16 @@ export class CareEventTimelineFeed {
       epoch: ++this.#observerEpochCounter,
       stops: [],
       pendingErrors: [],
+      matchedPages: new Set<number>(),
+      expectedPageCount: pages.length,
+      phase: 'preparing',
       pendingMismatch: false,
     };
+    this.#preparedPageObserverSets.add(prepared);
     try {
-      for (const page of pages) {
-        prepared.stops.push(
+      for (const [pageIndex, page] of pages.entries()) {
+        this.#addPreparedObserver(
+          prepared,
           this.#remote.observePage(page.request, observation => {
             if (!this.#isActive(generation)) {
               return;
@@ -618,10 +686,22 @@ export class CareEventTimelineFeed {
                 } else if (prepared.epoch > this.#activeObserverEpoch) {
                   prepared.pendingMismatch = true;
                 }
+              } else {
+                prepared.matchedPages.add(pageIndex);
+                if (
+                  this.#activeObserverEpoch === prepared.epoch &&
+                  prepared.matchedPages.size === prepared.expectedPageCount
+                ) {
+                  this.#markObserverSetHealthy();
+                }
               }
             } catch (error) {
               if (this.#activeObserverEpoch === prepared.epoch) {
-                this.#reportRemoteError(error);
+                this.#handleTerminalPageError(
+                  normalizeRemoteError(error),
+                  generation,
+                  prepared.epoch,
+                );
               } else if (prepared.epoch > this.#activeObserverEpoch) {
                 prepared.pendingErrors.push(normalizeRemoteError(error));
               }
@@ -630,13 +710,7 @@ export class CareEventTimelineFeed {
         );
       }
     } catch (error) {
-      for (const stop of prepared.stops) {
-        try {
-          stop();
-        } catch {
-          // Preserve the observer installation failure as the primary error.
-        }
-      }
+      this.#stopPreparedObservers(prepared);
       throw error;
     }
     return prepared;
@@ -677,15 +751,26 @@ export class CareEventTimelineFeed {
           assertRemotePage(observation.page, request);
           this.#scheduleRefresh(generation);
         } catch (error) {
-          this.#reportRemoteError(error);
+          this.#handleTerminalPageError(
+            normalizeRemoteError(error),
+            generation,
+            epoch,
+          );
         }
       });
     } catch (error) {
+      const remoteError = normalizeRemoteError(error);
       this.#activeObserverEpoch = ++this.#observerEpochCounter;
-      this.#reportRemoteError(error);
+      this.#deliverRemoteError(remoteError);
+      if (shouldAutoRecover(remoteError)) {
+        this.#scheduleRecoveryRebind(generation);
+      }
       return;
     }
-    if (!this.#isActive(generation)) {
+    if (
+      !this.#isActive(generation) ||
+      this.#activeObserverEpoch !== epoch
+    ) {
       try {
         stop();
       } catch {
@@ -699,9 +784,15 @@ export class CareEventTimelineFeed {
   #activatePageObservers(
     prepared: PreparedPageObservers,
     generation: number,
-  ): void {
+  ): boolean {
+    if (prepared.phase !== 'preparing') {
+      return true;
+    }
+    prepared.phase = 'activated';
+    this.#preparedPageObserverSets.delete(prepared);
     this.#activeObserverEpoch = prepared.epoch;
     this.#replaceRemoteObservers(prepared.stops);
+    const hadTerminalError = prepared.pendingErrors.length > 0;
     for (const error of prepared.pendingErrors) {
       this.#handleTerminalPageError(
         error,
@@ -709,18 +800,54 @@ export class CareEventTimelineFeed {
         prepared.epoch,
       );
     }
-    if (prepared.pendingMismatch) {
+    if (
+      this.#activeObserverEpoch === prepared.epoch &&
+      prepared.matchedPages.size === prepared.expectedPageCount
+    ) {
+      this.#markObserverSetHealthy();
+    }
+    if (
+      prepared.pendingMismatch &&
+      this.#activeObserverEpoch === prepared.epoch
+    ) {
       this.#scheduleRefresh(generation);
     }
+    return hadTerminalError;
   }
 
   #stopPreparedObservers(prepared: PreparedPageObservers): void {
+    if (prepared.phase !== 'preparing') {
+      return;
+    }
+    prepared.phase = 'stopped';
+    this.#preparedPageObserverSets.delete(prepared);
     for (const stop of prepared.stops) {
       try {
         stop();
       } catch {
         // A never-activated observer has no durable state to roll back.
       }
+    }
+  }
+
+  #addPreparedObserver(
+    prepared: PreparedPageObservers,
+    stop: () => void,
+  ): void {
+    if (prepared.phase === 'preparing') {
+      prepared.stops.push(stop);
+      return;
+    }
+    try {
+      stop();
+    } catch {
+      // The prepared set was already stopped while the observer was installed.
+    }
+  }
+
+  #stopAllPreparedObservers(): void {
+    for (const prepared of [...this.#preparedPageObserverSets]) {
+      this.#stopPreparedObservers(prepared);
     }
   }
 
@@ -736,9 +863,12 @@ export class CareEventTimelineFeed {
     void this.refresh()
       .catch(error => {
         if (this.#isActive(generation)) {
-          this.#reportRemoteError(error);
+          const remoteError = normalizeRemoteError(error);
+          this.#deliverRemoteError(remoteError);
           this.#setState({loadMoreError: LOAD_MORE_ERROR_MESSAGE});
-          this.#installHeadRecoveryObserver(generation);
+          if (shouldAutoRecover(remoteError)) {
+            this.#installHeadRecoveryObserver(generation);
+          }
         }
       })
       .finally(() => {
@@ -767,18 +897,51 @@ export class CareEventTimelineFeed {
     generation: number,
     observerEpoch: number,
   ): void {
-    this.#deliverRemoteError(error);
     if (
-      error.code !== 'retryable' ||
       this.#activeObserverEpoch !== observerEpoch ||
-      this.#terminalRecoveryAttempts >= 1
+      !this.#isActive(generation)
     ) {
       return;
     }
-    this.#terminalRecoveryAttempts += 1;
+    this.#deliverRemoteError(error);
     this.#activeObserverEpoch = ++this.#observerEpochCounter;
     this.#replaceRemoteObservers([]);
-    this.#scheduleRefresh(generation);
+    if (error.code === 'retryable') {
+      if (this.#terminalRecoveryAttempts < 1) {
+        this.#terminalRecoveryAttempts += 1;
+        this.#scheduleRefresh(generation);
+      } else {
+        this.#scheduleRecoveryRebind(generation);
+      }
+    } else if (error.code === 'invalid') {
+      this.#scheduleRecoveryRebind(generation);
+    }
+  }
+
+  #markObserverSetHealthy(): void {
+    this.#terminalRecoveryAttempts = 0;
+    this.#recoveryRebindAttempts = 0;
+  }
+
+  #scheduleRecoveryRebind(generation: number): void {
+    if (
+      !this.#isActive(generation) ||
+      this.#recoveryRebindTimer !== undefined
+    ) {
+      return;
+    }
+    const exponent = Math.min(this.#recoveryRebindAttempts, 5);
+    const delay = Math.min(
+      RECOVERY_RETRY_DELAY_MS * 2 ** exponent,
+      MAX_RECOVERY_RETRY_DELAY_MS,
+    );
+    this.#recoveryRebindAttempts += 1;
+    this.#recoveryRebindTimer = setTimeout(() => {
+      this.#recoveryRebindTimer = undefined;
+      if (this.#isActive(generation)) {
+        this.#installHeadRecoveryObserver(generation);
+      }
+    }, delay);
   }
 
   #applyCoverageState(coverage: CareEventTimelineCoverage): void {

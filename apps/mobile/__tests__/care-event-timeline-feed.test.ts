@@ -60,6 +60,7 @@ interface PageObserverRecord {
   readonly request: CareEventPageRequest;
   readonly listener: (observation: CareEventRemotePageObservation) => void;
   active: boolean;
+  stopCalls: number;
 }
 
 class TimelineRemoteStore implements CareEventRemoteStorePort {
@@ -67,6 +68,7 @@ class TimelineRemoteStore implements CareEventRemoteStorePort {
   readonly fetchRequests: CareEventPageRequest[] = [];
   readonly observerHistory: PageObserverRecord[] = [];
   readonly #pageObservers = new Set<PageObserverRecord>();
+  synchronousObservation: CareEventRemotePageObservation | undefined;
   #nextFetch:
     | ((page: CareEventRemotePage) => Promise<CareEventRemotePage>)
     | undefined;
@@ -109,10 +111,19 @@ class TimelineRemoteStore implements CareEventRemoteStorePort {
       }
       failure.remainingSuccessfulInstalls -= 1;
     }
-    const observer: PageObserverRecord = {request, listener, active: true};
+    const observer: PageObserverRecord = {
+      request,
+      listener,
+      active: true,
+      stopCalls: 0,
+    };
     this.observerHistory.push(observer);
     this.#pageObservers.add(observer);
+    if (this.synchronousObservation) {
+      listener(this.synchronousObservation);
+    }
     return () => {
+      observer.stopCalls += 1;
       observer.active = false;
       this.#pageObservers.delete(observer);
     };
@@ -296,6 +307,129 @@ afterEach(async () => {
 });
 
 describe('CareEventTimelineFeed', () => {
+  it('does not start ownership after the initial listener closes the feed', async () => {
+    const local = new PersistentCareEventSyncStore(
+      scope,
+      new MemoryStringStorage(),
+    );
+    const remote = new TimelineRemoteStore([]);
+    const feed = new CareEventTimelineFeed(local, remote, {
+      groupId: scope.groupId,
+      babyId: scope.babyId,
+      pageSize: 2,
+      maxCachedEvents: 8,
+      maxScanPagesPerLoad: 3,
+    });
+
+    feed.start(() => feed.close());
+    await new Promise<void>(resolve => setTimeout(resolve, 10));
+
+    expect(remote.fetchRequests).toHaveLength(0);
+    expect(remote.observerCount).toBe(0);
+    await local.close();
+  });
+
+  it('does not leak prepared observers when state delivery closes the feed', async () => {
+    const local = new PersistentCareEventSyncStore(
+      scope,
+      new MemoryStringStorage(),
+    );
+    const remote = new TimelineRemoteStore([diaper('close-on-state', 1_000)]);
+    const feed = new CareEventTimelineFeed(local, remote, {
+      groupId: scope.groupId,
+      babyId: scope.babyId,
+      pageSize: 2,
+      maxCachedEvents: 8,
+      maxScanPagesPerLoad: 3,
+    });
+    let closedFromServerState = false;
+
+    feed.start(state => {
+      if (state.events.length > 0) {
+        closedFromServerState = true;
+        feed.close();
+      }
+    });
+    await waitUntil(
+      () => closedFromServerState,
+      'timeline state reentrant close',
+    );
+
+    expect(remote.observerCount).toBe(0);
+    await local.close();
+  });
+
+  it('stops prepared observers immediately when closed during a durable commit', async () => {
+    const harness = await startFeed([diaper('close-during-commit', 1_000)]);
+    let releaseCommit: (() => void) | undefined;
+    let notifyCommitStarted: (() => void) | undefined;
+    const commitStarted = new Promise<void>(resolve => {
+      notifyCommitStarted = resolve;
+    });
+    const originalReplace =
+      harness.local.replaceRemoteTimelinePrefix.bind(harness.local);
+    jest
+      .spyOn(harness.local, 'replaceRemoteTimelinePrefix')
+      .mockImplementationOnce(async (...args) => {
+        notifyCommitStarted?.();
+        await new Promise<void>(resolve => {
+          releaseCommit = resolve;
+        });
+        return originalReplace(...args);
+      });
+
+    const refreshing = harness.feed.refresh();
+    await commitStarted;
+    expect(harness.remote.observerCount).toBe(2);
+
+    harness.feed.close();
+    expect(harness.remote.observerCount).toBe(0);
+
+    releaseCommit?.();
+    await refreshing;
+    expect(harness.remote.observerCount).toBe(0);
+  });
+
+  it('waits for lifecycle recovery after a permission-denied startup', async () => {
+    const local = new PersistentCareEventSyncStore(
+      scope,
+      new MemoryStringStorage(),
+    );
+    const remote = new TimelineRemoteStore([]);
+    remote.failNextFetch(
+      Object.assign(new Error('membership must be restored'), {
+        remoteError: {code: 'permission_denied'},
+      }),
+    );
+    const onRemoteError = jest.fn();
+    const feed = new CareEventTimelineFeed(local, remote, {
+      groupId: scope.groupId,
+      babyId: scope.babyId,
+      pageSize: 2,
+      maxCachedEvents: 8,
+      maxScanPagesPerLoad: 3,
+      onRemoteError,
+    });
+    feed.start(() => undefined);
+    await waitUntil(
+      () => onRemoteError.mock.calls.length > 0,
+      'permission-denied timeline state',
+    );
+    const stableFetchCount = remote.fetchRequests.length;
+
+    await new Promise<void>(resolve => setTimeout(resolve, 20));
+    expect(remote.fetchRequests).toHaveLength(stableFetchCount);
+    expect(remote.observerCount).toBe(0);
+    expect(onRemoteError).toHaveBeenCalledWith(
+      expect.objectContaining({code: 'permission_denied'}),
+    );
+
+    await feed.refresh();
+    expect(remote.observerCount).toBe(1);
+    feed.close();
+    await local.close();
+  });
+
   it('rebases the complete loaded prefix from HEAD after a head insertion', async () => {
     const initial = [
       diaper('event-5', 5_000),
@@ -615,6 +749,39 @@ describe('CareEventTimelineFeed', () => {
     );
   });
 
+  it('does not tight-loop when every replacement observer fails synchronously', async () => {
+    const remoteErrors = jest.fn();
+    const onServerConfirmed = jest.fn();
+    const harness = await startFeed(
+      [diaper('event-1', 1_000)],
+      {},
+      {onRemoteError: remoteErrors, onServerConfirmed},
+    );
+    const failedObserver = harness.remote.observerHistory.at(-1)!;
+    harness.remote.synchronousObservation = {
+      kind: 'error',
+      error: {code: 'retryable', cause: new Error('immediate page failure')},
+    };
+    const fetchCount = harness.remote.fetchRequests.length;
+
+    failedObserver.listener({
+      kind: 'error',
+      error: {code: 'retryable', cause: new Error('initial page failure')},
+    });
+    await waitUntil(
+      () =>
+        harness.remote.fetchRequests.length === fetchCount + 1 &&
+        harness.remote.observerCount === 0,
+      'bounded page observer recovery',
+    );
+    const stableFetchCount = harness.remote.fetchRequests.length;
+    await new Promise<void>(resolve => setTimeout(resolve, 30));
+
+    expect(harness.remote.fetchRequests).toHaveLength(stableFetchCount);
+    expect(onServerConfirmed).toHaveBeenCalledTimes(1);
+    expect(remoteErrors).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps the old observer and prefix when preparing a replacement observer throws', async () => {
     const initial = [
       diaper('event-4', 4_000),
@@ -637,7 +804,9 @@ describe('CareEventTimelineFeed', () => {
     ]);
     expect(harness.remote.observerCount).toBe(1);
     expect(oldObserver.active).toBe(true);
-    expect(harness.remote.observerHistory.at(-1)!.active).toBe(false);
+    const failedPreparedObserver = harness.remote.observerHistory.at(-1)!;
+    expect(failedPreparedObserver.active).toBe(false);
+    expect(failedPreparedObserver.stopCalls).toBe(1);
 
     const inserted = diaper('event-5', 5_000);
     harness.remote.events = [inserted, ...initial];
@@ -649,6 +818,8 @@ describe('CareEventTimelineFeed', () => {
       () => harness.latest().events[0]?.id === inserted.id,
       'old observer recovery refresh',
     );
+    harness.feed.close();
+    expect(failedPreparedObserver.stopCalls).toBe(1);
   });
 
   it('classifies a malformed remote page as invalid', async () => {

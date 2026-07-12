@@ -6,6 +6,7 @@ import {
   parseIsoCalendarDate,
   type CareEvent,
   type CareEventKind,
+  type SleepEvent,
 } from '@babycare/product-core';
 
 import {eventTitle, formatDuration, formatTimeAgo} from '../app/format';
@@ -15,6 +16,13 @@ import type {AppTheme} from '../app/theme';
 function startOfToday(now: number): number {
   const date = new Date(now);
   date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function startOfTomorrow(now: number): number {
+  const date = new Date(now);
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 1);
   return date.getTime();
 }
 
@@ -77,6 +85,8 @@ function LatestCard(props: {
 }
 
 export function HomeScreen(props: {
+  /** Authoritative active-sleep projection; do not infer it from a bounded timeline. */
+  readonly activeSleep: SleepEvent | undefined;
   readonly caregiverNames: ReadonlyMap<string, string>;
   readonly events: readonly CareEvent[];
   readonly session: LocalSession;
@@ -90,12 +100,12 @@ export function HomeScreen(props: {
     () =>
       buildDashboardSummary(
         props.events,
-        {from: startOfToday(props.now), to: startOfToday(props.now) + 86_400_000},
+        {from: startOfToday(props.now), to: startOfTomorrow(props.now)},
         props.now,
       ),
     [props.events, props.now],
   );
-  const activeSleep = props.events.find(isActiveSleep);
+  const activeSleep = props.activeSleep;
   const today = new Intl.DateTimeFormat('ko-KR', {
     month: 'long',
     day: 'numeric',

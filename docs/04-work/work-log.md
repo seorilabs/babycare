@@ -1,5 +1,19 @@
 # Work Log
 
+## 2026-07-13 — Cloud overview and active-sleep projections
+
+- core에 Firebase type을 포함하지 않는 `CareEventProjectionRemotePort`를 추가했다. Home/Stats용 half-open 기간 window, 종류별 latest와 active-sleep singleton의 fetch/observe 계약을 분리하고, 통계 core는 delivery layer가 만든 명시적 범위만 집계한다.
+- RNFirebase adapter는 window/latest/active를 server-only로 읽고 cache·pending snapshot을 authoritative 값으로 취급하지 않는다. active singleton은 `activeSleeps/{babyId}` lock에서 event를 따라가며 group/baby/event/caregiver/start/create identity와 실제 active 상태를 함께 검증한다.
+- scoped durable envelope를 v3로 올려 bounded timeline coverage와 독립된 `overviewEventIds`, `unknown | confirmed_none | active(eventId)` coverage를 저장한다. overview와 active singleton은 `replaceRemoteProjections` 한 번으로 atomic 교체하며 pending/failed local mutation은 optimistic overlay로 보존한다.
+- `CareEventOverviewFeed`는 최근 통계 window, feeding/diaper/sleep latest와 active singleton을 결합한다. source 간 동일 revision payload/identity 불일치, observer epoch supersession, terminal error와 recovery 재연결에서 last-good projection을 보존한다.
+- 인증 cloud container는 scope마다 `CareEventTimelineFeed`와 `CareEventOverviewFeed` owner를 각각 하나씩 시작해 반환한다. Auth/membership 복구 시 두 feed를 refresh하고, revocation/teardown에서는 둘 다 중단한 뒤 기존 purge/close 불변식을 따른다.
+- Home은 진행 중 수면을 bounded event 목록에서 추론하지 않고 explicit `activeSleep`을 받는다. Stats의 7일/30일 bucket은 device-local calendar의 `setDate` 경계를 사용하고 DST 변화에서도 명시적 `[from, to)` 범위를 core에 전달한다.
+- 기본 `App.tsx`는 계속 전체 local event를 사용하는 preview다. production authenticated UI root/Auth/group/baby composition, 실제 Firebase project/index/listener, 두 계정·두 기기 및 새 기기 active-sleep 복구 QA, AppsInToss와 배포는 완료하지 않았다.
+
+검증 범위:
+
+- projection port/use case, Firebase server-only adapter, envelope v1/v2→v3 migration·atomic rollback, overview observer/recovery, container owner/lifecycle, Home/Stats 날짜·DST 회귀 suite를 추가했다. `test:core` 40건, mobile Jest 24 suites/201건, Rules Emulator 23건, Functions unit 10건, Functions transaction Emulator 5건이 통과했고 typecheck, lint, architecture, docs, mobile target gate도 통과했다.
+
 ## 2026-07-13 — Bounded timeline pagination
 
 - core에 `(occurredAt DESC, documentId DESC)` UTF-8 tie-break, scalar cursor, runtime page request validation과 pure pagination reference를 추가했다.

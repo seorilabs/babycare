@@ -124,7 +124,7 @@ function pendingV1Entry(event: CareEvent) {
 }
 
 describe('PersistentCareEventSyncStore timeline coverage', () => {
-  it('migrates a v1 envelope to durable v2 coverage and restores it after restart', async () => {
+  it('migrates a v1 envelope to durable v3 coverage and restores it after restart', async () => {
     const storage = new MemoryStringStorage();
     const synced = diaperAt('migration-synced', 5_000);
     const pending = diaperAt('migration-pending', 4_000);
@@ -154,8 +154,12 @@ describe('PersistentCareEventSyncStore timeline coverage', () => {
 
     const persisted = JSON.parse(storage.values.get(scopedStorageKey())!);
     expect(persisted).toMatchObject({
-      version: 2,
+      version: 3,
       timelineCoverage: expectedCoverage,
+      projectionCoverage: {
+        overviewEventIds: [],
+        activeSleep: {status: 'unknown'},
+      },
     });
 
     const restarted = new PersistentCareEventSyncStore(scope, storage);
@@ -173,7 +177,7 @@ describe('PersistentCareEventSyncStore timeline coverage', () => {
     await restarted.close();
   });
 
-  it('discards a v2 envelope whose end cursor does not match the coverage tail', async () => {
+  it('discards a v3 envelope whose end cursor does not match the coverage tail', async () => {
     const storage = new MemoryStringStorage();
     const event = diaperAt('cursor-tail', 5_000);
     const first = new PersistentCareEventSyncStore(scope, storage);
@@ -418,7 +422,7 @@ describe('PersistentCareEventSyncStore timeline coverage', () => {
     await store.close();
   });
 
-  it('purges timeline rows and coverage on clear', async () => {
+  it('purges timeline rows and all projection coverage on clear', async () => {
     const storage = new MemoryStringStorage();
     const store = new PersistentCareEventSyncStore(scope, storage);
     const event = diaperAt('clear-timeline', 5_000);
@@ -426,6 +430,7 @@ describe('PersistentCareEventSyncStore timeline coverage', () => {
       [event],
       coverageFor([event], false),
     );
+    await store.replaceRemoteOverview([event]);
 
     await store.clear();
 
@@ -433,7 +438,7 @@ describe('PersistentCareEventSyncStore timeline coverage', () => {
     expect(storage.removals).toEqual([scopedStorageKey()]);
     const emptiedEnvelope = JSON.parse(storage.successfulWrites.at(-1)!.value);
     expect(emptiedEnvelope).toMatchObject({
-      version: 2,
+      version: 3,
       events: [],
       outbox: [],
       issues: [],
@@ -441,6 +446,10 @@ describe('PersistentCareEventSyncStore timeline coverage', () => {
         remoteEventIds: [],
         hasMore: true,
         loadedRawCount: 0,
+      },
+      projectionCoverage: {
+        overviewEventIds: [],
+        activeSleep: {status: 'unknown'},
       },
     });
 

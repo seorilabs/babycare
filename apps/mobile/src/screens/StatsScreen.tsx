@@ -1,11 +1,17 @@
 import {useMemo, useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
-import {buildDashboardSummary, type CareEvent} from '@babycare/product-core';
+import {
+  buildCareStatsBuckets,
+  type CareEvent,
+  type CareStatsBucket,
+} from '@babycare/product-core';
 
 import {formatDuration} from '../app/format';
+import {buildStatsRanges, type StatsPeriod} from '../app/stats-ranges';
 import type {AppTheme} from '../app/theme';
 
-export type Period = '12h' | '7d' | '30d';
+export type Period = StatsPeriod;
+export {buildStatsRanges};
 
 const EMPTY_SUMMARY = {
   latest: {},
@@ -16,34 +22,31 @@ const EMPTY_SUMMARY = {
   sleepDurationSeconds: 0,
 } as const;
 
-export function buildStatsBuckets(events: readonly CareEvent[], now: number, period: Period) {
-  const config =
-    period === '12h'
-      ? {count: 6, width: 2 * 60 * 60 * 1_000}
-      : period === '7d'
-        ? {count: 7, width: 24 * 60 * 60 * 1_000}
-        : {count: 10, width: 3 * 24 * 60 * 60 * 1_000};
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const end =
-    period === '12h'
-      ? now
-      : today.getTime() + 24 * 60 * 60 * 1_000;
-  return Array.from({length: config.count}, (_, index) => {
-    const bucketEnd = end - (config.count - index - 1) * config.width;
-    const from = bucketEnd - config.width;
-    const to = Math.min(bucketEnd, now);
+interface StatsBucket extends CareStatsBucket {
+  readonly label: string;
+}
+
+export function buildStatsBuckets(
+  events: readonly CareEvent[],
+  now: number,
+  period: Period,
+): readonly StatsBucket[] {
+  const ranges = buildStatsRanges(now, period);
+  const positiveRanges = ranges.filter(range => range.to > range.from);
+  const summaries = buildCareStatsBuckets(events, positiveRanges, now);
+  let summaryIndex = 0;
+  return ranges.map(range => {
+    const summary =
+      range.to > range.from
+        ? summaries[summaryIndex++]!.summary
+        : EMPTY_SUMMARY;
     return {
-      from,
-      to,
-      summary:
-        to > from
-          ? buildDashboardSummary(events, {from, to}, now)
-          : EMPTY_SUMMARY,
+      ...range,
+      summary,
       label:
         period === '12h'
-          ? new Intl.DateTimeFormat('ko-KR', {hour: 'numeric'}).format(from)
-          : new Intl.DateTimeFormat('ko-KR', {month: 'numeric', day: 'numeric'}).format(to - 1),
+          ? new Intl.DateTimeFormat('ko-KR', {hour: 'numeric'}).format(range.from)
+          : new Intl.DateTimeFormat('ko-KR', {month: 'numeric', day: 'numeric'}).format(range.to - 1),
     };
   });
 }

@@ -5,11 +5,13 @@ import {
   type AnalyticsPort,
   type AuthPort,
   type CareGroupRepositoryPort,
+  type CareEventProjectionRemotePort,
   type CareEventRemoteStorePort,
   type ClockPort,
   type IdGeneratorPort,
 } from '@babycare/product-core';
 import {
+  CareEventOverviewFeed,
   CareEventTimelineFeed,
   LocalFirstCareEventRepository,
   PersistentCareEventSyncStore,
@@ -33,7 +35,7 @@ export interface CareEventContainerDependencies {
     CareGroupRepositoryPort,
     'observeMembership' | 'listForUser'
   >;
-  readonly remote: CareEventRemoteStorePort;
+  readonly remote: CareEventRemoteStorePort & CareEventProjectionRemotePort;
   readonly timeline: CareEventTimelineFeedConfig;
   readonly clock: ClockPort;
   readonly idGenerator: IdGeneratorPort;
@@ -60,7 +62,9 @@ export async function createCareEventContainer(
   );
   let lifecycle: CareSessionLifecycle;
   let timelineFeed: CareEventTimelineFeed | undefined;
+  let overviewFeed: CareEventOverviewFeed | undefined;
   let stopTimelineOwner: () => void = () => undefined;
+  let stopOverviewOwner: () => void = () => undefined;
   const repository = new LocalFirstCareEventRepository(
     local,
     dependencies.remote,
@@ -69,14 +73,29 @@ export async function createCareEventContainer(
       remoteObservationMode: 'external_pages',
     },
   );
-  const closeTimelineFeed = () => {
+  const closeProjectionFeeds = () => {
     stopTimelineOwner();
     stopTimelineOwner = () => undefined;
+    stopOverviewOwner();
+    stopOverviewOwner = () => undefined;
     timelineFeed?.close();
+    overviewFeed?.close();
   };
   const purge = async () => {
-    closeTimelineFeed();
+    closeProjectionFeeds();
     await repository.clear();
+  };
+  const refreshProjectionFeeds = async () => {
+    const [timelineResult] = await Promise.allSettled([
+      timelineFeed?.refresh() ?? Promise.resolve(),
+      overviewFeed?.refresh() ?? Promise.resolve(),
+    ]);
+    // Overview refresh reports its typed error through onRemoteError before
+    // rejecting. Timeline refresh does not, so only its rejection is rethrown
+    // to the lifecycle to avoid reporting the overview failure twice.
+    if (timelineResult.status === 'rejected') {
+      throw timelineResult.reason;
+    }
   };
   lifecycle = new CareSessionLifecycle({
     auth: dependencies.auth,
@@ -85,10 +104,10 @@ export async function createCareEventContainer(
     purge,
     onAuthenticationRestored: async () => {
       await repository.retryFailures(['unauthenticated']);
-      await timelineFeed?.refresh();
+      await refreshProjectionFeeds();
     },
     onMembershipRestored: async () => {
-      await timelineFeed?.refresh();
+      await refreshProjectionFeeds();
     },
     onRevoked: dependencies.onRevoked,
     onError: dependencies.onError,
@@ -104,12 +123,22 @@ export async function createCareEventContainer(
       onServerConfirmed: () =>
         repository.retryFailures(['retryable', 'unauthenticated']),
     });
-    // Exactly one page owner is started per authenticated scope. UI callers
-    // add presentation listeners to this instance instead of creating feeds.
+    overviewFeed = new CareEventOverviewFeed(local, dependencies.remote, {
+      groupId: dependencies.context.group.id,
+      babyId: dependencies.context.baby.id,
+      clock: dependencies.clock,
+      onRemoteError: error => lifecycle.handleRemoteError(error),
+      onServerConfirmed: () =>
+        repository.retryFailures(['retryable', 'unauthenticated']),
+    });
+    // Exactly one owner per projection is started for this authenticated
+    // scope. UI callers add listeners to these instances instead of creating
+    // competing Firestore feeds.
     stopTimelineOwner = timelineFeed.start(() => undefined);
+    stopOverviewOwner = overviewFeed.start(() => undefined);
   } catch (error) {
     stopSessionLifecycle?.();
-    closeTimelineFeed();
+    closeProjectionFeeds();
     try {
       await repository.clear();
     } catch (cleanupError) {
@@ -122,16 +151,18 @@ export async function createCareEventContainer(
     throw error;
   }
   const activeTimelineFeed = timelineFeed;
-  if (!activeTimelineFeed) {
-    throw new Error('Care event timeline owner failed to initialize');
+  const activeOverviewFeed = overviewFeed;
+  if (!activeTimelineFeed || !activeOverviewFeed) {
+    throw new Error('Care event projection owners failed to initialize');
   }
   const stopContainerSession = () => {
     stopSessionLifecycle();
-    closeTimelineFeed();
+    closeProjectionFeeds();
   };
   return {
     repository,
     timelineFeed: activeTimelineFeed,
+    overviewFeed: activeOverviewFeed,
     syncNow: repository.syncNow.bind(repository),
     observeSyncState: repository.observeSyncState.bind(repository),
     purge,

@@ -11,17 +11,24 @@ import {
   type CareEventMutation,
   type CareEventPushResult,
   type CareEventPageRequest,
+  type CareEventProjectionScope,
   type CareEventQuery,
   type CareEventRemoteObservation,
   type CareEventRemotePage,
   type CareEventRemotePageObservation,
   type CareEventRemoteStorePort,
+  type CareEventWindowObservation,
+  type CareEventWindowRequest,
   type CareGroup,
   type EventId,
   type GroupId,
   type Membership,
   type MembershipObservation,
+  type LatestCareEventObservation,
+  type LatestCareEventRequest,
+  type ActiveSleepObservation,
 } from '@babycare/product-core';
+import {PersistentCareEventSyncStore} from '@babycare/product-data';
 
 import type {AuthenticatedCareContext} from '../src/app/care-context';
 import {createCareEventContainer} from '../src/app/care-event-container';
@@ -133,7 +140,17 @@ class FakeRemote implements CareEventRemoteStorePort {
   readonly pageListeners = new Set<
     (observation: CareEventRemotePageObservation) => void
   >();
+  readonly windowListeners = new Set<
+    (observation: CareEventWindowObservation) => void
+  >();
+  readonly latestListeners = new Set<
+    (observation: LatestCareEventObservation) => void
+  >();
+  readonly activeSleepListeners = new Set<
+    (observation: ActiveSleepObservation) => void
+  >();
   fetchCount = 0;
+  projectionFetchCount = 0;
 
   async push(mutation: CareEventMutation): Promise<CareEventPushResult> {
     return {kind: 'applied', remote: mutation.event};
@@ -144,6 +161,51 @@ class FakeRemote implements CareEventRemoteStorePort {
     _eventId: EventId,
   ): Promise<CareEvent | undefined> {
     return undefined;
+  }
+
+  async fetchWindow(
+    _request: CareEventWindowRequest,
+  ): Promise<readonly CareEvent[]> {
+    this.projectionFetchCount += 1;
+    return [];
+  }
+
+  observeWindow(
+    _request: CareEventWindowRequest,
+    listener: (observation: CareEventWindowObservation) => void,
+  ): () => void {
+    this.windowListeners.add(listener);
+    return () => this.windowListeners.delete(listener);
+  }
+
+  async fetchLatest(
+    _request: LatestCareEventRequest,
+  ): Promise<CareEvent | undefined> {
+    this.projectionFetchCount += 1;
+    return undefined;
+  }
+
+  observeLatest(
+    _request: LatestCareEventRequest,
+    listener: (observation: LatestCareEventObservation) => void,
+  ): () => void {
+    this.latestListeners.add(listener);
+    return () => this.latestListeners.delete(listener);
+  }
+
+  async fetchActiveSleep(
+    _scope: CareEventProjectionScope,
+  ): Promise<undefined> {
+    this.projectionFetchCount += 1;
+    return undefined;
+  }
+
+  observeActiveSleep(
+    _scope: CareEventProjectionScope,
+    listener: (observation: ActiveSleepObservation) => void,
+  ): () => void {
+    this.activeSleepListeners.add(listener);
+    return () => this.activeSleepListeners.delete(listener);
   }
 
   async fetchPage(
@@ -242,7 +304,13 @@ describe('createCareEventContainer', () => {
     const stopTimeline = trackStop(
       container.timelineFeed.start(() => undefined),
     );
-    await container.timelineFeed.refresh();
+    const stopOverview = trackStop(
+      container.overviewFeed.start(() => undefined),
+    );
+    await Promise.all([
+      container.timelineFeed.refresh(),
+      container.overviewFeed.refresh(),
+    ]);
 
     remote.emitPage({kind: 'error', error: {code: 'permission_denied'}});
     await container.whenSessionSettled();
@@ -252,11 +320,15 @@ describe('createCareEventContainer', () => {
     expect(AsyncStorage.removeItem).toHaveBeenCalledTimes(1);
     expect(remote.listeners.size).toBe(0);
     expect(remote.pageListeners.size).toBe(0);
+    expect(remote.windowListeners.size).toBe(0);
+    expect(remote.latestListeners.size).toBe(0);
+    expect(remote.activeSleepListeners.size).toBe(0);
     expect(auth.listeners.size).toBe(0);
     expect(groups.listeners.size).toBe(0);
 
     stopEvents();
     stopTimeline();
+    stopOverview();
     container.stopSessionLifecycle();
   });
 
@@ -291,6 +363,101 @@ describe('createCareEventContainer', () => {
     await restarted.purge();
   });
 
+  it('starts one timeline and one overview owner for the authenticated scope', async () => {
+    const remote = new FakeRemote();
+    const container = await createCareEventContainer({
+      auth: new FakeAuth(),
+      groups: new FakeGroups(),
+      context,
+      remote,
+      timeline: timelineConfig,
+      clock: {now: () => 1_000},
+      idGenerator: {nextEventId: () => eventId('generated')},
+      analytics: {track: async () => undefined},
+      onRevoked: jest.fn(),
+      onError: jest.fn(),
+    });
+    await Promise.all([
+      container.timelineFeed.refresh(),
+      container.overviewFeed.refresh(),
+    ]);
+
+    expect(remote.pageListeners.size).toBe(1);
+    expect(remote.windowListeners.size).toBe(1);
+    expect(remote.latestListeners.size).toBe(3);
+    expect(remote.activeSleepListeners.size).toBe(1);
+    const stopTimeline = trackStop(
+      container.timelineFeed.start(() => undefined),
+    );
+    const stopOverview = trackStop(
+      container.overviewFeed.start(() => undefined),
+    );
+    expect(remote.pageListeners.size).toBe(1);
+    expect(remote.windowListeners.size).toBe(1);
+    expect(remote.latestListeners.size).toBe(3);
+    expect(remote.activeSleepListeners.size).toBe(1);
+
+    await container.dispose();
+    expect(remote.pageListeners.size).toBe(0);
+    expect(remote.windowListeners.size).toBe(0);
+    expect(remote.latestListeners.size).toBe(0);
+    expect(remote.activeSleepListeners.size).toBe(0);
+    stopTimeline();
+    stopOverview();
+  });
+
+  it('cleans up the first owner when overview startup fails partway', async () => {
+    const auth = new FakeAuth();
+    const groups = new FakeGroups();
+    const remote = new FakeRemote();
+    const startupError = new Error('overview local observer unavailable');
+    const originalObserve = PersistentCareEventSyncStore.prototype.observe;
+    let observeCalls = 0;
+    const observeSpy = jest
+      .spyOn(PersistentCareEventSyncStore.prototype, 'observe')
+      .mockImplementation(function (
+        this: PersistentCareEventSyncStore,
+        ...args: Parameters<typeof originalObserve>
+      ) {
+        observeCalls += 1;
+        if (observeCalls === 2) {
+          throw startupError;
+        }
+        return originalObserve.apply(this, args);
+      });
+    const dependencies = {
+      auth,
+      groups,
+      context,
+      remote,
+      timeline: timelineConfig,
+      clock: {now: () => 1_000},
+      idGenerator: {nextEventId: () => eventId('generated')},
+      analytics: {track: async () => undefined},
+      onRevoked: jest.fn(),
+      onError: jest.fn(),
+    };
+
+    try {
+      await expect(createCareEventContainer(dependencies)).rejects.toBe(
+        startupError,
+      );
+    } finally {
+      observeSpy.mockRestore();
+    }
+
+    expect(AsyncStorage.removeItem).toHaveBeenCalledTimes(1);
+    expect(remote.pageListeners.size).toBe(0);
+    expect(remote.windowListeners.size).toBe(0);
+    expect(remote.latestListeners.size).toBe(0);
+    expect(remote.activeSleepListeners.size).toBe(0);
+    expect(auth.listeners.size).toBe(0);
+    expect(groups.listeners.size).toBe(0);
+
+    const restarted = await createCareEventContainer(dependencies);
+    await restarted.dispose();
+  });
+
   it('rebinds the page owner after verified Auth recovery', async () => {
     const remote = new FakeRemote();
     const onError = jest.fn();
@@ -306,18 +473,26 @@ describe('createCareEventContainer', () => {
       onRevoked: jest.fn(),
       onError,
     });
-    await container.timelineFeed.refresh();
+    await Promise.all([
+      container.timelineFeed.refresh(),
+      container.overviewFeed.refresh(),
+    ]);
     const fetchCount = remote.fetchCount;
+    const projectionFetchCount = remote.projectionFetchCount;
 
     remote.emitPage({kind: 'error', error: {code: 'unauthenticated'}});
     await container.whenSessionSettled();
 
     expect(remote.fetchCount).toBeGreaterThan(fetchCount);
+    expect(remote.projectionFetchCount).toBeGreaterThan(projectionFetchCount);
     expect(remote.pageListeners.size).toBeGreaterThan(0);
     expect(onError).not.toHaveBeenCalled();
     await container.dispose();
     expect(remote.listeners.size).toBe(0);
     expect(remote.pageListeners.size).toBe(0);
+    expect(remote.windowListeners.size).toBe(0);
+    expect(remote.latestListeners.size).toBe(0);
+    expect(remote.activeSleepListeners.size).toBe(0);
   });
 
   it('rebinds the page owner when membership remains authorized', async () => {
@@ -336,19 +511,27 @@ describe('createCareEventContainer', () => {
       onRevoked,
       onError,
     });
-    await container.timelineFeed.refresh();
+    await Promise.all([
+      container.timelineFeed.refresh(),
+      container.overviewFeed.refresh(),
+    ]);
     const fetchCount = remote.fetchCount;
+    const projectionFetchCount = remote.projectionFetchCount;
 
     remote.emitPage({kind: 'error', error: {code: 'permission_denied'}});
     await container.whenSessionSettled();
 
     expect(remote.fetchCount).toBeGreaterThan(fetchCount);
+    expect(remote.projectionFetchCount).toBeGreaterThan(projectionFetchCount);
     expect(remote.pageListeners.size).toBeGreaterThan(0);
     expect(onRevoked).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     await container.dispose();
     expect(remote.listeners.size).toBe(0);
     expect(remote.pageListeners.size).toBe(0);
+    expect(remote.windowListeners.size).toBe(0);
+    expect(remote.latestListeners.size).toBe(0);
+    expect(remote.activeSleepListeners.size).toBe(0);
   });
 
   it('releases the scoped writer on normal teardown without purging cache', async () => {

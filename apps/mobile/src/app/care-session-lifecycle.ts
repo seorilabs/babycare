@@ -40,7 +40,8 @@ export class CareSessionLifecycle {
   #stopAuth: (() => void) | undefined;
   #stopMembership: (() => void) | undefined;
   #pending: Promise<void> = Promise.resolve();
-  #authenticationRecoveryInProgress = false;
+  #authenticationRecoveryPhase: 'verifying' | 'restoring' | undefined;
+  #membershipRecoveryPhase: 'verifying' | 'restoring' | undefined;
   #revoking = false;
   #started = false;
 
@@ -113,8 +114,11 @@ export class CareSessionLifecycle {
 
   handleRemoteError(error: CareEventRemoteError): void {
     if (error.code === 'unauthenticated') {
-      if (this.#authenticationRecoveryInProgress) {
+      if (this.#authenticationRecoveryPhase === 'restoring') {
         this.#dependencies.onError(this.#remoteError(error));
+        return;
+      }
+      if (this.#authenticationRecoveryPhase === 'verifying') {
         return;
       }
       this.#verifyIdentityAfterError();
@@ -155,10 +159,10 @@ export class CareSessionLifecycle {
   }
 
   #verifyIdentityAfterError(): void {
-    if (this.#revoking || this.#authenticationRecoveryInProgress) {
+    if (this.#revoking || this.#authenticationRecoveryPhase !== undefined) {
       return;
     }
-    this.#authenticationRecoveryInProgress = true;
+    this.#authenticationRecoveryPhase = 'verifying';
     const context = this.#dependencies.context;
     this.#pending = this.#pending.then(async () => {
       try {
@@ -177,6 +181,7 @@ export class CareSessionLifecycle {
         if (!this.#started) {
           return;
         }
+        this.#authenticationRecoveryPhase = 'restoring';
         await this.#dependencies.onAuthenticationRestored();
       } catch (verificationError) {
         if (this.#revoking || !this.#started) {
@@ -189,7 +194,7 @@ export class CareSessionLifecycle {
         );
         return;
       } finally {
-        this.#authenticationRecoveryInProgress = false;
+        this.#authenticationRecoveryPhase = undefined;
       }
       // A forced token refresh succeeded and the failed outbox was retried.
     });
@@ -199,46 +204,60 @@ export class CareSessionLifecycle {
     if (this.#revoking) {
       return;
     }
+    if (this.#membershipRecoveryPhase === 'verifying') {
+      return;
+    }
+    if (this.#membershipRecoveryPhase === 'restoring') {
+      this.#dependencies.onError(originalError);
+      return;
+    }
+    this.#membershipRecoveryPhase = 'verifying';
     const context = this.#dependencies.context;
     this.#pending = this.#pending.then(async () => {
       try {
-        const groups = await this.#dependencies.groups.listForUser(
-          context.identity.userId,
-        );
-        if (this.#revoking) {
-          return;
-        }
-        if (!groups.some(group => group.id === context.group.id)) {
-          this.#revoke('membership_removed');
-          return;
-        }
-      } catch (verificationError) {
-        if (this.#revoking || !this.#started) {
-          return;
-        }
-        this.#dependencies.onError(
-          verificationError instanceof Error
-            ? verificationError
-            : new Error('Membership verification failed'),
-        );
-        return;
-      }
-      if (this.#started && this.#dependencies.onMembershipRestored) {
         try {
-          await this.#dependencies.onMembershipRestored();
-        } catch (recoveryError) {
-          if (!this.#revoking && this.#started) {
-            this.#dependencies.onError(
-              recoveryError instanceof Error
-                ? recoveryError
-                : new Error('Membership recovery failed'),
-            );
+          const groups = await this.#dependencies.groups.listForUser(
+            context.identity.userId,
+          );
+          if (this.#revoking) {
+            return;
           }
+          if (!groups.some(group => group.id === context.group.id)) {
+            this.#revoke('membership_removed');
+            return;
+          }
+        } catch (verificationError) {
+          if (this.#revoking || !this.#started) {
+            return;
+          }
+          this.#dependencies.onError(
+            verificationError instanceof Error
+              ? verificationError
+              : new Error('Membership verification failed'),
+          );
           return;
         }
-      }
-      if (this.#started) {
-        this.#dependencies.onError(originalError);
+
+        if (this.#started && this.#dependencies.onMembershipRestored) {
+          this.#membershipRecoveryPhase = 'restoring';
+          try {
+            await this.#dependencies.onMembershipRestored();
+          } catch (recoveryError) {
+            if (!this.#revoking && this.#started) {
+              this.#dependencies.onError(
+                recoveryError instanceof Error
+                  ? recoveryError
+                  : new Error('Membership recovery failed'),
+              );
+            }
+            return;
+          }
+        }
+        if (this.#started) {
+          this.#dependencies.onError(originalError);
+        }
+      } finally {
+        this.#membershipRecoveryPhase = undefined;
       }
     });
   }

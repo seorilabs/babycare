@@ -15,10 +15,10 @@
 | 로컬 구현·검증 완료·실제 통합 대기 | 초대 발급/수락 Functions와 client callable adapter | HMAC, 만료, single-use, rate limit, audit unit 10건과 transaction Emulator 검증. 실제 verified Auth/callable/App Check/Secret Manager/IAM 통합 필요 |
 | 대기 | 두 계정·두 기기 공동 기록 end-to-end | 초대→합류→실시간 반영→오프라인 복귀→멤버 제거 통과 |
 | Rules/transaction 구현·실제 project 대기 | cross-device active sleep 단일성 | `activeSleeps/{babyId}` singleton lock을 event와 원자 생성·종료하고 동시 시작 2건 중 1건만 허용하는 Emulator 경쟁 테스트 통과. 실제 두 기기 conflict UX 검증 필요 |
-| read adapter 구현 대기 | 새 기기 active-sleep singleton projection | bounded timeline 밖에서도 진행 중 수면을 복구하도록 `activeSleeps/{babyId}`→event server read/observe를 별도 연결. timeline prefix를 active-session completeness source로 사용 금지 |
+| 구현·로컬 검증 완료·실제 project 대기 | 새 기기 active-sleep singleton projection | `activeSleeps/{babyId}`→event server-only read/observe와 lock/event identity 검증, v3 `unknown/confirmed_none/active` coverage를 구현. timeline prefix를 completeness source로 쓰지 않으며 실제 새 기기 QA 필요 |
 | lifecycle 구현·실제 Auth composition 대기 | 로컬 cache purge와 오류/동기화 상태 UX | Auth sign-out·identity 변경·확인된 membership 제거, 강제 token refresh, 반복 401 차단, concurrent close/purge와 replacement-writer 보호를 Jest로 검증. RNFirebase disk persistence 비활성화와 실제 제거 QA 필요 |
-| 구현·로컬 검증 완료·실제 project 대기 | bounded query와 timeline pagination | `(occurredAt DESC, documentId DESC)` raw cursor, server-only page, authoritative prefix envelope v2, live page 변경 시 HEAD rebase, tombstone scan·cache cap과 SectionList load/retry를 구현. cloud 화면 composition·실제 index/2기기 경계 QA 필요 |
-| 설계·구현 대기 | Home/Stats cloud 독립 projection | cloud container의 전체 baby listener는 bounded feed와 공존하지 않도록 비활성화했다. 오늘/12시간/7일/30일 기간 query 또는 server aggregate를 별도 authoritative projection으로 연결해야 하며 timeline prefix를 전체 통계로 사용 금지 |
+| 구현·로컬 검증 완료·실제 project 대기 | bounded query와 timeline pagination | `(occurredAt DESC, documentId DESC)` raw cursor, server-only page, envelope v3 authoritative prefix, live page 변경 시 HEAD rebase, tombstone scan·cache cap과 SectionList load/retry를 구현. production UI composition·실제 index/2기기 경계 QA 필요 |
+| 구현·로컬 검증 완료·production UI composition 대기 | Home/Stats cloud 독립 projection | 기간 window+종류별 latest+active singleton을 결합하는 `CareEventOverviewFeed`, v3 named coverage와 atomic 교체를 구현. Home은 explicit active sleep, Stats는 local calendar/DST 범위를 사용. 기본 `App.tsx`와 실제 Firebase/두 기기에는 미연결 |
 
 ## P0 — AppsInToss
 

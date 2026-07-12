@@ -1,7 +1,11 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Alert, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
-import type {CareEvent, CareEventKind} from '@babycare/product-core';
+import {
+  isActiveSleep,
+  type CareEvent,
+  type CareEventKind,
+} from '@babycare/product-core';
 
 import {LocalSessionHydrationError} from './src/adapters/local/local-session-repository';
 import {appContainer} from './src/app/container';
@@ -164,6 +168,7 @@ function BabyCareApp() {
     }
     return (
       <HomeScreen
+        activeSleep={events.find(isActiveSleep)}
         caregiverNames={caregiverNames}
         events={events}
         now={now}

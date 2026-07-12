@@ -116,6 +116,7 @@ function setup() {
   const groups = new FakeGroups();
   const purge = jest.fn(async () => undefined);
   const onAuthenticationRestored = jest.fn(async () => undefined);
+  const onMembershipRestored = jest.fn(async () => undefined);
   const onRevoked = jest.fn();
   const onError = jest.fn();
   const lifecycle = new CareSessionLifecycle({
@@ -124,6 +125,7 @@ function setup() {
     context,
     purge,
     onAuthenticationRestored,
+    onMembershipRestored,
     onRevoked,
     onError,
   });
@@ -133,6 +135,7 @@ function setup() {
     groups,
     purge,
     onAuthenticationRestored,
+    onMembershipRestored,
     onRevoked,
     onError,
     lifecycle,
@@ -245,6 +248,71 @@ describe('CareSessionLifecycle', () => {
     expect(state.onError).toHaveBeenCalledTimes(1);
     expect(state.onError).toHaveBeenCalledWith(repeatedError);
     expect(state.onRevoked).not.toHaveBeenCalled();
+  });
+
+  it('coalesces simultaneous 401s while identity verification is pending', async () => {
+    const state = setup();
+    let resolveIdentity: ((value: AuthIdentity) => void) | undefined;
+    let notifyVerificationStarted: (() => void) | undefined;
+    const verificationStarted = new Promise<void>(resolve => {
+      notifyVerificationStarted = resolve;
+    });
+    const verifyCurrentUser = jest
+      .spyOn(state.auth, 'verifyCurrentUser')
+      .mockImplementationOnce(() => {
+        notifyVerificationStarted?.();
+        return new Promise(resolve => {
+          resolveIdentity = resolve;
+        });
+      });
+
+    state.lifecycle.handleRemoteError({code: 'unauthenticated'});
+    await verificationStarted;
+    state.lifecycle.handleRemoteError({
+      code: 'unauthenticated',
+      cause: new Error('same token incident from another owner'),
+    });
+    resolveIdentity?.(identity);
+    await state.lifecycle.whenSettled();
+
+    expect(verifyCurrentUser).toHaveBeenCalledTimes(1);
+    expect(state.onAuthenticationRestored).toHaveBeenCalledTimes(1);
+    expect(state.onError).not.toHaveBeenCalled();
+  });
+
+  it('coalesces simultaneous permission errors during membership verification', async () => {
+    const state = setup();
+    let resolveGroups: ((value: readonly CareGroup[]) => void) | undefined;
+    let notifyVerificationStarted: (() => void) | undefined;
+    const verificationStarted = new Promise<void>(resolve => {
+      notifyVerificationStarted = resolve;
+    });
+    const listForUser = jest
+      .spyOn(state.groups, 'listForUser')
+      .mockImplementationOnce(() => {
+        notifyVerificationStarted?.();
+        return new Promise(resolve => {
+          resolveGroups = resolve;
+        });
+      });
+    const original = new Error('first projection denied');
+
+    state.lifecycle.handleRemoteError({
+      code: 'permission_denied',
+      cause: original,
+    });
+    await verificationStarted;
+    state.lifecycle.handleRemoteError({
+      code: 'permission_denied',
+      cause: new Error('same denial from another owner'),
+    });
+    resolveGroups?.([group]);
+    await state.lifecycle.whenSettled();
+
+    expect(listForUser).toHaveBeenCalledTimes(1);
+    expect(state.onMembershipRestored).toHaveBeenCalledTimes(1);
+    expect(state.onError).toHaveBeenCalledTimes(1);
+    expect(state.onError).toHaveBeenCalledWith(original);
   });
 
   it('does not retry a restored identity after normal teardown starts', async () => {

@@ -8,14 +8,14 @@
 
 | Layer | 목적 | 명령/위치 | 현재 범위 |
 | --- | --- | --- | --- |
-| Core unit | domain/use case 순수 로직 | `pnpm run test:core` | 모유 좌·우 독립 시간, 수유·기저귀·수면 validation, 자정 경계 집계, 시간/단위, 기록·수면종료·로컬 active sleep 단일화, UTF-8 document cursor pagination |
+| Core unit | domain/use case 순수 로직 | `pnpm run test:core` | 모유 좌·우 독립 시간, 수유·기저귀·수면 validation, 자정 경계 집계, 시간/단위, 기록·수면종료·로컬 active sleep 단일화, UTF-8 document cursor pagination, projection request와 explicit range 통계 |
 | Firebase Rules | 그룹 접근·이벤트 불변·soft delete·active-sleep singleton·receipt·Storage 권한 | `pnpm run test:firebase` | Firestore/Storage Emulator allow/deny와 동시 시작 경쟁 |
 | Functions unit | HMAC·입력·Auth·rate/error mapping 순수 검증 | `pnpm run test:functions` | callable boundary와 invite service |
 | Functions transaction | owner·expiry·single-use·audit·rate limit | `pnpm run test:functions:emulator` | Firestore Admin transaction Emulator |
 | TypeScript | workspace compile contract | `pnpm run typecheck` | core, product-data, mobile, Functions의 `tsc --noEmit` |
 | Architecture | core/data import·runtime dependency boundary | `pnpm run check:architecture` | core와 product-data의 RN/Firebase/AIT/native 의존 탐지 |
 | Docs | docs source-of-truth 구조 | `pnpm run check:docs` | 필수 planning/architecture/market/release/QA 문서 |
-| Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded prefix migration/rebase/tombstone/cap, transaction receipt·active lock, server page metadata, timeline load/retry, document decoder |
+| Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded prefix와 v3 named projection migration/rebase/tombstone/cap, transaction receipt·active lock, server page/window/latest/active metadata, timeline/overview load·recovery, document decoder, local calendar DST |
 | Mobile lint | RN source 정적 검사 | `pnpm --filter @babycare/mobile lint` | mobile source |
 | Mobile target | RN Android/iOS target과 iOS launch | `pnpm run check:mobile` | native project 존재, framework launch 문구 탐지 |
 | AIT target | Granite target 초기화 | `pnpm run check:ait` | 현재 미초기화라 실패가 정상 |
@@ -34,6 +34,7 @@ pnpm run test
 - 디바이스, emulator, network, wall-clock 실환경 없이 실행한다. 시간·ID·repository·analytics는 port/fake로 주입한다.
 - 수유 subtype 필수값과 상한, 미래 시각, 수면 시작/종료와 48시간 상한을 경계값으로 검증한다.
 - 홈/통계 집계는 soft delete 제외, 오늘 범위, 진행 중 수면 clipping을 검증한다.
+- core 통계는 caller가 전달한 `[from, to)`만 집계하고, 12시간/7일/30일 local calendar·DST 범위 생성은 mobile delivery test에서 검증한다.
 - use case는 저장 결과와 PII-free analytics event를 함께 검증한다.
 - production bug를 고치면 재현 순수 테스트를 먼저 추가하고 가장 좁은 test부터 재실행한다.
 
@@ -58,7 +59,7 @@ pnpm run test
 
 ## Adapter / Sync Test 기준
 
-현재 화면 composition의 `PersistentCareEventRepository`는 AsyncStorage 기반 local preview adapter다. 별도 인증 context factory는 주입형 `StringStoragePort`와 `PersistentCareEventSyncStore`, `LocalFirstCareEventRepository`, `CareEventTimelineFeed`, RNFirebase transaction/page transport를 조립한다. Jest에서는 local durable commit, revision chain, restart, retry, conflict, lost-ack receipt, active lock, authoritative prefix와 purge lifecycle을 검증하지만 실제 Firebase project와 기본 화면에는 아직 연결하지 않았다. 아래 계약을 실제 Firestore/AIT adapter 환경에서 다시 검증한다.
+현재 기본 화면 composition의 `PersistentCareEventRepository`는 AsyncStorage 기반 local preview adapter다. 별도 인증 context factory는 주입형 `StringStoragePort`와 `PersistentCareEventSyncStore`, `LocalFirstCareEventRepository`, `CareEventTimelineFeed`, `CareEventOverviewFeed`, RNFirebase transaction/page/projection transport를 조립하고 timeline·overview owner를 각각 하나씩 반환한다. Jest에서는 local durable commit, revision chain, restart, retry, conflict, lost-ack receipt, active lock, authoritative prefix, v3 named coverage/atomic projection과 purge lifecycle을 검증하지만 실제 Firebase project와 production authenticated UI root에는 아직 연결하지 않았다. 아래 계약을 실제 Firestore/AIT adapter 환경에서 다시 검증한다.
 
 | 시나리오 | 기대 결과 |
 | --- | --- |
@@ -70,7 +71,11 @@ pnpm run test
 | 같은 timestamp의 page 경계 | document ID tie-break로 중복·누락 없이 한 번씩 보임 |
 | head 삽입·시간 이동·soft delete | 로드된 prefix를 HEAD rebase해 stale/duplicate row가 남지 않음 |
 | tombstone 연속 page | raw cursor는 전진하고 visible row 또는 scan/cap 경계까지 조회 |
-| 앱 재시작 후 더 보기 | envelope v2 coverage/end cursor가 복구되고 v1 cache도 안전하게 이관 |
+| 앱 재시작 후 더 보기 | envelope v3 timeline coverage/end cursor가 복구되고 v1/v2 cache도 안전하게 이관 |
+| Home/Stats 독립 조회 | bounded timeline 밖의 종류별 latest와 통계 window가 named overview projection에 보존 |
+| 새 기기에서 진행 중 수면 | timeline prefix와 무관하게 active lock→event가 복구되고 Home에 explicit active sleep으로 전달 |
+| overview/active 갱신 중 실패 | atomic commit 또는 rollback으로 두 projection이 서로 다른 server 세대를 노출하지 않음 |
+| projection listener terminal 오류 | tight loop 없이 recovery bind하고 superseded epoch callback은 last-good을 덮지 않음 |
 | active sleep 동시 종료 | 허용된 단일 close 전이만 남음 |
 | 멤버 제거·로그아웃 | observer/in-flight sync 중단, 새 server 요청 실패, 민감 cache purge |
 | 손상된 local cache | crash하지 않고 안전한 복구/오류 상태 제공 |
@@ -91,8 +96,9 @@ pnpm run test
 한 명의 테스트로 MVP를 승인하지 않는다.
 
 - 서로 다른 계정·실제 기기 2대에서 owner 초대→member 합류.
-- A가 기록한 내용과 기록자가 B의 홈/타임라인에 반영.
+- A가 기록한 내용과 기록자가 B의 홈/타임라인/통계 독립 projection에 반영.
 - B가 A의 active sleep을 종료하되 event identity 보존.
+- timeline page에 없는 이전 기록과 새 기기 active sleep도 Home/Stats에 누락되지 않음.
 - 한 기기를 offline으로 전환해 기록·재실행 후 online 복귀.
 - owner가 member를 제거한 직후 Firestore/Storage 접근 차단과 local cache purge.
 
