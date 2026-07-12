@@ -18,10 +18,10 @@ done
 test_files=()
 while IFS= read -r file; do
   test_files+=("${file}")
-done < <(find packages/product-core/tests -type f -name "*.test.mjs" -print)
+done < <(find packages/product-core/tests -type f \( -name "*.test.ts" -o -name "*.test.mjs" \) -print | sort)
 
 if [ "${#test_files[@]}" -gt 0 ]; then
-  node --test "${test_files[@]}"
+  node --test --experimental-strip-types "${test_files[@]}"
 else
   echo "Core test scaffold is present. Add product-specific pure tests under packages/product-core/tests."
 fi

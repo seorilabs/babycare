@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app_name="${1:-}"
+if [ "${1:-}" = "--" ]; then
+  shift
+fi
 
-if [ -z "${app_name}" ]; then
-  echo "Usage: pnpm run bootstrap:mobile -- <AppName>" >&2
-  echo "Example: pnpm run bootstrap:mobile -- MySeorilabsApp" >&2
+app_name="${1:-}"
+package_name="${2:-}"
+
+if [ -z "${app_name}" ] || [ -z "${package_name}" ]; then
+  echo "Usage: pnpm run bootstrap:mobile -- <AppName> <package.name>" >&2
+  echo "Example: pnpm run bootstrap:mobile -- MySeorilabsApp com.seorilabs.myapp.dev" >&2
   exit 2
 fi
 
@@ -23,7 +28,11 @@ trap cleanup EXIT
 echo "Creating bare React Native app with Community CLI: ${app_name}"
 (
   cd "${tmp_dir}"
-  npx @react-native-community/cli@latest init "${app_name}"
+  npx @react-native-community/cli@20.0.2 init "${app_name}" \
+    --version 0.85.3 \
+    --package-name "${package_name}" \
+    --skip-install \
+    --skip-git-init
 )
 
 rsync -a "${tmp_dir}/${app_name}/" "apps/mobile/"

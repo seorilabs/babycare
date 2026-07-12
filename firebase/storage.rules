@@ -2,6 +2,29 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function canAccessBaby(groupId, babyId) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/groups/$(groupId)/members/$(request.auth.uid))
+        && firestore.exists(/databases/(default)/documents/groups/$(groupId)/babies/$(babyId));
+    }
+
+    function isSupportedBabyImage() {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp|heic|heif)');
+    }
+
+    match /groups/{groupId}/babies/{babyId}/{filePath=**} {
+      allow read: if canAccessBaby(groupId, babyId);
+      allow create, update: if canAccessBaby(groupId, babyId) && isSupportedBabyImage();
+      allow delete: if canAccessBaby(groupId, babyId);
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

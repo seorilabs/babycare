@@ -52,8 +52,24 @@ if rg -n "확정 필요|TBD|TODO" "${scan_targets[@]}"; then
   blockers=1
 fi
 
+if rg -n '^- \[ \]' "docs/06-release/release-checklist.md"; then
+  echo
+  echo "Release checklist still has incomplete approval, signing, privacy, asset, or QA gates." >&2
+  blockers=1
+fi
+
+if ! bash scripts/check_mobile_target.sh; then
+  echo "Mobile target or startup asset gate failed." >&2
+  blockers=1
+fi
+
+if [ -f "apps/ait/granite.config.ts" ] && ! bash scripts/check_ait_target.sh; then
+  echo "AppsInToss target gate failed." >&2
+  blockers=1
+fi
+
 if [ "${blockers}" -ne 0 ]; then
   exit 1
 fi
 
-echo "No release placeholders found."
+echo "Release readiness checklist is complete."

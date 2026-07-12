@@ -1,0 +1,144 @@
+import {Alert, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+
+import type {LocalSession} from '../app/session';
+import type {AppTheme} from '../app/theme';
+
+function SettingRow(props: {
+  readonly icon: string;
+  readonly title: string;
+  readonly detail?: string;
+  readonly theme: AppTheme;
+  readonly onPress?: () => void;
+}) {
+  return (
+    <Pressable
+      disabled={!props.onPress}
+      onPress={props.onPress}
+      style={[styles.settingRow, {borderBottomColor: props.theme.colors.border}]}>
+      <View style={[styles.settingIcon, {backgroundColor: props.theme.colors.surfaceMuted}]}>
+        <Text style={styles.settingEmoji}>{props.icon}</Text>
+      </View>
+      <View style={styles.settingCopy}>
+        <Text style={[styles.settingTitle, {color: props.theme.colors.text}]}>{props.title}</Text>
+        {props.detail ? <Text style={[styles.settingDetail, {color: props.theme.colors.textMuted}]}>{props.detail}</Text> : null}
+      </View>
+      <Text style={[styles.chevron, {color: props.theme.colors.textMuted}]}>{props.onPress ? '›' : ''}</Text>
+    </Pressable>
+  );
+}
+
+export function MoreScreen(props: {
+  readonly session: LocalSession;
+  readonly theme: AppTheme;
+  readonly onReset: () => Promise<void>;
+}) {
+  return (
+    <ScrollView
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      style={{backgroundColor: props.theme.colors.background}}>
+      <Text style={[styles.title, {color: props.theme.colors.text}]}>더보기</Text>
+      <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>그룹과 앱 설정을 관리해요</Text>
+
+      <View style={[styles.groupCard, {backgroundColor: props.theme.colors.surface}]}>
+        <View style={styles.groupHeader}>
+          <View>
+            <Text style={[styles.groupEyebrow, {color: props.theme.colors.primary}]}>돌봄 그룹</Text>
+            <Text style={[styles.groupName, {color: props.theme.colors.text}]}>{props.session.babyName}이네</Text>
+          </View>
+          <View style={[styles.localBadge, {backgroundColor: props.theme.colors.surfaceMuted}]}>
+            <Text style={[styles.localText, {color: props.theme.colors.textMuted}]}>로컬 개발 모드</Text>
+          </View>
+        </View>
+        <View style={[styles.member, {borderTopColor: props.theme.colors.border}]}>
+          <View style={[styles.avatar, {backgroundColor: props.theme.colors.primary}]}>
+            <Text style={styles.avatarText}>{props.session.caregiverName.slice(0, 1)}</Text>
+          </View>
+          <View style={styles.memberCopy}>
+            <Text style={[styles.memberName, {color: props.theme.colors.text}]}>{props.session.caregiverName}</Text>
+            <Text style={[styles.memberRole, {color: props.theme.colors.textMuted}]}>나 · 소유자</Text>
+          </View>
+        </View>
+        <View style={[styles.invite, {backgroundColor: props.theme.colors.primarySoft}]}>
+          <View>
+            <Text style={[styles.inviteLabel, {color: props.theme.colors.textMuted}]}>초대 코드 미리보기</Text>
+            <Text style={[styles.inviteCode, {color: props.theme.colors.primary}]}>{props.session.inviteCode}</Text>
+          </View>
+          <Text style={[styles.inviteStatus, {color: props.theme.colors.textMuted}]}>Firebase 연결 후 활성화</Text>
+        </View>
+      </View>
+
+      <Text style={[styles.sectionLabel, {color: props.theme.colors.textMuted}]}>설정</Text>
+      <View style={[styles.settings, {backgroundColor: props.theme.colors.surface}]}>
+        <SettingRow detail="ml" icon="⚖️" theme={props.theme} title="단위" />
+        <SettingRow detail="시스템 설정 사용" icon="◐" theme={props.theme} title="화면 모드" />
+        <SettingRow detail="기기 로컬 저장 · 개발 모드" icon="☁️" theme={props.theme} title="동기화 상태" />
+        <SettingRow detail="한국어" icon="文" theme={props.theme} title="언어" />
+      </View>
+
+      <Text style={[styles.sectionLabel, {color: props.theme.colors.textMuted}]}>데이터와 개인정보</Text>
+      <View style={[styles.settings, {backgroundColor: props.theme.colors.surface}]}>
+        <SettingRow detail="준비 중" icon="⇩" theme={props.theme} title="데이터 내보내기" />
+        <SettingRow detail="성인 양육자용 · 비의료 목적" icon="🔒" theme={props.theme} title="개인정보 보호" />
+      </View>
+
+      <Pressable
+        onPress={() =>
+          Alert.alert('로컬 데이터를 초기화할까요?', '이 기기에 저장한 모든 돌봄 기록과 프로필이 삭제됩니다.', [
+            {text: '취소', style: 'cancel'},
+            {
+              text: '초기화',
+              style: 'destructive',
+              onPress: () =>
+                props.onReset().catch(error =>
+                  Alert.alert(
+                    '초기화하지 못했어요',
+                    error instanceof Error
+                      ? error.message
+                      : '기기 데이터를 지우지 못했습니다. 다시 시도해 주세요.',
+                  ),
+                ),
+            },
+          ])
+        }
+        style={[styles.reset, {borderColor: props.theme.colors.danger}]}>
+        <Text style={[styles.resetText, {color: props.theme.colors.danger}]}>로컬 데이터 초기화</Text>
+      </Pressable>
+      <Text style={[styles.version, {color: props.theme.colors.textMuted}]}>개발 빌드 0.1.0</Text>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {paddingBottom: 34, paddingHorizontal: 18, paddingTop: 14},
+  title: {fontSize: 27, fontWeight: '900', letterSpacing: -0.7},
+  subtitle: {fontSize: 12, marginTop: 5},
+  groupCard: {borderRadius: 20, marginTop: 20, padding: 17},
+  groupHeader: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'},
+  groupEyebrow: {fontSize: 10, fontWeight: '900', letterSpacing: 0.8},
+  groupName: {fontSize: 21, fontWeight: '900', marginTop: 4},
+  localBadge: {borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6},
+  localText: {fontSize: 9, fontWeight: '700'},
+  member: {alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', marginTop: 16, paddingTop: 16},
+  avatar: {alignItems: 'center', borderRadius: 20, height: 40, justifyContent: 'center', width: 40},
+  avatarText: {color: '#FFFFFF', fontSize: 15, fontWeight: '900'},
+  memberCopy: {flex: 1, marginLeft: 11},
+  memberName: {fontSize: 14, fontWeight: '800'},
+  memberRole: {fontSize: 10, marginTop: 3},
+  invite: {alignItems: 'center', borderRadius: 15, flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, padding: 14},
+  inviteLabel: {fontSize: 9},
+  inviteCode: {fontSize: 21, fontWeight: '900', letterSpacing: 3, marginTop: 3},
+  inviteStatus: {fontSize: 9, maxWidth: 90, textAlign: 'right'},
+  sectionLabel: {fontSize: 11, fontWeight: '800', marginBottom: 8, marginLeft: 4, marginTop: 24},
+  settings: {borderRadius: 18, overflow: 'hidden'},
+  settingRow: {alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 68, paddingHorizontal: 14},
+  settingIcon: {alignItems: 'center', borderRadius: 11, height: 38, justifyContent: 'center', width: 38},
+  settingEmoji: {fontSize: 18},
+  settingCopy: {flex: 1, marginLeft: 12},
+  settingTitle: {fontSize: 14, fontWeight: '700'},
+  settingDetail: {fontSize: 10, marginTop: 3},
+  chevron: {fontSize: 22},
+  reset: {alignItems: 'center', borderRadius: 15, borderWidth: 1, marginTop: 26, minHeight: 50, justifyContent: 'center'},
+  resetText: {fontSize: 13, fontWeight: '800'},
+  version: {fontSize: 10, marginTop: 14, textAlign: 'center'},
+});

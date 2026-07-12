@@ -2,15 +2,21 @@
 
 ## Workflows
 
-- `Repository Checks`: core, architecture, docs checks.
-- `Release Inventory`: manual release blocker inventory.
-- `Build AppsInToss Candidate`: manual `.ait` candidate build.
-- `Build Android Candidate`: manual Android AAB candidate build.
-- `Build iOS Candidate`: manual iOS archive handoff workflow.
+| 파일 / 표시 이름 | 트리거 | 현재 역할 |
+| --- | --- | --- |
+| `static-checks.yml` / `Static Checks` | PR·push→`main`, dispatch | org RN static workflow로 `pnpm run test` |
+| `release-inventory.yml` / `Release Inventory` | dispatch | `check_release_readiness.sh`; placeholder가 남아 있어 현재 실패가 정상 |
+| `release-tag.yml` / `Release Tag` | dispatch | 명시적 SemVer tag |
+| `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | AIT build·배포 caller; target 미초기화 |
+| `deploy-google-play.yml` / `Deploy Google Play` | dispatch/call | x64 Linux AAB·선택 upload caller; signing/config 미구성 |
+| `deploy-app-store.yml` / `Deploy App Store` | dispatch/call | macOS archive·선택 upload caller; production 입력 미구성 |
+| `deploy-all.yml` / `Deploy All` | dispatch | tag 기준 마켓 fan-out |
+| `nightly.yml` / `Nightly` | dispatch, schedule 주석 | 새 commit이 있을 때 AIT test build; 현재 target 없어 실행 불가 |
+| `cleanup-actions-storage.yml` / `Cleanup Actions Storage` | dispatch | Actions artifact/cache 정리 |
 
 ## Runner Routing
 
-- 템플릿 workflow는 public/private 양쪽에서 안전하게 동작하도록 `github.event.repository.private` 조건을 둔다.
+- 현재 `seorilabs/babycare`는 private repo다. caller는 public/private 양쪽을 고려해 `github.event.repository.private` 조건을 둔다.
 - private repo의 JS/TS/docs/AIT candidate는 `seorilabs-rpi-arm64`를 우선 사용한다.
 - public repo 또는 public PR path에서는 `ubuntu-latest` fallback을 사용한다.
 - Android release build는 RPI ARC로 보내지 않고 `ubuntu-latest` x64 Linux runner를 사용한다.
@@ -24,7 +30,7 @@
 cat /Users/syous/Workspace/kubectl/github-actions-runners/global-versions.yaml
 ```
 
-2026-06-16 확인값:
+2026-07-12 중앙 파일과 cluster live state 확인값:
 
 - `seorilabs-rpi-arm64`: `minRunners: 2`, `maxRunners: 4`
 - `seorilabs-rpi-arm64-dind`: `minRunners: 0`, `maxRunners: 1`
@@ -34,13 +40,13 @@ cat /Users/syous/Workspace/kubectl/github-actions-runners/global-versions.yaml
 
 ## Runner Group Membership
 
-2026-06-16 확인:
+2026-07-12 확인:
 
-- Repo: `seorilabs/starter-template-app`
+- Repo: `seorilabs/babycare`
 - Visibility: private
-- GitHub template: enabled
 - Runner group: `RPI ARM64 Builders`
 - Runner group ID: `3`
-- Repo ID: `1270901663`
+- Runner group visibility: `all`
+- Repo ID: `1298244321`
 
-신규 private repo는 `RPI ARM64 Builders`가 selected visibility라 repo membership 추가가 필요했다. membership 추가 전 push-triggered `Repository Checks`는 queued 상태로 남았고, 추가 후 workflow_dispatch run은 성공했다.
+`Static Checks`의 `main` push run `29191886926`은 commit `bcce524`에서 성공했다. 이 결과는 현재 feature branch 변경의 검증 결과가 아니므로 PR head의 새 run을 별도로 확인한다.

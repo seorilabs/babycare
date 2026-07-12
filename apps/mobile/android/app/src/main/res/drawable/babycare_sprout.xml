@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M48,75 C48,61 48,48 48,31"
+        android:strokeColor="@color/babycare_primary"
+        android:strokeLineCap="round"
+        android:strokeWidth="5" />
+    <path
+        android:fillColor="@color/babycare_primary"
+        android:pathData="M48,44 C34,44 24,36 23,22 C37,22 47,30 48,44 Z" />
+    <path
+        android:fillColor="@color/babycare_primary"
+        android:pathData="M48,36 C50,22 61,15 75,17 C73,31 63,39 48,36 Z" />
+</vector>
