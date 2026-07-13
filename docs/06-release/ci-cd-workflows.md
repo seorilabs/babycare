@@ -22,8 +22,8 @@
 ## 현재 실행 Blocker
 
 1. `apps/ait` target이 없으므로 AppsInToss와 nightly workflow는 현재 실행할 수 없다.
-2. Google Play/App Store production ID, signing, Firebase client config와 console app이 없다. `upload=true`를 사용하지 않는다.
-3. `deploy-app-store.yml`의 `ios_scheme`/`ios_workspace`/`ios_bundle_id`는 dispatch 또는 caller 입력이 필요하다. 개발 target 값은 production 값이 아니다.
+2. Google Play/App Store 식별자는 `com.seorilabs.babycare`로 확정했지만 signing, Firebase client config와 console app이 없다. `upload=true`를 사용하지 않는다.
+3. `deploy-app-store.yml`의 `ios_scheme`/`ios_workspace`/`ios_bundle_id`는 dispatch 또는 caller 입력이 필요하며 `ios_bundle_id`에는 확정값 `com.seorilabs.babycare`를 전달한다.
 4. org workflow가 기대하는 다음 repo-local 표준 스크립트는 아직 없다. release workflow 실행 전에 구현·검증해야 한다.
 
    - `scripts/resolve-release-version.mjs --tag <tag> --github-output` → `version_name`, `android_version_code`, `apple_marketing_version`, `apple_build_number`, `release_name`

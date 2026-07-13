@@ -10,8 +10,8 @@
 | Planning approval | `approved` (2026-07-12) |
 | Deployment approval | **미승인** — 제출·프로덕션 배포 금지 |
 | 출시 목표 | Google Play, Apple App Store, AppsInToss |
-| 모바일 개발 ID | Android/iOS `com.seorilabs.babycare.dev` |
-| 제품 이름·프로덕션 ID | `확정 필요` |
+| 모바일 식별자 | Android/iOS `com.seorilabs.babycare` (2026-07-13 확정) |
+| 제품 이름 | `확정 필요` |
 
 현재 `apps/mobile`의 기본 `App.tsx`는 로컬 개발 세로 슬라이스다. 온보딩, 수유·기저귀·수면 기록, 수면 종료, 홈 요약, 타임라인, 기본 통계와 기기 로컬 저장을 확인할 수 있다. 별도 인증 context factory에는 bounded timeline과 Home/Stats·active-sleep용 cloud projection 기반을 구현했지만, production Auth/group/baby UI root와 실제 Firebase project에는 아직 연결하지 않았다. `apps/ait`은 AppsInToss 정책 적합성과 영구 `appName`을 확정한 뒤 초기화한다.
 
@@ -32,11 +32,9 @@
 | --- | --- |
 | repo/app id | `babycare` |
 | 현재 native target/display name | `BabyCare` (개발용, 최종 제품명 아님) |
-| Android development application ID | `com.seorilabs.babycare.dev` |
-| iOS development bundle ID | `com.seorilabs.babycare.dev` |
+| Android application ID | `com.seorilabs.babycare` |
+| iOS bundle ID | `com.seorilabs.babycare` |
 | 한국어/영어 제품명 | `확정 필요` (`함께봄` / `BabyNest`는 후보) |
-| Android production package | `확정 필요` |
-| iOS production bundle ID | `확정 필요` |
 | AppsInToss `appName` | `확정 필요` |
 
 ## 구조
@@ -81,7 +79,7 @@ pnpm run check:ait
 pnpm run check:release
 ```
 
-`check:release`는 제품명, 프로덕션 ID, 마켓 config와 정책·자산 blocker가 남아 있어 현재 실패하는 것이 정상이다. `.aab`, archive 또는 `.ait` 생성만으로 release-ready가 되지 않으며, 별도 deployment approval 전에는 제출·프로덕션 승격을 수행하지 않는다.
+`check:release`는 제품명, AppsInToss `appName`, 마켓 config와 정책·자산 blocker가 남아 있어 현재 실패하는 것이 정상이다. `.aab`, archive 또는 `.ait` 생성만으로 release-ready가 되지 않으며, 별도 deployment approval 전에는 제출·프로덕션 승격을 수행하지 않는다.
 
 ## 문서 원장
 

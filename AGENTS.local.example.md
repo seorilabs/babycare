@@ -4,10 +4,10 @@
 
 커밋하지 않는다.
 
-## 확정 필요 항목
+## 프로젝트별 값
 
-- Android package name: `확정 필요`
-- iOS bundle ID: `확정 필요`
+- Android package name: `com.seorilabs.babycare`
+- iOS bundle ID: `com.seorilabs.babycare`
 - AppsInToss appName: `확정 필요`
 - Firebase project ID: `확정 필요`
 - Google Play app ID: `확정 필요`

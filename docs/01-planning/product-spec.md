@@ -24,7 +24,7 @@
 
 ## 제품 식별자
 
-후보를 확정값처럼 사용하지 않는다. 개발 ID는 로컬·비프로덕션 빌드용이고 프로덕션 ID를 선점하지 않는다.
+후보를 확정값처럼 사용하지 않는다. Android application ID와 iOS bundle ID는 사용자가 확정한 `com.seorilabs.babycare`를 Debug/Release에 공통 사용한다.
 
 | 항목 | 현재 값 | 상태 |
 | --- | --- | --- |
@@ -32,10 +32,8 @@
 | 현재 native target/display name | `BabyCare` | 개발용 기술 이름 |
 | 한국어 앱 이름 | 후보 `함께봄` | `확정 필요` |
 | 영어 앱 이름 | 후보 `BabyNest` | `확정 필요` |
-| Android development application ID | `com.seorilabs.babycare.dev` | 개발용 확정 |
-| iOS development bundle ID | `com.seorilabs.babycare.dev` | 개발용 확정 |
-| Android production package name | `확정 필요` | Play 앱 생성 전 사용자 확정 |
-| iOS production bundle ID | `확정 필요` | App ID 생성 전 사용자 확정 |
+| Android application ID | `com.seorilabs.babycare` | 2026-07-13 사용자 확정 |
+| iOS bundle ID | `com.seorilabs.babycare` | 2026-07-13 사용자 확정 |
 | AppsInToss `appName` | `확정 필요` | 정책 확인 후, target 생성 전에 확정 |
 | 대표 색상 | 후보 `#5FB49C` | `확정 필요` |
 | 고객지원 이메일 | `cs@seorilabs.com` | 해당 마켓에 사용 |
@@ -115,7 +113,7 @@ flowchart LR
 | mobile | 기존 로컬 UX에 더해 인증 context assertion, scoped event+outbox envelope, local-first coordinator, 독립 sync status/retry component 계약, membership/auth cache purge lifecycle과 RNFirebase transaction adapter 구현 | 기본 composition은 여전히 local preview. Firebase project/client config, production Auth provider, 실제 session/group/invite UI·sync banner와 2인 흐름 연결 필요 |
 | Firebase | 기존 Rules/Functions에 payload-bound mutation receipt와 baby별 active-sleep singleton lock을 추가. Rules 22건에서 event/receipt/lock 원자성·receipt exact-get/list 경계·미래 receipt 선점 차단·동시 시작 1건만 성공 검증 | 실제 non-production project, App Check·Secret Manager·IAM·client composition 통합 검증 |
 | AppsInToss | 문서와 example만 있고 Granite target은 미초기화 | 정책 적합성·영구 `appName`, Granite+TDS 초기화, auth/storage/realtime adapter, sandbox QA |
-| release | 3마켓 문서 구조 | 제품명·프로덕션 ID·서명·정책 답변·자산·콘솔 등록·사람 QA |
+| release | 3마켓 문서 구조와 Android/iOS 식별자 확정 | 제품명·AppsInToss `appName`·서명·정책 답변·자산·콘솔 등록·사람 QA |
 
 RNFirebase adapter 파일이 존재하는 것과 production composition이 연결된 것은 다르다. 현재 실행 경로인 로컬 AsyncStorage 세로 슬라이스는 UX와 core wiring 검증용이며, 클라우드 보존·공동 기록 MVP가 완료됐다는 증거로 사용하지 않는다.
 

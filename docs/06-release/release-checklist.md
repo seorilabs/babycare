@@ -4,7 +4,8 @@
 
 - [x] Planning approval 완료 — 2026-07-12
 - [x] Product spec와 MVP 범위 repo 원장 반영
-- [ ] Package name / bundle ID / AppsInToss appName 확정
+- [x] Android package name / iOS bundle ID 확정 — `com.seorilabs.babycare`, 2026-07-13
+- [ ] AppsInToss `appName` 확정
 - [ ] Firebase project strategy 확정
 
 ## Architecture Gate

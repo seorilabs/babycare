@@ -1,5 +1,12 @@
 # Work Log
 
+## 2026-07-13 — Android/iOS 식별자 확정
+
+- 사용자가 Android application ID와 iOS bundle ID를 `com.seorilabs.babycare`로 확정했다. Debug/Release native target이 같은 식별자를 사용하며 Android Kotlin package 경로와 iOS Debug/Release build setting도 함께 맞췄다.
+- 이전 `.dev` 앱과 새 앱은 별도 설치·별도 로컬 데이터 컨테이너이므로 AsyncStorage 데이터는 자동 승계하지 않는다. 실제 Firebase client app과 Play Console/App Store Connect 등록도 새 식별자를 사용해야 한다.
+- 최종 한국어/영어 표시 이름, AppsInToss `appName`, signing, Firebase project와 deployment approval은 별도 미완료 게이트로 유지한다.
+- `pnpm run test:static`과 mobile/docs gate가 통과했다. Android JDK 21 clean debug 빌드의 APK application ID와 iPhone 16 Pro Simulator Debug 빌드의 `.app` `CFBundleIdentifier`가 모두 `com.seorilabs.babycare`임을 확인했다.
+
 ## 2026-07-13 — Cloud overview and active-sleep projections
 
 - core에 Firebase type을 포함하지 않는 `CareEventProjectionRemotePort`를 추가했다. Home/Stats용 half-open 기간 window, 종류별 latest와 active-sleep singleton의 fetch/observe 계약을 분리하고, 통계 core는 delivery layer가 만든 명시적 범위만 집계한다.

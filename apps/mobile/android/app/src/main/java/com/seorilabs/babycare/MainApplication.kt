@@ -1,4 +1,4 @@
-package com.seorilabs.babycare.dev
+package com.seorilabs.babycare
 
 import android.app.Application
 import com.facebook.react.PackageList

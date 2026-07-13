@@ -1,6 +1,6 @@
 # BabyCare Mobile
 
-Google Play와 Apple App Store용 Community CLI 기반 bare React Native target이다. 현재 native target name `BabyCare`와 bundle/application ID `com.seorilabs.babycare.dev`는 개발용이다. 최종 한국어/영어 앱 이름과 production package/bundle ID는 `확정 필요`다.
+Google Play와 Apple App Store용 Community CLI 기반 bare React Native target이다. Android application ID와 iOS bundle ID는 `com.seorilabs.babycare`로 확정했으며 Debug/Release가 같은 식별자를 사용한다. 현재 native target name `BabyCare`는 개발용 기술 이름이고 최종 한국어/영어 앱 이름은 `확정 필요`다.
 
 ## 현재 구현
 
@@ -22,7 +22,7 @@ Google Play와 Apple App Store용 Community CLI 기반 bare React Native target�
 - 실제 project의 초대 발급·수락 callable과 멤버 제거/cache purge 실기기 검증.
 - 서로 다른 기기의 active sleep 충돌 UX와 실제 project 검증.
 - Firebase Analytics/Crashlytics/App Check/FCM.
-- production signing과 마켓용 ID·아이콘.
+- production signing과 마켓용 아이콘.
 
 ## 구조
 
@@ -37,8 +37,8 @@ src/adapters/local/             # AsyncStorage development adapters
 src/adapters/firebase/          # RNFirebase port adapters + document decoders
 src/adapters/system/            # target system adapters
 ../../packages/product-data/    # target 공용 local-first store/coordinator
-android/                        # com.seorilabs.babycare.dev
-ios/BabyCare/                   # com.seorilabs.babycare.dev
+android/                        # com.seorilabs.babycare
+ios/BabyCare/                   # com.seorilabs.babycare
 ```
 
 `packages/product-core`의 use case/port와 `packages/product-data`의 target 공용 동기화 정책을 import한다. Firebase/AsyncStorage/native API 구현은 adapter 또는 app layer에 두고 core/data package로 올리지 않는다.
@@ -101,8 +101,8 @@ pnpm run check:mobile
 
 ## Native identity와 launch
 
-- Android `namespace`/`applicationId`: `com.seorilabs.babycare.dev`.
-- iOS `PRODUCT_BUNDLE_IDENTIFIER`: `com.seorilabs.babycare.dev`.
+- Android `namespace`/`applicationId`: `com.seorilabs.babycare`.
+- iOS `PRODUCT_BUNDLE_IDENTIFIER`: `com.seorilabs.babycare`.
 - JS/native target name: `BabyCare` — 최종 제품명이 아니다.
 - iOS `UILaunchStoryboardName`은 유지하고 `LaunchScreen.storyboard`를 제품형 정적 화면으로 사용한다.
 - Android launch theme/splash도 첫 RN 화면 배경과 맞춘다.
@@ -113,7 +113,7 @@ pnpm run check:mobile
 
 로컬 adapter를 기본 production 경로로 두지 않는다. Firebase port adapter 구현 뒤 남은 연결 순서는 다음과 같다.
 
-1. non-production Firebase project와 Android/iOS dev app 등록.
+1. non-production Firebase project에 Android/iOS app ID `com.seorilabs.babycare` 등록.
 2. production Auth provider, 계정 recovery/deletion 정책 확정.
 3. composition root에서 Auth/그룹/아기/기록/invite adapter와 app session 흐름 연결.
 4. 인증된 app session/navigation에 cloud factory의 timeline/overview 상태와 pending/retry/conflict UI 연결.

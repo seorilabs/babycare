@@ -2,7 +2,7 @@
 
 ## App Identity
 
-- Bundle ID: `확정 필요`
+- Bundle ID: `com.seorilabs.babycare` (2026-07-13 확정)
 - SKU: `확정 필요`
 - App name KO: `확정 필요`
 - App name EN: `확정 필요`
