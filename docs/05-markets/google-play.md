@@ -2,7 +2,7 @@
 
 ## App Identity
 
-- Package name: `확정 필요`
+- Package name: `com.seorilabs.babycare` (2026-07-13 확정)
 - App name KO: `확정 필요`
 - App name EN: `확정 필요`
 - Category: `확정 필요`

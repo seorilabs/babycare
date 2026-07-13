@@ -34,7 +34,7 @@
 
 | 상태 | 작업 | 완료 증거 / Blocker |
 | --- | --- | --- |
-| 결정 대기 | 최종 앱 이름, production package/bundle ID, 대표 색상 | 후보를 확정값으로 사용하지 않음 |
+| 부분 확정 | 최종 앱 이름과 대표 색상 | Android/iOS ID는 `com.seorilabs.babycare`로 확정. 이름·색상 후보는 확정값으로 사용하지 않음 |
 | 대기 | Android release signing과 x64 Linux AAB | Play App Signing/upload key, internal track |
 | 대기 | iOS signing, archive/export와 TestFlight | macOS/Xcode, App ID/profile, 2인 TestFlight |
 | 대기 | 개인정보 처리방침·Data safety·Privacy Labels·연령등급 | 실제 SDK/데이터 흐름과 일치해야 함 |

@@ -30,6 +30,50 @@ if ! node -e "const pkg = require('./apps/mobile/package.json'); process.exit(pk
   exit 1
 fi
 
+mobile_id='com.seorilabs.babycare'
+mobile_id_regex="${mobile_id//./\\.}"
+android_build='apps/mobile/android/app/build.gradle'
+android_sources='apps/mobile/android/app/src/main/java/com/seorilabs/babycare'
+ios_project='apps/mobile/ios/BabyCare.xcodeproj/project.pbxproj'
+
+android_namespace_count="$(rg -c "^[[:space:]]*namespace[[:space:]]+\"${mobile_id_regex}\"[[:space:]]*$" "${android_build}" || true)"
+android_namespace_count="${android_namespace_count:-0}"
+android_namespace_total="$(rg -c '^[[:space:]]*namespace[[:space:]]+' "${android_build}" || true)"
+android_namespace_total="${android_namespace_total:-0}"
+android_application_id_count="$(rg -c "^[[:space:]]*applicationId[[:space:]]+\"${mobile_id_regex}\"[[:space:]]*$" "${android_build}" || true)"
+android_application_id_count="${android_application_id_count:-0}"
+android_application_id_total="$(rg -c '^[[:space:]]*applicationId[[:space:]]+' "${android_build}" || true)"
+android_application_id_total="${android_application_id_total:-0}"
+
+if [ "${android_namespace_count}" -ne 1 ] || [ "${android_namespace_total}" -ne 1 ] || \
+  [ "${android_application_id_count}" -ne 1 ] || [ "${android_application_id_total}" -ne 1 ]; then
+  echo "Android namespace/applicationId must be ${mobile_id}." >&2
+  exit 1
+fi
+
+for source in \
+  "${android_sources}/MainActivity.kt" \
+  "${android_sources}/MainApplication.kt"; do
+  if [ ! -f "${source}" ] || ! rg -Fqx "package ${mobile_id}" "${source}"; then
+    echo "Android Kotlin source ${source} must use package ${mobile_id}." >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "${ios_project}" ]; then
+  echo "Missing iOS project file: ${ios_project}." >&2
+  exit 1
+fi
+
+ios_identifier_count="$(rg -F -c "PRODUCT_BUNDLE_IDENTIFIER = ${mobile_id};" "${ios_project}" || true)"
+ios_identifier_count="${ios_identifier_count:-0}"
+ios_identifier_total="$(rg -c 'PRODUCT_BUNDLE_IDENTIFIER = ' "${ios_project}" || true)"
+ios_identifier_total="${ios_identifier_total:-0}"
+if [ "${ios_identifier_count}" -ne 2 ] || [ "${ios_identifier_total}" -ne 2 ]; then
+  echo "iOS PRODUCT_BUNDLE_IDENTIFIER must be ${mobile_id}." >&2
+  exit 1
+fi
+
 launch_storyboard="$(find "apps/mobile/ios" -name "LaunchScreen.storyboard" -type f | sed -n '1p')"
 info_plist="$(find "apps/mobile/ios" -name "Info.plist" -type f | sed -n '1p')"
 

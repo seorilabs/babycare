@@ -1,4 +1,4 @@
-package com.seorilabs.babycare.dev
+package com.seorilabs.babycare
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

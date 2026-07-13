@@ -93,9 +93,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.seorilabs.babycare.dev"
+    namespace "com.seorilabs.babycare"
     defaultConfig {
-        applicationId "com.seorilabs.babycare.dev"
+        applicationId "com.seorilabs.babycare"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode
