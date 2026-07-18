@@ -6,7 +6,7 @@
 ## App Identity
 
 - **App Store Connect 앱 생성 + 메타데이터 draft 반영 (2026-07-18)** — appleId(adamId): `6792193162`, primaryLocale: `ko`. ASC API로 ko/en-US 설명·키워드·promo, subtitle, 6.9" 스크린샷 5컷 반영(버전 1.0). 심사 제출은 안 함.
-- ⚠️ **영문 이름 `BabyNest`가 App Store에서 타 계정 사용 중**(상표 충돌) → en-US 이름이 한국어 타이틀로 대체됨. 고유 영문명 확정 필요. (Google Play는 `BabyNest` 정상)
+- App name EN(App Store): `BabyNest: Shared Baby Care Log` (2026-07-18 확정) — 단독 `BabyNest`는 App Store 타 계정 선점이라 Play 타이틀과 동일한 고유 문자열 사용. 브랜드명은 BabyNest.
 - Bundle ID: `com.seorilabs.babycare` (2026-07-13 확정)
 - SKU: `babynet-app` (생성 시 확정)
 - App name KO: `함께봄: 수유, 기저귀, 아기돌봄 기록 어플` (24/30, 생성된 실제 이름)
