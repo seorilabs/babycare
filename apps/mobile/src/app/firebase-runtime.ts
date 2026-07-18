@@ -53,6 +53,12 @@ export const FIREBASE_EMULATOR_RUNTIME_CONFIG = {
   functionsPort: 5001,
 } as const;
 
+// Production Cloud Functions region for the native Firebase app. Deployed to
+// seorilabs-babycare (asia-northeast3). Must match the Functions deploy region.
+export const FIREBASE_CLOUD_RUNTIME_CONFIG = {
+  functionsRegion: 'asia-northeast3',
+} as const;
+
 export const FIREBASE_CARE_EVENT_TIMELINE_CONFIG: CareEventTimelineFeedConfig = {
   pageSize: 20,
   maxCachedEvents: 200,
@@ -250,7 +256,7 @@ export async function createFirebaseRuntime(
     (resolved.source === 'emulator'
       ? nonEmpty(options.emulator?.functionsRegion) ??
         FIREBASE_EMULATOR_RUNTIME_CONFIG.functionsRegion
-      : undefined);
+      : FIREBASE_CLOUD_RUNTIME_CONFIG.functionsRegion);
   if (!functionsRegion) {
     throw new FirebaseRuntimeConfigurationError(
       'Firebase Functions region must be supplied for a native Firebase app',
