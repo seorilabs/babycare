@@ -8,7 +8,7 @@
 //   --android  FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64
 //              -> apps/mobile/android/app/google-services.json
 //   --ios      FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64
-//              -> apps/mobile/ios/BabyCare/GoogleService-Info.plist
+//              -> apps/mobile/ios/GoogleService-Info.plist
 //   --require  fail if the corresponding env var is empty (else skip with a warning)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -34,7 +34,7 @@ if (want.android) {
 if (want.ios) {
   targets.push({
     env: 'FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64',
-    dest: 'apps/mobile/ios/BabyCare/GoogleService-Info.plist',
+    dest: 'apps/mobile/ios/GoogleService-Info.plist',
   });
 }
 
