@@ -25,9 +25,10 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 
 | Target | Repo 위치 | 목표 Artifact | 현재 상태 | 다음 Gate |
 | --- | --- | --- | --- | --- |
-| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | package 확정, config·listing·아이콘/피처/스크린샷·업로드 스크립트 준비 완료. 서명/Play console app/privacy URL 없음 | release signing → Play app 생성 → internal test |
-| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | bundle ID·launch screen 확정, config·listing·아이콘/스크린샷(실기 캡처)·업로드 워크플로우 준비 완료. signing/ASC app/privacy URL 없음 | App ID·signing → archive → TestFlight |
+| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **signed AAB(1.0.0/1000000)를 internal 트랙에 draft 업로드 완료**. 남음: App content 설문·privacy URL·internal 릴리스 활성화 | App content 설문 → internal 테스터 릴리스 |
+| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명(cert/profile). **build 1(1.0) archive→export→TestFlight 업로드, ASC에서 VALID**. 남음: privacy URL·supportUrl·App Privacy·TestFlight 그룹 | TestFlight 테스트 → 심사 제출(승인 후) |
 | AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite target 미초기화 | 정책 적합성·영구 `appName` 확정 → 초기화 → sandbox |
+| **백엔드(Firebase)** | `firebase/` | 프로덕션 프로젝트 | ✅ **`seorilabs-babycare`(서울) LIVE** — Firestore·익명 Auth·Functions(createInvite/acceptInvite)·Rules 배포 완료 | production Auth provider·App Check·2기기 QA |
 
 ## 공통 Blocker
 
