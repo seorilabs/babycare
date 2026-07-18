@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "여러 양육자가 실시간으로 함께 쓰는 아기 돌봄 기록 앱",
-  "packageManager": "pnpm@11.12.0",
+  "packageManager": "pnpm@11.14.0",
   "engines": {
     "node": ">=24 <27",
     "pnpm": ">=11 <12"
