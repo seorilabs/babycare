@@ -1,5 +1,5 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
-import {Alert, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
+import {useEffect, useMemo, useRef, useState, type ComponentType} from 'react';
+import {Alert, Pressable, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {type CareEventKind} from '@babycare/product-core';
 
@@ -234,10 +234,72 @@ function BabyCareApp() {
   );
 }
 
+function RuntimeApp() {
+  const dark = useColorScheme() === 'dark';
+  const [localPreview, setLocalPreview] = useState(
+    () => typeof jest !== 'undefined',
+  );
+  const [FirebaseApp, setFirebaseApp] = useState<ComponentType<{
+    readonly onUseLocalPreview: () => void;
+  }>>();
+  const [runtimeLoadError, setRuntimeLoadError] = useState<string>();
+
+  useEffect(() => {
+    if (localPreview || FirebaseApp) {
+      return undefined;
+    }
+    let active = true;
+    import('./src/app/FirebaseBabyCareApp')
+      .then(module => {
+        if (active) {
+          setFirebaseApp(() => module.FirebaseBabyCareApp);
+        }
+      })
+      .catch(error => {
+        if (active) {
+          setRuntimeLoadError(
+            error instanceof Error
+              ? error.message
+              : 'Firebase 화면을 불러오지 못했어요',
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [FirebaseApp, localPreview]);
+
+  if (localPreview) {
+    return <BabyCareApp />;
+  }
+  if (runtimeLoadError) {
+    const theme = createTheme(dark);
+    return (
+      <View
+        style={[styles.loading, {backgroundColor: theme.colors.background}]}>
+        <Text style={[styles.loadingTitle, {color: theme.colors.text}]}>공동 기록 화면을 열 수 없어요</Text>
+        <Text style={[styles.runtimeLoadError, {color: theme.colors.textMuted}]}>
+          {runtimeLoadError}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setLocalPreview(true)}
+          style={[styles.runtimeFallbackButton, {backgroundColor: theme.colors.primary}]}>
+          <Text style={styles.runtimeFallbackText}>로컬 미리보기로 계속</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  if (!FirebaseApp) {
+    return <LoadingScreen dark={dark} />;
+  }
+  return <FirebaseApp onUseLocalPreview={() => setLocalPreview(true)} />;
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <BabyCareApp />
+      <RuntimeApp />
     </SafeAreaProvider>
   );
 }
@@ -250,6 +312,9 @@ const styles = StyleSheet.create({
   loadingEmoji: {fontSize: 38},
   loadingTitle: {fontSize: 24, fontWeight: '900', marginTop: 18},
   loadingText: {fontSize: 12, marginTop: 6},
+  runtimeLoadError: {fontSize: 12, lineHeight: 18, marginTop: 10, paddingHorizontal: 28, textAlign: 'center'},
+  runtimeFallbackButton: {borderRadius: 14, marginTop: 22, minHeight: 48, paddingHorizontal: 22, paddingVertical: 14},
+  runtimeFallbackText: {color: '#FFFFFF', fontSize: 13, fontWeight: '900'},
   toast: {alignSelf: 'center', borderRadius: 999, bottom: 78, paddingHorizontal: 18, paddingVertical: 11, position: 'absolute', zIndex: 10},
   toastText: {fontSize: 12, fontWeight: '800'},
 });

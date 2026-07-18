@@ -179,7 +179,9 @@ export function TimelineScreen(props: {
             <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>누가 무엇을 기록했는지 시간순으로 확인해요</Text>
           </View>
           <View style={[styles.liveBadge, {backgroundColor: props.theme.colors.primarySoft}]}>
-            <Text style={[styles.liveText, {color: props.theme.colors.primary}]}>● LOCAL</Text>
+            <Text style={[styles.liveText, {color: props.theme.colors.primary}]}>
+              {props.session.runtimeMode === 'firebase' ? '● LIVE' : '● LOCAL'}
+            </Text>
           </View>
         </View>
       }

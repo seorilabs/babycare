@@ -1,0 +1,121 @@
+import React from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import ReactTestRenderer from 'react-test-renderer';
+
+import { createTheme } from '../src/app/theme';
+import { CloudOnboardingScreen } from '../src/screens/CloudOnboardingScreen';
+
+jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
+
+const theme = createTheme(false);
+
+function setup() {
+  const onCreate = jest.fn(async () => undefined);
+  const onJoin = jest.fn(async () => undefined);
+  let renderer!: ReactTestRenderer.ReactTestRenderer;
+  ReactTestRenderer.act(() => {
+    renderer = ReactTestRenderer.create(
+      <CloudOnboardingScreen
+        onCreate={onCreate}
+        onJoin={onJoin}
+        runtimeLabel="Firebase Emulator"
+        theme={theme}
+      />,
+    );
+  });
+  return { onCreate, onJoin, renderer };
+}
+
+function press(renderer: ReactTestRenderer.ReactTestRenderer, label: string) {
+  ReactTestRenderer.act(() => {
+    renderer.root.findByProps({ accessibilityLabel: label }).props.onPress();
+  });
+}
+
+function changeText(
+  renderer: ReactTestRenderer.ReactTestRenderer,
+  label: string,
+  value: string,
+) {
+  ReactTestRenderer.act(() => {
+    renderer.root
+      .findByProps({ accessibilityLabel: label })
+      .props.onChangeText(value);
+  });
+}
+
+describe('CloudOnboardingScreen', () => {
+  it('collects creation fields one screen at a time and submits the picked date', async () => {
+    const state = setup();
+
+    expect(() =>
+      state.renderer.root.findByProps({ accessibilityLabel: '양육자 이름' }),
+    ).toThrow();
+    press(state.renderer, '처음 시작하기');
+    changeText(state.renderer, '양육자 이름', '엄마');
+    expect(
+      state.renderer.root.findByProps({ accessibilityLabel: '다음' }).props
+        .disabled,
+    ).toBe(false);
+    press(state.renderer, '다음');
+
+    changeText(state.renderer, '아기 이름', '하루');
+    press(state.renderer, '다음');
+    press(state.renderer, '아기 생년월일');
+    ReactTestRenderer.act(() => {
+      state.renderer.root
+        .findByType(DateTimePicker)
+        .props.onChange({ type: 'set' }, new Date(2020, 0, 1));
+    });
+    expect(
+      state.renderer.root.findByProps({
+        accessibilityLabel: '돌봄 그룹 만들기',
+      }).props.disabled,
+    ).toBe(false);
+
+    await ReactTestRenderer.act(async () => {
+      await state.renderer.root
+        .findByProps({ accessibilityLabel: '돌봄 그룹 만들기' })
+        .props.onPress();
+    });
+    expect(state.onCreate).toHaveBeenCalledWith({
+      caregiverName: '엄마',
+      babyName: '하루',
+      birthDate: '2020-01-01',
+    });
+    expect(state.onJoin).not.toHaveBeenCalled();
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
+  it('requires six invite characters after choosing the join flow', async () => {
+    const state = setup();
+    press(state.renderer, '초대 코드로 참여');
+    changeText(state.renderer, '양육자 이름', '아빠');
+    press(state.renderer, '다음');
+
+    changeText(state.renderer, '초대 코드', 'abc23');
+    expect(
+      state.renderer.root.findByProps({
+        accessibilityLabel: '돌봄 그룹 참여하기',
+      }).props.disabled,
+    ).toBe(true);
+
+    changeText(state.renderer, '초대 코드', 'abc2i34');
+    const codeInput = state.renderer.root.findByProps({
+      accessibilityLabel: '초대 코드',
+    });
+    expect(codeInput.props.value).toBe('ABC234');
+
+    await ReactTestRenderer.act(async () => {
+      await state.renderer.root
+        .findByProps({ accessibilityLabel: '돌봄 그룹 참여하기' })
+        .props.onPress();
+    });
+    expect(state.onJoin).toHaveBeenCalledWith({
+      caregiverName: '아빠',
+      code: 'ABC234',
+    });
+    expect(state.onCreate).not.toHaveBeenCalled();
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+});

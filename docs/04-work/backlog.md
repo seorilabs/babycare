@@ -8,17 +8,17 @@
 | --- | --- | --- |
 | 구현·로컬 검증 완료 | platform-independent product core와 순수 테스트 | 수유·기저귀·수면·집계, 모유 좌·우 독립 시간, 날짜/ID·시계 역행 경계, 48시간 수면 복구와 로컬 active sleep 단일화. core 25건·architecture gate 통과 |
 | 로컬 구현·native smoke 완료 | Android/iOS 로컬 UX 세로 슬라이스 | 온보딩·기록·홈·타임라인·통계·AsyncStorage 구현. Android JDK 21 build/실기기 process, iOS RNFirebase build와 light/dark Simulator first-screen 통과 |
-| 로컬 검증 완료·실제 project 대기 | Firestore/Storage Rules와 Emulator 회귀 테스트 | 멤버십, 표시문자/달력 날짜, event schema/soft delete/close-only, active-sleep lock·receipt exact-get/list 경계, Storage 크기·권한 22건 통과. 실제 project 통합 검증 필요 |
-| 대기 | Firebase non-production/prod project 전략과 client app 등록 | 실제 project ID와 환경별 config `확정 필요` |
-| adapter 구현·composition 대기 | Firebase Auth와 실제 session/group/baby 생성 | RNFirebase Auth/그룹/아기 adapter는 구현. production 로그인 provider, account recovery/deletion 정책, app composition 연결은 `확정 필요` |
-| local-first 구현·실제 project composition 대기 | Firestore realtime/offline 동기화 | 인증 user/group/baby scoped 단일 envelope에 event+revision별 outbox를 원자 저장하고 pending/failed/conflict·retry UI 계약을 구현. transaction receipt로 lost-ack 멱등성, server-confirmed snapshot만 merge하는 adapter/Jest 검증 완료. 실제 project 재연결·2기기 QA 필요 |
-| 로컬 구현·검증 완료·실제 통합 대기 | 초대 발급/수락 Functions와 client callable adapter | HMAC, 만료, single-use, rate limit, audit unit 10건과 transaction Emulator 검증. 실제 verified Auth/callable/App Check/Secret Manager/IAM 통합 필요 |
-| 대기 | 두 계정·두 기기 공동 기록 end-to-end | 초대→합류→실시간 반영→오프라인 복귀→멤버 제거 통과 |
+| 로컬 검증 완료·실제 project 대기 | Firestore/Storage Rules와 Emulator 회귀 테스트 | 멤버십, 표시문자/달력 날짜, event schema/soft delete/close-only, active-sleep lock·receipt exact-get/list 경계, Storage 크기·권한 23건 통과. 실제 project 통합 검증 필요 |
+| 대기 | Firebase non-production/prod project 전략과 client app 등록 | 실제 project ID, Functions region과 Android/iOS 환경별 client config `확정 필요` |
+| 개발 runtime·익명 Auth 구현/로컬 검증 완료·production 인증 대기 | Firebase Auth와 session/group/baby 생성 | 기본 개발 composition이 native Firebase app 또는 `demo-babycare` Emulator를 선택한다. 익명 Auth, owner 그룹·아기 생성, 기존 session 복구, 초대 합류 UI와 fail-closed 다중 그룹 처리를 Jest로 검증. production 로그인 provider, account recovery/deletion 정책과 실제 project 검증은 `확정 필요` |
+| 개발 composition 구현·Emulator 검증 완료·실제 project 대기 | Firestore realtime/offline 동기화 | 인증 user/group/baby scoped 단일 envelope와 outbox, 실시간 Home/Timeline/Stats feed, pending/failed 상태와 retry 배너를 기본 Firebase 개발 UI에 연결. transaction receipt 멱등성과 server-confirmed merge를 검증했으며 실제 project의 비행기 모드→재실행→재연결·기기 2대 QA 필요 |
+| 개발 UI·Emulator 검증 완료·실제 통합 대기 | 초대 발급/수락 Functions와 client callable adapter | owner 초대 발급/공유와 6자리 코드 합류 UI를 연결. HMAC, 만료, single-use, rate limit, audit 단위/transaction 테스트와 Auth·Functions Emulator callable 흐름 통과. 실제 verified Auth/App Check/Secret Manager/IAM 통합 필요 |
+| Emulator 두 client 검증 완료·실기기 대기 | 두 계정·두 기기 공동 기록 end-to-end | 익명 사용자 2명이 owner 생성→초대→합류→owner 기저귀 기록의 member 실시간 수신→멤버 제거 후 접근 거부를 로컬 Emulator에서 통과. offline/restart/reconnect와 실제 계정·실제 기기 2대는 미검증 |
 | Rules/transaction 구현·실제 project 대기 | cross-device active sleep 단일성 | `activeSleeps/{babyId}` singleton lock을 event와 원자 생성·종료하고 동시 시작 2건 중 1건만 허용하는 Emulator 경쟁 테스트 통과. 실제 두 기기 conflict UX 검증 필요 |
 | 구현·로컬 검증 완료·실제 project 대기 | 새 기기 active-sleep singleton projection | `activeSleeps/{babyId}`→event server-only read/observe와 lock/event identity 검증, v3 `unknown/confirmed_none/active` coverage를 구현. timeline prefix를 completeness source로 쓰지 않으며 실제 새 기기 QA 필요 |
-| lifecycle 구현·실제 Auth composition 대기 | 로컬 cache purge와 오류/동기화 상태 UX | Auth sign-out·identity 변경·확인된 membership 제거, 강제 token refresh, 반복 401 차단, concurrent close/purge와 replacement-writer 보호를 Jest로 검증. RNFirebase disk persistence 비활성화와 실제 제거 QA 필요 |
-| 구현·로컬 검증 완료·실제 project 대기 | bounded query와 timeline pagination | `(occurredAt DESC, documentId DESC)` raw cursor, server-only page, envelope v3 authoritative prefix, live page 변경 시 HEAD rebase, tombstone scan·cache cap과 SectionList load/retry를 구현. production UI composition·실제 index/2기기 경계 QA 필요 |
-| 구현·로컬 검증 완료·production UI composition 대기 | Home/Stats cloud 독립 projection | 기간 window+종류별 latest+active singleton을 결합하는 `CareEventOverviewFeed`, v3 named coverage와 atomic 교체를 구현. Home은 explicit active sleep, Stats는 local calendar/DST 범위를 사용. 기본 `App.tsx`와 실제 Firebase/두 기기에는 미연결 |
+| lifecycle·cloud context cache 구현/연결 완료·실제 Auth 대기 | 로컬 cache purge와 오류/동기화 상태 UX | UID-scoped versioned context/membership cache로 offline restart 경로를 구성하고 identity 불일치·손상 schema·확인된 membership 제거 시 purge한다. Auth sign-out/token refresh, 반복 401 차단, concurrent close/purge도 Jest 검증. production 인증과 실제 제거·재시작 QA 필요 |
+| 개발 UI 연결·로컬 검증 완료·실제 project 대기 | bounded query와 timeline pagination | `(occurredAt DESC, documentId DESC)` raw cursor, server-only page, envelope v3 authoritative prefix, live page 변경 시 HEAD rebase, tombstone scan·cache cap과 SectionList load/retry를 기본 Firebase 개발 UI에 연결. 실제 index/기기 2대 경계 QA 필요 |
+| 개발 UI 연결·로컬 검증 완료·실제 project 대기 | Home/Stats cloud 독립 projection | 기간 window+종류별 latest+active singleton을 결합하는 `CareEventOverviewFeed`, v3 named coverage와 atomic 교체를 구현해 Firebase 개발 root의 Home/Stats에 연결. 실제 Firebase/기기 2대에서 bounded timeline 밖 latest·active sleep 누락 여부 검증 필요 |
 
 ## P0 — AppsInToss
 

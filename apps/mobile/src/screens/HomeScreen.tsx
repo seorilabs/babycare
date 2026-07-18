@@ -143,7 +143,9 @@ export function HomeScreen(props: {
         </View>
         <View style={[styles.syncBadge, {backgroundColor: props.theme.colors.primarySoft}]}>
           <View style={[styles.syncDot, {backgroundColor: props.theme.colors.primary}]} />
-          <Text style={[styles.syncText, {color: props.theme.colors.primary}]}>로컬 저장</Text>
+          <Text style={[styles.syncText, {color: props.theme.colors.primary}]}>
+            {props.session.runtimeMode === 'firebase' ? '공동 기록' : '로컬 저장'}
+          </Text>
         </View>
       </View>
 

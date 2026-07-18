@@ -109,13 +109,13 @@ flowchart LR
 
 | 영역 | 현재 구현 | MVP까지 남은 핵심 |
 | --- | --- | --- |
-| product core | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, `CareEvent`; 기록·수면종료·soft delete·대시보드 use case; Auth/그룹/아기/초대/기록·remote mutation·string storage port | 실제 Auth/group boot composition과 2인 use-case 검증 |
-| mobile | 기존 로컬 UX에 더해 인증 context assertion, scoped event+outbox envelope, local-first coordinator, 독립 sync status/retry component 계약, membership/auth cache purge lifecycle과 RNFirebase transaction adapter 구현 | 기본 composition은 여전히 local preview. Firebase project/client config, production Auth provider, 실제 session/group/invite UI·sync banner와 2인 흐름 연결 필요 |
-| Firebase | 기존 Rules/Functions에 payload-bound mutation receipt와 baby별 active-sleep singleton lock을 추가. Rules 22건에서 event/receipt/lock 원자성·receipt exact-get/list 경계·미래 receipt 선점 차단·동시 시작 1건만 성공 검증 | 실제 non-production project, App Check·Secret Manager·IAM·client composition 통합 검증 |
+| product core | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, `CareEvent`; 기록·수면종료·soft delete·대시보드 use case; Auth/그룹/아기/초대/기록·remote mutation·string storage port | 실제 non-production project와 기기 2대에서 전체 use-case 검증 |
+| mobile | 기본 개발 실행 경로에 Firebase composition root를 연결했다. native Firebase app이 없으면 `demo-babycare` Emulator에 Auth/Firestore/Functions를 연결하며, 개발용 익명 인증, owner 그룹·아기 생성, 6자리 초대 발급·합류 UI, UID-scoped cloud context cache, 실시간 Home/Timeline/Stats feed, 동기화 상태·재시도 배너와 멤버 목록을 제공한다. 명시적 오류 fallback과 Jest에서는 local preview를 유지한다. | 실제 Firebase client config와 Functions region, production Auth provider·계정 복구/삭제, 실제 기기 2대의 초대·offline/restart/reconnect·권한 회수 QA |
+| Firebase | Rules/Functions의 payload-bound mutation receipt와 baby별 active-sleep singleton lock을 검증한다. 별도 mobile shared-flow 테스트는 Auth Emulator의 익명 사용자 2명으로 owner 생성→초대 발급/수락→member 실시간 기록 수신→멤버 제거 후 접근 거부를 통과한다. | 실제 non-production project, App Check·Secret Manager·IAM·client config 통합 검증. Emulator의 두 client는 실제 기기 2대 증거가 아님 |
 | AppsInToss | 문서와 example만 있고 Granite target은 미초기화 | 정책 적합성·영구 `appName`, Granite+TDS 초기화, auth/storage/realtime adapter, sandbox QA |
 | release | 3마켓 문서 구조와 Android/iOS 식별자 확정 | 제품명·AppsInToss `appName`·서명·정책 답변·자산·콘솔 등록·사람 QA |
 
-RNFirebase adapter 파일이 존재하는 것과 production composition이 연결된 것은 다르다. 현재 실행 경로인 로컬 AsyncStorage 세로 슬라이스는 UX와 core wiring 검증용이며, 클라우드 보존·공동 기록 MVP가 완료됐다는 증거로 사용하지 않는다.
+RNFirebase adapter와 Firebase 개발 composition이 연결됐지만 production composition이 검증된 것은 아니다. `demo-babycare` Emulator의 익명 사용자 2명 테스트는 client·Rules·Functions 계약을 검증하는 로컬 증거이며, 실제 프로젝트의 App Check/IAM, production 인증, 클라우드 보존, 실제 기기 2대 공동 기록 완료 증거로 사용하지 않는다.
 
 ## MVP 완료 기준
 

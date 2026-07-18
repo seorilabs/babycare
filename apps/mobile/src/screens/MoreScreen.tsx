@@ -1,4 +1,5 @@
-import {Alert, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Alert, Pressable, ScrollView, Share, StyleSheet, Text, View} from 'react-native';
+import type {Membership} from '@babycare/product-core';
 
 import type {LocalSession} from '../app/session';
 import type {AppTheme} from '../app/theme';
@@ -31,7 +32,36 @@ export function MoreScreen(props: {
   readonly session: LocalSession;
   readonly theme: AppTheme;
   readonly onReset: () => Promise<void>;
+  readonly memberships?: readonly Membership[];
+  readonly inviteExpiresAt?: number;
+  readonly onCreateInvite?: () => Promise<void>;
+  readonly onRefreshMembers?: () => Promise<void>;
 }) {
+  const firebase = props.session.runtimeMode === 'firebase';
+  const owner = props.session.membershipRole !== 'member';
+  const memberships = props.memberships ?? [];
+  const inviteReady = firebase && Boolean(props.session.inviteCode);
+
+  const createInvite = () => {
+    props.onCreateInvite?.().catch(error =>
+      Alert.alert(
+        '초대 코드를 만들지 못했어요',
+        error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+      ),
+    );
+  };
+
+  const shareInvite = () => {
+    Share.share({
+      message: `BabyCare 돌봄 그룹 초대 코드: ${props.session.inviteCode}`,
+    }).catch(error =>
+      Alert.alert(
+        '초대 코드를 공유하지 못했어요',
+        error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+      ),
+    );
+  };
+
   return (
     <ScrollView
       contentContainerStyle={styles.content}
@@ -47,24 +77,73 @@ export function MoreScreen(props: {
             <Text style={[styles.groupName, {color: props.theme.colors.text}]}>{props.session.babyName}이네</Text>
           </View>
           <View style={[styles.localBadge, {backgroundColor: props.theme.colors.surfaceMuted}]}>
-            <Text style={[styles.localText, {color: props.theme.colors.textMuted}]}>로컬 개발 모드</Text>
+            <Text style={[styles.localText, {color: props.theme.colors.textMuted}]}>
+              {firebase ? '공동 기록 모드' : '로컬 개발 모드'}
+            </Text>
           </View>
         </View>
-        <View style={[styles.member, {borderTopColor: props.theme.colors.border}]}>
-          <View style={[styles.avatar, {backgroundColor: props.theme.colors.primary}]}>
-            <Text style={styles.avatarText}>{props.session.caregiverName.slice(0, 1)}</Text>
+        {(memberships.length > 0
+          ? memberships
+          : [{
+              userId: props.session.caregiverId,
+              displayName: props.session.caregiverName,
+              membershipRole: props.session.membershipRole ?? 'owner',
+            }]
+        ).map((membership, index) => (
+          <View
+            key={membership.userId}
+            style={[
+              styles.member,
+              {borderTopColor: props.theme.colors.border},
+              index > 0 && styles.additionalMember,
+            ]}>
+            <View style={[styles.avatar, {backgroundColor: props.theme.colors.primary}]}>
+              <Text style={styles.avatarText}>{membership.displayName.slice(0, 1)}</Text>
+            </View>
+            <View style={styles.memberCopy}>
+              <Text style={[styles.memberName, {color: props.theme.colors.text}]}>
+                {membership.displayName}
+              </Text>
+              <Text style={[styles.memberRole, {color: props.theme.colors.textMuted}]}>
+                {membership.userId === props.session.caregiverId ? '나 · ' : ''}
+                {membership.membershipRole === 'owner' ? '소유자' : '구성원'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.memberCopy}>
-            <Text style={[styles.memberName, {color: props.theme.colors.text}]}>{props.session.caregiverName}</Text>
-            <Text style={[styles.memberRole, {color: props.theme.colors.textMuted}]}>나 · 소유자</Text>
-          </View>
-        </View>
+        ))}
         <View style={[styles.invite, {backgroundColor: props.theme.colors.primarySoft}]}>
           <View>
-            <Text style={[styles.inviteLabel, {color: props.theme.colors.textMuted}]}>초대 코드 미리보기</Text>
-            <Text style={[styles.inviteCode, {color: props.theme.colors.primary}]}>{props.session.inviteCode}</Text>
+            <Text style={[styles.inviteLabel, {color: props.theme.colors.textMuted}]}>
+              {firebase ? '양육자 초대 코드' : '초대 코드 미리보기'}
+            </Text>
+            <Text style={[styles.inviteCode, {color: props.theme.colors.primary}]}>
+              {firebase ? props.session.inviteCode || '------' : props.session.inviteCode}
+            </Text>
+            {props.inviteExpiresAt ? (
+              <Text style={[styles.inviteExpiry, {color: props.theme.colors.textMuted}]}>
+                {new Intl.DateTimeFormat('ko-KR', {
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                }).format(props.inviteExpiresAt)}까지 유효
+              </Text>
+            ) : null}
           </View>
-          <Text style={[styles.inviteStatus, {color: props.theme.colors.textMuted}]}>Firebase 연결 후 활성화</Text>
+          {firebase && owner ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={inviteReady ? shareInvite : createInvite}
+              style={[styles.inviteAction, {borderColor: props.theme.colors.primary}]}>
+              <Text style={[styles.inviteActionText, {color: props.theme.colors.primary}]}>
+                {inviteReady ? '공유' : '코드 만들기'}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={[styles.inviteStatus, {color: props.theme.colors.textMuted}]}>
+              {firebase ? '소유자만 초대할 수 있어요' : 'Firebase 연결 후 활성화'}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -72,7 +151,13 @@ export function MoreScreen(props: {
       <View style={[styles.settings, {backgroundColor: props.theme.colors.surface}]}>
         <SettingRow detail="ml" icon="⚖️" theme={props.theme} title="단위" />
         <SettingRow detail="시스템 설정 사용" icon="◐" theme={props.theme} title="화면 모드" />
-        <SettingRow detail="기기 로컬 저장 · 개발 모드" icon="☁️" theme={props.theme} title="동기화 상태" />
+        <SettingRow
+          detail={firebase ? 'Firestore 공동 기록 · local-first' : '기기 로컬 저장 · 개발 모드'}
+          icon="☁️"
+          onPress={props.onRefreshMembers ? () => props.onRefreshMembers?.().catch(() => undefined) : undefined}
+          theme={props.theme}
+          title="동기화 상태"
+        />
         <SettingRow detail="한국어" icon="文" theme={props.theme} title="언어" />
       </View>
 
@@ -82,7 +167,7 @@ export function MoreScreen(props: {
         <SettingRow detail="성인 양육자용 · 비의료 목적" icon="🔒" theme={props.theme} title="개인정보 보호" />
       </View>
 
-      <Pressable
+      {!firebase ? <Pressable
         onPress={() =>
           Alert.alert('로컬 데이터를 초기화할까요?', '이 기기에 저장한 모든 돌봄 기록과 프로필이 삭제됩니다.', [
             {text: '취소', style: 'cancel'},
@@ -103,7 +188,7 @@ export function MoreScreen(props: {
         }
         style={[styles.reset, {borderColor: props.theme.colors.danger}]}>
         <Text style={[styles.resetText, {color: props.theme.colors.danger}]}>로컬 데이터 초기화</Text>
-      </Pressable>
+      </Pressable> : null}
       <Text style={[styles.version, {color: props.theme.colors.textMuted}]}>개발 빌드 0.1.0</Text>
     </ScrollView>
   );
@@ -120,6 +205,7 @@ const styles = StyleSheet.create({
   localBadge: {borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6},
   localText: {fontSize: 9, fontWeight: '700'},
   member: {alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', marginTop: 16, paddingTop: 16},
+  additionalMember: {marginTop: 10, paddingTop: 10},
   avatar: {alignItems: 'center', borderRadius: 20, height: 40, justifyContent: 'center', width: 40},
   avatarText: {color: '#FFFFFF', fontSize: 15, fontWeight: '900'},
   memberCopy: {flex: 1, marginLeft: 11},
@@ -128,7 +214,10 @@ const styles = StyleSheet.create({
   invite: {alignItems: 'center', borderRadius: 15, flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, padding: 14},
   inviteLabel: {fontSize: 9},
   inviteCode: {fontSize: 21, fontWeight: '900', letterSpacing: 3, marginTop: 3},
+  inviteExpiry: {fontSize: 9, marginTop: 3},
   inviteStatus: {fontSize: 9, maxWidth: 90, textAlign: 'right'},
+  inviteAction: {alignItems: 'center', borderRadius: 10, borderWidth: 1, justifyContent: 'center', minHeight: 36, paddingHorizontal: 10},
+  inviteActionText: {fontSize: 10, fontWeight: '900'},
   sectionLabel: {fontSize: 11, fontWeight: '800', marginBottom: 8, marginLeft: 4, marginTop: 24},
   settings: {borderRadius: 18, overflow: 'hidden'},
   settingRow: {alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 68, paddingHorizontal: 14},

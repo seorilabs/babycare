@@ -1,9 +1,8 @@
 import {
+  default as firebaseAuth,
   getIdToken,
   onAuthStateChanged,
   reload,
-  signInAnonymously,
-  signOut,
   type Auth,
   type User,
 } from '@react-native-firebase/auth';
@@ -63,13 +62,12 @@ export class FirebaseAuthAdapter implements AuthPort {
   }
 
   async signInAnonymously(): Promise<AuthIdentity> {
-    // RNFirebase 25 modular functions intentionally receive the Auth instance.
-    const credential = await signInAnonymously(this.#auth);
-    return toIdentity(credential.user)!;
+    const credential = await firebaseAuth(this.#auth.app).signInAnonymously();
+    return toIdentity(credential.user as unknown as User)!;
   }
 
   async signOut(): Promise<void> {
-    await signOut(this.#auth);
+    await firebaseAuth(this.#auth.app).signOut();
   }
 
   observe(listener: (identity: AuthIdentity | undefined) => void): () => void {

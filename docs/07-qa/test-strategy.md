@@ -10,12 +10,13 @@
 | --- | --- | --- | --- |
 | Core unit | domain/use case 순수 로직 | `pnpm run test:core` | 모유 좌·우 독립 시간, 수유·기저귀·수면 validation, 자정 경계 집계, 시간/단위, 기록·수면종료·로컬 active sleep 단일화, UTF-8 document cursor pagination, projection request와 explicit range 통계 |
 | Firebase Rules | 그룹 접근·이벤트 불변·soft delete·active-sleep singleton·receipt·Storage 권한 | `pnpm run test:firebase` | Firestore/Storage Emulator allow/deny와 동시 시작 경쟁 |
+| Firebase mobile flow | 개발 client·Auth·Rules·Functions 공동 기록 계약 | `pnpm run test:firebase:mobile-flow` | Auth Emulator 익명 사용자 2명, owner 그룹/아기 생성, callable 초대 발급·수락, member 실시간 event 수신, 멤버 제거 후 접근 거부 |
 | Functions unit | HMAC·입력·Auth·rate/error mapping 순수 검증 | `pnpm run test:functions` | callable boundary와 invite service |
 | Functions transaction | owner·expiry·single-use·audit·rate limit | `pnpm run test:functions:emulator` | Firestore Admin transaction Emulator |
 | TypeScript | workspace compile contract | `pnpm run typecheck` | core, product-data, mobile, Functions의 `tsc --noEmit` |
 | Architecture | core/data import·runtime dependency boundary | `pnpm run check:architecture` | core와 product-data의 RN/Firebase/AIT/native 의존 탐지 |
 | Docs | docs source-of-truth 구조 | `pnpm run check:docs` | 필수 planning/architecture/market/release/QA 문서 |
-| Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded prefix와 v3 named projection migration/rebase/tombstone/cap, transaction receipt·active lock, server page/window/latest/active metadata, timeline/overview load·recovery, document decoder, local calendar DST |
+| Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded projection, transaction receipt·active lock, Firebase runtime host/config, session restore·그룹 생성·초대 합류, strict cloud context cache, cloud onboarding UI |
 | Mobile lint | RN source 정적 검사 | `pnpm --filter @babycare/mobile lint` | mobile source |
 | Mobile target | RN Android/iOS target과 iOS launch | `pnpm run check:mobile` | native project 존재, framework launch 문구 탐지 |
 | AIT target | Granite target 초기화 | `pnpm run check:ait` | 현재 미초기화라 실패가 정상 |
@@ -27,7 +28,7 @@
 pnpm run test
 ```
 
-현재 root `test`는 core/mobile unit, Firebase Rules, Functions unit/transaction, workspace typecheck/lint, architecture/docs를 순서대로 검증한다. Firebase Emulator 실행에는 Java와 의존성 설치가 필요하다. target/device build와 `check:release`는 별도다.
+현재 root `test`는 core/mobile unit, Firebase Rules, Functions unit/transaction, `test:firebase:mobile-flow`, workspace typecheck/lint, architecture/docs를 순서대로 검증한다. Firebase Emulator 실행에는 Java와 의존성 설치가 필요하며 target/device build와 `check:release`는 별도다.
 
 ## Core Test 기준
 
@@ -49,6 +50,16 @@ pnpm run test
 - Storage는 group/baby membership, image MIME/size, unscoped path, 멤버 제거 후 접근 회수를 검증한다.
 - Emulator 통과 뒤 실제 non-production project에서 Auth, Rules, indexes, Storage↔Firestore, App Check/IAM 통합 smoke를 별도 수행한다.
 
+`pnpm run test:firebase:mobile-flow`는 같은 로컬 Emulator Suite에 연결된 독립 Firebase JS client 2개로 다음을 검증한다.
+
+1. owner/member가 각각 익명 Auth 계정을 만든다.
+2. owner가 그룹·아기·owner membership을 Rules 아래 원자 생성한다.
+3. `createInvite`/`acceptInvite` callable로 member가 합류한다.
+4. owner의 기저귀 event와 mutation receipt를 member realtime listener가 수신한다.
+5. owner가 member 문서를 제거하면 member의 새 group read가 `permission-denied`가 된다.
+
+이는 callable protocol과 로컬 client/Rules 경계를 함께 확인하지만 실제 Firebase project, App Check, IAM/Secret Manager, Storage, 실제 기기 2대, offline/restart/reconnect를 증명하지 않는다.
+
 ## Functions Test 기준
 
 - callable `.run()`에서 Auth 누락과 object가 아닌 payload를 먼저 거부한다.
@@ -59,7 +70,9 @@ pnpm run test
 
 ## Adapter / Sync Test 기준
 
-현재 기본 화면 composition의 `PersistentCareEventRepository`는 AsyncStorage 기반 local preview adapter다. 별도 인증 context factory는 주입형 `StringStoragePort`와 `PersistentCareEventSyncStore`, `LocalFirstCareEventRepository`, `CareEventTimelineFeed`, `CareEventOverviewFeed`, RNFirebase transaction/page/projection transport를 조립하고 timeline·overview owner를 각각 하나씩 반환한다. Jest에서는 local durable commit, revision chain, restart, retry, conflict, lost-ack receipt, active lock, authoritative prefix, v3 named coverage/atomic projection과 purge lifecycle을 검증하지만 실제 Firebase project와 production authenticated UI root에는 아직 연결하지 않았다. 아래 계약을 실제 Firestore/AIT adapter 환경에서 다시 검증한다.
+기본 native 개발 화면은 Firebase composition root를 동적 로드한다. native Firebase app이 있으면 주입된 Functions region으로 cloud adapter를 구성하고, client config가 없는 개발 빌드는 Metro URL에서 host를 찾아 `demo-babycare` Auth/Firestore/Functions Emulator에 연결한다. Firestore native persistence는 끄고 `PersistentCareEventSyncStore`의 custom outbox만 durable queue로 사용한다.
+
+Firebase root는 익명 Auth session restore, owner 그룹·아기 생성, 초대 코드 합류, `LocalFirstCareEventRepository`, `CareEventTimelineFeed`, `CareEventOverviewFeed`, 동기화 상태·재시도 UI를 조립한다. UID-scoped `CloudCareContextCache`는 인증 context와 멤버 목록을 versioned allowlist로 저장하고 identity 불일치나 손상 schema를 purge하며 raw invite code를 저장하지 않는다. local preview는 명시적 runtime 오류 fallback과 Jest 경로로 남아 있다. 아래 계약은 실제 Firestore/AIT adapter 환경에서 다시 검증해야 한다.
 
 | 시나리오 | 기대 결과 |
 | --- | --- |

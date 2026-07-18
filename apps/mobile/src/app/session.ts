@@ -23,6 +23,8 @@ export interface LocalSession {
   readonly babyName: string;
   readonly birthDate: string;
   readonly inviteCode: string;
+  readonly runtimeMode?: 'local' | 'firebase';
+  readonly membershipRole?: 'owner' | 'member';
 }
 
 function localCalendarDay(now: number): number {
@@ -57,6 +59,8 @@ export function createLocalSession(input: {
     babyName,
     birthDate: input.birthDate,
     inviteCode: localInvitePreview(),
+    runtimeMode: 'local',
+    membershipRole: 'owner',
   };
 }
 

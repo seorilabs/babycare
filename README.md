@@ -54,17 +54,81 @@ scripts/               # 로컬/CI 품질 게이트
 
 `packages/product-core`는 React Native, Firebase, AppsInToss 또는 마켓 SDK를 import하지 않는다. `apps/mobile/src/app/container.ts`는 현재 로컬 preview를 조립한다. 별도의 인증 컨텍스트 factory는 user/group/baby scoped durable envelope v3, revision별 outbox, pending/failed/conflict 상태, Firestore transaction·mutation receipt, server-only bounded timeline과 독립 window/latest/active-sleep projection을 조립한다. timeline과 overview feed는 인증 scope마다 각각 단일 owner로 동작하고, overview/active coverage는 한 번의 atomic commit으로 교체된다. 실제 Firebase project와 로그인 제공자가 확정되기 전에는 이 cloud factory를 기본 실행 경로로 바꾸거나 local preview 데이터를 자동 이관하지 않는다. AppsInToss도 같은 port와 주입형 string storage 계약을 target 밖에서 구현한다. 자세한 경계는 [Clean Architecture](docs/03-architecture/clean-architecture.md)를 참고한다.
 
-## 개발
+## 마켓별 로컬 실행
 
-루트에서 Node 24~26, pnpm 11을 사용한다.
+공통으로 Node 24~26, pnpm 11을 사용한다. 처음 한 번 루트에서 의존성을 설치하고 native target 상태를 확인한다.
 
 ```bash
 pnpm install
-pnpm run test
 pnpm run check:mobile
+```
+
+### Google Play — Android
+
+Android Studio/SDK, Temurin JDK 21, 실행 중인 Android Emulator 또는 USB debugging을 켠 기기가 필요하다. 현재 React Native/Gradle 조합은 JDK 22의 `jlink` 단계에서 실패하므로 JDK 21을 사용한다.
+
+첫 터미널에서 Metro를 실행한다.
+
+```bash
 pnpm --filter @babycare/mobile start
+```
+
+다른 터미널에서 debug 앱을 설치하고 실행한다.
+
+```bash
 pnpm --filter @babycare/mobile android
+```
+
+Firebase 공동 기록 개발 흐름도 함께 확인하려면 앱을 실행하기 전에 별도 터미널에서 Emulator Suite를 시작한다. native Firebase client config가 없는 개발 빌드는 Metro 주소를 이용해 이 로컬 Emulator에 연결한다.
+
+```bash
+pnpm run firebase:mobile
+```
+
+Emulator를 쓰지 않거나 연결 오류가 나면 앱의 로컬 미리보기로 전환해 AsyncStorage 기반 단일 기기 흐름을 확인할 수 있다. 이는 실제 Firebase project나 두 기기 동기화를 검증하지 않는다.
+
+### Apple App Store — iOS
+
+macOS, Xcode, Ruby Bundler, CocoaPods와 iOS Simulator가 필요하다. 처음 설치했거나 `Podfile`/lockfile이 바뀌었을 때만 Pods를 설치한다.
+
+```bash
+cd apps/mobile
+bundle install
+cd ios
+bundle exec pod install
+cd ../../..
+```
+
+첫 터미널에서 Metro를 실행하고, 다른 터미널에서 Simulator용 debug 앱을 실행한다.
+
+```bash
+pnpm --filter @babycare/mobile start
 pnpm --filter @babycare/mobile ios
+```
+
+실기기 실행에는 별도의 Apple signing team과 provisioning 설정이 필요하며, 현재 이는 출시 준비 항목으로 남아 있다. Firebase Emulator를 이용한 공동 기록 개발 흐름은 Android와 동일하게 `pnpm run firebase:mobile`을 먼저 실행한다.
+
+### AppsInToss — Granite React Native
+
+현재 `apps/ait`은 예시 파일만 있는 미초기화 상태다. AppsInToss `appName`과 정책 적합성이 아직 `확정 필요`이므로 지금은 실행할 로컬 target이나 `dev` 명령이 없다. `pnpm run check:ait`가 실패하는 것이 정상이다.
+
+`appName`을 확정한 뒤에만 아래 순서로 target을 만들고 sandbox 개발 서버를 실행한다. `<app-name>`에는 확정된 AppsInToss `appName`을 넣는다.
+
+```bash
+pnpm run bootstrap:ait -- <app-name>
+pnpm --dir apps/ait add @apps-in-toss/framework @toss/tds-react-native
+pnpm --dir apps/ait ait init --template react-native --app-name <app-name>
+pnpm --dir apps/ait dev
+```
+
+초기화 후 `granite.config.ts`, `TDSProvider`, AppsInToss `Storage` adapter, sandbox scheme을 구현·확인한 뒤 `pnpm run check:ait`를 통과시킨다. `.ait` build 또는 sandbox 실행은 콘솔 등록·심사·프로덕션 배포를 의미하지 않는다.
+
+## 개발 검증
+
+전체 정적/Emulator 검증은 다음 명령으로 실행한다.
+
+```bash
+pnpm run test
 ```
 
 세부 게이트:

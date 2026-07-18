@@ -9,13 +9,15 @@
     "pnpm": ">=11 <12"
   },
   "scripts": {
-    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
+    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run test:firebase:mobile-flow && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
     "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:functions && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
     "test:core": "bash scripts/test_core.sh",
     "test:mobile": "pnpm --dir apps/mobile test",
     "test:firebase": "firebase emulators:exec --config firebase/firebase.json --project babycare-rules-test --only firestore,storage \"node --test --test-concurrency=1 firebase/tests/security-rules.test.mjs\"",
+    "test:firebase:mobile-flow": "bash scripts/test_firebase_mobile_flow.sh",
     "test:functions": "pnpm --dir firebase/functions test",
     "test:functions:emulator": "pnpm --dir firebase/functions build && firebase emulators:exec --config firebase/firebase.functions-test.json --project babycare-functions-test --only firestore \"pnpm --dir firebase/functions test:emulator\"",
+    "firebase:mobile": "bash scripts/run_firebase_mobile_emulators.sh",
     "typecheck": "pnpm --recursive --if-present run typecheck",
     "lint": "pnpm --recursive --if-present run lint",
     "check:architecture": "bash scripts/check_architecture.sh",

@@ -1,4 +1,5 @@
 import {
+  default as firebaseFirestore,
   collection,
   collectionGroup,
   doc,
@@ -8,7 +9,6 @@ import {
   onSnapshot,
   query,
   where,
-  writeBatch,
   type Firestore,
 } from '@react-native-firebase/firestore';
 import type {
@@ -44,14 +44,21 @@ export class FirebaseCareGroupRepository implements CareGroupRepositoryPort {
     ) {
       throw new Error('Care group setup identities are inconsistent');
     }
-    const batch = writeBatch(this.#firestore);
-    const groupRef = doc(this.#firestore, 'groups', setup.group.id);
+    // RNFirebase's modular writeBatch wrapper calls `firestore.batch.call(...)`.
+    // The dynamically configured emulator app does not expose that wrapper,
+    // whereas the supported namespaced API does.
+    const firestore = firebaseFirestore(this.#firestore.app);
+    const batch = firestore.batch();
+    const groupRef = firestore.collection('groups').doc(setup.group.id);
     batch.set(groupRef, encodeGroupDocument(setup.group));
     batch.set(
-      doc(groupRef, 'members', setup.ownerMembership.userId),
+      groupRef.collection('members').doc(setup.ownerMembership.userId),
       encodeMembershipDocument(setup.ownerMembership),
     );
-    batch.set(doc(groupRef, 'babies', setup.baby.id), encodeBabyDocument(setup.baby));
+    batch.set(
+      groupRef.collection('babies').doc(setup.baby.id),
+      encodeBabyDocument(setup.baby),
+    );
     await batch.commit();
   }
 

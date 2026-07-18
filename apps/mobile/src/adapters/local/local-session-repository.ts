@@ -18,6 +18,8 @@ const SESSION_FIELD_SET = {
   babyName: true,
   birthDate: true,
   inviteCode: true,
+  runtimeMode: true,
+  membershipRole: true,
 } as const satisfies Record<keyof LocalSession, true>;
 const SESSION_FIELDS = Object.keys(SESSION_FIELD_SET);
 
@@ -59,6 +61,8 @@ function decodeSession(value: unknown): LocalSession {
   const babyName = sessionText(candidate, 'babyName', '아기 이름');
   const birthDate = sessionText(candidate, 'birthDate', '생년월일');
   const code = sessionText(candidate, 'inviteCode', '초대 코드');
+  const runtimeMode = candidate.runtimeMode;
+  const membershipRole = candidate.membershipRole;
 
   if (groupId(group) !== group || babyId(baby) !== baby || userId(caregiver) !== caregiver) {
     throw new Error('식별자가 canonical 형식이 아닙니다');
@@ -75,6 +79,12 @@ function decodeSession(value: unknown): LocalSession {
   if (inviteCode(code) !== code) {
     throw new Error('초대 코드가 canonical 형식이 아닙니다');
   }
+  if (runtimeMode !== undefined && runtimeMode !== 'local') {
+    throw new Error('로컬 세션 실행 모드가 유효하지 않습니다');
+  }
+  if (membershipRole !== undefined && membershipRole !== 'owner') {
+    throw new Error('로컬 세션 멤버십 역할이 유효하지 않습니다');
+  }
   return {
     groupId: group,
     babyId: baby,
@@ -83,6 +93,8 @@ function decodeSession(value: unknown): LocalSession {
     babyName,
     birthDate,
     inviteCode: code,
+    ...(runtimeMode !== undefined ? {runtimeMode} : {}),
+    ...(membershipRole !== undefined ? {membershipRole} : {}),
   };
 }
 
