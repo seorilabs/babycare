@@ -5,6 +5,7 @@
 
 ## App Identity
 
+- **Play Console 앱 생성 + 리스팅 draft 반영 (2026-07-18)** — publisher SA로 ko-KR·en-US 제목·설명, 아이콘 512·피처그래픽·phone 스크린샷 3컷 커밋(리스팅 콘텐츠 검토는 자동 트리거, 앱 게시/출시는 아님 — 릴리스 트랙 없음)
 - Package name: `com.seorilabs.babycare` (2026-07-13 확정)
 - App name KO(타이틀): `함께봄: 수유, 기저귀, 아기돌봄 기록 어플` (24자, 사용자 확정)
 - App name EN(타이틀): `BabyNest: Shared Baby Care Log` (30자)

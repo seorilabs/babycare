@@ -1,13 +1,14 @@
 {
   "bundleId": "com.seorilabs.babycare",
-  "sku": "seorilabs-babycare-ios",
+  "appleId": "6792193162",
+  "sku": "babynet-app",
   "primaryLanguage": "ko",
   "appName": {
-    "ko": "함께봄",
+    "ko": "함께봄: 수유, 기저귀, 아기돌봄 기록 어플",
     "en": "BabyNest"
   },
   "subtitle": {
-    "ko": "수유·기저귀·수면 공동 돌봄 기록",
+    "ko": "여러 양육자와 함께 실시간 공동 기록",
     "en": "Shared baby care tracker"
   },
   "promotionalText": {
@@ -56,7 +57,10 @@
   "dsaTrader": "확정 필요 (EU 배포 여부·trader 상태 결정 후 확정)",
   "notes": {
     "_comment": "확정값+초안 등록 준비 원장. deployment approval 미승인 → 실제 제출/TestFlight 외부 배포 금지.",
-    "appNameVsPlay": "App Store 이름은 정책(2.3.7)상 키워드 나열 리스크가 있어 브랜드명 '함께봄'으로 두고 subtitle/keywords로 설명. Play 타이틀은 사용자 확정 키워드형 유지.",
+    "createdApp": "App Store Connect 앱 생성 완료(2026-07-18). appleId(adamId)=6792193162, sku=babynet-app, primaryLocale=ko. appName은 생성된 실제 이름(키워드형 타이틀)에 정렬.",
+    "pushed": "2026-07-18 ASC API로 ko/en-US description·keywords·promotionalText, ko subtitle, 6.9\"(APP_IPHONE_67) 스크린샷 5컷 draft 반영. 버전 1.0 PREPARE_FOR_SUBMISSION.",
+    "appStoreNameConflict": "영문 이름 'BabyNest'는 App Store에서 다른 계정이 사용 중(409 DUPLICATE.DIFFERENT_ACCOUNT). en-US 이름이 한국어 타이틀로 대체됨. 고유 영문명 확정 또는 상표 클레임 필요. Google Play는 'BabyNest' 정상 사용.",
+    "remaining": "영문명 결정, supportUrl, privacyPolicyUrl(seorilabs-official 호스팅), Xcode AppIcon.appiconset, signing/TestFlight.",
     "assetsPending": "app-store/assets 아이콘 1024, app-store/screenshots iPhone 6.9/6.5·iPad 13\"는 task #2에서 생성 예정.",
     "signingPending": "Team ID·Apple Distribution 인증서·App Store provisioning은 task #3에서 자격증명 준비 후."
   }
