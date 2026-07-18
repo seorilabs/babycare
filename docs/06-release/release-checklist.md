@@ -17,12 +17,12 @@
 
 ## Market Gate
 
-- [ ] Google Play metadata와 config 확정
-- [ ] App Store metadata와 config 확정
+- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 아이콘 512·피처그래픽·phone 스크린샷 생성 완료 / 남음: privacy URL 호스팅, data safety·content rating 콘솔 확정
+- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 아이콘 1024·6.9" 스크린샷 5컷 생성 완료 / 남음: privacy URL, signing, ASC 앱 생성, App Privacy 콘솔 확정
 - [ ] AppsInToss metadata와 config 확정
 - [x] Firebase rules/indexes/functions와 local test 코드 구현
 - [ ] 실제 project의 Auth/client composition/App Check/Secret Manager/IAM 통합 확정
-- [ ] Privacy/data safety/review notes 확정
+- [ ] Privacy/data safety/review notes 확정 — 진행: `docs/legal/privacy-policy.md`·`docs/05-markets/store-data-disclosure.md`·`review.notes` 초안 작성 / 남음: legal 검토, privacy URL 호스팅, 콘솔 제출
 
 ## QA Gate
 

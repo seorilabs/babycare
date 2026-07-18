@@ -1,0 +1,27 @@
+{
+  "model": "gemini-2.5-flash-image",
+  "out_dir": "release-assets/drafts",
+  "background": "#5FB49C",
+  "brand": "Warm, friendly flat brand art for '함께봄 / BabyNest', a shared baby-care logging app used by parents, grandparents, and sitters together. Soft mint (#5FB49C) and cream palette, gentle rounded shapes, cozy and calm, no photorealism, no medical or clinical imagery, no clip-art babies, no text unless explicitly specified.",
+  "items": [
+    {
+      "id": "icon-draft",
+      "kind": "logo",
+      "path": "icon-draft-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "background": "#5FB49C",
+      "prompt": "App icon: a single cream-white cozy nest shape gently cradling one small warm heart at its center, symbolizing shared care of a baby. One clean simple symbol centered and filling the mint square, soft rounded forms, subtle warmth. No border, no rim, no inset frame, no rounded-corner mask, no drop shadow box, no text."
+    },
+    {
+      "id": "feature-draft",
+      "kind": "thumbnail",
+      "path": "feature-graphic-draft-1024x500.png",
+      "width": 1024,
+      "height": 500,
+      "background": "#5FB49C",
+      "prompt": "Wide store feature banner for a shared baby-care app. Left: a friendly rounded phone showing a simple daily care log with feeding, diaper, and sleep entries. Right: two soft caregiver avatars connected by a gentle sync arc, showing the same record shared in real time. Mint and cream palette, cozy flat style. The Korean service name '함께봄' as the ONLY text, kept in the central safe area. No other text, no medical imagery."
+    }
+  ],
+  "rules": []
+}

@@ -1,0 +1,63 @@
+{
+  "bundleId": "com.seorilabs.babycare",
+  "sku": "seorilabs-babycare-ios",
+  "primaryLanguage": "ko",
+  "appName": {
+    "ko": "함께봄",
+    "en": "BabyNest"
+  },
+  "subtitle": {
+    "ko": "수유·기저귀·수면 공동 돌봄 기록",
+    "en": "Shared baby care tracker"
+  },
+  "promotionalText": {
+    "ko": "여러 양육자가 아기의 수유·기저귀·수면을 실시간으로 함께 기록하고 확인해요. 인터넷이 없어도 기록하고, 다시 연결되면 자동으로 동기화됩니다.",
+    "en": "Log your baby's feeding, diapers, and sleep together with every caregiver in real time. Works offline and syncs automatically when you reconnect."
+  },
+  "description": {
+    "ko": "함께봄은 여러 양육자가 한 아기의 돌봄 기록을 실시간으로 함께 남기고 확인하는 공동 기록 앱입니다.\n\n부모, 조부모, 베이비시터가 교대로 아이를 돌볼 때 수유·기저귀·수면 기록이 한 사람의 휴대폰에만 남거나 메신저로 흩어지지 않도록, 초대한 양육자끼리 같은 기록을 함께 봅니다.\n\n■ 이렇게 기록해요\n· 수유: 모유 좌·우 타이머, 유축·분유·이유식 양\n· 기저귀: 소변·대변·혼합\n· 수면: 낮잠·밤잠 시작과 종료\n\n■ 함께봄의 특징\n· 공동 기록: 초대 코드로 다른 양육자를 초대하면 서로의 기록이 실시간으로 반영돼요.\n· 빠른 입력: 자주 쓰는 기록은 몇 초 안에, 밤중 한 손으로도 남길 수 있어요.\n· 오프라인 지원: 인터넷이 없어도 기록을 시작하고, 다시 연결되면 자동으로 동기화돼요.\n· 한눈에 확인: 마지막 수유·기저귀·수면과 오늘의 요약, 기록자와 시각이 보이는 타임라인, 기본 통계를 제공해요.\n· 안전한 공유: 아이 기록은 초대된 돌봄 그룹 안에서만 보입니다.\n\n■ 이런 분께\n· 배우자와 번갈아 밤중 수유를 하는 부모\n· 아이를 함께 돌보는 조부모\n· 가정 내 베이비시터·보육 도우미와 기록을 공유하고 싶은 분\n\n함께봄은 성인 양육자를 위한 기록·공유 도구입니다. 의료 진단·처방·치료 판단을 제공하지 않습니다.\n\n문의: cs@seorilabs.com",
+    "en": "BabyNest helps multiple caregivers log and see one baby's care in real time, together.\n\nWhen parents, grandparents, and sitters take turns, feeding, diaper, and sleep logs no longer get stuck on one phone or scattered across chat apps — everyone you invite shares the same record.\n\n■ What you can log\n· Feeding: left/right breastfeeding timers, pumped milk, formula, and solids amounts\n· Diaper: pee, poop, mixed\n· Sleep: nap and night sleep start and end\n\n■ Why BabyNest\n· Shared logging: invite another caregiver with a code and your logs sync in real time.\n· Fast entry: log common events in seconds, one-handed, even at night.\n· Works offline: start logging without a connection; it syncs automatically when you're back online.\n· See at a glance: last feeding, diaper, and sleep, today's summary, a timeline showing who logged what and when, and basic stats.\n· Private by design: your baby's records are visible only inside your invited care group.\n\n■ Made for\n· Parents taking turns with night feeds\n· Grandparents who share the care\n· Families sharing records with an in-home sitter\n\nBabyNest is a logging and sharing tool for adult caregivers. It does not provide medical diagnosis, prescription, or treatment decisions.\n\nContact: cs@seorilabs.com"
+  },
+  "keywords": {
+    "ko": "육아,수유,기저귀,수면,아기,신생아,돌봄,육아일기,모유수유,분유,이유식,공동육아,베이비",
+    "en": "baby,newborn,feeding,diaper,sleep,tracker,parenting,breastfeeding,caregiver,nanny,baby log,nursing"
+  },
+  "category": {
+    "primary": "라이프스타일 (Lifestyle) 제안",
+    "secondary": "유틸리티 (Utilities) 제안"
+  },
+  "supportUrl": "확정 필요",
+  "marketingUrl": "확정 필요",
+  "privacyPolicyUrl": "확정 필요",
+  "copyright": "2026 Seorilabs",
+  "review": {
+    "notes": "성인 양육자용 비의료 돌봄 기록·공유 앱. 공동 기록은 데모 계정 로그인 후 홈에서 그룹·아기 생성 → 6자리 초대 코드 발급 → 두 번째 계정으로 코드 입력 시 합류·실시간 반영으로 확인 가능. 의료 진단/처방 기능 없음. 광고·인앱결제 없음.",
+    "demoAccount": "확정 필요 (심사용 데모 계정 2개 — owner/member)",
+    "contactFirstName": "확정 필요",
+    "contactLastName": "확정 필요",
+    "contactPhone": "확정 필요",
+    "contactEmail": "cs@seorilabs.com"
+  },
+  "ageRating": "4+",
+  "exportCompliance": {
+    "usesNonExemptEncryption": false,
+    "rationale": "표준 HTTPS/TLS와 Firebase SDK 전송 암호화만 사용, 비면제 커스텀 암호화 없음. Info.plist에 ITSAppUsesNonExemptEncryption=false 설정."
+  },
+  "appPrivacy": {
+    "tracking": "no",
+    "collected": [
+      { "type": "이메일 주소 (Contact Info)", "linked": true, "purpose": "app-functionality", "note": "계정 인증" },
+      { "type": "사용자 콘텐츠 - 돌봄 기록 (User Content)", "linked": true, "purpose": "app-functionality", "note": "그룹 내부에서만 노출" },
+      { "type": "사용자 ID (Identifiers)", "linked": true, "purpose": "app-functionality" },
+      { "type": "비정상 종료·성능 진단 (Diagnostics)", "linked": false, "purpose": "app-functionality", "note": "event type allowlist만 전송, 기록 값·아기 정보 제외" }
+    ],
+    "detailDoc": "docs/05-markets/store-data-disclosure.md"
+  },
+  "dsaTrader": "확정 필요 (EU 배포 여부·trader 상태 결정 후 확정)",
+  "notes": {
+    "_comment": "확정값+초안 등록 준비 원장. deployment approval 미승인 → 실제 제출/TestFlight 외부 배포 금지.",
+    "appNameVsPlay": "App Store 이름은 정책(2.3.7)상 키워드 나열 리스크가 있어 브랜드명 '함께봄'으로 두고 subtitle/keywords로 설명. Play 타이틀은 사용자 확정 키워드형 유지.",
+    "assetsPending": "app-store/assets 아이콘 1024, app-store/screenshots iPhone 6.9/6.5·iPad 13\"는 task #2에서 생성 예정.",
+    "signingPending": "Team ID·Apple Distribution 인증서·App Store provisioning은 task #3에서 자격증명 준비 후."
+  }
+}

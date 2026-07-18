@@ -14,7 +14,10 @@
 | Android application ID | `com.seorilabs.babycare` | Debug/Release 공통, 2026-07-13 확정 |
 | iOS bundle ID | `com.seorilabs.babycare` | Debug/Release 공통, 2026-07-13 확정 |
 | AppsInToss `appName` | target 미생성 | `확정 필요` |
-| 제품명 | native target `BabyCare` | 한국어/영어 모두 `확정 필요` |
+| 한국어 앱 이름 | `함께봄` (Play 타이틀 `함께봄: 수유, 기저귀, 아기돌봄 기록 어플`) | 2026-07-18 사용자 확정 |
+| 영어 앱 이름 | `BabyNest` | 2026-07-18 사용자 확정 |
+| 대표 색상 | `#5FB49C` | 2026-07-18 사용자 확정 |
+| native target 이름 | `BabyCare` | 기술 이름, 상품명 아님 |
 
 Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `.dev` 앱과 별도 앱·별도 로컬 데이터 컨테이너가 된다. 향후 Debug/Release도 같은 식별자라 한 기기에 병렬 설치할 수 없다. 동일 signing/provisioning으로 업데이트 설치되면 컨테이너를 이어 쓰지만, signing/provisioning이 호환되지 않으면 설치가 거부되어 기존 앱을 삭제해야 할 수 있고 이 경우 로컬 데이터도 삭제된다. `BabyCare` target name은 최종 상품명으로 승격하지 않는다. AppsInToss `appName`은 영구 식별자 변경 리스크와 정책 적합성을 확인한 뒤 target 생성 전에 확정한다.
 
@@ -22,13 +25,13 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 
 | Target | Repo 위치 | 목표 Artifact | 현재 상태 | 다음 Gate |
 | --- | --- | --- | --- | --- |
-| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | package 확정, 서명/Play config/console app 없음 | release signing → Play app 생성 → internal test |
-| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | bundle ID와 product launch screen 확정, signing/App Store config/console app 없음 | App ID·signing → archive → TestFlight |
+| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | package 확정, config·listing·아이콘/피처/스크린샷·업로드 스크립트 준비 완료. 서명/Play console app/privacy URL 없음 | release signing → Play app 생성 → internal test |
+| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | bundle ID·launch screen 확정, config·listing·아이콘/스크린샷(실기 캡처)·업로드 워크플로우 준비 완료. signing/ASC app/privacy URL 없음 | App ID·signing → archive → TestFlight |
 | AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite target 미초기화 | 정책 적합성·영구 `appName` 확정 → 초기화 → sandbox |
 
 ## 공통 Blocker
 
-- 최종 한국어/영어 앱 이름과 AppsInToss `appName` 확정.
+- ~~최종 한국어/영어 앱 이름 확정~~ 완료(`함께봄`/`BabyNest`, 2026-07-18). AppsInToss `appName`은 여전히 `확정 필요`.
 - 실제 비프로덕션/프로덕션 Firebase project 전략과 환경별 client config 확정.
 - production Auth provider와 Firebase composition 연결, 실시간/offline sync, 멤버 제거와 cache purge 통합 검증. 초대 Functions와 client adapter는 로컬 코드만 구현된 상태다.
 - 개인정보 처리방침, 아동 관련 정보·사진·건강/돌봄 기록 disclosure, 계정 삭제·데이터 export 절차.
@@ -44,7 +47,8 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - Data safety에 아동 관련 프로필·사진·돌봄/건강 데이터의 수집·공유·삭제를 실제 SDK와 일치시켜 신고.
 - IARC/GRAC, target audience, 광고/결제 여부와 Families 적용 범위 확인.
 - internal → closed test, crash/ANR, 오프라인 복귀와 계정 삭제 검증.
-- `play-store/google-play.config.json`, listing text, icon/feature graphic/screenshots와 release note.
+- ~~`play-store/google-play.config.json`, listing text, icon/feature graphic/screenshots~~ 완료(아이콘 512·피처 1024×500·phone 9:16 3컷). release note와 privacy URL 호스팅은 남음.
+- 업로드 자동화: `deploy-google-play.yml` + `scripts/{resolve-release-version.mjs,upload-google-play-internal.py,restore-mobile-firebase-config.mjs}` 준비 완료. 시크릿·WIF·keystore는 `docs/06-release/store-upload-setup.md` 참고.
 
 ## App Store Blocker
 
@@ -52,8 +56,9 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - macOS/Xcode에서 archive/export 및 TestFlight 업로드 검증.
 - Privacy Labels, age rating, export compliance, 계정 삭제와 review note 확정.
 - 성인 양육자용·비의료 목적, 초대된 그룹 내 아동 정보 공유 구조를 review note에 설명.
-- 양육자 2인 이상 TestFlight 테스트, iPhone 크기별 screenshot과 최종 AppIcon.
-- `app-store/app-store.config.json` 작성.
+- 양육자 2인 이상 TestFlight 테스트. ~~iPhone 6.9" screenshot~~ 완료(실기 시뮬레이터 캡처 5컷). store 아이콘 1024 완료, Xcode `AppIcon.appiconset` 채우기는 남음.
+- ~~`app-store/app-store.config.json` 작성~~ 완료(이름·subtitle·설명·키워드·review·export·privacy 초안).
+- 업로드 자동화: `deploy-app-store.yml`(scheme/workspace/bundle 기본값 채움) 준비 완료. signing·ASC 키는 `docs/06-release/store-upload-setup.md` 참고.
 
 ## AppsInToss Blocker
 

@@ -1,0 +1,36 @@
+{
+  "model": "gemini-3-pro-image",
+  "out_dir": ".",
+  "background": "#5FB49C",
+  "brand": "함께봄 / BabyNest shared baby-care app brand art, mint and cream palette.",
+  "items": [
+    {
+      "id": "apple-icon-1024",
+      "kind": "logo",
+      "path": "app-store/assets/icon-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "background": "#5FB49C",
+      "source": "release-assets/drafts/icon-draft-1024-c2.png"
+    },
+    {
+      "id": "play-icon-512",
+      "kind": "logo",
+      "path": "play-store/assets/icon-512.png",
+      "width": 512,
+      "height": 512,
+      "background": "#5FB49C",
+      "source": "release-assets/drafts/icon-draft-1024-c2.png"
+    },
+    {
+      "id": "play-feature-1024x500",
+      "kind": "thumbnail",
+      "path": "play-store/assets/feature-graphic-1024x500.png",
+      "width": 1024,
+      "height": 500,
+      "background": "#5FB49C",
+      "source": "release-assets/drafts/feature-graphic-draft-1024x500-c1.png"
+    }
+  ],
+  "rules": []
+}

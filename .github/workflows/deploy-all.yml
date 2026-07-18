@@ -31,20 +31,20 @@ on:
         options: [draft, completed]
         default: completed
       ios_scheme:
-        description: "App Store: Xcode scheme (deploy_app_store=true 시 필수)"
+        description: "App Store: Xcode scheme"
         type: string
         required: false
-        default: ""
+        default: "BabyCare"
       ios_workspace:
         description: "App Store: Xcode workspace 경로"
         type: string
         required: false
-        default: ""
+        default: "apps/mobile/ios/BabyCare.xcworkspace"
       ios_bundle_id:
         description: "App Store: iOS bundle id"
         type: string
         required: false
-        default: ""
+        default: "com.seorilabs.babycare"
       memo:
         description: "AIT 배포 메모(선택)"
         type: string

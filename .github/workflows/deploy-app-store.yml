@@ -1,6 +1,5 @@
 # App Store(Xcode archive + 업로드) — macos-26. org 재사용 워크플로우 호출.
-# ios_scheme/workspace/bundle_id는 입력으로 받는다(템플릿에 가짜 기본값을 커밋하지 않음).
-# 앱 설정 후: 이 caller의 with:에 기본값을 채우거나 dispatch/deploy-all에서 입력.
+# ios_scheme/workspace/bundle_id 기본값은 확정된 실제 식별자(2026-07-13). 필요 시 dispatch로 override.
 name: Deploy App Store
 
 on:
@@ -15,17 +14,17 @@ on:
         type: boolean
         default: false
       ios_scheme:
-        description: "Xcode scheme (필수)"
+        description: "Xcode scheme"
         type: string
-        required: true
+        default: "BabyCare"
       ios_workspace:
-        description: "Xcode workspace 경로(.xcworkspace) (필수)"
+        description: "Xcode workspace 경로(.xcworkspace)"
         type: string
-        required: true
+        default: "apps/mobile/ios/BabyCare.xcworkspace"
       ios_bundle_id:
-        description: "iOS bundle id (필수)"
+        description: "iOS bundle id"
         type: string
-        required: true
+        default: "com.seorilabs.babycare"
   workflow_call:
     inputs:
       release_tag:
@@ -37,13 +36,13 @@ on:
         default: true
       ios_scheme:
         type: string
-        required: true
+        default: "BabyCare"
       ios_workspace:
         type: string
-        required: true
+        default: "apps/mobile/ios/BabyCare.xcworkspace"
       ios_bundle_id:
         type: string
-        required: true
+        default: "com.seorilabs.babycare"
 
 permissions:
   contents: read

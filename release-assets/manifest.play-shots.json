@@ -1,0 +1,44 @@
+{
+  "model": "gemini-2.5-flash-image",
+  "out_dir": "play-store/screenshots/phone",
+  "background": "#F5F8F6",
+  "brand": "resize only",
+  "items": [
+    {
+      "id": "play-home",
+      "kind": "screenshot",
+      "path": "01-home.png",
+      "width": 1620,
+      "height": 2880,
+      "fit": "contain",
+      "background": "#F5F8F6",
+      "source": "app-store/screenshots/6.9/01-home.png"
+    },
+    {
+      "id": "play-timeline",
+      "kind": "screenshot",
+      "path": "02-timeline.png",
+      "width": 1620,
+      "height": 2880,
+      "fit": "contain",
+      "background": "#F5F8F6",
+      "source": "app-store/screenshots/6.9/02-timeline.png"
+    },
+    {
+      "id": "play-stats",
+      "kind": "screenshot",
+      "path": "03-stats.png",
+      "width": 1620,
+      "height": 2880,
+      "fit": "contain",
+      "background": "#F5F8F6",
+      "source": "app-store/screenshots/6.9/03-stats.png"
+    }
+  ],
+  "rules": [
+    {
+      "kind": "screenshot",
+      "min": 2
+    }
+  ]
+}
