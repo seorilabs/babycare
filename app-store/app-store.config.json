@@ -27,9 +27,9 @@
     "primary": "라이프스타일 (Lifestyle) 제안",
     "secondary": "유틸리티 (Utilities) 제안"
   },
-  "supportUrl": "확정 필요",
-  "marketingUrl": "확정 필요",
-  "privacyPolicyUrl": "확정 필요",
+  "supportUrl": "https://www.seorilabs.com/support/",
+  "marketingUrl": "https://www.seorilabs.com/",
+  "privacyPolicyUrl": "https://www.seorilabs.com/babycare/privacy/",
   "copyright": "2026 Seorilabs",
   "review": {
     "notes": "성인 양육자용 비의료 돌봄 기록·공유 앱. 공동 기록은 데모 계정 로그인 후 홈에서 그룹·아기 생성 → 6자리 초대 코드 발급 → 두 번째 계정으로 코드 입력 시 합류·실시간 반영으로 확인 가능. 의료 진단/처방 기능 없음. 광고·인앱결제 없음.",
@@ -47,10 +47,29 @@
   "appPrivacy": {
     "tracking": "no",
     "collected": [
-      { "type": "이메일 주소 (Contact Info)", "linked": true, "purpose": "app-functionality", "note": "계정 인증" },
-      { "type": "사용자 콘텐츠 - 돌봄 기록 (User Content)", "linked": true, "purpose": "app-functionality", "note": "그룹 내부에서만 노출" },
-      { "type": "사용자 ID (Identifiers)", "linked": true, "purpose": "app-functionality" },
-      { "type": "비정상 종료·성능 진단 (Diagnostics)", "linked": false, "purpose": "app-functionality", "note": "event type allowlist만 전송, 기록 값·아기 정보 제외" }
+      {
+        "type": "이메일 주소 (Contact Info)",
+        "linked": true,
+        "purpose": "app-functionality",
+        "note": "계정 인증"
+      },
+      {
+        "type": "사용자 콘텐츠 - 돌봄 기록 (User Content)",
+        "linked": true,
+        "purpose": "app-functionality",
+        "note": "그룹 내부에서만 노출"
+      },
+      {
+        "type": "사용자 ID (Identifiers)",
+        "linked": true,
+        "purpose": "app-functionality"
+      },
+      {
+        "type": "비정상 종료·성능 진단 (Diagnostics)",
+        "linked": false,
+        "purpose": "app-functionality",
+        "note": "event type allowlist만 전송, 기록 값·아기 정보 제외"
+      }
     ],
     "detailDoc": "docs/05-markets/store-data-disclosure.md"
   },
@@ -60,8 +79,9 @@
     "createdApp": "App Store Connect 앱 생성 완료(2026-07-18). appleId(adamId)=6792193162, sku=babynet-app, primaryLocale=ko. appName은 생성된 실제 이름(키워드형 타이틀)에 정렬.",
     "pushed": "2026-07-18 ASC API로 ko/en-US description·keywords·promotionalText, ko subtitle, 6.9\"(APP_IPHONE_67) 스크린샷 5컷 draft 반영. 버전 1.0 PREPARE_FOR_SUBMISSION.",
     "appStoreNameEn": "App Store en-US 표시 이름은 'BabyNest: Shared Baby Care Log'(2026-07-18 확정 반영). 단독 'BabyNest'는 타 계정 선점이라 Play 타이틀과 동일한 고유 문자열을 사용. 브랜드명은 여전히 BabyNest.",
-    "remaining": "supportUrl, privacyPolicyUrl(seorilabs-official 호스팅), Xcode AppIcon.appiconset, signing/TestFlight.",
+    "remaining": "App Privacy 콘솔 답변, TestFlight 테스트 그룹, 심사 제출(승인 후).",
     "assetsPending": "app-store/assets 아이콘 1024, app-store/screenshots iPhone 6.9/6.5·iPad 13\"는 task #2에서 생성 예정.",
-    "signingPending": "Team ID·Apple Distribution 인증서·App Store provisioning은 task #3에서 자격증명 준비 후."
+    "signingPending": "Team ID·Apple Distribution 인증서·App Store provisioning은 task #3에서 자격증명 준비 후.",
+    "urls": "privacyPolicyUrl·supportUrl·marketingUrl 확정 반영(2026-07-18). ASC 콘솔에도 privacy(appInfo)·support(version loc) PATCH 완료."
   }
 }

@@ -38,4 +38,4 @@
 - App access instructions: 심사용 데모 계정(owner/member) `확정 필요`
 - Target audience/content rating: 성인 양육자용, 아동 대상 아님 / IARC 전체이용가 예상 — 콘솔 설문 `확정 필요`
 - Financial/payment features: 없음
-- Privacy policy URL: `확정 필요` — 초안 `docs/legal/privacy-policy.md`, 호스팅 후 확정
+- Privacy policy URL: `https://www.seorilabs.com/babycare/privacy/` ✅ 게시 완료. Play는 API로 안 써지므로 **Play Console '앱 콘텐츠 > 개인정보처리방침'에 수동 입력** 필요

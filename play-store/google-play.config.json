@@ -4,7 +4,7 @@
   "appType": "app",
   "freeOrPaid": "free",
   "contactEmail": "cs@seorilabs.com",
-  "privacyPolicyUrl": "확정 필요",
+  "privacyPolicyUrl": "https://www.seorilabs.com/babycare/privacy/",
   "storeListing": {
     "appName": {
       "ko-KR": "함께봄: 수유, 기저귀, 아기돌봄 기록 어플",
@@ -47,7 +47,7 @@
     "assetsDone": "아이콘 512·피처그래픽 1024x500·phone 스크린샷(홈/타임라인/통계, 1620x2880 9:16) 생성 완료. release-assets/manifest.*.json 참고.",
     "tabletScreenshots": "phone-first 앱으로 태블릿 스크린샷 미제공(선택 항목). validator의 tablet 최소 2장 경고는 Play 필수 아님.",
     "dataSafety": "docs/05-markets/store-data-disclosure.md 근거, 콘솔 설문으로 완료 필요(CSV 미사용).",
-    "privacyPolicyDraft": "docs/legal/privacy-policy.md (초안). 호스팅 URL 확정 후 privacyPolicyUrl 갱신.",
-    "dataSafetyDetail": "docs/05-markets/store-data-disclosure.md 참고"
+    "dataSafetyDetail": "docs/05-markets/store-data-disclosure.md 참고",
+    "privacyPolicyDone": "privacyPolicyUrl 반영(https://www.seorilabs.com/babycare/privacy/). Play는 API로 privacy URL을 쓰지 않으므로 Play Console '앱 콘텐츠 > 개인정보처리방침'에 수동 입력 필요."
   }
 }

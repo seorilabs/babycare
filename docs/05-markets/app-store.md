@@ -14,14 +14,14 @@
 - Subtitle KO: `여러 양육자와 함께 실시간 공동 기록` (20/30)
 - Subtitle EN: `Shared baby care tracker` (24/30)
 - Category: primary `라이프스타일(Lifestyle)` / secondary `유틸리티(Utilities)` 제안 — 콘솔 확정
-- Support URL: `확정 필요`
-- Marketing URL: `확정 필요`(선택)
+- Support URL: `https://www.seorilabs.com/support/` (ASC version loc 반영 완료)
+- Marketing URL: `https://www.seorilabs.com/`(선택)
 
 > App Store 이름은 정책(2.3.7) 키워드 나열 리스크로 브랜드명 `함께봄`을 쓰고, 설명 키워드는 subtitle/keywords로 분리. Play 타이틀(키워드형)과 의도적으로 다름.
 
 ## App Information
 
-- Privacy policy URL: `확정 필요` — 초안 `docs/legal/privacy-policy.md`, 호스팅 후 확정
+- Privacy policy URL: `https://www.seorilabs.com/babycare/privacy/` ✅ 게시·ASC appInfo(ko/en-US) 반영 완료
 - Age rating: `4+` (아동 대상 아님, 부적절 콘텐츠 없음)
 - Export compliance: `ITSAppUsesNonExemptEncryption = false` (표준 TLS/Firebase만)
 - Review notes: `app-store/app-store.config.json`의 `review.notes` (공동 기록 데모 절차 포함)
