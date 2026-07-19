@@ -21,7 +21,7 @@
 
 ## App Information
 
-- Privacy policy URL: `https://www.seorilabs.com/babycare/privacy/` ✅ 게시·ASC appInfo(ko/en-US) 반영 완료
+- Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시·ASC appInfo(ko/en-US) 반영 완료
 - Age rating: `4+` (아동 대상 아님, 부적절 콘텐츠 없음)
 - Export compliance: `ITSAppUsesNonExemptEncryption = false` (표준 TLS/Firebase만)
 - Review notes: `app-store/app-store.config.json`의 `review.notes` (공동 기록 데모 절차 포함)

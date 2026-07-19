@@ -4,7 +4,7 @@
 > 근거: `docs/05-markets/store-data-disclosure.md`, `docs/01-planning/product-spec.md`.
 
 ## 1. 개인정보처리방침 (Privacy policy)
-- URL: `https://www.seorilabs.com/babycare/privacy/`
+- URL: `https://www.seorilabs.com/privacy/`
 
 ## 2. 앱 액세스 (App access)
 - **일부 기능이 제한됨** 선택 후 지침 제공(또는 "모든 기능 이용 가능"). 앱은 별도 로그인 없이 익명 인증으로 자동 시작하므로 심사용 자격증명은 불필요.
