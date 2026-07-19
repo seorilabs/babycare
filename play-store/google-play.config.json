@@ -48,6 +48,7 @@
     "tabletScreenshots": "phone-first 앱으로 태블릿 스크린샷 미제공(선택 항목). validator의 tablet 최소 2장 경고는 Play 필수 아님.",
     "dataSafety": "docs/05-markets/store-data-disclosure.md 근거, 콘솔 설문으로 완료 필요(CSV 미사용).",
     "dataSafetyDetail": "docs/05-markets/store-data-disclosure.md 참고",
-    "privacyPolicyDone": "privacyPolicyUrl 반영(https://www.seorilabs.com/babycare/privacy/). Play는 API로 privacy URL을 쓰지 않으므로 Play Console '앱 콘텐츠 > 개인정보처리방침'에 수동 입력 필요."
+    "privacyPolicyDone": "privacyPolicyUrl 반영(https://www.seorilabs.com/babycare/privacy/). Play는 API로 privacy URL을 쓰지 않으므로 Play Console '앱 콘텐츠 > 개인정보처리방침'에 수동 입력 필요.",
+    "appContentSheet": "Play '앱 콘텐츠' 전 섹션 답변 시트: docs/05-markets/google-play-app-content.md (콘솔 수동 입력용). 돌봄 기록=개인정보>기타, 타깃 18+, 광고 없음, 예상 등급 전체이용가."
   }
 }
