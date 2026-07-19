@@ -7,3 +7,4 @@ ADR과 장기 의사결정을 관리한다.
 - `0001-docs-as-source-of-truth.md`
 - `0002-react-native-framework-choice.md`
 - `0003-native-launch-screen-policy.md`
+- `0004-monetization-strategy.md`
