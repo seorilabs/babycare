@@ -26,9 +26,9 @@
 
 ## Release
 
-- Signing key / Play App Signing: `확정 필요` — task #3
-- Internal testing track: `확정 필요`
-- Production rollout policy: `확정 필요`
+- Signing key / Play App Signing: ✅ 업로드 keystore·서명 완료, signed AAB 업로드로 Play App Signing 등록 확인. **단 CI 업로드용 secret(Environment `google-play`)은 미구성** — 현재까지 업로드는 로컬 수동
+- Internal testing track: ✅ signed AAB(`1.0.0`/`1000000`) draft 업로드됨 / internal 릴리스 활성화·테스터 배포는 남음
+- Production rollout policy: `확정 필요` (승인 후 결정)
 - Release notes: `확정 필요`
 
 ## Policy

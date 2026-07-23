@@ -38,7 +38,7 @@
 
 ## Release
 
-- Signing team (Team ID) / Apple Distribution 인증서: `확정 필요` — task #3
-- App Store provisioning profile: `확정 필요`
-- TestFlight group: `확정 필요`
+- Signing team (Team ID) / Apple Distribution 인증서: ✅ 로컬 서명으로 build 1 archive→export→TestFlight 업로드(ASC `VALID`). **단 CI 업로드용 secret(Environment `app-store`)은 미구성** — 현재까지 업로드는 로컬 수동
+- App Store provisioning profile: ✅ App Store profile로 export 완료
+- TestFlight group: `확정 필요` (그룹 생성·테스터 배정 남음)
 - Release notes: `확정 필요`
