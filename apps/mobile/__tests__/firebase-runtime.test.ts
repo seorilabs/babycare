@@ -36,7 +36,6 @@ import {
 import {createCareEventContainer} from '../src/app/care-event-container';
 
 import {
-  FirebaseRuntimeConfigurationError,
   createFirebaseRuntime,
   resolveFirebaseEmulatorHost,
 } from '../src/app/firebase-runtime';
@@ -162,27 +161,39 @@ it('creates a dummy dev app and connects every emulator before adapters are used
   });
 });
 
-it('uses a native app without emulator connections and requires an injected region', async () => {
+it('uses a native app without emulator connections and defaults to the deployed production region', async () => {
   mockGetApps.mockReturnValue([nativeApp]);
 
-  await expect(
-    createFirebaseRuntime({dev: false, platform: 'ios'}),
-  ).rejects.toBeInstanceOf(FirebaseRuntimeConfigurationError);
-  expect(mockInitializeFirestore).not.toHaveBeenCalled();
+  // A native (release) Firebase app defaults the Functions region to the
+  // deployed production region (asia-northeast3) rather than requiring an
+  // injected region — see FIREBASE_CLOUD_RUNTIME_CONFIG.
+  const runtime = await createFirebaseRuntime({dev: false, platform: 'ios'});
 
-  const runtime = await createFirebaseRuntime({
-    dev: false,
-    platform: 'ios',
-    functionsRegion: 'asia-northeast3',
-  });
   expect(runtime.source).toBe('native');
+  expect(runtime.functionsRegion).toBe('asia-northeast3');
   expect(mockInitializeApp).not.toHaveBeenCalled();
+  expect(mockGetFunctions).toHaveBeenCalledWith(nativeApp, 'asia-northeast3');
   expect(mockInitializeFirestore).toHaveBeenCalledWith(nativeApp, {
     persistence: false,
   });
   expect(mockConnectAuthEmulator).not.toHaveBeenCalled();
   expect(mockConnectFirestoreEmulator).not.toHaveBeenCalled();
   expect(mockConnectFunctionsEmulator).not.toHaveBeenCalled();
+});
+
+it('lets an injected region override the native default', async () => {
+  mockGetApps.mockReturnValue([nativeApp]);
+
+  const runtime = await createFirebaseRuntime({
+    dev: false,
+    platform: 'ios',
+    functionsRegion: 'us-central1',
+  });
+
+  expect(runtime.source).toBe('native');
+  expect(runtime.functionsRegion).toBe('us-central1');
+  expect(mockGetFunctions).toHaveBeenCalledWith(nativeApp, 'us-central1');
+  expect(mockInitializeApp).not.toHaveBeenCalled();
 });
 
 it('fails explicitly when a release build has no native Firebase app', async () => {
