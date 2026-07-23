@@ -1,4 +1,11 @@
 # App Store(Xcode archive + 업로드) — macos-26. org 재사용 워크플로우 호출.
+#
+# ⚠️ babycare App Store 배포 정본은 **Xcode Cloud**다(apps/mobile/ios/ci_scripts/ + backoffice
+#    ciBuildRuns 트리거, XCODE_CLOUD_APP_STORE_REPOS allowlist). babycare 는 RNFirebase 라
+#    Xcode 26.x 정적 링키지 회귀 대상이라 macOS 러너 archive 는 실패 위험이 있다. 이 GH 경로는
+#    fallback 으로만 남긴다(deploy-all 기본 deploy_app_store=false, backoffice ALL 배포도
+#    Xcode Cloud repo 면 deploy_app_store=false 주입). 필요 시 수동 dispatch 로만 사용.
+#
 # ios_scheme/workspace/bundle_id 기본값은 확정된 실제 식별자(2026-07-13). 필요 시 dispatch로 override.
 name: Deploy App Store
 
