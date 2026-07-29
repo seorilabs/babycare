@@ -1,6 +1,6 @@
 # Google Play
 
-> 등록 준비 원장. 확정값과 초안을 반영. `release-targets.md` deployment approval **미승인** — 준비만, 제출·프로덕션 승격 금지.
+> 등록 준비 원장. 확정값과 초안을 반영. 2026-07-29 승인 범위는 internal draft 빌드 업로드까지이며, 릴리스 활성화·테스터 배포·프로덕션 승격은 미승인.
 > 기계 판독 source of truth: `play-store/google-play.config.json`
 
 ## App Identity
@@ -27,7 +27,7 @@
 ## Release
 
 - Signing key / Play App Signing: ✅ 업로드 keystore·서명 완료, signed AAB 업로드로 Play App Signing 등록 확인. **단 CI 업로드용 secret(Environment `google-play`)은 미구성** — 현재까지 업로드는 로컬 수동
-- Internal testing track: ✅ signed AAB(`1.0.0`/`1000000`) draft 업로드됨 / internal 릴리스 활성화·테스터 배포는 남음
+- Internal testing track: ✅ `main@8c5196e`(`v1.0.1`) signed AAB(`1.0.1`/`1000001`) draft 업로드 및 Android Publisher API readback 완료(2026-07-29) / internal 릴리스 활성화·테스터 배포는 남음
 - Production rollout policy: `확정 필요` (승인 후 결정)
 - Release notes: `확정 필요`
 

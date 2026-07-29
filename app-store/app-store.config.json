@@ -44,6 +44,19 @@
     "usesNonExemptEncryption": false,
     "rationale": "표준 HTTPS/TLS와 Firebase SDK 전송 암호화만 사용, 비면제 커스텀 암호화 없음. Info.plist에 ITSAppUsesNonExemptEncryption=false 설정."
   },
+  "release": {
+    "marketingVersion": "1.0.1",
+    "buildNumber": "1000001",
+    "sourceTag": "v1.0.1",
+    "sourceCommit": "8c5196e484f93b53630efb7ad6cbaaabfde56d58",
+    "buildId": "6b9c26b2-31ea-4b95-9bd1-6b2495039b9b",
+    "processingState": "VALID",
+    "uploadedDate": "2026-07-29T06:25:03-07:00",
+    "artifactSha256": "b7459c72f76ea2f6e1aa9ca472c12f9fd2bbe2f8022f5eee31daafde5da16ce1",
+    "betaGroup": "서리랩스 내부테스터",
+    "betaGroupHasAccessToAllBuilds": true,
+    "submittedForReview": false
+  },
   "appPrivacy": {
     "tracking": "no",
     "collected": [
@@ -75,13 +88,13 @@
   },
   "dsaTrader": "확정 필요 (EU 배포 여부·trader 상태 결정 후 확정)",
   "notes": {
-    "_comment": "확정값+초안 등록 준비 원장. deployment approval 미승인 → 실제 제출/TestFlight 외부 배포 금지.",
+    "_comment": "확정값+초안 등록 준비 원장. 2026-07-29 승인 범위는 App Store Connect/TestFlight 빌드 업로드까지이며, 실제 테스터 QA·App Review 제출·공개 출시는 별도 승인 전까지 금지.",
     "createdApp": "App Store Connect 앱 생성 완료(2026-07-18). appleId(adamId)=6792193162, sku=babynet-app, primaryLocale=ko. appName은 생성된 실제 이름(키워드형 타이틀)에 정렬.",
     "pushed": "2026-07-18 ASC API로 ko/en-US description·keywords·promotionalText, ko subtitle, 6.9\"(APP_IPHONE_67) 스크린샷 5컷 draft 반영. 버전 1.0 PREPARE_FOR_SUBMISSION.",
     "appStoreNameEn": "App Store en-US 표시 이름은 'BabyNest: Shared Baby Care Log'(2026-07-18 확정 반영). 단독 'BabyNest'는 타 계정 선점이라 Play 타이틀과 동일한 고유 문자열을 사용. 브랜드명은 여전히 BabyNest.",
-    "remaining": "App Privacy 콘솔 답변, TestFlight 테스트 그룹, 심사 제출(승인 후).",
-    "assetsDone": "아이콘 1024·iPhone 6.9\" 스크린샷 5컷 생성 완료. iPad 13\"는 iPad 지원 결정 후. Xcode AppIcon.appiconset 채우기는 남음.",
-    "signingDone": "Team ID·Apple Distribution 인증서·App Store provisioning으로 로컬 서명·build 1 TestFlight 업로드 완료(VALID). 단 CI 업로드용 secret(Environment app-store)은 미구성.",
+    "remaining": "App Privacy 콘솔 답변, 내부 테스터 실제 설치·2기기 QA, 심사 제출(승인 후).",
+    "assetsDone": "아이콘 1024·iPhone 6.9\" 스크린샷 5컷 생성 완료. iPad 13\"는 iPad 지원 결정 후. Xcode AppIcon.appiconset에는 iPhone/iPad/marketing 아이콘 반영 완료.",
+    "signingDone": "Team ID·Apple Distribution 인증서·App Store provisioning으로 main@8c5196e(v1.0.1) 1.0.1/1000001 로컬 서명·업로드 완료(ASC VALID). 내부 그룹 '서리랩스 내부테스터'는 모든 빌드 접근 활성화. 단 CI 업로드용 secret(Environment app-store)은 미구성.",
     "urls": "privacyPolicyUrl·supportUrl·marketingUrl 확정 반영(2026-07-18). ASC 콘솔에도 privacy(appInfo)·support(version loc) PATCH 완료."
   }
 }
