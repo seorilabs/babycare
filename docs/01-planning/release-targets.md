@@ -4,7 +4,7 @@
 
 - Google Play, Apple App Store, AppsInToss를 모두 공식 타깃으로 준비한다.
 - 세 타깃의 release candidate 준비는 병행하되 최초 제출 순서는 `확정 필요`다.
-- Deployment approval은 **미승인** 상태다. 빌드·QA·등록 자료 준비는 가능하지만 store submission, production promotion, AppsInToss production release는 금지한다.
+- 2026-07-29 Google Play internal draft와 App Store Connect/TestFlight 빌드 업로드만 승인·완료했다. 릴리스 활성화·테스터 배포·store review submission·production promotion·AppsInToss production release는 별도 승인 전까지 금지한다.
 - `.aab`, archive/`.ipa`, `.ait` 생성은 packaging 증거일 뿐 release-ready 증거가 아니다.
 
 ## 식별자 기준
@@ -25,8 +25,8 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 
 | Target | Repo 위치 | 목표 Artifact | 현재 상태 | 다음 Gate |
 | --- | --- | --- | --- | --- |
-| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **signed AAB(1.0.0/1000000)를 internal 트랙에 draft 업로드 완료**. 남음: App content 설문·privacy URL·internal 릴리스 활성화 | App content 설문 → internal 테스터 릴리스 |
-| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명(cert/profile). **build 1(1.0) archive→export→TestFlight 업로드, ASC에서 VALID**. 남음: privacy URL·supportUrl·App Privacy·TestFlight 그룹 | TestFlight 테스트 → 심사 제출(승인 후) |
+| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **`main@8c5196e`(`v1.0.1`) AAB(1.0.1/1000001)를 internal draft 업로드하고 API readback 완료**. 남음: App content 설문·internal 릴리스 활성화 | App content 설문 → internal 테스터 릴리스 |
+| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명(cert/profile). **`main@8c5196e`(`v1.0.1`) 1.0.1(1000001) archive→export→업로드, ASC `VALID`**. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. 남음: App Privacy·실기기 QA | TestFlight 테스트 → 심사 제출(승인 후) |
 | AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite target 미초기화 | 정책 적합성·영구 `appName` 확정 → 초기화 → sandbox |
 | **백엔드(Firebase)** | `firebase/` | 프로덕션 프로젝트 | ✅ **`seorilabs-babycare`(서울) LIVE** — Firestore·익명 Auth·Functions(createInvite/acceptInvite)·Rules 배포 완료 | production Auth provider·App Check·2기기 QA |
 
@@ -39,12 +39,12 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - 연령등급, 성인 양육자용·비의료 목적 review note, 지역별 규제 검토.
 - 앱 아이콘, feature/thumbnail, phone screenshot, native launch 화면의 최종 제품명·브랜딩.
 - 서로 다른 계정·기기 2대의 초대·실시간·오프라인·접근 회수 사람 QA.
-- 별도 deployment approval.
+- internal 빌드 활성화·테스터 배포·심사 제출·프로덕션 승격별 별도 deployment approval.
 
 ## Google Play Blocker
 
-- 확정 package `com.seorilabs.babycare`로 Play Console 앱 생성.
-- Play App Signing과 upload key, x64 Linux 기반 signed AAB release build.
+- ~~확정 package `com.seorilabs.babycare`로 Play Console 앱 생성.~~ 완료.
+- ~~Play App Signing과 upload key, x64 Linux 기반 signed AAB release build.~~ 완료(1.0.1/1000001).
 - Data safety에 아동 관련 프로필·사진·돌봄/건강 데이터의 수집·공유·삭제를 실제 SDK와 일치시켜 신고.
 - IARC/GRAC, target audience, 광고/결제 여부와 Families 적용 범위 확인.
 - internal → closed test, crash/ANR, 오프라인 복귀와 계정 삭제 검증.
@@ -53,11 +53,11 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 
 ## App Store Blocker
 
-- 확정 bundle ID `com.seorilabs.babycare`의 App ID, signing certificate/profile과 App Store Connect 앱 생성.
-- macOS/Xcode에서 archive/export 및 TestFlight 업로드 검증.
+- ~~확정 bundle ID `com.seorilabs.babycare`의 App ID, signing certificate/profile과 App Store Connect 앱 생성.~~ 완료.
+- ~~macOS/Xcode에서 archive/export 및 TestFlight 업로드 검증.~~ 완료(1.0.1/1000001, ASC `VALID`).
 - Privacy Labels, age rating, export compliance, 계정 삭제와 review note 확정.
 - 성인 양육자용·비의료 목적, 초대된 그룹 내 아동 정보 공유 구조를 review note에 설명.
-- 양육자 2인 이상 TestFlight 테스트. ~~iPhone 6.9" screenshot~~ 완료(실기 시뮬레이터 캡처 5컷). store 아이콘 1024 완료, Xcode `AppIcon.appiconset` 채우기는 남음.
+- 양육자 2인 이상 TestFlight 테스트. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. ~~iPhone 6.9" screenshot~~ 완료(실기 시뮬레이터 캡처 5컷). store 아이콘 1024와 Xcode `AppIcon.appiconset` 반영 완료.
 - ~~`app-store/app-store.config.json` 작성~~ 완료(이름·subtitle·설명·키워드·review·export·privacy 초안).
 - 업로드 자동화: `deploy-app-store.yml`(scheme/workspace/bundle 기본값 채움) 준비 완료. signing·ASC 키는 `docs/06-release/store-upload-setup.md` 참고.
 

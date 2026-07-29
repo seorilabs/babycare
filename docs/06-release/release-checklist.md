@@ -10,15 +10,15 @@
 
 ## Architecture Gate
 
-- [x] `pnpm run test:core` — 25건 통과
+- [x] `pnpm run test:core` — 40건 통과(2026-07-29)
 - [x] `pnpm run check:architecture`
 - [x] platform SDK import 없이 `packages/product-core` 경계 구현
 - [x] 현재 변경 snapshot의 architecture/core gate 재실행 증거
 
 ## Market Gate
 
-- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 아이콘 512·피처그래픽·phone 스크린샷 생성 완료 / 남음: privacy URL 호스팅, data safety·content rating 콘솔 확정
-- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 아이콘 1024·6.9" 스크린샷 5컷 생성 완료 / 남음: privacy URL, signing, ASC 앱 생성, App Privacy 콘솔 확정
+- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.1/1000001 internal draft 업로드 완료 / 남음: Play Console privacy URL·data safety·content rating 확정
+- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9" 스크린샷 5컷, signing·ASC 앱 생성, 1.0.1/1000001 `VALID` 완료 / 남음: App Privacy 콘솔 확정
 - [ ] AppsInToss metadata와 config 확정
 - [x] Firebase rules/indexes/functions와 local test 코드 구현
 - [ ] 실제 project의 Auth/client composition/App Check/Secret Manager/IAM 통합 확정
@@ -39,7 +39,9 @@
 
 ## Deployment Gate
 
-- [ ] Deployment approval 완료
-- [ ] Google Play production 또는 testing track 배포 승인
-- [ ] App Store TestFlight 또는 App Review 제출 승인
+- [x] Google Play internal draft와 App Store Connect/TestFlight 빌드 업로드 승인 — 2026-07-29
+- [x] Google Play 1.0.1/1000001 internal draft 업로드·API readback
+- [x] App Store 1.0.1/1000001 업로드·ASC `VALID`, 내부 그룹 모든 빌드 접근 확인
+- [ ] Google Play internal 릴리스 활성화·테스터 배포 또는 production 승격 승인
+- [ ] App Store 실제 테스터 설치·실기기 QA 또는 App Review 제출 승인
 - [ ] AppsInToss production release 승인

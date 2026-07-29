@@ -1,6 +1,6 @@
 # App Store
 
-> 등록 준비 원장. 확정값과 초안을 반영. `release-targets.md` deployment approval **미승인** — 준비만, 제출·TestFlight 외부 배포 금지.
+> 등록 준비 원장. 확정값과 초안을 반영. 2026-07-29 승인 범위는 App Store Connect/TestFlight 빌드 업로드까지이며, 테스터 실기기 QA·App Review 제출·공개 출시는 미승인.
 > 기계 판독 source of truth: `app-store/app-store.config.json`
 
 ## App Identity
@@ -31,14 +31,14 @@
 
 ## Assets
 
-- App store icon (1024x1024): `app-store/assets/icon-1024.png` ✅ 생성 / Xcode `AppIcon.appiconset`는 마스터에서 채워야 함(`확정 필요`)
+- App store icon (1024x1024): `app-store/assets/icon-1024.png` 및 Xcode `AppIcon.appiconset`(iPhone/iPad/marketing) ✅ 반영
 - Native launch screen: 구현됨 — 최종 브랜딩 `확정 필요`
 - iPhone screenshots (6.9" 1320x2868): 홈/타임라인/통계/수유기록/더보기 5컷 ✅ `app-store/screenshots/6.9/` (실제 앱 시뮬레이터 캡처)
 - iPad screenshots (13" 2064x2752): iPad 지원 여부 결정 후 `확정 필요`
 
 ## Release
 
-- Signing team (Team ID) / Apple Distribution 인증서: ✅ 로컬 서명으로 build 1 archive→export→TestFlight 업로드(ASC `VALID`). **단 CI 업로드용 secret(Environment `app-store`)은 미구성** — 현재까지 업로드는 로컬 수동
+- Signing team (Team ID) / Apple Distribution 인증서: ✅ `main@8c5196e`(`v1.0.1`) 기준 `1.0.1`(`1000001`) archive→export→App Store Connect 업로드, ASC `VALID` 확인(2026-07-29). **단 CI 업로드용 secret(Environment `app-store`)은 미구성** — 현재까지 업로드는 로컬 수동
 - App Store provisioning profile: ✅ App Store profile로 export 완료
-- TestFlight group: `확정 필요` (그룹 생성·테스터 배정 남음)
+- TestFlight group: ✅ 내부 그룹 `서리랩스 내부테스터` 존재, 모든 빌드 접근 활성화 / 실제 테스터 설치·실기기 QA는 남음
 - Release notes: `확정 필요`
