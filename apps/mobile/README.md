@@ -1,6 +1,6 @@
 # BabyCare Mobile
 
-Google Play와 Apple App Store용 Community CLI 기반 bare React Native target이다. Android application ID와 iOS bundle ID는 `com.seorilabs.babycare`로 확정했으며 Debug/Release가 같은 식별자를 사용한다. 현재 native target name `BabyCare`는 개발용 기술 이름이고 최종 한국어/영어 앱 이름은 `확정 필요`다.
+Google Play와 Apple App Store용 Community CLI 기반 bare React Native target이다. Android application ID와 iOS bundle ID는 `com.seorilabs.babycare`로 확정했으며 Debug/Release가 같은 식별자를 사용한다. native target name `BabyCare`는 개발용 기술 이름이고 사용자 표시 이름은 `함께봄`이다.
 
 ## 현재 구현
 
@@ -104,10 +104,11 @@ pnpm run check:mobile
 - Android `namespace`/`applicationId`: `com.seorilabs.babycare`.
 - iOS `PRODUCT_BUNDLE_IDENTIFIER`: `com.seorilabs.babycare`.
 - JS/native target name: `BabyCare` — 최종 제품명이 아니다.
+- Android/iOS 사용자 표시 이름: `함께봄`.
 - iOS `UILaunchStoryboardName`은 유지하고 `LaunchScreen.storyboard`를 제품형 정적 화면으로 사용한다.
 - Android launch theme/splash도 첫 RN 화면 배경과 맞춘다.
 
-최종 제품명·아이콘·대표 색상이 확정되면 두 native launch 화면과 첫 RN 화면을 함께 교체하고 실제 cold start를 다시 확인한다. framework/template 문구를 숨기기 위해 launch storyboard 연결을 삭제하지 않는다.
+확정 제품명·아이콘·대표 색상을 두 native launch 화면과 첫 RN 화면에 함께 유지하고 실제 cold start를 다시 확인한다. framework/template 문구를 숨기기 위해 launch storyboard 연결을 삭제하지 않는다.
 
 ## Firebase production composition 조건
 

@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-07-30 — 확정 제품명 사용자 표면 반영
+
+- 2026-07-18 확정·스토어 반영된 한국어 제품명 `함께봄`과 달리 Android/iOS launcher label, React Native `displayName`, 초대 공유 문구가 개발용 기술 이름 `BabyCare`를 노출하고 있음을 확인했다. 기존 `pnpm run check:mobile`도 이 상태를 통과했다.
+- Android `app_name`, iOS `CFBundleDisplayName`, React Native `displayName`과 초대 공유 문구를 `함께봄`으로 통일했다. 내부 JS/native target 이름 `BabyCare`는 module·scheme 호환을 위해 유지한다.
+- `check:mobile`이 세 native 표시 이름과 초대 공유 브랜드를 검사하도록 보강하고, 초대 공유 payload 회귀 테스트와 접근성 label을 추가했다. 기획서·backlog의 과거 `확정 필요` 표기도 현재 승인 상태에 맞췄다.
+- `pnpm run test:static`에서 core 40건, mobile 29 suites/234건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`, iOS plist lint도 통과했다.
+- JDK 21 Android debug APK를 빌드하고 `aapt dump badging`에서 package `com.seorilabs.babycare`, application/activity label `함께봄`을 확인했다. 이번 실행에서는 Android/iOS 화면·cold start를 직접 보지 않았으므로 QA checklist는 완료 처리하지 않았다.
+- `pnpm run check:release`는 이번 변경과 무관한 AppsInToss `appName`/target, 스토어 정책 답변, 실제 계정·기기 QA와 deployment approval blocker로 예상대로 실패했다.
+
 ## 2026-07-13 — Android/iOS 식별자 확정
 
 - 사용자가 Android application ID와 iOS bundle ID를 `com.seorilabs.babycare`로 확정했다. Debug/Release native target이 같은 식별자를 사용하며 Android Kotlin package 경로와 iOS Debug/Release build setting도 함께 맞췄다.

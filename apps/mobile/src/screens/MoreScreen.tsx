@@ -53,7 +53,7 @@ export function MoreScreen(props: {
 
   const shareInvite = () => {
     Share.share({
-      message: `BabyCare 돌봄 그룹 초대 코드: ${props.session.inviteCode}`,
+      message: `함께봄 돌봄 그룹 초대 코드: ${props.session.inviteCode}`,
     }).catch(error =>
       Alert.alert(
         '초대 코드를 공유하지 못했어요',
@@ -132,6 +132,7 @@ export function MoreScreen(props: {
           </View>
           {firebase && owner ? (
             <Pressable
+              accessibilityLabel={inviteReady ? '초대 코드 공유' : '초대 코드 만들기'}
               accessibilityRole="button"
               onPress={inviteReady ? shareInvite : createInvite}
               style={[styles.inviteAction, {borderColor: props.theme.colors.primary}]}>

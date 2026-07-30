@@ -32,9 +32,12 @@ fi
 
 mobile_id='com.seorilabs.babycare'
 mobile_id_regex="${mobile_id//./\\.}"
+brand_name='함께봄'
 android_build='apps/mobile/android/app/build.gradle'
 android_sources='apps/mobile/android/app/src/main/java/com/seorilabs/babycare'
 ios_project='apps/mobile/ios/BabyCare.xcodeproj/project.pbxproj'
+android_strings='apps/mobile/android/app/src/main/res/values/strings.xml'
+app_json='apps/mobile/app.json'
 
 android_namespace_count="$(rg -c "^[[:space:]]*namespace[[:space:]]+\"${mobile_id_regex}\"[[:space:]]*$" "${android_build}" || true)"
 android_namespace_count="${android_namespace_count:-0}"
@@ -74,6 +77,17 @@ if [ "${ios_identifier_count}" -ne 2 ] || [ "${ios_identifier_total}" -ne 2 ]; t
   exit 1
 fi
 
+if ! BRAND_NAME="${brand_name}" node -e \
+  "const app = require('./${app_json}'); process.exit(app.displayName === process.env.BRAND_NAME ? 0 : 1)"; then
+  echo "React Native displayName must be ${brand_name}." >&2
+  exit 1
+fi
+
+if ! rg -Fq "<string name=\"app_name\">${brand_name}</string>" "${android_strings}"; then
+  echo "Android launcher name must be ${brand_name}." >&2
+  exit 1
+fi
+
 launch_storyboard="$(find "apps/mobile/ios" -name "LaunchScreen.storyboard" -type f | sed -n '1p')"
 info_plist="$(find "apps/mobile/ios" -name "Info.plist" -type f | sed -n '1p')"
 
@@ -88,6 +102,11 @@ if [ -z "${info_plist}" ] || \
   exit 1
 fi
 
+if ! rg -Uq "<key>CFBundleDisplayName</key>[[:space:]]*<string>${brand_name}</string>" "${info_plist}"; then
+  echo "iOS launcher name must be ${brand_name}." >&2
+  exit 1
+fi
+
 default_surface_pattern='Powered by React Native|Welcome to React Native|Welcome to React Native App|Hello World'
 
 if rg -n "${default_surface_pattern}" "${launch_storyboard}" "apps/mobile/App.tsx"; then
@@ -97,7 +116,13 @@ fi
 
 if rg -n 'text="(BabyCare|React Native)([^\"]*)?"' "${launch_storyboard}" || \
   rg -n '>(BabyCare|React Native)([^<]*)?<' "apps/mobile/App.tsx" "apps/mobile/src/screens/MoreScreen.tsx"; then
-  echo "A framework default or unconfirmed product name remains on a user-visible surface." >&2
+  echo "A framework default or technical target name remains on a user-visible surface." >&2
+  exit 1
+fi
+
+if ! rg -Fq "message: \`${brand_name} 돌봄 그룹 초대 코드:" \
+  "apps/mobile/src/screens/MoreScreen.tsx"; then
+  echo "Invite sharing must use the confirmed ${brand_name} brand." >&2
   exit 1
 fi
 

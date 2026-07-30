@@ -29,13 +29,13 @@
 | 항목 | 현재 값 | 상태 |
 | --- | --- | --- |
 | app id | `babycare` | repo 내부 식별자 |
-| 현재 native target/display name | `BabyCare` | 개발용 기술 이름 |
-| 한국어 앱 이름 | 후보 `함께봄` | `확정 필요` |
-| 영어 앱 이름 | 후보 `BabyNest` | `확정 필요` |
+| 현재 native target name | `BabyCare` | 개발용 기술 이름 |
+| 한국어 앱 이름 | `함께봄` | 2026-07-18 사용자 확정 |
+| 영어 앱 이름 | `BabyNest` | 2026-07-18 사용자 확정 |
 | Android application ID | `com.seorilabs.babycare` | 2026-07-13 사용자 확정 |
 | iOS bundle ID | `com.seorilabs.babycare` | 2026-07-13 사용자 확정 |
 | AppsInToss `appName` | `확정 필요` | 정책 확인 후, target 생성 전에 확정 |
-| 대표 색상 | 후보 `#5FB49C` | `확정 필요` |
+| 대표 색상 | `#5FB49C` | 2026-07-18 사용자 확정 |
 | 고객지원 이메일 | `cs@seorilabs.com` | 해당 마켓에 사용 |
 
 ## MVP 범위
@@ -113,7 +113,7 @@ flowchart LR
 | mobile | 기본 개발 실행 경로에 Firebase composition root를 연결했다. native Firebase app이 없으면 `demo-babycare` Emulator에 Auth/Firestore/Functions를 연결하며, 개발용 익명 인증, owner 그룹·아기 생성, 6자리 초대 발급·합류 UI, UID-scoped cloud context cache, 실시간 Home/Timeline/Stats feed, 동기화 상태·재시도 배너와 멤버 목록을 제공한다. 명시적 오류 fallback과 Jest에서는 local preview를 유지한다. | 실제 Firebase client config와 Functions region, production Auth provider·계정 복구/삭제, 실제 기기 2대의 초대·offline/restart/reconnect·권한 회수 QA |
 | Firebase | Rules/Functions의 payload-bound mutation receipt와 baby별 active-sleep singleton lock을 검증한다. 별도 mobile shared-flow 테스트는 Auth Emulator의 익명 사용자 2명으로 owner 생성→초대 발급/수락→member 실시간 기록 수신→멤버 제거 후 접근 거부를 통과한다. | 실제 non-production project, App Check·Secret Manager·IAM·client config 통합 검증. Emulator의 두 client는 실제 기기 2대 증거가 아님 |
 | AppsInToss | 문서와 example만 있고 Granite target은 미초기화 | 정책 적합성·영구 `appName`, Granite+TDS 초기화, auth/storage/realtime adapter, sandbox QA |
-| release | 3마켓 문서 구조와 Android/iOS 식별자 확정 | 제품명·AppsInToss `appName`·서명·정책 답변·자산·콘솔 등록·사람 QA |
+| release | 3마켓 문서 구조, 제품명·대표 색상과 Android/iOS 식별자 확정 | AppsInToss `appName`·정책 답변·남은 자산/콘솔 등록·사람 QA |
 
 RNFirebase adapter와 Firebase 개발 composition이 연결됐지만 production composition이 검증된 것은 아니다. `demo-babycare` Emulator의 익명 사용자 2명 테스트는 client·Rules·Functions 계약을 검증하는 로컬 증거이며, 실제 프로젝트의 App Check/IAM, production 인증, 클라우드 보존, 실제 기기 2대 공동 기록 완료 증거로 사용하지 않는다.
 
