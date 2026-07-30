@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-07-30 — 고정 개발 버전 문구 노출 제거
+
+- 더보기 화면이 workspace package의 초기값인 `개발 빌드 0.1.0`을 고정 노출했지만, 실제 Android/iOS 최신 업로드 빌드는 1.0.1(1000001)이고 release workflow는 태그에서 native 버전을 주입한다.
+- 잘못된 버전을 제품 정보로 안내하지 않도록 고정 문구를 제거했다. 실제 native 버전 readback 경로를 도입하기 전까지 임의 값으로 대체하지 않는다.
+- More 화면 회귀 테스트가 미구현 export 문구와 함께 고정 개발 버전의 재노출을 막는다.
+- `pnpm run test:static`에서 core 40건, mobile 29 suites/235건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다. 텍스트 제거만 수행해 이번 실행에서는 simulator/device 화면을 직접 보지 않았다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+
 ## 2026-07-30 — 미구현 데이터 내보내기 노출 제거
 
 - 더보기 화면이 누를 수 없는 `데이터 내보내기 — 준비 중` 행으로 아직 제공하지 않는 기능을 사용자에게 약속하고 있었다.

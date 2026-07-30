@@ -189,7 +189,6 @@ export function MoreScreen(props: {
         style={[styles.reset, {borderColor: props.theme.colors.danger}]}>
         <Text style={[styles.resetText, {color: props.theme.colors.danger}]}>로컬 데이터 초기화</Text>
       </Pressable> : null}
-      <Text style={[styles.version, {color: props.theme.colors.textMuted}]}>개발 빌드 0.1.0</Text>
     </ScrollView>
   );
 }
@@ -229,5 +228,4 @@ const styles = StyleSheet.create({
   chevron: {fontSize: 22},
   reset: {alignItems: 'center', borderRadius: 15, borderWidth: 1, marginTop: 26, minHeight: 50, justifyContent: 'center'},
   resetText: {fontSize: 13, fontWeight: '800'},
-  version: {fontSize: 10, marginTop: 14, textAlign: 'center'},
 });

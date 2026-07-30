@@ -6,7 +6,7 @@ import {createTheme} from '../src/app/theme';
 import {MoreScreen} from '../src/screens/MoreScreen';
 
 describe('MoreScreen', () => {
-  it('does not promise an unimplemented data export', () => {
+  it('does not expose unfinished or stale release labels', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
 
     ReactTestRenderer.act(() => {
@@ -36,6 +36,7 @@ describe('MoreScreen', () => {
 
     expect(visibleText).not.toContain('데이터 내보내기');
     expect(visibleText).not.toContain('준비 중');
+    expect(visibleText).not.toContain('개발 빌드 0.1.0');
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
