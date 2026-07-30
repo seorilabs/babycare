@@ -189,7 +189,7 @@ export function HomeScreen(props: {
         />
         <LatestCard
           caregiverNames={props.caregiverNames}
-          event={summary.latest.sleep}
+          event={activeSleep ?? summary.latest.sleep}
           kind="sleep"
           now={props.now}
           theme={props.theme}

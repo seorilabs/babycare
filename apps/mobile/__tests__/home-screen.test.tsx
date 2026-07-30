@@ -1,6 +1,14 @@
 import React from 'react';
 import {Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
+import {
+  babyId,
+  createCareEvent,
+  eventId,
+  groupId,
+  userId,
+  type SleepEvent,
+} from '@babycare/product-core';
 
 import type {LocalSession} from '../src/app/session';
 import {createTheme} from '../src/app/theme';
@@ -56,6 +64,41 @@ describe('HomeScreen', () => {
     expect(visibleText).not.toContain('하루 ▾');
     expect(visibleText).toContain('더보기 설정 열기');
     expect(visibleText).not.toContain('더보기 바로 남기기');
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('shows the authoritative active sleep when the bounded event list is empty', () => {
+    const now = new Date('2026-07-31T09:00:00+09:00').getTime();
+    const activeSleep = createCareEvent(
+      {
+        groupId: groupId(session.groupId),
+        babyId: babyId(session.babyId),
+        caregiverId: userId(session.caregiverId),
+        kind: 'sleep',
+        sleepType: 'night',
+        startedAt: now - 30 * 60_000,
+      },
+      {id: eventId('active-sleep'), now},
+    ) as SleepEvent;
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <HomeScreen
+          activeSleep={activeSleep}
+          caregiverNames={new Map([[session.caregiverId, session.caregiverName]])}
+          events={[]}
+          now={now}
+          onMore={jest.fn()}
+          onRecord={jest.fn()}
+          onStopSleep={jest.fn()}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    expect(renderedText(renderer)).toContain('밤잠 자는 중');
     ReactTestRenderer.act(() => renderer.unmount());
   });
 });

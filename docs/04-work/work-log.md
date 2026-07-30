@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-07-31 — 새 기기 진행 중 수면 표시 복구
+
+- Home은 별도 active-sleep projection을 받아 기상 동작에는 사용했지만 최근 수면 카드는 bounded 이벤트 목록의 latest 값만 렌더링했다. 새 기기나 timeline 범위 밖 active sleep에서는 `마지막 수면 · 아직 기록이 없어요`와 `기상` 동작이 동시에 노출될 수 있었다.
+- authoritative `activeSleep`이 있으면 최근 수면 카드에서도 우선 표시하고, 없을 때만 overview의 마지막 완료 수면을 사용하도록 수정했다.
+- bounded 이벤트 목록이 비어 있고 active-sleep projection만 있는 조건을 Home 회귀 테스트로 추가했다. 테스트는 수정 전 `밤잠 자는 중` 누락을 재현했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 30 suites/237건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- 이번 실행은 정적 렌더 경계 수정이라 simulator/device 화면은 직접 확인하지 않았다.
+
 ## 2026-07-31 — 빠른 기록 더보기 문구 정합성 수정
 
 - 홈의 `더보기` 빠른 동작은 설정 화면을 열지만 다른 기록 동작과 같은 `바로 남기기` 보조 문구를 노출해 실제 동작을 잘못 안내했다.
