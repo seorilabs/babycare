@@ -136,7 +136,9 @@ export function HomeScreen(props: {
       style={{backgroundColor: props.theme.colors.background}}>
       <View style={styles.header}>
         <View>
-          <Text style={[styles.babyName, {color: props.theme.colors.text}]}>{props.session.babyName} ▾</Text>
+          <Text style={[styles.babyName, {color: props.theme.colors.text}]}>
+            {props.session.babyName}
+          </Text>
           <Text style={[styles.date, {color: props.theme.colors.textMuted}]}>
             {today} · {ageLabel(props.session.birthDate, props.now)}
           </Text>
