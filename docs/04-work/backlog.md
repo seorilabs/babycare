@@ -38,7 +38,7 @@
 | 대기 | Android release signing과 x64 Linux AAB | Play App Signing/upload key, internal track |
 | 대기 | iOS signing, archive/export와 TestFlight | macOS/Xcode, App ID/profile, 2인 TestFlight |
 | 대기 | 개인정보 처리방침·Data safety·Privacy Labels·연령등급 | 실제 SDK/데이터 흐름과 일치해야 함 |
-| 대기 | 계정·그룹 완전 삭제, 데이터 export, owner 이전 | privileged workflow와 재인증 필요 |
+| 대기 | 계정·그룹 완전 삭제, 데이터 export, owner 이전 | privileged workflow와 재인증 필요. 미구현 export는 제품 UI에 노출하지 않음 |
 | 대기 | 3마켓 icon/thumbnail/screenshots/listing/review note | 최종 제품명·브랜딩 이후 생성 |
 | 대기 | 실제 project App Check/IAM/Rules/indexes 통합 QA | Emulator 통과만으로 완료 처리하지 않음 |
 | 차단 | store 제출·production promotion | **Deployment approval 미승인** |

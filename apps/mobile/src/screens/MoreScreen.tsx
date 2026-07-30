@@ -164,7 +164,6 @@ export function MoreScreen(props: {
 
       <Text style={[styles.sectionLabel, {color: props.theme.colors.textMuted}]}>데이터와 개인정보</Text>
       <View style={[styles.settings, {backgroundColor: props.theme.colors.surface}]}>
-        <SettingRow detail="준비 중" icon="⇩" theme={props.theme} title="데이터 내보내기" />
         <SettingRow detail="성인 양육자용 · 비의료 목적" icon="🔒" theme={props.theme} title="개인정보 보호" />
       </View>
 

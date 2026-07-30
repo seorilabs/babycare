@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-07-30 — 미구현 데이터 내보내기 노출 제거
+
+- 더보기 화면이 누를 수 없는 `데이터 내보내기 — 준비 중` 행으로 아직 제공하지 않는 기능을 사용자에게 약속하고 있었다.
+- CSV/PDF 내보내기는 승인 MVP 밖이며, 개인정보 보호 목적의 기본 export 절차는 재인증·privileged backend 정책이 필요한 P1 release blocker다. 범위를 임의 확장하지 않고 해당 행만 제품 UI에서 숨겼으며 backlog blocker는 유지했다.
+- More 화면 회귀 테스트가 `데이터 내보내기`와 `준비 중` 문구의 재노출을 막는다.
+- `pnpm run test:static`에서 core 40건, mobile 29 suites/235건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다. 이번 실행에서는 simulator/device 화면을 직접 보지 않았다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+
 ## 2026-07-30 — 확정 제품명 사용자 표면 반영
 
 - 2026-07-18 확정·스토어 반영된 한국어 제품명 `함께봄`과 달리 Android/iOS launcher label, React Native `displayName`, 초대 공유 문구가 개발용 기술 이름 `BabyCare`를 노출하고 있음을 확인했다. 기존 `pnpm run check:mobile`도 이 상태를 통과했다.
