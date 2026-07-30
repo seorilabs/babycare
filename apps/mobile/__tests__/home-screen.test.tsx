@@ -54,6 +54,8 @@ describe('HomeScreen', () => {
     const visibleText = renderedText(renderer);
     expect(visibleText).toContain('하루');
     expect(visibleText).not.toContain('하루 ▾');
+    expect(visibleText).toContain('더보기 설정 열기');
+    expect(visibleText).not.toContain('더보기 바로 남기기');
     ReactTestRenderer.act(() => renderer.unmount());
   });
 });

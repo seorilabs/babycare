@@ -117,16 +117,36 @@ export function HomeScreen(props: {
     readonly icon: string;
     readonly label: string;
     readonly color: string;
+    readonly hint: string;
   }> = [
-    {kind: 'feeding', icon: '🍼', label: '수유', color: props.theme.colors.feeding},
-    {kind: 'diaper', icon: '🧷', label: '기저귀', color: props.theme.colors.diaper},
+    {
+      kind: 'feeding',
+      icon: '🍼',
+      label: '수유',
+      color: props.theme.colors.feeding,
+      hint: '바로 남기기',
+    },
+    {
+      kind: 'diaper',
+      icon: '🧷',
+      label: '기저귀',
+      color: props.theme.colors.diaper,
+      hint: '바로 남기기',
+    },
     {
       kind: 'sleep',
       icon: activeSleep ? '☀️' : '🌙',
       label: activeSleep ? '기상' : '수면',
       color: props.theme.colors.sleep,
+      hint: activeSleep ? '지금 종료' : '바로 남기기',
     },
-    {kind: 'more', icon: '＋', label: '더보기', color: props.theme.colors.primary},
+    {
+      kind: 'more',
+      icon: '＋',
+      label: '더보기',
+      color: props.theme.colors.primary,
+      hint: '설정 열기',
+    },
   ];
 
   return (
@@ -229,7 +249,7 @@ export function HomeScreen(props: {
             </View>
             <Text style={[styles.actionLabel, {color: props.theme.colors.text}]}>{action.label}</Text>
             <Text style={[styles.actionHint, {color: props.theme.colors.textMuted}]}>
-              {action.kind === 'sleep' && activeSleep ? '지금 종료' : '바로 남기기'}
+              {action.hint}
             </Text>
           </Pressable>
         ))}
