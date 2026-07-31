@@ -81,6 +81,66 @@ describe('MoreScreen', () => {
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
+  it('submits only one invite creation request while it is in progress', async () => {
+    let finishInvite!: () => void;
+    const createInvite = jest.fn(
+      () =>
+        new Promise<void>(resolve => {
+          finishInvite = resolve;
+        }),
+    );
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onCreateInvite={createInvite}
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: '',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const action = renderer.root.findByProps({
+      accessibilityLabel: '초대 코드 만들기',
+    });
+    ReactTestRenderer.act(() => {
+      action.props.onPress();
+      action.props.onPress();
+    });
+
+    expect(createInvite).toHaveBeenCalledTimes(1);
+    const pendingAction = renderer.root.findByProps({
+      accessibilityLabel: '초대 코드 만드는 중',
+    });
+    expect(pendingAction.props.disabled).toBe(true);
+    expect(pendingAction.props.accessibilityState).toEqual({
+      busy: true,
+      disabled: true,
+    });
+
+    await ReactTestRenderer.act(async () => {
+      finishInvite();
+      await Promise.resolve();
+    });
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '초대 코드 만들기'})
+        .props.disabled,
+    ).toBe(false);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('labels membership refresh by its real behavior and surfaces failures', async () => {
     const refreshMembers = jest.fn(async () => {
       throw new Error('네트워크 연결을 확인해 주세요.');

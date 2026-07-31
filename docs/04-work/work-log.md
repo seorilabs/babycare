@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-01 — 초대 코드 중복 생성 요청 방지
+
+- 더보기의 초대 코드 생성 버튼은 진행 중 잠금이 없어 빠른 연속 탭마다 privileged Functions 요청을 다시 보내고 rate-limit 오류를 만들 수 있었다.
+- 동기식 요청 잠금과 진행 상태를 추가해 완료 전 재입력을 막고, 버튼을 `만드는 중…`으로 비활성화하며 접근성 `busy`/`disabled` 상태도 함께 노출했다.
+- More 화면 회귀 테스트가 같은 렌더의 연속 탭 두 번에서도 생성 요청이 한 번만 실행되고 완료 뒤 버튼이 다시 활성화되는지 검증한다. 테스트는 수정 전 2회 호출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 30 suites/240건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 연결된 Android 기기는 Debug/Release가 같은 application ID를 사용해 서명 충돌이나 앱 데이터 영향 가능성이 있으므로 설치하지 않았다. 부팅된 iOS Simulator도 없어 실제 진행 상태 화면은 직접 확인하지 않았다.
+
 ## 2026-07-31 — 작은 화면 빠른 기록 2열 안정화
 
 - 홈 빠른 기록 카드는 `48.5%` 고정 너비 두 개와 10px gap을 사용해 320px 화면에서 가용 content 폭 284px보다 합계가 약 1.5px 커지고, 단일 열로 밀리거나 가로로 넘칠 수 있었다.

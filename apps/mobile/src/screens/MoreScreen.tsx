@@ -1,3 +1,4 @@
+import {useRef, useState} from 'react';
 import {Alert, Pressable, ScrollView, Share, StyleSheet, Text, View} from 'react-native';
 import type {Membership} from '@babycare/product-core';
 
@@ -43,14 +44,32 @@ export function MoreScreen(props: {
   const owner = props.session.membershipRole !== 'member';
   const memberships = props.memberships ?? [];
   const inviteReady = firebase && Boolean(props.session.inviteCode);
+  const inviteCreationInFlight = useRef(false);
+  const [inviteCreationPending, setInviteCreationPending] = useState(false);
 
   const createInvite = () => {
-    props.onCreateInvite?.().catch(error =>
-      Alert.alert(
-        '초대 코드를 만들지 못했어요',
-        error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
-      ),
-    );
+    if (inviteCreationInFlight.current || !props.onCreateInvite) {
+      return;
+    }
+    inviteCreationInFlight.current = true;
+    setInviteCreationPending(true);
+    let request: Promise<void>;
+    try {
+      request = props.onCreateInvite();
+    } catch (error) {
+      request = Promise.reject(error);
+    }
+    request
+      .catch(error =>
+        Alert.alert(
+          '초대 코드를 만들지 못했어요',
+          error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+        ),
+      )
+      .finally(() => {
+        inviteCreationInFlight.current = false;
+        setInviteCreationPending(false);
+      });
   };
 
   const shareInvite = () => {
@@ -143,12 +162,27 @@ export function MoreScreen(props: {
           </View>
           {firebase && owner ? (
             <Pressable
-              accessibilityLabel={inviteReady ? '초대 코드 공유' : '초대 코드 만들기'}
+              accessibilityLabel={
+                inviteCreationPending
+                  ? '초대 코드 만드는 중'
+                  : inviteReady
+                    ? '초대 코드 공유'
+                    : '초대 코드 만들기'
+              }
               accessibilityRole="button"
+              accessibilityState={{
+                busy: inviteCreationPending,
+                disabled: inviteCreationPending,
+              }}
+              disabled={inviteCreationPending}
               onPress={inviteReady ? shareInvite : createInvite}
-              style={[styles.inviteAction, {borderColor: props.theme.colors.primary}]}>
+              style={[
+                styles.inviteAction,
+                {borderColor: props.theme.colors.primary},
+                inviteCreationPending && styles.inviteActionPending,
+              ]}>
               <Text style={[styles.inviteActionText, {color: props.theme.colors.primary}]}>
-                {inviteReady ? '공유' : '코드 만들기'}
+                {inviteCreationPending ? '만드는 중…' : inviteReady ? '공유' : '코드 만들기'}
               </Text>
             </Pressable>
           ) : (
@@ -233,6 +267,7 @@ const styles = StyleSheet.create({
   inviteExpiry: {fontSize: 9, marginTop: 3},
   inviteStatus: {fontSize: 9, maxWidth: 90, textAlign: 'right'},
   inviteAction: {alignItems: 'center', borderRadius: 10, borderWidth: 1, justifyContent: 'center', minHeight: 36, paddingHorizontal: 10},
+  inviteActionPending: {opacity: 0.6},
   inviteActionText: {fontSize: 10, fontWeight: '900'},
   sectionLabel: {fontSize: 11, fontWeight: '800', marginBottom: 8, marginLeft: 4, marginTop: 24},
   settings: {borderRadius: 18, overflow: 'hidden'},
