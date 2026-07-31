@@ -180,7 +180,9 @@ export function TimelineScreen(props: {
           </View>
           <View style={[styles.liveBadge, {backgroundColor: props.theme.colors.primarySoft}]}>
             <Text style={[styles.liveText, {color: props.theme.colors.primary}]}>
-              {props.session.runtimeMode === 'firebase' ? '● LIVE' : '● LOCAL'}
+              {props.session.runtimeMode === 'firebase'
+                ? '● 공동 기록'
+                : '● 로컬 저장'}
             </Text>
           </View>
         </View>

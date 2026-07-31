@@ -80,6 +80,19 @@ function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
 }
 
 describe('TimelineScreen bounded feed', () => {
+  it('labels the Firebase timeline as shared records without promising a live connection', () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        screen({session: {...session, runtimeMode: 'firebase'}}),
+      );
+    });
+
+    expect(renderedText(renderer)).toContain('공동 기록');
+    expect(renderedText(renderer)).not.toContain('LIVE');
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('allows only one onEndReached load at a time', async () => {
     const onLoadMore = jest.fn(async () => undefined);
     let renderer!: ReactTestRenderer.ReactTestRenderer;

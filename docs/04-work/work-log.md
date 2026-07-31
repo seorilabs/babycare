@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-01 — 타임라인 실시간 연결 오표시 제거
+
+- 타임라인은 Firebase 공동 기록 모드라는 이유만으로 `● LIVE` 배지를 표시해, 오프라인 기록·재시도·연결 오류 상태에서도 실시간 연결 중이라고 안내했다. 실제 pending/failed 상태는 별도 동기화 배너가 담당한다.
+- 연결 상태를 추정하지 않고 제품 모드만 설명하도록 Firebase 배지를 `● 공동 기록`, Jest 전용 local preview 배지를 `● 로컬 저장`으로 바꿨다.
+- Timeline 회귀 테스트가 Firebase 모드에서 `공동 기록`을 표시하고 `LIVE`를 다시 노출하지 않는지 검증한다. 테스트는 수정 전 `● LIVE`로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 30 suites/242건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 부팅된 iOS Simulator가 없었고, 연결된 Android 기기는 Debug/Release가 같은 application ID를 사용해 설치 시 서명·앱 데이터 영향 가능성이 있으므로 현재 변경을 설치하거나 화면으로 직접 확인하지 않았다.
+
 ## 2026-08-01 — 만료 초대 코드 공유 차단
 
 - 더보기 화면은 초대 만료 시각이 지났어도 코드를 `까지 유효`로 표시하고 공유 버튼을 계속 제공해, 서버가 거부할 만료 코드를 다른 양육자에게 전달할 수 있었다.
