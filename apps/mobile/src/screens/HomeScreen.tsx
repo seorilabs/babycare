@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   summaryDivider: {height: 30, width: StyleSheet.hairlineWidth},
   sectionTitle: {fontSize: 18, fontWeight: '800', marginBottom: 11, marginTop: 25},
   actions: {flexDirection: 'row', flexWrap: 'wrap', gap: 10},
-  action: {borderRadius: 18, borderWidth: 1, minHeight: 135, padding: 15, width: '48.5%'},
+  action: {borderRadius: 18, borderWidth: 1, flexBasis: '47%', flexGrow: 1, minHeight: 135, padding: 15},
   actionIcon: {alignItems: 'center', borderRadius: 13, height: 44, justifyContent: 'center', width: 44},
   actionEmoji: {fontSize: 23},
   actionLabel: {fontSize: 16, fontWeight: '800', marginTop: 12},

@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 import {
   babyId,
@@ -64,6 +64,40 @@ describe('HomeScreen', () => {
     expect(visibleText).not.toContain('하루 ▾');
     expect(visibleText).toContain('더보기 설정 열기');
     expect(visibleText).not.toContain('더보기 바로 남기기');
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('keeps quick actions in a flexible two-column layout on narrow screens', () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <HomeScreen
+          activeSleep={undefined}
+          caregiverNames={new Map()}
+          events={[]}
+          now={new Date('2026-07-31T09:00:00+09:00').getTime()}
+          onMore={jest.fn()}
+          onRecord={jest.fn()}
+          onStopSleep={jest.fn()}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const actions = renderer.root.findAll(
+      node =>
+        node.props.accessibilityRole === 'button' &&
+        typeof node.props.style === 'function',
+    );
+    expect(actions).toHaveLength(4);
+    for (const action of actions) {
+      const style = StyleSheet.flatten(action.props.style({pressed: false}));
+      expect(style.flexBasis).toBe('47%');
+      expect(style.flexGrow).toBe(1);
+      expect(style.width).toBeUndefined();
+    }
     ReactTestRenderer.act(() => renderer.unmount());
   });
 

@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-07-31 — 작은 화면 빠른 기록 2열 안정화
+
+- 홈 빠른 기록 카드는 `48.5%` 고정 너비 두 개와 10px gap을 사용해 320px 화면에서 가용 content 폭 284px보다 합계가 약 1.5px 커지고, 단일 열로 밀리거나 가로로 넘칠 수 있었다.
+- 카드 기준 폭을 `47%`로 낮추고 남는 폭을 `flexGrow`로 균등 분배해 좁은 화면에서도 두 카드와 gap이 먼저 맞도록 수정했다.
+- Home 회귀 테스트가 네 빠른 동작의 가변 2열 스타일과 고정 width 제거를 검증한다. 테스트는 수정 전 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 30 suites/239건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device로 작은 화면과 큰 글꼴을 직접 확인하지 않았다.
+
 ## 2026-07-31 — 구성원 새로고침 안내 정합성 수정
 
 - 더보기의 `동기화 상태` 행은 상태 화면을 열지 않고 구성원 목록만 다시 읽었으며, 요청 실패도 조용히 무시해 실제 동작과 문구가 어긋났다.
