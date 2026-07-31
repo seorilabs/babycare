@@ -44,6 +44,7 @@ describe('MoreScreen', () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({
       action: 'sharedAction',
     });
+    share.mockClear();
     let renderer!: ReactTestRenderer.ReactTestRenderer;
 
     ReactTestRenderer.act(() => {
@@ -78,6 +79,58 @@ describe('MoreScreen', () => {
     await ReactTestRenderer.act(async () => {
       await Promise.resolve();
     });
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('does not expose an expired invite for sharing and offers a replacement', async () => {
+    const createInvite = jest.fn(async () => undefined);
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({
+      action: 'sharedAction',
+    });
+    share.mockClear();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          inviteExpiresAt={Date.now() - 60_000}
+          onCreateInvite={createInvite}
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: 'ABC234',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const visibleText = renderer.root
+      .findAllByType(Text)
+      .map(node => node.props.children)
+      .flat(Infinity);
+    expect(visibleText).toContain('초대 코드가 만료됐어요');
+    expect(visibleText).not.toContain('ABC234');
+    expect(
+      renderer.root.findAllByProps({accessibilityLabel: '초대 코드 공유'}),
+    ).toHaveLength(0);
+
+    await ReactTestRenderer.act(async () => {
+      renderer.root
+        .findByProps({accessibilityLabel: '새 초대 코드 만들기'})
+        .props.onPress();
+      await Promise.resolve();
+    });
+
+    expect(createInvite).toHaveBeenCalledTimes(1);
+    expect(share).not.toHaveBeenCalled();
     ReactTestRenderer.act(() => renderer.unmount());
   });
 

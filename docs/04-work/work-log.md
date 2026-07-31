@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-01 — 만료 초대 코드 공유 차단
+
+- 더보기 화면은 초대 만료 시각이 지났어도 코드를 `까지 유효`로 표시하고 공유 버튼을 계속 제공해, 서버가 거부할 만료 코드를 다른 양육자에게 전달할 수 있었다.
+- 만료된 코드는 화면에서 가리고 `초대 코드가 만료됐어요` 상태와 `새 코드 만들기` 동작을 노출했다. 만료되지 않은 기존 코드의 공유 흐름은 유지했다.
+- More 화면 회귀 테스트가 만료 코드·공유 동작이 노출되지 않고 replacement 생성 요청만 실행되는지 검증한다. 테스트는 수정 전 만료 상태 누락으로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 30 suites/241건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 연결된 Android 기기는 Debug/Release가 같은 application ID를 사용해 서명 충돌이나 앱 데이터 영향 가능성이 있으므로 설치하지 않았다. 부팅된 iOS Simulator도 없어 실제 만료 상태 화면은 직접 확인하지 않았다.
+
 ## 2026-08-01 — 초대 코드 중복 생성 요청 방지
 
 - 더보기의 초대 코드 생성 버튼은 진행 중 잠금이 없어 빠른 연속 탭마다 privileged Functions 요청을 다시 보내고 rate-limit 오류를 만들 수 있었다.

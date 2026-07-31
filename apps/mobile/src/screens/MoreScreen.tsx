@@ -43,7 +43,13 @@ export function MoreScreen(props: {
   const firebase = props.session.runtimeMode === 'firebase';
   const owner = props.session.membershipRole !== 'member';
   const memberships = props.memberships ?? [];
-  const inviteReady = firebase && Boolean(props.session.inviteCode);
+  const inviteExpired =
+    firebase &&
+    Boolean(props.session.inviteCode) &&
+    props.inviteExpiresAt !== undefined &&
+    props.inviteExpiresAt <= Date.now();
+  const inviteReady =
+    firebase && Boolean(props.session.inviteCode) && !inviteExpired;
   const inviteCreationInFlight = useRef(false);
   const [inviteCreationPending, setInviteCreationPending] = useState(false);
 
@@ -147,9 +153,19 @@ export function MoreScreen(props: {
               {firebase ? '양육자 초대 코드' : '초대 코드 미리보기'}
             </Text>
             <Text style={[styles.inviteCode, {color: props.theme.colors.primary}]}>
-              {firebase ? props.session.inviteCode || '------' : props.session.inviteCode}
+              {firebase
+                ? inviteExpired
+                  ? '------'
+                  : props.session.inviteCode || '------'
+                : props.session.inviteCode}
             </Text>
-            {props.inviteExpiresAt ? (
+            {inviteExpired ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[styles.inviteExpiry, {color: props.theme.colors.danger}]}>
+                초대 코드가 만료됐어요
+              </Text>
+            ) : props.inviteExpiresAt !== undefined ? (
               <Text style={[styles.inviteExpiry, {color: props.theme.colors.textMuted}]}>
                 {new Intl.DateTimeFormat('ko-KR', {
                   month: 'numeric',
@@ -167,7 +183,9 @@ export function MoreScreen(props: {
                   ? '초대 코드 만드는 중'
                   : inviteReady
                     ? '초대 코드 공유'
-                    : '초대 코드 만들기'
+                    : inviteExpired
+                      ? '새 초대 코드 만들기'
+                      : '초대 코드 만들기'
               }
               accessibilityRole="button"
               accessibilityState={{
@@ -182,7 +200,13 @@ export function MoreScreen(props: {
                 inviteCreationPending && styles.inviteActionPending,
               ]}>
               <Text style={[styles.inviteActionText, {color: props.theme.colors.primary}]}>
-                {inviteCreationPending ? '만드는 중…' : inviteReady ? '공유' : '코드 만들기'}
+                {inviteCreationPending
+                  ? '만드는 중…'
+                  : inviteReady
+                    ? '공유'
+                    : inviteExpired
+                      ? '새 코드 만들기'
+                      : '코드 만들기'}
               </Text>
             </Pressable>
           ) : (
