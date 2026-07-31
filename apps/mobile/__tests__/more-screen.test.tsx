@@ -1,5 +1,5 @@
 import React from 'react';
-import {Share, Text} from 'react-native';
+import {Alert, Share, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {createTheme} from '../src/app/theme';
@@ -78,6 +78,57 @@ describe('MoreScreen', () => {
     await ReactTestRenderer.act(async () => {
       await Promise.resolve();
     });
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('labels membership refresh by its real behavior and surfaces failures', async () => {
+    const refreshMembers = jest.fn(async () => {
+      throw new Error('네트워크 연결을 확인해 주세요.');
+    });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onRefreshMembers={refreshMembers}
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: 'ABC234',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const visibleText = renderer.root
+      .findAllByType(Text)
+      .map(node => node.props.children)
+      .flat(Infinity);
+    expect(visibleText).toContain('구성원 목록 새로고침');
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '구성원 목록 새로고침'})
+        .props.onPress();
+    });
+    await ReactTestRenderer.act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(refreshMembers).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledWith(
+      '구성원 목록을 새로고침하지 못했어요',
+      '네트워크 연결을 확인해 주세요.',
+    );
     ReactTestRenderer.act(() => renderer.unmount());
   });
 });

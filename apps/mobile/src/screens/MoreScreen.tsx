@@ -13,6 +13,8 @@ function SettingRow(props: {
 }) {
   return (
     <Pressable
+      accessibilityLabel={props.onPress ? props.title : undefined}
+      accessibilityRole={props.onPress ? 'button' : undefined}
       disabled={!props.onPress}
       onPress={props.onPress}
       style={[styles.settingRow, {borderBottomColor: props.theme.colors.border}]}>
@@ -57,6 +59,15 @@ export function MoreScreen(props: {
     }).catch(error =>
       Alert.alert(
         '초대 코드를 공유하지 못했어요',
+        error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+      ),
+    );
+  };
+
+  const refreshMembers = () => {
+    props.onRefreshMembers?.().catch(error =>
+      Alert.alert(
+        '구성원 목록을 새로고침하지 못했어요',
         error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
       ),
     );
@@ -153,11 +164,17 @@ export function MoreScreen(props: {
         <SettingRow detail="ml" icon="⚖️" theme={props.theme} title="단위" />
         <SettingRow detail="시스템 설정 사용" icon="◐" theme={props.theme} title="화면 모드" />
         <SettingRow
-          detail={firebase ? 'Firestore 공동 기록 · local-first' : '기기 로컬 저장 · 개발 모드'}
+          detail={
+            props.onRefreshMembers
+              ? '최신 구성원 목록을 다시 확인해요'
+              : firebase
+                ? '공동 기록 자동 동기화'
+                : '기기 로컬 저장 · 개발 모드'
+          }
           icon="☁️"
-          onPress={props.onRefreshMembers ? () => props.onRefreshMembers?.().catch(() => undefined) : undefined}
+          onPress={props.onRefreshMembers ? refreshMembers : undefined}
           theme={props.theme}
-          title="동기화 상태"
+          title={props.onRefreshMembers ? '구성원 목록 새로고침' : '동기화 상태'}
         />
         <SettingRow detail="한국어" icon="文" theme={props.theme} title="언어" />
       </View>
