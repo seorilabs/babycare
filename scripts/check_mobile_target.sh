@@ -120,6 +120,13 @@ if rg -n 'text="(BabyCare|React Native)([^\"]*)?"' "${launch_storyboard}" || \
   exit 1
 fi
 
+if rg -n '로컬 미리보기|setLocalPreview|onUseLocalPreview' \
+  "apps/mobile/App.tsx" \
+  "apps/mobile/src/app/FirebaseBabyCareApp.tsx"; then
+  echo "Local preview must not be exposed as a product runtime fallback." >&2
+  exit 1
+fi
+
 if ! rg -Fq "message: \`${brand_name} 돌봄 그룹 초대 코드:" \
   "apps/mobile/src/screens/MoreScreen.tsx"; then
   echo "Invite sharing must use the confirmed ${brand_name} brand." >&2

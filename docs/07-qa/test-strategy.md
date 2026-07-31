@@ -72,7 +72,7 @@ pnpm run test
 
 기본 native 개발 화면은 Firebase composition root를 동적 로드한다. native Firebase app이 있으면 주입된 Functions region으로 cloud adapter를 구성하고, client config가 없는 개발 빌드는 Metro URL에서 host를 찾아 `demo-babycare` Auth/Firestore/Functions Emulator에 연결한다. Firestore native persistence는 끄고 `PersistentCareEventSyncStore`의 custom outbox만 durable queue로 사용한다.
 
-Firebase root는 익명 Auth session restore, owner 그룹·아기 생성, 초대 코드 합류, `LocalFirstCareEventRepository`, `CareEventTimelineFeed`, `CareEventOverviewFeed`, 동기화 상태·재시도 UI를 조립한다. UID-scoped `CloudCareContextCache`는 인증 context와 멤버 목록을 versioned allowlist로 저장하고 identity 불일치나 손상 schema를 purge하며 raw invite code를 저장하지 않는다. local preview는 명시적 runtime 오류 fallback과 Jest 경로로 남아 있다. 아래 계약은 실제 Firestore/AIT adapter 환경에서 다시 검증해야 한다.
+Firebase root는 익명 Auth session restore, owner 그룹·아기 생성, 초대 코드 합류, `LocalFirstCareEventRepository`, `CareEventTimelineFeed`, `CareEventOverviewFeed`, 동기화 상태·재시도 UI를 조립한다. UID-scoped `CloudCareContextCache`는 인증 context와 멤버 목록을 versioned allowlist로 저장하고 identity 불일치나 손상 schema를 purge하며 raw invite code를 저장하지 않는다. Firebase 초기화 오류에서는 공동 기록 재시도만 제공하고 local preview는 Jest 경로로 제한한다. 아래 계약은 실제 Firestore/AIT adapter 환경에서 다시 검증해야 한다.
 
 | 시나리오 | 기대 결과 |
 | --- | --- |

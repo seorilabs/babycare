@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-07-31 — 공동 기록 오류의 로컬 미리보기 우회 제거
+
+- Firebase 화면 import 또는 초기화 실패 시 `로컬 미리보기로 계속`을 노출해, 사용자가 공동 기록과 분리된 개발용 로컬 저장소에 기록을 만들 수 있었다.
+- 제품 runtime 오류 화면은 공동 기록 실패를 명확히 유지하고 재시도만 제공하도록 fail-closed 처리했다. local preview composition은 기존 Jest 경로에만 남겼다.
+- `check:mobile`에 제품 runtime source의 `로컬 미리보기` 문구와 우회 handler 재노출 방지 검사를 추가했다. 검사는 수정 전 두 오류 화면을 찾아 실패했고 수정 후 통과했다.
+- 기획 기준선과 QA 전략의 local preview 범위를 Jest 전용으로 맞췄다.
+- `pnpm run test:static`에서 core 40건, mobile 30 suites/237건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- 이번 실행은 오류 경계의 정적 UI 수정이라 simulator/device 화면은 직접 확인하지 않았다.
+
 ## 2026-07-31 — 새 기기 진행 중 수면 표시 복구
 
 - Home은 별도 active-sleep projection을 받아 기상 동작에는 사용했지만 최근 수면 카드는 bounded 이벤트 목록의 latest 값만 렌더링했다. 새 기기나 timeline 범위 밖 active sleep에서는 `마지막 수면 · 아직 기록이 없어요`와 `기상` 동작이 동시에 노출될 수 있었다.

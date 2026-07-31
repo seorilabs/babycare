@@ -313,9 +313,7 @@ function FirebaseCareDashboard(props: {
   );
 }
 
-export function FirebaseBabyCareApp(props: {
-  readonly onUseLocalPreview: () => void;
-}) {
+export function FirebaseBabyCareApp() {
   const dark = useColorScheme() === 'dark';
   const theme = useMemo(() => createTheme(dark), [dark]);
   const cache = useMemo(() => new CloudCareContextCache(), []);
@@ -503,14 +501,6 @@ export function FirebaseBabyCareApp(props: {
           style={[styles.primaryButton, {backgroundColor: theme.colors.primary}]}>
           <Text style={styles.primaryButtonText}>다시 시도</Text>
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={props.onUseLocalPreview}
-          style={styles.secondaryButton}>
-          <Text style={[styles.secondaryButtonText, {color: theme.colors.textMuted}]}>
-            로컬 미리보기로 계속
-          </Text>
-        </Pressable>
       </View>
     );
   }
@@ -587,8 +577,6 @@ const styles = StyleSheet.create({
   errorDetail: {fontSize: 13, lineHeight: 20, marginTop: 10, textAlign: 'center'},
   primaryButton: {alignItems: 'center', borderRadius: 14, justifyContent: 'center', marginTop: 24, minHeight: 50, paddingHorizontal: 30},
   primaryButtonText: {color: '#FFFFFF', fontSize: 14, fontWeight: '900'},
-  secondaryButton: {marginTop: 16, padding: 8},
-  secondaryButtonText: {fontSize: 12, fontWeight: '700'},
   runtimeError: {alignItems: 'center', borderRadius: 12, borderWidth: 1, flexDirection: 'row', marginHorizontal: 16, marginTop: 8, minHeight: 42, paddingHorizontal: 12, paddingVertical: 8},
   runtimeErrorText: {flex: 1, fontSize: 11, fontWeight: '700'},
   runtimeRetry: {fontSize: 11, fontWeight: '900', marginLeft: 10},

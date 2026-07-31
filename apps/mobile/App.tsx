@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useRef, useState, type ComponentType} from 'react';
-import {Alert, Pressable, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
+import {Alert, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {type CareEventKind} from '@babycare/product-core';
 
@@ -236,12 +236,10 @@ function BabyCareApp() {
 
 function RuntimeApp() {
   const dark = useColorScheme() === 'dark';
-  const [localPreview, setLocalPreview] = useState(
+  const [localPreview] = useState(
     () => typeof jest !== 'undefined',
   );
-  const [FirebaseApp, setFirebaseApp] = useState<ComponentType<{
-    readonly onUseLocalPreview: () => void;
-  }>>();
+  const [FirebaseApp, setFirebaseApp] = useState<ComponentType>();
   const [runtimeLoadError, setRuntimeLoadError] = useState<string>();
 
   useEffect(() => {
@@ -281,19 +279,13 @@ function RuntimeApp() {
         <Text style={[styles.runtimeLoadError, {color: theme.colors.textMuted}]}>
           {runtimeLoadError}
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setLocalPreview(true)}
-          style={[styles.runtimeFallbackButton, {backgroundColor: theme.colors.primary}]}>
-          <Text style={styles.runtimeFallbackText}>로컬 미리보기로 계속</Text>
-        </Pressable>
       </View>
     );
   }
   if (!FirebaseApp) {
     return <LoadingScreen dark={dark} />;
   }
-  return <FirebaseApp onUseLocalPreview={() => setLocalPreview(true)} />;
+  return <FirebaseApp />;
 }
 
 export default function App() {
@@ -313,8 +305,6 @@ const styles = StyleSheet.create({
   loadingTitle: {fontSize: 24, fontWeight: '900', marginTop: 18},
   loadingText: {fontSize: 12, marginTop: 6},
   runtimeLoadError: {fontSize: 12, lineHeight: 18, marginTop: 10, paddingHorizontal: 28, textAlign: 'center'},
-  runtimeFallbackButton: {borderRadius: 14, marginTop: 22, minHeight: 48, paddingHorizontal: 22, paddingVertical: 14},
-  runtimeFallbackText: {color: '#FFFFFF', fontSize: 13, fontWeight: '900'},
   toast: {alignSelf: 'center', borderRadius: 999, bottom: 78, paddingHorizontal: 18, paddingVertical: 11, position: 'absolute', zIndex: 10},
   toastText: {fontSize: 12, fontWeight: '800'},
 });
