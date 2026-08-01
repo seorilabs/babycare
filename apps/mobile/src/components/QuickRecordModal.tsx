@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -71,6 +71,7 @@ export function QuickRecordModal(props: {
   const [rightAccumulatedMs, setRightAccumulatedMs] = useState(0);
   const [tick, setTick] = useState(0);
   const [saving, setSaving] = useState(false);
+  const saveRequestInFlight = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string>();
 
   useEffect(() => {
@@ -120,6 +121,9 @@ export function QuickRecordModal(props: {
   const saveOpacity = saving ? 0.65 : 1;
 
   const save = async () => {
+    if (saveRequestInFlight.current) {
+      return;
+    }
     const recordTime = timeEdited ? occurredAt : Date.now();
     let input: CreateCareEventInput;
     if (props.kind === 'feeding') {
@@ -152,6 +156,7 @@ export function QuickRecordModal(props: {
       input = {...context, kind: 'sleep', sleepType, startedAt: recordTime, note};
     }
 
+    saveRequestInFlight.current = true;
     setSaving(true);
     setErrorMessage(undefined);
     try {
@@ -164,6 +169,7 @@ export function QuickRecordModal(props: {
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '기록을 저장하지 못했어요. 다시 시도해 주세요.');
     } finally {
+      saveRequestInFlight.current = false;
       setSaving(false);
     }
   };
@@ -384,7 +390,9 @@ export function QuickRecordModal(props: {
             </Text>
           ) : null}
           <Pressable
+            accessibilityLabel={saving ? '돌봄 기록 저장 중' : '돌봄 기록 저장'}
             accessibilityRole="button"
+            accessibilityState={{busy: saving, disabled: saving || saveDisabled}}
             disabled={saving || saveDisabled}
             onPress={save}
             style={[
