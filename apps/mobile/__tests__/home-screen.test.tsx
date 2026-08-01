@@ -135,4 +135,77 @@ describe('HomeScreen', () => {
     expect(renderedText(renderer)).toContain('밤잠 자는 중');
     ReactTestRenderer.act(() => renderer.unmount());
   });
+
+  it('submits only one sleep stop request while the first request is in progress', async () => {
+    const now = new Date('2026-08-02T00:00:00+09:00').getTime();
+    const activeSleep = createCareEvent(
+      {
+        groupId: groupId(session.groupId),
+        babyId: babyId(session.babyId),
+        caregiverId: userId(session.caregiverId),
+        kind: 'sleep',
+        sleepType: 'night',
+        startedAt: now - 30 * 60_000,
+      },
+      {id: eventId('active-sleep-stop'), now},
+    ) as SleepEvent;
+    let finishStop!: () => void;
+    const stopRequest = new Promise<void>(resolve => {
+      finishStop = resolve;
+    });
+    const onStopSleep = jest.fn(() => stopRequest);
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <HomeScreen
+          activeSleep={activeSleep}
+          caregiverNames={new Map([[session.caregiverId, session.caregiverName]])}
+          events={[]}
+          now={now}
+          onMore={jest.fn()}
+          onRecord={jest.fn()}
+          onStopSleep={onStopSleep}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const stopAction = renderer.root.findAll(
+      node =>
+        node.props.accessibilityRole === 'button' &&
+        typeof node.props.onPress === 'function' &&
+        node
+          .findAllByType(Text)
+          .some(text => text.props.children === '기상'),
+    )[0];
+    if (!stopAction) {
+      throw new Error('수면 종료 버튼을 찾지 못했어요');
+    }
+    ReactTestRenderer.act(() => {
+      stopAction.props.onPress();
+      stopAction.props.onPress();
+    });
+
+    expect(onStopSleep).toHaveBeenCalledTimes(1);
+    const pendingAction = renderer.root.findByProps({
+      accessibilityLabel: '수면 종료 중',
+    });
+    expect(pendingAction.props.disabled).toBe(true);
+    expect(pendingAction.props.accessibilityState).toEqual({
+      busy: true,
+      disabled: true,
+    });
+
+    await ReactTestRenderer.act(async () => {
+      finishStop();
+      await stopRequest;
+    });
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '수면 종료'}).props
+        .disabled,
+    ).toBe(false);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
 });

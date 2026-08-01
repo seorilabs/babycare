@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-02 — 수면 종료 중복 요청 방지
+
+- 홈의 활성 수면 `기상` 버튼은 종료 요청이 진행 중이어도 재입력이 가능해, 빠른 연속 탭으로 같은 수면의 종료 mutation을 두 번 요청하고 첫 성공 뒤 불필요한 충돌 오류를 노출할 수 있었다.
+- 화면 상태와 별개인 동기식 요청 잠금을 추가해 첫 종료 요청이 끝날 때까지 재입력을 차단했다. 버튼은 `종료 중…`·`잠시만 기다려주세요`로 바뀌며 접근성 이름과 `busy`·`disabled` 상태도 함께 제공한다.
+- Home 화면 회귀 테스트가 같은 렌더의 수면 종료 버튼을 연속 두 번 눌러도 요청이 한 번만 실행되고 완료 뒤 다시 활성화되는지 검증한다. 테스트는 수정 전 종료 요청 2회 호출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 31 suites/246건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, production 인증·App Check, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device로 연속 탭과 종료 진행 상태 화면을 직접 확인하지 않았다.
+
 ## 2026-08-01 — 빠른 돌봄 기록 중복 저장 방지
 
 - 수유·기저귀·수면 빠른 기록 모달은 React의 `saving` 상태만 확인해, 버튼 비활성화 재렌더 전에 빠르게 두 번 누르면 서로 다른 이벤트 ID의 돌봄 기록 두 건을 저장할 수 있었다.

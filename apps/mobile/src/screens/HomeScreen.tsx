@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {
   buildDashboardSummary,
@@ -94,7 +94,7 @@ export function HomeScreen(props: {
   readonly theme: AppTheme;
   readonly onRecord: (kind: CareEventKind) => void;
   readonly onMore: () => void;
-  readonly onStopSleep: (event: CareEvent) => void;
+  readonly onStopSleep: (event: CareEvent) => Promise<void>;
 }) {
   const summary = useMemo(
     () =>
@@ -106,11 +106,27 @@ export function HomeScreen(props: {
     [props.events, props.now],
   );
   const activeSleep = props.activeSleep;
+  const sleepStopInFlight = useRef(false);
+  const [stoppingSleep, setStoppingSleep] = useState(false);
   const today = new Intl.DateTimeFormat('ko-KR', {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
   }).format(props.now);
+
+  const stopSleep = async (event: CareEvent) => {
+    if (sleepStopInFlight.current) {
+      return;
+    }
+    sleepStopInFlight.current = true;
+    setStoppingSleep(true);
+    try {
+      await props.onStopSleep(event);
+    } finally {
+      sleepStopInFlight.current = false;
+      setStoppingSleep(false);
+    }
+  };
 
   const quickActions: ReadonlyArray<{
     readonly kind: CareEventKind | 'more';
@@ -136,9 +152,13 @@ export function HomeScreen(props: {
     {
       kind: 'sleep',
       icon: activeSleep ? '☀️' : '🌙',
-      label: activeSleep ? '기상' : '수면',
+      label: activeSleep ? (stoppingSleep ? '종료 중…' : '기상') : '수면',
       color: props.theme.colors.sleep,
-      hint: activeSleep ? '지금 종료' : '바로 남기기',
+      hint: activeSleep
+        ? stoppingSleep
+          ? '잠시만 기다려주세요'
+          : '지금 종료'
+        : '바로 남기기',
     },
     {
       kind: 'more',
@@ -225,13 +245,28 @@ export function HomeScreen(props: {
       <View style={styles.actions}>
         {quickActions.map(action => (
           <Pressable
+            accessibilityLabel={
+              action.kind === 'sleep' && activeSleep
+                ? stoppingSleep
+                  ? '수면 종료 중'
+                  : '수면 종료'
+                : undefined
+            }
             accessibilityRole="button"
+            accessibilityState={
+              action.kind === 'sleep' && activeSleep
+                ? {busy: stoppingSleep, disabled: stoppingSleep}
+                : undefined
+            }
+            disabled={
+              action.kind === 'sleep' && Boolean(activeSleep) && stoppingSleep
+            }
             key={action.kind}
             onPress={() => {
               if (action.kind === 'more') {
                 props.onMore();
               } else if (action.kind === 'sleep' && activeSleep) {
-                props.onStopSleep(activeSleep);
+                stopSleep(activeSleep).catch(() => undefined);
               } else {
                 props.onRecord(action.kind);
               }
@@ -241,7 +276,12 @@ export function HomeScreen(props: {
               {
                 backgroundColor: props.theme.colors.surface,
                 borderColor: props.theme.colors.border,
-                opacity: pressed ? 0.75 : 1,
+                opacity:
+                  action.kind === 'sleep' && activeSleep && stoppingSleep
+                    ? 0.65
+                    : pressed
+                      ? 0.75
+                      : 1,
               },
             ]}>
             <View style={[styles.actionIcon, {backgroundColor: `${action.color}20`}]}>
