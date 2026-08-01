@@ -148,7 +148,7 @@ describe('TimelineScreen bounded feed', () => {
     await ReactTestRenderer.act(async () => renderer.unmount());
   });
 
-  it('builds stable day sections and keeps author-only long-press deletion', async () => {
+  it('builds stable day sections and keeps author-only accessible deletion', async () => {
     const ownerLatest = careEvent('event-b', 'owner-1', now - 60_000);
     const ownerEarlier = careEvent('event-a', 'owner-1', now - 120_000);
     const memberYesterday = careEvent(
@@ -193,12 +193,22 @@ describe('TimelineScreen bounded feed', () => {
       section: sections[1],
     });
     expect(ownerRow.props.accessibilityHint).toBe(
-      '길게 누르면 기록을 삭제할 수 있습니다',
+      '활성화하면 기록 삭제 확인창이 열립니다',
     );
+    expect(ownerRow.props.accessibilityRole).toBe('button');
+    expect(ownerRow.props.accessibilityActions).toEqual([
+      {name: 'activate', label: '기록 삭제'},
+    ]);
+    expect(ownerRow.props.onAccessibilityAction).toEqual(expect.any(Function));
     expect(memberRow.props.accessibilityHint).toBeUndefined();
+    expect(memberRow.props.accessibilityRole).toBeUndefined();
+    expect(memberRow.props.accessibilityActions).toBeUndefined();
+    expect(memberRow.props.onAccessibilityAction).toBeUndefined();
     expect(memberRow.props.onLongPress).toBeUndefined();
 
-    ownerRow.props.onLongPress();
+    ownerRow.props.onAccessibilityAction({
+      nativeEvent: {actionName: 'activate'},
+    });
     expect(alert).toHaveBeenCalledWith(
       '기록을 삭제할까요?',
       expect.any(String),
@@ -211,6 +221,14 @@ describe('TimelineScreen bounded feed', () => {
       await Promise.resolve();
     });
     expect(onDelete).toHaveBeenCalledWith(ownerLatest);
+
+    alert.mockClear();
+    ownerRow.props.onLongPress();
+    expect(alert).toHaveBeenCalledWith(
+      '기록을 삭제할까요?',
+      expect.any(String),
+      expect.any(Array),
+    );
 
     alert.mockRestore();
     await ReactTestRenderer.act(async () => renderer.unmount());

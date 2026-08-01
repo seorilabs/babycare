@@ -86,6 +86,7 @@ export function TimelineScreen(props: {
     hasMore,
     loadMoreError,
     loadingMore,
+    onDelete,
     onLoadMore,
     onRetryLoadMore,
   } = props;
@@ -94,6 +95,20 @@ export function TimelineScreen(props: {
     [props.events, props.now],
   );
   const loadMoreInFlight = useRef(false);
+
+  const confirmDelete = useCallback(
+    (event: CareEvent) => {
+      Alert.alert('기록을 삭제할까요?', eventTitle(event), [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => onDelete(event).catch(() => undefined),
+        },
+      ]);
+    },
+    [onDelete],
+  );
 
   const runLoadMore = useCallback(
     async (retry: boolean) => {
@@ -194,20 +209,27 @@ export function TimelineScreen(props: {
         const last = index === section.data.length - 1;
         return (
           <Pressable
-            accessibilityHint={canDelete ? '길게 누르면 기록을 삭제할 수 있습니다' : undefined}
-            onLongPress={
+            accessibilityActions={
+              canDelete ? [{name: 'activate', label: '기록 삭제'}] : undefined
+            }
+            accessibilityHint={
               canDelete
-                ? () =>
-                    Alert.alert('기록을 삭제할까요?', eventTitle(event), [
-                      {text: '취소', style: 'cancel'},
-                      {
-                        text: '삭제',
-                        style: 'destructive',
-                        onPress: () => props.onDelete(event).catch(() => undefined),
-                      },
-                    ])
+                ? '활성화하면 기록 삭제 확인창이 열립니다'
                 : undefined
             }
+            accessibilityRole={canDelete ? 'button' : undefined}
+            onAccessibilityAction={
+              canDelete
+                ? accessibilityEvent => {
+                    if (
+                      accessibilityEvent.nativeEvent.actionName === 'activate'
+                    ) {
+                      confirmDelete(event);
+                    }
+                  }
+                : undefined
+            }
+            onLongPress={canDelete ? () => confirmDelete(event) : undefined}
             style={[
               styles.row,
               {backgroundColor: props.theme.colors.surface},

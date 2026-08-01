@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-02 — 본인 기록 삭제 접근성 경로 추가
+
+- 타임라인의 본인 기록 soft delete는 길게 누르기에만 연결돼 있어 화면낭독기 사용자가 MVP 삭제 기능을 안정적으로 실행할 명시적 접근성 동작이 없었다.
+- 본인 기록 행에 button 역할과 `기록 삭제` 활성화 동작을 추가해 화면낭독기의 기본 활성화가 기존 삭제 확인창을 열도록 연결했다. 터치 사용자의 길게 누르기는 유지하고 다른 양육자의 기록에는 삭제 역할·동작을 노출하지 않는다.
+- Timeline 회귀 테스트가 본인 기록의 접근성 활성화와 길게 누르기가 같은 확인창을 열고, 다른 양육자 기록에는 삭제 접근성 동작이 없는지 검증한다. 테스트는 수정 전 접근성 역할 누락으로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 31 suites/246건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, production 인증·App Check, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 VoiceOver/TalkBack과 simulator/device 화면을 직접 확인하지 않았다.
+
 ## 2026-08-02 — 수면 종료 중복 요청 방지
 
 - 홈의 활성 수면 `기상` 버튼은 종료 요청이 진행 중이어도 재입력이 가능해, 빠른 연속 탭으로 같은 수면의 종료 mutation을 두 번 요청하고 첫 성공 뒤 불필요한 충돌 오류를 노출할 수 있었다.
