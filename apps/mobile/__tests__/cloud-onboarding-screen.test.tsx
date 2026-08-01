@@ -105,6 +105,66 @@ describe('CloudOnboardingScreen', () => {
     ReactTestRenderer.act(() => state.renderer.unmount());
   });
 
+  it('submits only one group creation request while setup is in progress', async () => {
+    let finishCreate!: () => void;
+    const createRequest = new Promise<void>(resolve => {
+      finishCreate = resolve;
+    });
+    const onCreate = jest.fn(() => createRequest);
+    const onJoin = jest.fn(async () => undefined);
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <CloudOnboardingScreen
+          onCreate={onCreate}
+          onJoin={onJoin}
+          theme={theme}
+        />,
+      );
+    });
+
+    press(renderer, '처음 시작하기');
+    changeText(renderer, '양육자 이름', '엄마');
+    press(renderer, '다음');
+    changeText(renderer, '아기 이름', '하루');
+    press(renderer, '다음');
+    press(renderer, '아기 생년월일');
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByType(DateTimePicker)
+        .props.onChange({ type: 'set' }, new Date(2020, 0, 1));
+    });
+
+    const createButton = renderer.root.findByProps({
+      accessibilityLabel: '돌봄 그룹 만들기',
+    });
+    ReactTestRenderer.act(() => {
+      createButton.props.onPress();
+      createButton.props.onPress();
+    });
+
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    const pendingButton = renderer.root.findByProps({
+      accessibilityLabel: '공동 기록을 준비하는 중…',
+    });
+    expect(pendingButton.props.disabled).toBe(true);
+    expect(pendingButton.props.accessibilityState).toEqual({
+      busy: true,
+      disabled: true,
+    });
+
+    await ReactTestRenderer.act(async () => {
+      finishCreate();
+      await createRequest;
+    });
+    expect(
+      renderer.root.findByProps({
+        accessibilityLabel: '돌봄 그룹 만들기',
+      }).props.disabled,
+    ).toBe(false);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('requires six invite characters after choosing the join flow', async () => {
     const state = setup();
     press(state.renderer, '초대 코드로 참여');

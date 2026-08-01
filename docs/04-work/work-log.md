@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-01 — 공동 기록 온보딩 중복 제출 방지
+
+- 공동 기록 생성·참여 버튼은 React의 `saving` 상태만 확인해, 비활성화 재렌더 전에 같은 버튼을 빠르게 두 번 누르면 Firebase 그룹 생성 또는 참여 요청이 중복 실행될 수 있었다. 특히 생성 요청이 겹치면 한 익명 계정에 여러 그룹이 만들어져 다음 세션 복원이 중단될 수 있다.
+- 화면 상태와 별개인 동기식 요청 잠금을 추가해 생성·참여 요청이 끝날 때까지 재입력을 차단했다. 진행 버튼은 기존 `공동 기록을 준비하는 중…` 문구와 함께 접근성 `busy`·`disabled` 상태도 노출한다.
+- Cloud onboarding 회귀 테스트가 같은 렌더의 생성 버튼을 연속 두 번 눌러도 요청이 한 번만 실행되고 완료 뒤 다시 활성화되는지 검증한다. 테스트는 수정 전 2회 호출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 30 suites/244건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, production 인증·App Check, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device로 연속 탭과 진행 상태 화면을 직접 확인하지 않았다.
+
 ## 2026-08-01 — 공동 기록 온보딩 내부 개발 문구 제거
 
 - 공동 기록 온보딩이 `Firebase Cloud/Emulator`, `현재 개발 빌드`, `출시 전에 추가`처럼 사용자와 무관한 구현 기술과 미완성 TODO를 제품 화면에 노출했다.

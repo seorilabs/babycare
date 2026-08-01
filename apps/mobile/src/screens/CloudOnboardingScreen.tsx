@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -52,6 +52,7 @@ export function CloudOnboardingScreen(props: {
   const [code, setCode] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const submissionInFlight = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     props.initialErrorMessage,
   );
@@ -87,7 +88,7 @@ export function CloudOnboardingScreen(props: {
   };
 
   const next = async () => {
-    if (saving) {
+    if (submissionInFlight.current || saving) {
       return;
     }
     setErrorMessage(undefined);
@@ -100,6 +101,7 @@ export function CloudOnboardingScreen(props: {
       return;
     }
     if (step === 'birthDate' && isValidBirthDate(birthDate)) {
+      submissionInFlight.current = true;
       setSaving(true);
       try {
         await props.onCreate({ caregiverName, babyName, birthDate });
@@ -110,11 +112,13 @@ export function CloudOnboardingScreen(props: {
             : '공동 기록을 준비하지 못했어요. 다시 시도해 주세요.',
         );
       } finally {
+        submissionInFlight.current = false;
         setSaving(false);
       }
       return;
     }
     if (step === 'inviteCode' && codeValid) {
+      submissionInFlight.current = true;
       setSaving(true);
       try {
         await props.onJoin({ caregiverName, code });
@@ -125,6 +129,7 @@ export function CloudOnboardingScreen(props: {
             : '공동 기록을 준비하지 못했어요. 다시 시도해 주세요.',
         );
       } finally {
+        submissionInFlight.current = false;
         setSaving(false);
       }
     }
@@ -381,6 +386,10 @@ export function CloudOnboardingScreen(props: {
               <Pressable
                 accessibilityLabel={actionLabel}
                 accessibilityRole="button"
+                accessibilityState={{
+                  busy: saving,
+                  disabled: !actionEnabled || saving,
+                }}
                 disabled={!actionEnabled || saving}
                 onPress={next}
                 style={({ pressed }) => [
