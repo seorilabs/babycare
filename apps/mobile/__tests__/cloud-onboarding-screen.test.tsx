@@ -1,5 +1,6 @@
 import React from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Text } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import { createTheme } from '../src/app/theme';
@@ -18,7 +19,6 @@ function setup() {
       <CloudOnboardingScreen
         onCreate={onCreate}
         onJoin={onJoin}
-        runtimeLabel="Firebase Emulator"
         theme={theme}
       />,
     );
@@ -45,6 +45,24 @@ function changeText(
 }
 
 describe('CloudOnboardingScreen', () => {
+  it('uses product copy while preserving the anonymous-account safety warning', () => {
+    const state = setup();
+    const visibleText = state.renderer.root
+      .findAllByType(Text)
+      .flatMap(node => node.props.children)
+      .filter(value => typeof value === 'string')
+      .join(' ');
+
+    expect(visibleText).toContain('함께봄 공동 기록');
+    expect(visibleText).toContain(
+      '앱을 삭제하거나 기기를 바꾸면 현재 계정과 기록에 다시 접근하지 못할 수 있어요.',
+    );
+    expect(visibleText).not.toContain('Firebase');
+    expect(visibleText).not.toContain('현재 개발 빌드');
+    expect(visibleText).not.toContain('출시 전에');
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
   it('collects creation fields one screen at a time and submits the picked date', async () => {
     const state = setup();
 

@@ -523,7 +523,6 @@ export function FirebaseBabyCareApp() {
           );
           await activateReadySession(state.runtime, ready);
         }}
-        runtimeLabel={state.runtime.label}
         theme={theme}
       />
     );

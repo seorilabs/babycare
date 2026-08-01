@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-01 — 공동 기록 온보딩 내부 개발 문구 제거
+
+- 공동 기록 온보딩이 `Firebase Cloud/Emulator`, `현재 개발 빌드`, `출시 전에 추가`처럼 사용자와 무관한 구현 기술과 미완성 TODO를 제품 화면에 노출했다.
+- 상단 문구를 확정 제품명 기반 `함께봄 공동 기록`으로 바꾸고 runtime 기술 label prop을 제거했다. 익명 계정의 복구 미지원은 숨기지 않고, 앱 삭제·기기 변경 시 계정과 기록에 다시 접근하지 못할 수 있다는 현재 위험으로 안내한다.
+- Cloud onboarding 회귀 테스트가 제품 문구와 계정 안전 안내를 검증하고 `Firebase`·`현재 개발 빌드`·`출시 전에`의 재노출을 막는다. 테스트는 수정 전 내부 문구 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 30 suites/243건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, production 인증·App Check, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다. 계정 복구·삭제 정책도 완료 처리하지 않았다.
+- 부팅된 iOS Simulator가 없었고, 연결된 Android 기기는 Debug/Release가 같은 application ID를 사용해 설치 시 서명·앱 데이터 영향 가능성이 있으므로 현재 문구를 설치하거나 화면으로 직접 확인하지 않았다.
+
 ## 2026-08-01 — 타임라인 실시간 연결 오표시 제거
 
 - 타임라인은 Firebase 공동 기록 모드라는 이유만으로 `● LIVE` 배지를 표시해, 오프라인 기록·재시도·연결 오류 상태에서도 실시간 연결 중이라고 안내했다. 실제 pending/failed 상태는 별도 동기화 배너가 담당한다.

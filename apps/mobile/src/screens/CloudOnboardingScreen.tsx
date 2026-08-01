@@ -33,7 +33,6 @@ function dateFromIso(value: string): Date {
 
 export function CloudOnboardingScreen(props: {
   readonly theme: AppTheme;
-  readonly runtimeLabel: string;
   readonly initialErrorMessage?: string;
   readonly onCreate: (input: {
     caregiverName: string;
@@ -175,7 +174,7 @@ export function CloudOnboardingScreen(props: {
           <Text style={styles.markEmoji}>🌿</Text>
         </View>
         <Text style={[styles.eyebrow, { color: props.theme.colors.primary }]}>
-          공동 기록 · {props.runtimeLabel}
+          함께봄 공동 기록
         </Text>
 
         {step === 'choose' ? (
@@ -408,8 +407,8 @@ export function CloudOnboardingScreen(props: {
           </Text>
         ) : null}
         <Text style={[styles.notice, { color: props.theme.colors.textMuted }]}>
-          현재 개발 빌드는 익명 Firebase 계정을 사용합니다. 계정 복구 수단은
-          출시 전에 추가해야 합니다.
+          앱을 삭제하거나 기기를 바꾸면 현재 계정과 기록에 다시 접근하지 못할 수
+          있어요.
         </Text>
       </View>
     </KeyboardAvoidingView>
