@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-02 — 제품 화면 Firebase 기술 문구 제거
+
+- 기본 제품 런타임의 공동 기록 로딩·시작 실패·계정 상태 변경 안내가 `Firebase 계정`, `Firebase 공동 기록`처럼 사용자에게 필요 없는 백엔드 구현명을 노출했다.
+- 로딩은 계정과 돌봄 그룹을 확인하는 실제 동작만 안내하고, 시작 실패와 계정 상태 변경도 `공동 기록` 제품 용어로 통일했다. 개발 코드의 Firebase 식별자와 진단 경계는 유지했다.
+- Firebase 제품 root 렌더 회귀 테스트를 추가해 로딩 화면과 메시지 없는 시작 실패 fallback이 제품 문구를 표시하고 `Firebase`를 노출하지 않는지 검증한다. 테스트는 수정 전 두 화면 모두 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 32 suites/248건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, production 인증·App Check, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device로 로딩·오류 화면을 직접 확인하지 않았다.
+
 ## 2026-08-02 — 본인 기록 삭제 접근성 경로 추가
 
 - 타임라인의 본인 기록 soft delete는 길게 누르기에만 연결돼 있어 화면낭독기 사용자가 MVP 삭제 기능을 안정적으로 실행할 명시적 접근성 동작이 없었다.

@@ -350,7 +350,7 @@ export function FirebaseBabyCareApp() {
           const message =
             reason === 'membership_removed'
               ? '돌봄 그룹 접근 권한이 해제됐어요'
-              : 'Firebase 계정 상태가 변경됐어요';
+              : '공동 기록 계정 상태가 변경됐어요';
           sessionStore
             .clear(sessionToken)
             .then(cleared => {
@@ -456,7 +456,7 @@ export function FirebaseBabyCareApp() {
         if (active) {
           setState({
             kind: 'error',
-            error: errorValue(error, 'Firebase 공동 기록을 시작하지 못했어요'),
+            error: errorValue(error, '공동 기록을 시작하지 못했어요'),
           });
         }
       }
@@ -476,7 +476,7 @@ export function FirebaseBabyCareApp() {
           공동 기록을 준비하고 있어요
         </Text>
         <Text style={[styles.loadingText, {color: theme.colors.textMuted}]}>
-          Firebase 계정과 돌봄 그룹을 확인합니다
+          계정과 돌봄 그룹을 확인합니다
         </Text>
       </View>
     );
