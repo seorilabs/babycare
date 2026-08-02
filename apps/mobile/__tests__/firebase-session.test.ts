@@ -25,7 +25,7 @@ const now = Date.UTC(2026, 6, 14, 3);
 const identity: AuthIdentity = {
   userId: userId('caregiver-1'),
   displayName: 'Firebase 사용자',
-  isAnonymous: true,
+  isAnonymous: false,
 };
 const group: CareGroup = {
   id: groupId('group-1'),
@@ -62,11 +62,11 @@ function setup(overrides: {
   readonly memberships?: readonly Membership[];
 } = {}) {
   const currentUser = jest.fn(async () => overrides.currentIdentity);
-  const signInAnonymously = jest.fn(async () => identity);
+  const signInWithoutAccount = jest.fn(async () => identity);
   const auth: AuthPort = {
     currentUser,
     verifyCurrentUser: jest.fn(async () => overrides.currentIdentity),
-    signInAnonymously,
+    signInWithoutAccount,
     signOut: jest.fn(async () => undefined),
     observe: jest.fn(() => () => undefined),
   };
@@ -126,7 +126,7 @@ function setup(overrides: {
     listForUser,
     nextDocumentId,
     services,
-    signInAnonymously,
+    signInWithoutAccount,
   };
 }
 
@@ -144,6 +144,18 @@ describe('Firebase session bootstrap', () => {
       identity,
     });
     expect(needsGroup.listForUser).toHaveBeenCalledWith(identity.userId);
+  });
+
+  it('migrates a legacy anonymous Firebase uid through the auth bridge before restore', async () => {
+    const legacyIdentity: AuthIdentity = {...identity, isAnonymous: true};
+    const state = setup({currentIdentity: legacyIdentity});
+
+    await expect(restoreFirebaseSession(state.services)).resolves.toEqual({
+      kind: 'needs_group',
+      identity,
+    });
+    expect(state.signInWithoutAccount).toHaveBeenCalledTimes(1);
+    expect(state.listForUser).toHaveBeenCalledWith(identity.userId);
   });
 
   it('restores one authoritative group with its membership, baby, and caregivers', async () => {
@@ -203,7 +215,7 @@ describe('Firebase owner and invite session creation', () => {
       birthDate: '2026-07-13',
     });
 
-    expect(state.signInAnonymously).toHaveBeenCalledTimes(1);
+    expect(state.signInWithoutAccount).toHaveBeenCalledTimes(1);
     expect(state.listForUser).toHaveBeenCalledWith(identity.userId);
     expect(state.nextDocumentId.mock.calls).toEqual([['group'], ['baby']]);
     expect(state.createOwnerGroup).toHaveBeenCalledWith({
@@ -272,7 +284,7 @@ describe('Firebase owner and invite session creation', () => {
         birthDate: '2026-02-30',
       }),
     ).rejects.toThrow('아기 생년월일을 YYYY-MM-DD 형식으로 확인해 주세요');
-    expect(state.signInAnonymously).not.toHaveBeenCalled();
+    expect(state.signInWithoutAccount).not.toHaveBeenCalled();
     expect(state.createOwnerGroup).not.toHaveBeenCalled();
   });
 
@@ -302,7 +314,7 @@ describe('Firebase owner and invite session creation', () => {
       code: 'abc234',
     });
 
-    expect(state.signInAnonymously).not.toHaveBeenCalled();
+    expect(state.signInWithoutAccount).not.toHaveBeenCalled();
     expect(state.acceptInvite).toHaveBeenCalledWith({
       code: 'ABC234',
       userId: identity.userId,

@@ -95,7 +95,7 @@ class FakeAuth implements AuthPort {
     return identity;
   }
 
-  async signInAnonymously(): Promise<AuthIdentity> {
+  async signInWithoutAccount(): Promise<AuthIdentity> {
     return identity;
   }
 

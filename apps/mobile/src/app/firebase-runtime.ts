@@ -34,6 +34,10 @@ import {FirebaseCareEventRemoteStore} from '../adapters/firebase/firebase-care-e
 import {FirebaseCareGroupRepository} from '../adapters/firebase/firebase-care-group-repository';
 import {FirebaseInviteService} from '../adapters/firebase/firebase-invite-service';
 import {NativeIdGenerator} from '../adapters/system/native-id-generator';
+import {
+  PlatformFirebaseCustomTokenBridge,
+  type FirebaseCustomTokenBridge,
+} from '../adapters/platform/platform-firebase-custom-token-bridge';
 import {createCareEventContainer} from './care-event-container';
 import {
   RandomCareDocumentIdFactory,
@@ -93,6 +97,7 @@ export interface FirebaseRuntimeOptions {
   readonly eventIds?: IdGeneratorPort;
   readonly analytics?: AnalyticsPort;
   readonly timeline?: CareEventTimelineFeedConfig;
+  readonly authBridge?: FirebaseCustomTokenBridge;
 }
 
 export interface FirebaseCareEventRuntimeCallbacks {
@@ -302,7 +307,16 @@ export async function createFirebaseRuntime(
     connectFunctionsEmulator(functions, emulatorHost, functionsPort);
   }
 
-  const authAdapter = new FirebaseAuthAdapter(auth);
+  const authBridge =
+    options.authBridge ??
+    (resolved.source === 'native'
+      ? new PlatformFirebaseCustomTokenBridge()
+      : undefined);
+  const authAdapter = new FirebaseAuthAdapter(
+    auth,
+    authBridge,
+    resolved.source === 'emulator',
+  );
   const groups = new FirebaseCareGroupRepository(firestore);
   const babies = new FirebaseBabyRepository(firestore);
   const invites = new FirebaseInviteService(functions, authAdapter);
