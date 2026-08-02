@@ -69,7 +69,7 @@ target 공용 local-first 데이터 정책을 둔다. `CareEvent` codec/revision
 | Firebase transport | Auth, 그룹·멤버십, 아기, 돌봄 기록 transaction, server-only timeline/window/latest/active singleton, invite callable adapter와 외부 문서 decoder |
 | Cloud sync factory | 인증 context 검증, `product-data` store/coordinator, timeline+overview 단일 owner, sync status, Auth/membership 확인형 cache purge lifecycle |
 
-기본 `app/container.ts` 구성은 로컬 UX 세로 슬라이스용이다. `care-event-container.ts`는 인증 identity·membership·group·baby가 일치할 때만 별도의 scoped cloud store를 만들며 local preview key를 가져오지 않는다. 실제 Firebase project/client config와 production Auth provider가 없으므로 아직 기본 실행 경로로 선택하지 않는다.
+`app/container.ts` 구성은 Jest local preview용이다. 실제 앱은 native Firebase 공동 기록 root를 동적 로드한다. `care-event-container.ts`는 인증 identity·membership·group·baby가 일치할 때만 별도의 scoped cloud store를 만들며 local preview key를 가져오지 않는다. production Auth는 platform custom token bridge를 사용하고 signer IAM·registry sync·API 배포는 운영 gate로 남는다.
 
 Firebase 연결 시 `CareEventRepositoryPort` 구현을 교체하고 core use case는 유지한다. Auth/session/navigation, 동기화 상태, permissions와 native lifecycle은 mobile app layer에 둔다.
 
@@ -90,7 +90,7 @@ MVP에 필요한 외부 기능만 port로 추가한다.
 
 | Capability | Core contract 후보 | 구현 위치 |
 | --- | --- | --- |
-| 인증/session | `AuthPort` + app-level session contract | mobile Firebase Auth adapter 구현, provider/composition 미확정 / AIT auth bridge |
+| 인증/session | `AuthPort` + app-level session contract | mobile은 platform custom token bridge → RNFirebase, Emulator만 direct anonymous / AIT auth bridge 미구현 |
 | 그룹·아기 | `CareGroupRepositoryPort`, `BabyRepositoryPort` | mobile Firestore adapter 구현 / AIT adapter 미구현 |
 | 초대 | `InviteServicePort` | client adapter → privileged Functions |
 | 돌봄 기록 | `CareEventRepositoryPort` | AsyncStorage 개발 adapter. 화면이 기다리는 local durable write 계약 |

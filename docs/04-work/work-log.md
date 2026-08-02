@@ -1,5 +1,12 @@
 # Work Log
 
+## 2026-08-02 — 익명 인증을 platform custom token bridge로 전환
+
+- production mobile 인증에서 RNFirebase `signInAnonymously`를 제거하고 Seorilabs platform의 custom token endpoint를 호출한 뒤 `signInWithCustomToken`으로 연결한다. direct anonymous는 Firebase Emulator 전용으로 제한했다.
+- 기존 anonymous Firebase 사용자는 강제 갱신한 ID token을 platform이 검증해 같은 uid로 custom token을 발급받는다. bridge 응답이나 Firebase credential uid가 다르면 새 사용자로 조용히 전환하지 않고 fail closed 한다.
+- 신규 사용자는 uid를 클라이언트가 고르지 않고 platform 서버가 생성한다. custom token은 저장하지 않고 즉시 Firebase 로그인에 한 번 사용한다.
+- platform의 signer SA/IAM, registry sync, API 배포와 live 신규·기존 UID smoke는 별도 운영 gate이며 코드 검증과 구분한다.
+
 ## 2026-08-02 — 공동 기록 온보딩의 작은 화면·키보드 경로 보강
 
 - 제품의 공동 기록 온보딩은 `KeyboardAvoidingView` 안에 고정 `View`만 사용해 작은 화면·큰 글꼴·키보드가 열린 조건에서 입력 필드와 제출 버튼이 화면 밖으로 밀려도 스크롤로 복구할 수 없었다.

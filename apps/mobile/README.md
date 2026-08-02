@@ -9,15 +9,15 @@ Google Play와 Apple App Store용 Community CLI 기반 bare React Native target�
 - 마지막 기록과 오늘 요약 홈, 기록자 타임라인, 12시간/7일/30일 기본 통계.
 - 본인 기록 soft delete, 시스템 dark mode, AsyncStorage 재실행 보존.
 - iOS/Android 제품형 native launch surface.
-- RNFirebase Auth, Firestore 그룹·아기·돌봄 기록, Functions invite callable adapter와 외부 문서 decoder.
+- Seorilabs platform custom token bridge 기반 RNFirebase Auth, Firestore 그룹·아기·돌봄 기록, Functions invite callable adapter와 외부 문서 decoder.
 - 인증 user/group/baby별 durable event+outbox, local-first coordinator, sync 상태 banner와 권한 회수 cache purge lifecycle.
 - server-only 기간 window·종류별 latest·active-sleep singleton read와 이를 소유하는 `CareEventOverviewFeed`.
 
-현재 기본 `App.tsx` composition은 **로컬 개발 모드**다. `LocalSessionRepository`와 `PersistentCareEventRepository`가 기기 AsyncStorage를 사용하고 analytics는 no-op이다. 로컬 전체 snapshot도 `{events, activeSleep}` overview source로 화면에 전달해 Home이 event 목록에서 진행 중 수면을 다시 추론하지 않는다. cloud용 `care-event-container.ts`는 인증 scope마다 timeline과 overview feed를 각각 하나씩 시작하고 반환하지만, 실제 project/client config와 production Auth/group/baby UI root가 없어 `src/app/container.ts`에서 선택하지 않는다. 화면의 초대 코드는 미리보기일 뿐 다른 기기와 연결되지 않는다.
+실제 앱의 기본 `App.tsx` composition은 native Firebase 공동 기록 root를 동적 로드한다. Jest만 로컬 preview를 사용한다. native production 인증은 `platform-api`에서 custom token을 받아 RNFirebase `signInWithCustomToken`으로 연결하며, Firebase Emulator 개발 경로만 direct anonymous sign-in을 사용한다.
 
 아직 제공하지 않는 것:
 
-- production Auth 계정/provider와 실제 session/group/baby 화면 흐름.
+- platform signer IAM·registry sync·API 배포와 live custom token smoke.
 - Firebase adapter의 production authenticated UI composition, 실제 Firestore 공동 기록과 cloud 복구.
 - 실제 project의 초대 발급·수락 callable과 멤버 제거/cache purge 실기기 검증.
 - 서로 다른 기기의 active sleep 충돌 UX와 실제 project 검증.
@@ -35,6 +35,7 @@ src/screens/                    # home/timeline/stats/more/onboarding
 src/components/                 # quick record modal, tab bar, sync status banner
 src/adapters/local/             # AsyncStorage development adapters
 src/adapters/firebase/          # RNFirebase port adapters + document decoders
+src/adapters/platform/          # platform custom token HTTP bridge
 src/adapters/system/            # target system adapters
 ../../packages/product-data/    # target 공용 local-first store/coordinator
 android/                        # com.seorilabs.babycare
@@ -115,9 +116,9 @@ pnpm run check:mobile
 로컬 adapter를 기본 production 경로로 두지 않는다. Firebase port adapter 구현 뒤 남은 연결 순서는 다음과 같다.
 
 1. non-production Firebase project에 Android/iOS app ID `com.seorilabs.babycare` 등록.
-2. production Auth provider, 계정 recovery/deletion 정책 확정.
-3. composition root에서 Auth/그룹/아기/기록/invite adapter와 app session 흐름 연결.
-4. 인증된 app session/navigation에 cloud factory의 timeline/overview 상태와 pending/retry/conflict UI 연결.
+2. platform signer SA·IAM, `babycare` registry, platform-api 배포와 기존 uid 보존 smoke.
+3. App Check 또는 edge rate limit과 계정 recovery/deletion 정책 확정.
+4. 실제 기기 두 대에서 Auth/그룹/아기/기록/invite와 offline 복귀를 검증.
 5. Emulator 테스트 후 실제 project에서 두 계정·두 기기 초대·실시간·offline·Home/Stats projection·active sleep 충돌·접근 회수 QA.
 6. PII-free Analytics allowlist, App Check와 native Firestore persistence OFF·로그아웃·멤버 제거 purge 실기기 검증.
 

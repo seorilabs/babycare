@@ -21,7 +21,10 @@
 - [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9" 스크린샷 5컷, signing·ASC 앱 생성, 1.0.1/1000001 `VALID` 완료 / 남음: App Privacy 콘솔 확정
 - [ ] AppsInToss metadata와 config 확정
 - [x] Firebase rules/indexes/functions와 local test 코드 구현
-- [ ] 실제 project의 Auth/client composition/App Check/Secret Manager/IAM 통합 확정
+- [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
+- [ ] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포
+- [ ] live custom token 신규 로그인과 기존 UID 보존 smoke
+- [ ] 실제 project의 App Check 또는 edge rate limit, Secret Manager/IAM 통합 확정
 - [ ] Privacy/data safety/review notes 확정 — 진행: **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`, App Store ASC + config 반영), review notes·store-data-disclosure 작성 / 남음: Play Console '앱 콘텐츠' 개인정보 URL 수동 입력·Data safety·연령등급 콘솔 제출, App Privacy 답변
 
 ## QA Gate

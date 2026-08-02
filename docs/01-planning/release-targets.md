@@ -28,13 +28,14 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 | Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **`main@8c5196e`(`v1.0.1`) AAB(1.0.1/1000001)를 internal draft 업로드하고 API readback 완료**. 남음: App content 설문·internal 릴리스 활성화 | App content 설문 → internal 테스터 릴리스 |
 | App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명(cert/profile). **`main@8c5196e`(`v1.0.1`) 1.0.1(1000001) archive→export→업로드, ASC `VALID`**. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. 남음: App Privacy·실기기 QA | TestFlight 테스트 → 심사 제출(승인 후) |
 | AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite target 미초기화 | 정책 적합성·영구 `appName` 확정 → 초기화 → sandbox |
-| **백엔드(Firebase)** | `firebase/` | 프로덕션 프로젝트 | ✅ **`seorilabs-babycare`(서울) LIVE** — Firestore·익명 Auth·Functions(createInvite/acceptInvite)·Rules 배포 완료 | production Auth provider·App Check·2기기 QA |
+| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firebase Firestore·Functions·Rules는 LIVE. direct anonymous Auth를 대체하는 platform custom token bridge와 기존 UID 보존 client migration 구현 | platform IAM·registry sync·API 배포 → live bridge smoke → App Check·2기기 QA |
 
 ## 공통 Blocker
 
 - ~~최종 한국어/영어 앱 이름 확정~~ 완료(`함께봄`/`BabyNest`, 2026-07-18). AppsInToss `appName`은 여전히 `확정 필요`.
 - 실제 비프로덕션/프로덕션 Firebase project 전략과 환경별 client config 확정.
-- production Auth provider와 Firebase composition 연결, 실시간/offline sync, 멤버 제거와 cache purge 통합 검증. 초대 Functions와 client adapter는 로컬 코드만 구현된 상태다.
+- platform custom token signer SA/IAM, registry sync, API 배포와 실제 기존 UID 보존 smoke. 코드·단위 테스트만으로 live bridge를 완료 처리하지 않는다.
+- App Check 또는 edge rate limit, 실시간/offline sync, 멤버 제거와 cache purge 통합 검증.
 - 개인정보 처리방침, 아동 관련 정보·사진·건강/돌봄 기록 disclosure, 계정 삭제·데이터 export 절차.
 - 연령등급, 성인 양육자용·비의료 목적 review note, 지역별 규제 검토.
 - 앱 아이콘, feature/thumbnail, phone screenshot, native launch 화면의 최종 제품명·브랜딩.
