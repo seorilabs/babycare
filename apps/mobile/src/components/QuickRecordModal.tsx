@@ -166,8 +166,10 @@ export function QuickRecordModal(props: {
       setLeftAccumulatedMs(0);
       setRightAccumulatedMs(0);
       props.onClose();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : '기록을 저장하지 못했어요. 다시 시도해 주세요.');
+    } catch {
+      setErrorMessage(
+        '기록을 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+      );
     } finally {
       saveRequestInFlight.current = false;
       setSaving(false);

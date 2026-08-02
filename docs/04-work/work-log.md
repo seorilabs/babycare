@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-03 — 빠른 기록 저장 오류의 내부 진단 노출 차단
+
+- 수유·기저귀·수면 빠른 기록 저장이 실패하면 `[firestore/unavailable]` 같은 SDK 코드와 영문 내부 진단이 Alert와 모달 오류 문구에 그대로 노출됐다.
+- 저장 실패는 모달 안에서 `기록을 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.`로만 안내하고, 같은 실패를 별도 Alert로 중복 표시하던 dashboard 경로를 제거했다. 입력값과 저장 요청은 유지해 사용자가 모달에서 바로 재시도할 수 있다.
+- Quick record 회귀 테스트가 실제 Firestore 기술 오류를 주입해 제품 안내만 표시하고 SDK 코드와 영문 진단을 숨기는지 검증한다. 테스트는 수정 전 기술 오류 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/260건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 부팅된 iOS Simulator와 연결된 Android device가 없고 격리 worktree에는 `GoogleService-Info.plist`가 없어 저장 실패 화면을 실제 기기로 확인하지 않았다.
+
 ## 2026-08-02 — platform custom token bridge 운영 활성화
 
 - `platform-auth@seorilabs-babycare.iam.gserviceaccount.com`을 생성하고 `platform-api@seorilabs-platform.iam.gserviceaccount.com`에 해당 service account의 resource-level `roles/iam.serviceAccountTokenCreator`만 부여했다. 프로젝트 전체 Token Creator binding은 추가하지 않았다.

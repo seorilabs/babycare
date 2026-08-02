@@ -1,4 +1,5 @@
 import React from 'react';
+import {Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import type {LocalSession} from '../src/app/session';
@@ -20,6 +21,19 @@ const session: LocalSession = {
   runtimeMode: 'firebase',
   membershipRole: 'owner',
 };
+
+function visibleText(renderer: ReactTestRenderer.ReactTestRenderer): string {
+  const read = (value: unknown): string =>
+    Array.isArray(value)
+      ? value.map(read).join('')
+      : typeof value === 'string' || typeof value === 'number'
+        ? String(value)
+        : '';
+  return renderer.root
+    .findAllByType(Text)
+    .map(node => read(node.props.children))
+    .join(' ');
+}
 
 describe('QuickRecordModal', () => {
   let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
@@ -81,5 +95,38 @@ describe('QuickRecordModal', () => {
       await saveRequest;
     });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides technical details when saving fails', async () => {
+    const technicalMessage =
+      '[firestore/unavailable] The service is currently unavailable.';
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          kind="diaper"
+          onClose={jest.fn()}
+          onSave={jest.fn(async () => {
+            throw new Error(technicalMessage);
+          })}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('빠른 기록 모달을 렌더링하지 못했어요');
+    }
+
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+
+    expect(visibleText(renderer)).toContain(
+      '기록을 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+    );
+    expect(visibleText(renderer)).not.toContain(technicalMessage);
+    expect(visibleText(renderer)).not.toContain('firestore');
   });
 });

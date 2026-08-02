@@ -303,14 +303,9 @@ function FirebaseCareDashboard(props: {
         kind={recording}
         onClose={() => setRecording(undefined)}
         onSave={async input => {
-          try {
-            await props.container.recordCareEvent(input);
-            setNow(Date.now());
-            setSavedMessage('돌봄 기록을 저장했어요');
-          } catch (error) {
-            showError('기록을 저장할 수 없어요', error);
-            throw error;
-          }
+          await props.container.recordCareEvent(input);
+          setNow(Date.now());
+          setSavedMessage('돌봄 기록을 저장했어요');
         }}
         session={session}
         theme={theme}
