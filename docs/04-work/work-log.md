@@ -3,8 +3,9 @@
 ## 2026-08-02 — platform custom token bridge 운영 활성화
 
 - `platform-auth@seorilabs-babycare.iam.gserviceaccount.com`을 생성하고 `platform-api@seorilabs-platform.iam.gserviceaccount.com`에 해당 service account의 resource-level `roles/iam.serviceAccountTokenCreator`만 부여했다. 프로젝트 전체 Token Creator binding은 추가하지 않았다.
-- platform 앱 레지스트리를 Firestore에 동기화하고 production workflow [run 30750253253](https://github.com/seorilabs/platform/actions/runs/30750253253)로 `platform-api-00015-xpx`를 배포했다. 서비스는 `platform:b57bfc82a6cf7cf5f5fb2b9c612adc4612d5754d` 이미지를 100% 제공한다.
+- platform 앱 레지스트리를 Firestore에 동기화하고 최초 활성화 workflow [run 30750253253](https://github.com/seorilabs/platform/actions/runs/30750253253)로 `platform-api-00015-xpx`를 배포했다. 활성화 시점에는 `platform:b57bfc82a6cf7cf5f5fb2b9c612adc4612d5754d` 이미지를 100% 제공했다.
 - live endpoint에서 임의 `uid` 주입 거부, 신규 custom token의 Firebase 교환, 합성 legacy Firebase ID token의 동일 UID 전환, `Cache-Control: no-store`를 검증했다.
+- 같은 날 후속 main production [run 30750946141](https://github.com/seorilabs/platform/actions/runs/30750946141)이 `platform-api-00016-cdv` / `platform:bdbd69428900d85ab7ae4e9a58b32eee09e48f20`로 전진한 뒤에도 babycare config 200과 custom-token route의 POST-only 405를 다시 확인했다.
 - smoke가 만든 Firebase Auth 사용자와 platform identity/user mapping은 종료 시 삭제했다. token·API key·UID는 로그나 문서에 남기지 않았다.
 - App Check 또는 edge rate limit과 실제 기존 사용자·실기기 migration은 별도 release gate로 남는다.
 
