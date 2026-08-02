@@ -28,7 +28,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 | Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **`main@8c5196e`(`v1.0.1`) AAB(1.0.1/1000001)를 internal draft 업로드하고 API readback 완료**. 남음: App content 설문·internal 릴리스 활성화 | App content 설문 → internal 테스터 릴리스 |
 | App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명(cert/profile). **`main@8c5196e`(`v1.0.1`) 1.0.1(1000001) archive→export→업로드, ASC `VALID`**. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. 남음: App Privacy·실기기 QA | TestFlight 테스트 → 심사 제출(승인 후) |
 | AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite target 미초기화 | 정책 적합성·영구 `appName` 확정 → 초기화 → sandbox |
-| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firebase Firestore·Functions·Rules는 LIVE. platform custom token bridge도 `platform-api-00015-xpx`에 배포했고 신규·합성 legacy UID live smoke를 통과 | App Check 또는 edge rate limit → 실제 기존 사용자 migration·2기기 QA |
+| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firebase Firestore·Functions·Rules는 LIVE. platform custom token bridge도 production 활성화했고 신규·합성 legacy UID live smoke와 후속 main 배포 호환성 readback을 통과 | App Check 또는 edge rate limit → 실제 기존 사용자 migration·2기기 QA |
 
 ## 공통 Blocker
 

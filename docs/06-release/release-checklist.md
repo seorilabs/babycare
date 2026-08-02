@@ -22,7 +22,7 @@
 - [ ] AppsInToss metadata와 config 확정
 - [x] Firebase rules/indexes/functions와 local test 코드 구현
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
-- [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — workflow run `30750253253`, revision `platform-api-00015-xpx`
+- [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — 최초 활성화 workflow run `30750253253`, revision `platform-api-00015-xpx`
 - [x] live custom token 신규 로그인과 합성 legacy UID 보존 smoke — UID 주입 거부·no-store·Firebase 교환·cleanup 포함
 - [ ] 실제 project의 App Check 또는 edge rate limit, Secret Manager/IAM 통합 확정
 - [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
