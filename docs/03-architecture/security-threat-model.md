@@ -4,7 +4,7 @@
 
 이 문서는 MVP의 `groups`, `members`, `babies`, `events`, `activeSleeps`, `eventMutationReceipts`, `invites`, 아기 이미지 Storage 경계를 다룬다. 앱의 직접 사용자는 성인 양육자지만 저장 대상에는 아동의 식별·돌봄·건강·사진 정보가 포함되므로 기본 공개나 추측 가능한 링크 공유를 허용하지 않는다.
 
-현재 증거는 로컬 Rules 테스트, client transaction adapter Jest, Functions 순수 unit/Firestore Admin transaction Emulator 테스트와 platform custom token bridge 단위 테스트까지다. 실제 platform signer IAM·registry sync·API 배포, legacy UID live migration, App Check, 계정 삭제 workflow는 아직 검증하지 않았다.
+현재 증거는 로컬 Rules 테스트, client transaction adapter Jest, Functions 순수 unit/Firestore Admin transaction Emulator 테스트와 platform custom token bridge 단위 테스트다. 또한 실제 signer resource IAM·registry sync·API 배포, 신규 custom token 교환과 합성 legacy UID 보존 live smoke까지 검증했다. 실제 기존 사용자·실기기 migration, App Check와 계정 삭제 workflow는 아직 검증하지 않았다.
 
 ## Data Classification
 
@@ -49,8 +49,8 @@ flowchart LR
 | listener error를 빈 server snapshot으로 오인해 로컬 기록 소실 | cache/pending snapshot은 무시하고 server-confirmed snapshot과 typed error를 분리 | adapter metadata/error Jest, local error snapshot 보존 테스트 | 실제 permission revoke 재현 |
 | 로그아웃·멤버 제거 뒤 내려받은 아동 데이터 잔존 | Auth/membership/event observer 중단→in-flight sync generation 무효화→scoped envelope purge→revoked 상태 순서. concurrent close보다 purge가 우선되고 replacement writer는 보호한다 | sign-out, identity 변경, server-only membership 재확인, in-flight push·observer·close/purge race Jest | native Firestore disk persistence OFF와 실제 기기 purge 확인 |
 | disabled/deleted/revoked-token 계정의 local Auth identity 잔존 | Auth observer와 remote unauthenticated 오류를 함께 처리하고 `reload`+강제 ID-token refresh로 서버 identity를 검증한다 | revoked error mapping, identity 변경, 반복 401·teardown recovery 차단 Jest | 실제 production provider에서 disabled/deleted/revoked-token별 purge smoke |
-| custom token 전환 중 기존 UID 단절 | 기존 Firebase ID token을 platform이 검증해 같은 uid로 서명하고 client가 bridge·Firebase credential uid를 이중 대조 | legacy uid 보존, mismatch fail-closed Jest와 platform service 테스트 | signer IAM·registry sync 뒤 실제 기존 계정 smoke |
-| 공개 custom token bootstrap 남용 | feature allowlist, uid 서버 생성, private key 없는 resource-level IAM 원격 서명 | 임의 uid 주입 필드 부재와 feature/IAM signer 테스트 | App Check 또는 edge rate limit과 비용 alert |
+| custom token 전환 중 기존 UID 단절 | 기존 Firebase ID token을 platform이 검증해 같은 uid로 서명하고 client가 bridge·Firebase credential uid를 이중 대조 | legacy uid 보존, mismatch fail-closed Jest와 platform service 테스트, 합성 legacy UID live 교환 | 실제 기존 사용자·실기기 migration |
+| 공개 custom token bootstrap 남용 | feature allowlist, uid 서버 생성, private key 없는 resource-level IAM 원격 서명 | 임의 uid 주입 live 거부, 앱 SA resource-level Token Creator, 신규 custom token live 교환 | App Check 또는 edge rate limit과 비용 alert |
 | 초대 raw code 유출·재사용·임의 membership 생성 | raw 미저장, HMAC hash, current owner, expiry, single-use transaction, 7-field Admin membership | unit + Firestore Emulator owner/expiry/concurrent accept/audit 테스트 | 실제 callable Auth/App Check/Secret Manager smoke |
 | 6자리 code online brute force | 유효 형식 실패도 먼저 커밋되는 UID별 rate limit, accept 상태 oracle 통합 | UID rate threshold Emulator 테스트 | verified Auth, anonymous UID 정책, App Check 강제 |
 | HMAC key 유출·rotation으로 기존 초대 무효화 | deploy-time secret, 최소 32 bytes fail-closed, 24h 기본 TTL, previous key 없이 active invite 무효화+재발급 | unit secret/hash 테스트 | Secret Manager IAM과 owner 재발급 안내 운영 검증 |

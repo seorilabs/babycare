@@ -159,7 +159,7 @@ auditLogs/{auditId}                  # server-only actor/action audit
 - `FirebaseCareEventRemoteStore`: strict path/schema decoder, revision transaction·payload receipt·active-sleep lock transport와 `CareEventProjectionRemotePort`의 server-only window/latest/active singleton fetch·observe.
 - `FirebaseInviteService`: `createInvite`/`acceptInvite` callable과 응답 actor/path 검증.
 
-실제 앱의 `App.tsx`는 native Firebase 공동 기록 root를 동적 로드하고 Jest만 AsyncStorage local preview를 사용한다. cloud factory는 인증 scope별 timeline과 overview projection owner를 각각 하나씩 만든다. platform bridge의 signer IAM·registry sync·API 배포와 실제 uid 보존 smoke는 아직 운영 gate다.
+실제 앱의 `App.tsx`는 native Firebase 공동 기록 root를 동적 로드하고 Jest만 AsyncStorage local preview를 사용한다. cloud factory는 인증 scope별 timeline과 overview projection owner를 각각 하나씩 만든다. platform bridge의 signer resource IAM·registry sync·production API 배포와 신규·합성 legacy UID live smoke는 2026-08-02 완료했다. App Check 또는 edge rate limit과 실제 기존 사용자·실기기 migration은 운영 gate로 남는다.
 
 `FirebaseCareEventRemoteStore.push`는 server acknowledgement까지 기다리는 원격 계약이다. 이를 `CareEventRepositoryPort` 대신 화면 use case에 직접 주입하면 offline 저장 UI가 완료되지 않을 수 있으므로 금지한다. `care-event-container.ts`는 `packages/product-data`의 scoped durable envelope/outbox에 먼저 저장하고 remote mutation을 revision 순서로 drain하며 pending/failed/conflict 상태를 노출한다. `CareEventOverviewFeed`는 server-confirmed 기간 window, 종류별 latest와 `activeSleeps/{babyId}`→event singleton을 결합해 envelope v3의 named overview/active coverage를 atomic 교체한다.
 

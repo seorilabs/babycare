@@ -1,11 +1,19 @@
 # Work Log
 
+## 2026-08-02 — platform custom token bridge 운영 활성화
+
+- `platform-auth@seorilabs-babycare.iam.gserviceaccount.com`을 생성하고 `platform-api@seorilabs-platform.iam.gserviceaccount.com`에 해당 service account의 resource-level `roles/iam.serviceAccountTokenCreator`만 부여했다. 프로젝트 전체 Token Creator binding은 추가하지 않았다.
+- platform 앱 레지스트리를 Firestore에 동기화하고 production workflow [run 30750253253](https://github.com/seorilabs/platform/actions/runs/30750253253)로 `platform-api-00015-xpx`를 배포했다. 서비스는 `platform:b57bfc82a6cf7cf5f5fb2b9c612adc4612d5754d` 이미지를 100% 제공한다.
+- live endpoint에서 임의 `uid` 주입 거부, 신규 custom token의 Firebase 교환, 합성 legacy Firebase ID token의 동일 UID 전환, `Cache-Control: no-store`를 검증했다.
+- smoke가 만든 Firebase Auth 사용자와 platform identity/user mapping은 종료 시 삭제했다. token·API key·UID는 로그나 문서에 남기지 않았다.
+- App Check 또는 edge rate limit과 실제 기존 사용자·실기기 migration은 별도 release gate로 남는다.
+
 ## 2026-08-02 — 익명 인증을 platform custom token bridge로 전환
 
 - production mobile 인증에서 RNFirebase `signInAnonymously`를 제거하고 Seorilabs platform의 custom token endpoint를 호출한 뒤 `signInWithCustomToken`으로 연결한다. direct anonymous는 Firebase Emulator 전용으로 제한했다.
 - 기존 anonymous Firebase 사용자는 강제 갱신한 ID token을 platform이 검증해 같은 uid로 custom token을 발급받는다. bridge 응답이나 Firebase credential uid가 다르면 새 사용자로 조용히 전환하지 않고 fail closed 한다.
 - 신규 사용자는 uid를 클라이언트가 고르지 않고 platform 서버가 생성한다. custom token은 저장하지 않고 즉시 Firebase 로그인에 한 번 사용한다.
-- platform의 signer SA/IAM, registry sync, API 배포와 live 신규·기존 UID smoke는 별도 운영 gate이며 코드 검증과 구분한다.
+- 당시 코드 검증과 분리했던 signer SA/IAM, registry sync, API 배포와 live 신규·합성 legacy UID smoke는 같은 날 후속 운영 작업으로 완료했다.
 
 ## 2026-08-02 — 공동 기록 온보딩의 작은 화면·키보드 경로 보강
 
