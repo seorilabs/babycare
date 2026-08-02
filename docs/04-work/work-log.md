@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-02 — 공동 기록 온보딩의 작은 화면·키보드 경로 보강
+
+- 제품의 공동 기록 온보딩은 `KeyboardAvoidingView` 안에 고정 `View`만 사용해 작은 화면·큰 글꼴·키보드가 열린 조건에서 입력 필드와 제출 버튼이 화면 밖으로 밀려도 스크롤로 복구할 수 없었다.
+- 화면 전체를 safe area 안에 두고 내용 컨테이너를 `flexGrow` 기반 `ScrollView`로 바꿔, 키보드가 열린 상태에서도 모든 입력·이전·제출 동작까지 세로 스크롤할 수 있게 했다.
+- 온보딩 회귀 테스트가 safe area와 키보드 탭을 보존하는 스크롤 컨테이너, 세로 스크롤 표시 제거, `flexGrow` 확장 계약을 검증한다. 테스트는 수정 전 safe area·scroll 경로 누락으로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 32 suites/251건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, production 인증·App Check, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- iPhone SE(3세대) Simulator에서 Firebase Emulator·Metro와 Debug build를 시도했지만, 격리 worktree에 `GoogleService-Info.plist`가 없어 app target 빌드가 중단됐다. 실제 작은 화면·큰 글꼴·키보드 화면은 확인하지 않았고 native client config blocker를 완료 처리하지 않는다.
+
 ## 2026-08-02 — 공동 기록 생성·참여 오류의 내부 진단 노출 차단
 
 - 공동 기록 생성·초대 참여 요청이 Firebase/Auth/Functions 오류로 실패하면 `[firestore/unavailable]`, `[functions/failed-precondition]` 같은 SDK 코드와 영문 내부 진단을 온보딩 화면에 그대로 표시했다.

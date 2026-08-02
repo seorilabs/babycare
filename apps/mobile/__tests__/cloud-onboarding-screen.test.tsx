@@ -1,12 +1,25 @@
 import React from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Text } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import { createTheme } from '../src/app/theme';
 import { CloudOnboardingScreen } from '../src/screens/CloudOnboardingScreen';
 
 jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
+jest.mock('react-native-safe-area-context', () => {
+  const ReactModule = jest.requireActual<typeof React>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>(
+    'react-native',
+  );
+  return {
+    SafeAreaView: ({
+      children,
+      ...props
+    }: React.ComponentProps<typeof View>) =>
+      ReactModule.createElement(View, props, children),
+  };
+});
 
 const theme = createTheme(false);
 
@@ -48,6 +61,23 @@ function changeText(
 }
 
 describe('CloudOnboardingScreen', () => {
+  it('keeps content scrollable inside the safe area', () => {
+    const state = setup();
+
+    expect(
+      state.renderer.root.findByProps({
+        testID: 'cloud-onboarding-safe-area',
+      }),
+    ).toBeDefined();
+    const scrollView = state.renderer.root.findByType(ScrollView);
+    expect(scrollView.props.keyboardShouldPersistTaps).toBe('handled');
+    expect(scrollView.props.showsVerticalScrollIndicator).toBe(false);
+    expect(scrollView.props.contentContainerStyle).toEqual(
+      expect.objectContaining({ flexGrow: 1 }),
+    );
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
   it('uses product copy while preserving the anonymous-account safety warning', () => {
     const state = setup();
     const visibleText = state.renderer.root

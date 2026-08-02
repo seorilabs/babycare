@@ -4,11 +4,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { isValidBirthDate } from '../app/session';
 import type { AppTheme } from '../app/theme';
@@ -162,11 +164,19 @@ export function CloudOnboardingScreen(props: {
     : '다음';
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <SafeAreaView
+      testID="cloud-onboarding-safe-area"
       style={[styles.fill, { backgroundColor: props.theme.colors.background }]}
     >
-      <View style={styles.content}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.fill}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View
           style={[
             styles.mark,
@@ -416,15 +426,16 @@ export function CloudOnboardingScreen(props: {
           앱을 삭제하거나 기기를 바꾸면 현재 계정과 기록에 다시 접근하지 못할 수
           있어요.
         </Text>
-      </View>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingBottom: 36,
     paddingHorizontal: 24,
     paddingTop: 38,
