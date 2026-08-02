@@ -10,9 +10,12 @@ jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
 
 const theme = createTheme(false);
 
-function setup() {
-  const onCreate = jest.fn(async () => undefined);
-  const onJoin = jest.fn(async () => undefined);
+function setup(input: {
+  onCreate?: () => Promise<void>;
+  onJoin?: () => Promise<void>;
+} = {}) {
+  const onCreate = jest.fn(input.onCreate ?? (async () => undefined));
+  const onJoin = jest.fn(input.onJoin ?? (async () => undefined));
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
     renderer = ReactTestRenderer.create(
@@ -165,6 +168,45 @@ describe('CloudOnboardingScreen', () => {
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
+  it('does not expose technical errors when group creation fails', async () => {
+    const state = setup({
+      onCreate: async () => {
+        throw new Error(
+          '[firestore/unavailable] The service is currently unavailable.',
+        );
+      },
+    });
+    press(state.renderer, '처음 시작하기');
+    changeText(state.renderer, '양육자 이름', '엄마');
+    press(state.renderer, '다음');
+    changeText(state.renderer, '아기 이름', '하루');
+    press(state.renderer, '다음');
+    press(state.renderer, '아기 생년월일');
+    ReactTestRenderer.act(() => {
+      state.renderer.root
+        .findByType(DateTimePicker)
+        .props.onChange({ type: 'set' }, new Date(2020, 0, 1));
+    });
+
+    await ReactTestRenderer.act(async () => {
+      await state.renderer.root
+        .findByProps({ accessibilityLabel: '돌봄 그룹 만들기' })
+        .props.onPress();
+    });
+
+    const visibleText = state.renderer.root
+      .findAllByType(Text)
+      .flatMap(node => node.props.children)
+      .filter(value => typeof value === 'string')
+      .join(' ');
+    expect(visibleText).toContain(
+      '돌봄 그룹을 만들지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+    );
+    expect(visibleText).not.toContain('firestore');
+    expect(visibleText).not.toContain('unavailable');
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
   it('requires six invite characters after choosing the join flow', async () => {
     const state = setup();
     press(state.renderer, '초대 코드로 참여');
@@ -194,6 +236,38 @@ describe('CloudOnboardingScreen', () => {
       code: 'ABC234',
     });
     expect(state.onCreate).not.toHaveBeenCalled();
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
+  it('does not expose technical errors when joining an invite fails', async () => {
+    const state = setup({
+      onJoin: async () => {
+        throw new Error(
+          '[functions/failed-precondition] Invite is invalid or unavailable',
+        );
+      },
+    });
+    press(state.renderer, '초대 코드로 참여');
+    changeText(state.renderer, '양육자 이름', '아빠');
+    press(state.renderer, '다음');
+    changeText(state.renderer, '초대 코드', 'ABC234');
+
+    await ReactTestRenderer.act(async () => {
+      await state.renderer.root
+        .findByProps({ accessibilityLabel: '돌봄 그룹 참여하기' })
+        .props.onPress();
+    });
+
+    const visibleText = state.renderer.root
+      .findAllByType(Text)
+      .flatMap(node => node.props.children)
+      .filter(value => typeof value === 'string')
+      .join(' ');
+    expect(visibleText).toContain(
+      '돌봄 그룹에 참여하지 못했어요. 코드를 확인하거나 새 코드를 요청해 주세요.',
+    );
+    expect(visibleText).not.toContain('functions');
+    expect(visibleText).not.toContain('failed-precondition');
     ReactTestRenderer.act(() => state.renderer.unmount());
   });
 });

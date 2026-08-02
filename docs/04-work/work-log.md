@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-02 — 공동 기록 생성·참여 오류의 내부 진단 노출 차단
+
+- 공동 기록 생성·초대 참여 요청이 Firebase/Auth/Functions 오류로 실패하면 `[firestore/unavailable]`, `[functions/failed-precondition]` 같은 SDK 코드와 영문 내부 진단을 온보딩 화면에 그대로 표시했다.
+- 입력 단계의 검증은 기존대로 유지하고, 실제 생성 실패는 연결 확인·재시도 안내로, 참여 실패는 코드 확인·재발급 안내로 제한해 내부 구현 정보를 사용자 화면에서 분리했다.
+- 온보딩 회귀 테스트가 생성·참여 각각에 실제 기술 오류를 주입해 제품 안내만 표시하고 SDK 코드와 영문 진단은 노출하지 않는지 검증한다. 두 테스트는 수정 전 내부 오류 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 32 suites/250건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, production 인증·App Check, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device로 생성·참여 오류 화면을 직접 확인하지 않았다.
+
 ## 2026-08-02 — 공동 기록 시작 오류의 내부 진단 노출 차단
 
 - 공동 기록 bootstrap이 실제 `Error`로 실패하면 제품 fallback 대신 `Firebase native client configuration…` 같은 영문 내부 진단을 연결 오류 화면에 그대로 표시했다.

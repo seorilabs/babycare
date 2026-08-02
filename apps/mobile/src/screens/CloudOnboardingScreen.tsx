@@ -16,6 +16,11 @@ import type { AppTheme } from '../app/theme';
 type SetupMode = 'create' | 'join';
 type Step = 'choose' | 'caregiver' | 'babyName' | 'birthDate' | 'inviteCode';
 
+const CREATE_FAILURE_MESSAGE =
+  '돌봄 그룹을 만들지 못했어요. 연결을 확인하고 다시 시도해 주세요.';
+const JOIN_FAILURE_MESSAGE =
+  '돌봄 그룹에 참여하지 못했어요. 코드를 확인하거나 새 코드를 요청해 주세요.';
+
 function isoCalendarDate(value: Date): string {
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, '0');
@@ -105,12 +110,8 @@ export function CloudOnboardingScreen(props: {
       setSaving(true);
       try {
         await props.onCreate({ caregiverName, babyName, birthDate });
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : '공동 기록을 준비하지 못했어요. 다시 시도해 주세요.',
-        );
+      } catch {
+        setErrorMessage(CREATE_FAILURE_MESSAGE);
       } finally {
         submissionInFlight.current = false;
         setSaving(false);
@@ -122,12 +123,8 @@ export function CloudOnboardingScreen(props: {
       setSaving(true);
       try {
         await props.onJoin({ caregiverName, code });
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : '공동 기록을 준비하지 못했어요. 다시 시도해 주세요.',
-        );
+      } catch {
+        setErrorMessage(JOIN_FAILURE_MESSAGE);
       } finally {
         submissionInFlight.current = false;
         setSaving(false);
