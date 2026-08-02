@@ -245,8 +245,10 @@ describe('MoreScreen', () => {
   });
 
   it('labels membership refresh by its real behavior and surfaces failures', async () => {
+    const technicalMessage =
+      '[firestore/unavailable] The service is currently unavailable.';
     const refreshMembers = jest.fn(async () => {
-      throw new Error('네트워크 연결을 확인해 주세요.');
+      throw new Error(technicalMessage);
     });
     const alert = jest.spyOn(Alert, 'alert').mockImplementation();
     let renderer!: ReactTestRenderer.ReactTestRenderer;
@@ -290,8 +292,10 @@ describe('MoreScreen', () => {
     expect(refreshMembers).toHaveBeenCalledTimes(1);
     expect(alert).toHaveBeenCalledWith(
       '구성원 목록을 새로고침하지 못했어요',
-      '네트워크 연결을 확인해 주세요.',
+      '연결을 확인하고 다시 시도해 주세요.',
     );
+    expect(JSON.stringify(alert.mock.calls)).not.toContain(technicalMessage);
+    expect(JSON.stringify(alert.mock.calls)).not.toContain('firestore');
     ReactTestRenderer.act(() => renderer.unmount());
   });
 });

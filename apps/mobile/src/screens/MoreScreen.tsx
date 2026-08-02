@@ -90,10 +90,10 @@ export function MoreScreen(props: {
   };
 
   const refreshMembers = () => {
-    props.onRefreshMembers?.().catch(error =>
+    props.onRefreshMembers?.().catch(() =>
       Alert.alert(
         '구성원 목록을 새로고침하지 못했어요',
-        error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+        '연결을 확인하고 다시 시도해 주세요.',
       ),
     );
   };
