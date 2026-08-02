@@ -83,6 +83,12 @@ function errorValue(error: unknown, fallback: string): Error {
   return error instanceof Error ? error : new Error(fallback);
 }
 
+function userFacingError(message: string, cause: unknown): Error {
+  const error = new Error(message);
+  Object.defineProperty(error, 'cause', {value: cause});
+  return error;
+}
+
 function FirebaseCareDashboard(props: {
   readonly runtime: FirebaseRuntime;
   readonly ready: ReadyFirebaseSession;
@@ -456,7 +462,7 @@ export function FirebaseBabyCareApp() {
         if (active) {
           setState({
             kind: 'error',
-            error: errorValue(error, '공동 기록을 시작하지 못했어요'),
+            error: userFacingError('공동 기록을 시작하지 못했어요', error),
           });
         }
       }

@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-02 — 공동 기록 시작 오류의 내부 진단 노출 차단
+
+- 공동 기록 bootstrap이 실제 `Error`로 실패하면 제품 fallback 대신 `Firebase native client configuration…` 같은 영문 내부 진단을 연결 오류 화면에 그대로 표시했다.
+- 시작 실패 화면은 항상 `공동 기록을 시작하지 못했어요`를 표시하고, 원래 오류는 화면에 렌더하지 않는 `cause`로 보존해 사용자 안내와 진단 경계를 분리했다. 기록 저장·동기화 등 다른 동작 오류의 세부 안내는 이번 범위에서 일괄 숨기지 않았다.
+- Firebase 제품 root 회귀 테스트가 실제 기술 오류를 주입해 내부 구성명은 노출하지 않고 제품 fallback만 표시하는지 검증한다. 테스트는 수정 전 영문 기술 오류 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 32 suites/248건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, production 인증·App Check, 마켓 정책·privacy 답변, 실제 계정·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device로 연결 오류 화면을 직접 확인하지 않았다.
+
 ## 2026-08-02 — 제품 화면 Firebase 기술 문구 제거
 
 - 기본 제품 런타임의 공동 기록 로딩·시작 실패·계정 상태 변경 안내가 `Firebase 계정`, `Firebase 공동 기록`처럼 사용자에게 필요 없는 백엔드 구현명을 노출했다.

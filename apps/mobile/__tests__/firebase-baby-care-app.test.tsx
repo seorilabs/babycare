@@ -69,8 +69,12 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('Firebase');
   });
 
-  it('uses a product-facing fallback when startup fails without a message', async () => {
-    bootstrap.mockRejectedValue(undefined);
+  it('hides technical details when startup fails', async () => {
+    bootstrap.mockRejectedValue(
+      new Error(
+        'Firebase native client configuration is missing from this release build',
+      ),
+    );
 
     await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
@@ -82,6 +86,7 @@ describe('FirebaseBabyCareApp product copy', () => {
     }
 
     expect(visibleText(renderer)).toContain('공동 기록을 시작하지 못했어요');
+    expect(visibleText(renderer)).not.toContain('native client configuration');
     expect(visibleText(renderer)).not.toContain('Firebase');
   });
 });
