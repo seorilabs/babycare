@@ -194,6 +194,56 @@ describe('MoreScreen', () => {
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
+  it('hides technical details when invite creation fails', async () => {
+    const technicalMessage =
+      '[functions/resource-exhausted] Invite rate limit exceeded.';
+    const createInvite = jest.fn(async () => {
+      throw new Error(technicalMessage);
+    });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onCreateInvite={createInvite}
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: '',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드 만들기'})
+        .props.onPress();
+    });
+    await ReactTestRenderer.act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(alert).toHaveBeenCalledWith(
+      '초대 코드를 만들지 못했어요',
+      '연결을 확인하고 잠시 후 다시 시도해 주세요.',
+    );
+    expect(JSON.stringify(alert.mock.calls)).not.toContain(technicalMessage);
+    expect(JSON.stringify(alert.mock.calls)).not.toContain('functions');
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('labels membership refresh by its real behavior and surfaces failures', async () => {
     const refreshMembers = jest.fn(async () => {
       throw new Error('네트워크 연결을 확인해 주세요.');

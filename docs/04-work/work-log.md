@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-03 — 초대 코드 생성 오류의 내부 진단 노출 차단
+
+- 양육자 초대 코드 생성이 실패하면 `[functions/resource-exhausted]` 같은 Functions SDK 코드와 영문 내부 진단을 Alert에 그대로 노출했다.
+- 생성 실패 Alert는 `연결을 확인하고 잠시 후 다시 시도해 주세요.`로 제한하고, 기존 중복 요청 잠금과 버튼 재활성화 동작은 유지했다.
+- More 화면 회귀 테스트가 실제 Functions 기술 오류를 주입해 제품 안내만 표시하고 SDK 코드와 영문 진단을 숨기는지 검증한다. 테스트는 수정 전 기술 오류 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/261건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA와 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device로 초대 생성 실패 Alert를 직접 확인하지 않았다.
+
 ## 2026-08-03 — 빠른 기록 저장 오류의 내부 진단 노출 차단
 
 - 수유·기저귀·수면 빠른 기록 저장이 실패하면 `[firestore/unavailable]` 같은 SDK 코드와 영문 내부 진단이 Alert와 모달 오류 문구에 그대로 노출됐다.
