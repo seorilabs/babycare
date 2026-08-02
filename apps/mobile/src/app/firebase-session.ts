@@ -54,7 +54,10 @@ export type FirebaseSessionBootstrap =
   | ({readonly kind: 'ready'} & ReadyFirebaseSession);
 
 async function authenticatedIdentity(auth: AuthPort): Promise<AuthIdentity> {
-  return (await auth.currentUser()) ?? auth.signInAnonymously();
+  const current = await auth.currentUser();
+  return current && !current.isAnonymous
+    ? current
+    : auth.signInWithoutAccount();
 }
 
 async function readySessionForGroup(
@@ -79,10 +82,13 @@ async function readySessionForGroup(
 export async function restoreFirebaseSession(
   services: FirebaseSessionServices,
 ): Promise<FirebaseSessionBootstrap> {
-  const identity = await services.auth.currentUser();
-  if (!identity) {
+  const current = await services.auth.currentUser();
+  if (!current) {
     return {kind: 'signed_out'};
   }
+  const identity = current.isAnonymous
+    ? await services.auth.signInWithoutAccount()
+    : current;
   const groups = await services.groups.listForUser(identity.userId);
   if (groups.length === 0) {
     return {kind: 'needs_group', identity};

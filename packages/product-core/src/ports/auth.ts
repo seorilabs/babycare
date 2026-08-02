@@ -10,7 +10,8 @@ export interface AuthPort {
   currentUser(): Promise<AuthIdentity | undefined>;
   /** Forces an authoritative identity/token check instead of local cache only. */
   verifyCurrentUser(): Promise<AuthIdentity | undefined>;
-  signInAnonymously(): Promise<AuthIdentity>;
+  /** Creates an account-free session through the app target's trusted auth bridge. */
+  signInWithoutAccount(): Promise<AuthIdentity>;
   signOut(): Promise<void>;
   observe(listener: (identity: AuthIdentity | undefined) => void): () => void;
 }

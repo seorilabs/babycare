@@ -18,7 +18,7 @@
 
 | Service | 사용 여부 | 용도/경계 |
 | --- | --- | --- |
-| Auth | 예 | 성인 양육자 신원과 그룹 멤버십 연결. RNFirebase adapter는 있으나 production 로그인 provider는 확정 필요 |
+| Auth | 예 | 성인 양육자 신원과 그룹 멤버십 연결. production mobile은 platform custom token bridge, 개발 Emulator는 direct anonymous |
 | Firestore | 예 | 그룹, 멤버십, 아기, 돌봄 이벤트 실시간 동기화. adapter는 구현됐지만 app composition과 project config는 미연결 |
 | Storage | Rules만 준비 | 그룹 경로의 지원 이미지, 파일당 10 MiB 이하만 허용. 현재 MVP UI에 upload 흐름 없음 |
 | Cloud Functions / Run | 예 | `createInvite`, `acceptInvite` 로컬 구현. 실제 callable deploy와 App Check/Secret Manager 미검증 |
@@ -154,14 +154,14 @@ auditLogs/{auditId}                  # server-only actor/action audit
 
 `apps/mobile/src/adapters/firebase/`에 다음 client 구현이 있다.
 
-- `FirebaseAuthAdapter`: RNFirebase Auth 상태·anonymous sign-in transport와 `reload`+강제 ID-token refresh 검증. anonymous를 production provider로 승인한 것은 아니다.
+- `FirebaseAuthAdapter`: production에서는 Seorilabs platform custom token bridge와 RNFirebase `signInWithCustomToken`을 사용한다. 기존 anonymous 사용자는 현재 ID token을 bridge에 보내 같은 uid로 전환하고, 신규 uid는 platform 서버가 생성한다. `signInAnonymously`는 Firebase Emulator 개발 경로에만 남긴다. `reload`+강제 ID-token refresh 검증은 유지한다.
 - `FirebaseCareGroupRepository`, `FirebaseBabyRepository`: group/membership/baby 문서와 atomic owner setup. 권한 오류 뒤 membership 재확인은 server-only query를 사용한다.
 - `FirebaseCareEventRemoteStore`: strict path/schema decoder, revision transaction·payload receipt·active-sleep lock transport와 `CareEventProjectionRemotePort`의 server-only window/latest/active singleton fetch·observe.
 - `FirebaseInviteService`: `createInvite`/`acceptInvite` callable과 응답 actor/path 검증.
 
-현재 기본 `apps/mobile/src/app/container.ts`와 `App.tsx`는 AsyncStorage 기반 local adapter를 사용한다. 별도 인증 cloud factory는 timeline과 overview projection owner를 각각 하나씩 만들지만, Firebase client config, production Auth provider와 app-level session/group/baby UI 흐름이 확정되기 전에는 위 코드가 실제 화면의 cloud data path가 아니다.
+실제 앱의 `App.tsx`는 native Firebase 공동 기록 root를 동적 로드하고 Jest만 AsyncStorage local preview를 사용한다. cloud factory는 인증 scope별 timeline과 overview projection owner를 각각 하나씩 만든다. platform bridge의 signer IAM·registry sync·API 배포와 실제 uid 보존 smoke는 아직 운영 gate다.
 
-`FirebaseCareEventRemoteStore.push`는 server acknowledgement까지 기다리는 원격 계약이다. 이를 `CareEventRepositoryPort` 대신 화면 use case에 직접 주입하면 offline 저장 UI가 완료되지 않을 수 있으므로 금지한다. `care-event-container.ts`는 `packages/product-data`의 scoped durable envelope/outbox에 먼저 저장하고 remote mutation을 revision 순서로 drain하며 pending/failed/conflict 상태를 노출한다. `CareEventOverviewFeed`는 server-confirmed 기간 window, 종류별 latest와 `activeSleeps/{babyId}`→event singleton을 결합해 envelope v3의 named overview/active coverage를 atomic 교체한다. 실제 Firebase project/Auth session/navigation에는 아직 연결하지 않았다.
+`FirebaseCareEventRemoteStore.push`는 server acknowledgement까지 기다리는 원격 계약이다. 이를 `CareEventRepositoryPort` 대신 화면 use case에 직접 주입하면 offline 저장 UI가 완료되지 않을 수 있으므로 금지한다. `care-event-container.ts`는 `packages/product-data`의 scoped durable envelope/outbox에 먼저 저장하고 remote mutation을 revision 순서로 drain하며 pending/failed/conflict 상태를 노출한다. `CareEventOverviewFeed`는 server-confirmed 기간 window, 종류별 latest와 `activeSleeps/{babyId}`→event singleton을 결합해 envelope v3의 named overview/active coverage를 atomic 교체한다.
 
 ## Invite Callable Contract
 
@@ -238,7 +238,7 @@ Rules 23건은 비멤버 차단, 멤버 read/record, 동일 timestamp raw timeli
 - service account JSON, private key, Admin SDK credential을 client나 repo에 포함하지 않는다.
 - 실제 Firebase project 생성, rules/index deploy, IAM 연결은 deployment approval 뒤 non-production 환경부터 진행한다.
 - `FUNCTIONS_REGION`과 `INVITE_CODE_HMAC_KEY`는 실제 non-production 환경에서 먼저 확정한다. MVP HMAC rotation 정책은 previous key fallback 없이 모든 미사용 초대를 무효화하고 owner가 재발급하는 방식이다. 기본 TTL이 최대 24시간이므로 계획 rotation은 만료 대기 후 수행하고, 긴급 rotation은 즉시 재발급 안내한다.
-- 6자리 code는 30-bit이므로 UID rate limit만으로 충분하지 않다. anonymous UID 무제한 발급을 허용하지 않고 verified Auth와 App Check를 함께 적용한다.
+- 6자리 code는 30-bit이므로 UID rate limit만으로 충분하지 않다. production uid는 platform custom token bridge가 서버에서 만들고 기존 uid는 서명된 Firebase ID token으로만 승계한다. 공개 bootstrap 남용 억제를 위해 App Check 또는 edge rate limit을 별도 release gate로 둔다.
 - `ENFORCE_APP_CHECK=false`는 AppsInToss 호환 검증용 임시값이다. 실제 Functions/Auth emulator callable protocol, App Check, Secret Manager binding, IAM은 non-production smoke 전 release-ready가 아니다.
 - Storage Rules가 Firestore membership을 조회하므로 실제 project에서 두 서비스 연결용 IAM 설정을 확인한다.
 - 계정 삭제, 그룹/아기 recursive delete+tombstone, export, 소유권 이전, 제거된 멤버의 로컬 캐시 삭제는 server/app workflow 구현 전 release blocker다. 삭제 workflow는 membership부터 회수한 뒤 파일·하위 문서·상위 문서를 정리하고 ID 재사용을 막아야 한다.

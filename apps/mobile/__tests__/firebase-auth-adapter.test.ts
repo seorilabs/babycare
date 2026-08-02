@@ -1,6 +1,9 @@
 import {
   getIdToken,
   reload,
+  signInAnonymously,
+  signInWithCustomToken,
+  signOut,
 } from '@react-native-firebase/auth';
 
 import {FirebaseAuthAdapter} from '../src/adapters/firebase/firebase-auth-adapter';
@@ -10,7 +13,8 @@ jest.mock('@react-native-firebase/auth', () => ({
   onAuthStateChanged: jest.fn(),
   reload: jest.fn(async () => undefined),
   signInAnonymously: jest.fn(),
-  signOut: jest.fn(),
+  signInWithCustomToken: jest.fn(),
+  signOut: jest.fn(async () => undefined),
 }));
 
 const firebaseUser = {
@@ -65,5 +69,112 @@ describe('FirebaseAuthAdapter authoritative verification', () => {
     } as never);
 
     await expect(adapter.verifyCurrentUser()).rejects.toBe(error);
+  });
+});
+
+describe('FirebaseAuthAdapter platform custom token bridge', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (getIdToken as jest.MockedFunction<typeof getIdToken>).mockResolvedValue(
+      'legacy-id-token',
+    );
+  });
+
+  it('preserves a legacy anonymous uid while switching to a custom token', async () => {
+    const legacyUser = { ...firebaseUser, isAnonymous: true };
+    const bridgedUser = { ...firebaseUser, isAnonymous: false };
+    const bridge = {
+      createFirebaseCustomToken: jest.fn(async () => ({
+        firebaseCustomToken: 'custom-token',
+        appUserId: legacyUser.uid,
+      })),
+    };
+    (
+      signInWithCustomToken as jest.MockedFunction<typeof signInWithCustomToken>
+    ).mockResolvedValueOnce({ user: bridgedUser } as never);
+    const adapter = new FirebaseAuthAdapter(
+      { currentUser: legacyUser } as never,
+      bridge,
+    );
+
+    await expect(adapter.signInWithoutAccount()).resolves.toEqual({
+      userId: legacyUser.uid,
+      displayName: '보호자',
+      isAnonymous: false,
+    });
+    expect(getIdToken).toHaveBeenCalledWith(legacyUser, true);
+    expect(bridge.createFirebaseCustomToken).toHaveBeenCalledWith({
+      existingFirebaseIdToken: 'legacy-id-token',
+    });
+    expect(signInWithCustomToken).toHaveBeenCalledWith(
+      expect.anything(),
+      'custom-token',
+    );
+  });
+
+  it('creates a new server uid when Firebase has no current user', async () => {
+    const bridgedUser = { ...firebaseUser, uid: 'pb-new-user' };
+    const bridge = {
+      createFirebaseCustomToken: jest.fn(async () => ({
+        firebaseCustomToken: 'custom-token',
+        appUserId: bridgedUser.uid,
+      })),
+    };
+    (
+      signInWithCustomToken as jest.MockedFunction<typeof signInWithCustomToken>
+    ).mockResolvedValueOnce({ user: bridgedUser } as never);
+    const adapter = new FirebaseAuthAdapter(
+      { currentUser: null } as never,
+      bridge,
+    );
+
+    await expect(adapter.signInWithoutAccount()).resolves.toMatchObject({
+      userId: bridgedUser.uid,
+    });
+    expect(bridge.createFirebaseCustomToken).toHaveBeenCalledWith({});
+    expect(getIdToken).not.toHaveBeenCalled();
+  });
+
+  it('fails closed before Firebase sign-in when the bridge changes a legacy uid', async () => {
+    const legacyUser = { ...firebaseUser, isAnonymous: true };
+    const bridge = {
+      createFirebaseCustomToken: jest.fn(async () => ({
+        firebaseCustomToken: 'custom-token',
+        appUserId: 'different-user',
+      })),
+    };
+    const adapter = new FirebaseAuthAdapter(
+      { currentUser: legacyUser } as never,
+      bridge,
+    );
+
+    await expect(adapter.signInWithoutAccount()).rejects.toThrow(
+      'changed the existing Firebase uid',
+    );
+    expect(signInWithCustomToken).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
+  it('keeps direct anonymous sign-in limited to the emulator adapter', async () => {
+    const emulatorUser = {
+      ...firebaseUser,
+      uid: 'emulator-user',
+      isAnonymous: true,
+    };
+    (
+      signInAnonymously as jest.MockedFunction<typeof signInAnonymously>
+    ).mockResolvedValueOnce({ user: emulatorUser } as never);
+    const adapter = new FirebaseAuthAdapter(
+      { currentUser: null } as never,
+      undefined,
+      true,
+    );
+
+    await expect(adapter.signInWithoutAccount()).resolves.toMatchObject({
+      userId: emulatorUser.uid,
+      isAnonymous: true,
+    });
+    expect(signInAnonymously).toHaveBeenCalledTimes(1);
+    expect(signInWithCustomToken).not.toHaveBeenCalled();
   });
 });

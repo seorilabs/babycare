@@ -1,12 +1,16 @@
 import {
-  default as firebaseAuth,
   getIdToken,
   onAuthStateChanged,
   reload,
+  signInAnonymously,
+  signInWithCustomToken,
+  signOut,
   type Auth,
   type User,
 } from '@react-native-firebase/auth';
 import {userId, type AuthIdentity, type AuthPort} from '@babycare/product-core';
+
+import type {FirebaseCustomTokenBridge} from '../platform/platform-firebase-custom-token-bridge';
 
 function toIdentity(user: User | null): AuthIdentity | undefined {
   if (!user) {
@@ -35,9 +39,17 @@ function isRevokedIdentityError(error: unknown): boolean {
 
 export class FirebaseAuthAdapter implements AuthPort {
   readonly #auth: Auth;
+  readonly #bridge?: FirebaseCustomTokenBridge;
+  readonly #allowEmulatorAnonymous: boolean;
 
-  constructor(auth: Auth) {
+  constructor(
+    auth: Auth,
+    bridge?: FirebaseCustomTokenBridge,
+    allowEmulatorAnonymous = false,
+  ) {
     this.#auth = auth;
+    this.#bridge = bridge;
+    this.#allowEmulatorAnonymous = allowEmulatorAnonymous;
   }
 
   async currentUser(): Promise<AuthIdentity | undefined> {
@@ -61,13 +73,49 @@ export class FirebaseAuthAdapter implements AuthPort {
     return toIdentity(this.#auth.currentUser);
   }
 
-  async signInAnonymously(): Promise<AuthIdentity> {
-    const credential = await firebaseAuth(this.#auth.app).signInAnonymously();
+  async signInWithoutAccount(): Promise<AuthIdentity> {
+    const current = this.#auth.currentUser;
+    if (current && !current.isAnonymous) {
+      return toIdentity(current)!;
+    }
+
+    if (!this.#bridge) {
+      if (!this.#allowEmulatorAnonymous) {
+        throw new Error('Firebase custom token bridge is not configured');
+      }
+      if (current) {
+        return toIdentity(current)!;
+      }
+      const emulatorCredential = await signInAnonymously(this.#auth);
+      return toIdentity(emulatorCredential.user as unknown as User)!;
+    }
+
+    const existingUid = current?.uid;
+    const existingFirebaseIdToken = current
+      ? await getIdToken(current, true)
+      : undefined;
+    const bridgeResult = await this.#bridge.createFirebaseCustomToken({
+      ...(existingFirebaseIdToken ? { existingFirebaseIdToken } : {}),
+    });
+    if (existingUid && bridgeResult.appUserId !== existingUid) {
+      throw new Error('Platform auth bridge changed the existing Firebase uid');
+    }
+
+    const credential = await signInWithCustomToken(
+      this.#auth,
+      bridgeResult.firebaseCustomToken,
+    );
+    if (credential.user.uid !== bridgeResult.appUserId) {
+      await signOut(this.#auth);
+      throw new Error(
+        'Firebase custom token uid did not match the bridge result',
+      );
+    }
     return toIdentity(credential.user as unknown as User)!;
   }
 
   async signOut(): Promise<void> {
-    await firebaseAuth(this.#auth.app).signOut();
+    await signOut(this.#auth);
   }
 
   observe(listener: (identity: AuthIdentity | undefined) => void): () => void {
