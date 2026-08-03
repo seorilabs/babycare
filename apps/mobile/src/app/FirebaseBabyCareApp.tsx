@@ -153,9 +153,9 @@ export function FirebaseCareDashboard(props: {
   useEffect(() => {
     if (overview.status === 'error' && overview.error) {
       onRuntimeError(
-        errorValue(
-          overview.error.cause,
+        userFacingError(
           '공동 기록을 새로 불러오지 못했어요',
+          overview.error.cause,
         ),
       );
     }
@@ -277,7 +277,10 @@ export function FirebaseCareDashboard(props: {
                 props.container.timelineFeed.refresh(),
               ]).catch(error =>
                 props.onRuntimeError(
-                  errorValue(error, '공동 기록을 새로 불러오지 못했어요'),
+                  userFacingError(
+                    '공동 기록을 새로 불러오지 못했어요',
+                    error,
+                  ),
                 ),
               );
             }}>
@@ -291,7 +294,7 @@ export function FirebaseCareDashboard(props: {
         onRetry={() => {
           props.container.syncNow({retryFailed: true}).catch(error =>
             props.onRuntimeError(
-              errorValue(error, '동기화를 다시 시도하지 못했어요'),
+              userFacingError('동기화를 다시 시도하지 못했어요', error),
             ),
           );
         }}

@@ -46,6 +46,9 @@ jest.mock('../src/app/firebase-runtime', () => ({
 }));
 
 const bootstrap = jest.mocked(bootstrapFirebaseRuntime);
+type DashboardContainer = React.ComponentProps<
+  typeof FirebaseCareDashboard
+>['container'];
 
 function visibleText(renderer: ReactTestRenderer.ReactTestRenderer): string {
   const read = (value: unknown): string =>
@@ -106,7 +109,7 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('Firebase');
   });
 
-  it('hides technical details when changing existing records fails', async () => {
+  it('hides technical details when runtime operations fail', async () => {
     const now = new Date('2026-08-03T16:00:00+09:00').getTime();
     const identity: AuthIdentity = {
       userId: userId('owner-1'),
@@ -176,9 +179,19 @@ describe('FirebaseBabyCareApp product copy', () => {
       throw new Error(sleepTechnicalMessage);
     });
     const onRuntimeError = jest.fn();
+    let observeOverview:
+      | Parameters<DashboardContainer['overviewFeed']['start']>[0]
+      | undefined;
+    let observeSyncState:
+      | Parameters<DashboardContainer['observeSyncState']>[0]
+      | undefined;
+    const refreshOverview = jest.fn(async () => undefined);
+    const refreshTimeline = jest.fn(async () => undefined);
+    const syncNow = jest.fn(async () => undefined);
     const container = {
       overviewFeed: {
         start: (observe: (value: unknown) => void) => {
+          observeOverview = observe as typeof observeOverview;
           observe({
             events: [event, activeSleep],
             activeSleep,
@@ -186,7 +199,7 @@ describe('FirebaseBabyCareApp product copy', () => {
           });
           return jest.fn();
         },
-        refresh: jest.fn(async () => undefined),
+        refresh: refreshOverview,
       },
       timelineFeed: {
         start: (observe: (value: unknown) => void) => {
@@ -201,17 +214,18 @@ describe('FirebaseBabyCareApp product copy', () => {
         },
         loadMore: jest.fn(async () => undefined),
         retryLoadMore: jest.fn(async () => undefined),
-        refresh: jest.fn(async () => undefined),
+        refresh: refreshTimeline,
       },
-      observeSyncState: jest.fn(() => jest.fn()),
+      observeSyncState: jest.fn((observe: typeof observeSyncState) => {
+        observeSyncState = observe;
+        return jest.fn();
+      }),
       dispose: jest.fn(async () => undefined),
       softDeleteCareEvent,
       endSleepSession,
-      syncNow: jest.fn(async () => undefined),
+      syncNow,
       recordCareEvent: jest.fn(async () => event),
-    } as unknown as React.ComponentProps<
-      typeof FirebaseCareDashboard
-    >['container'];
+    } as unknown as DashboardContainer;
     const alert = jest.spyOn(Alert, 'alert').mockImplementation();
 
     await ReactTestRenderer.act(async () => {
@@ -304,6 +318,114 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(JSON.stringify(alert.mock.calls)).not.toContain(
       sleepTechnicalMessage,
     );
+
+    const overviewTechnicalMessage =
+      '[firestore/permission-denied] Missing or insufficient permissions.';
+    const overviewCause = new Error(overviewTechnicalMessage);
+    ReactTestRenderer.act(() => {
+      observeOverview?.({
+        events: [],
+        activeSleep: undefined,
+        status: 'error',
+        error: {
+          code: 'permission_denied',
+          cause: overviewCause,
+        },
+      });
+    });
+    expect(onRuntimeError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: '공동 기록을 새로 불러오지 못했어요',
+      }),
+    );
+    expect(
+      (onRuntimeError.mock.calls.at(-1)?.[0] as Error).message,
+    ).not.toContain('firestore');
+    expect(
+      (onRuntimeError.mock.calls.at(-1)?.[0] as Error & {cause?: unknown})
+        .cause,
+    ).toBe(overviewCause);
+
+    const refreshTechnicalMessage =
+      '[firestore/unavailable] Failed to refresh the shared timeline.';
+    const refreshCause = new Error(refreshTechnicalMessage);
+    refreshOverview.mockRejectedValueOnce(refreshCause);
+    await ReactTestRenderer.act(async () => {
+      renderer?.update(
+        <FirebaseCareDashboard
+          container={container}
+          onInvite={async () => undefined}
+          onRefreshMembers={async () => undefined}
+          onRuntimeError={onRuntimeError}
+          ready={ready}
+          runtime={{} as React.ComponentProps<typeof FirebaseCareDashboard>['runtime']}
+          runtimeError={new Error('공동 기록을 새로 불러오지 못했어요')}
+        />,
+      );
+      await Promise.resolve();
+    });
+    const refreshText = renderer.root
+      .findAllByType(Text)
+      .find(text => text.props.children === '새로고침');
+    let refreshButton = refreshText?.parent;
+    while (refreshButton && typeof refreshButton.props.onPress !== 'function') {
+      refreshButton = refreshButton.parent;
+    }
+    if (!refreshButton) {
+      throw new Error('공동 기록 새로고침 버튼을 찾지 못했어요');
+    }
+    await ReactTestRenderer.act(async () => {
+      refreshButton.props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(onRuntimeError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: '공동 기록을 새로 불러오지 못했어요',
+      }),
+    );
+    expect(
+      (onRuntimeError.mock.calls.at(-1)?.[0] as Error).message,
+    ).not.toContain('firestore');
+    expect(
+      (onRuntimeError.mock.calls.at(-1)?.[0] as Error & {cause?: unknown})
+        .cause,
+    ).toBe(refreshCause);
+
+    const syncTechnicalMessage =
+      '[firestore/aborted] Failed to retry pending writes.';
+    const syncCause = new Error(syncTechnicalMessage);
+    syncNow.mockRejectedValueOnce(syncCause);
+    ReactTestRenderer.act(() => {
+      observeSyncState?.([
+        {
+          eventId: event.id,
+          status: 'failed',
+          attempts: 1,
+          pendingRevisions: [1],
+          failureKind: 'retryable',
+        },
+      ]);
+    });
+    await ReactTestRenderer.act(async () => {
+      renderer?.root
+        .findByProps({accessibilityLabel: '동기화 다시 시도'})
+        .props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(onRuntimeError).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: '동기화를 다시 시도하지 못했어요',
+      }),
+    );
+    expect(
+      (onRuntimeError.mock.calls.at(-1)?.[0] as Error).message,
+    ).not.toContain('firestore');
+    expect(
+      (onRuntimeError.mock.calls.at(-1)?.[0] as Error & {cause?: unknown})
+        .cause,
+    ).toBe(syncCause);
     alert.mockRestore();
   });
 });

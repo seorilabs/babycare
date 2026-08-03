@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-03 — 공동 기록 읽기·재시도 오류의 내부 진단 노출 차단
+
+- 공동 기록 조회, 오류 배너의 새로고침, 실패한 동기화의 재시도가 실패하면 `[firestore/permission-denied]`, `[firestore/unavailable]`, `[firestore/aborted]` 같은 Firestore 코드와 영문 내부 진단을 상단 오류 상태에 그대로 노출했다.
+- 세 경로 모두 실제 동작에 맞는 `공동 기록을 새로 불러오지 못했어요` 또는 `동기화를 다시 시도하지 못했어요`만 화면에 전달하고, 원래 오류는 렌더하지 않는 `cause`로 보존했다.
+- Firebase dashboard 회귀 테스트가 조회 observer와 새로고침·동기화 재시도 handler에 기술 오류를 주입해 제품 문구와 진단 원인 분리를 검증한다. 테스트는 수정 전 조회 오류 원문 노출로 실패했고 수정 후 세 경로 모두 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/263건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA, iOS 암호화 선언·유효 서명과 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 부팅된 iOS Simulator와 연결된 Android device가 없어 공동 기록 오류·재시도 배너를 실제 화면으로 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-03 — 기록 변경 오류의 내부 진단 노출 차단
 
 - 본인 기록 삭제와 진행 중 수면 종료가 실패하면 `[firestore/unavailable]`, `[firestore/aborted]` 같은 Firestore 코드와 영문 내부 진단을 Alert와 상단 오류 상태에 그대로 노출했다.
