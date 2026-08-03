@@ -47,7 +47,7 @@
 - [x] Google Play 1.0.1/1000001 internal draft 업로드·API readback
 - [x] App Store 1.0.1/1000001 업로드·ASC `VALID`, 내부 그룹 모든 빌드 접근 확인
 - [x] Google Play 1.0.2/1000002 internal draft 업로드·API readback — `v1.0.2` / `d11bbfaa3dcea221067d60c43fd888f4c0e93f55`, 2026-08-03
-- [ ] App Store 1.0.2/1000002 업로드 — App Store 서명 archive까지 검증했으나 최종 `Info.plist`에 `ITSAppUsesNonExemptEncryption`이 없어 업로드 중단. 수정 커밋의 새 후보 필요
+- [ ] App Store 1.0.2/1000002 업로드 — device archive는 생성했으나 최종 `Info.plist`에 `ITSAppUsesNonExemptEncryption`이 없고 strict codesign이 `CSSMERR_TP_NOT_TRUSTED`로 실패해 업로드 중단. 수정 커밋과 유효 서명 경로의 새 후보 필요
 - [ ] Google Play internal 릴리스 활성화·테스터 배포 또는 production 승격 승인
 - [ ] App Store 실제 테스터 설치·실기기 QA 또는 App Review 제출 승인
 - [ ] AppsInToss production release 승인

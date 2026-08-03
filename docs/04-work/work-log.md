@@ -6,8 +6,8 @@
 - `pnpm run test:static`, `pnpm run test:firebase`, `pnpm run test:functions:emulator`, `pnpm run test:firebase:mobile-flow`, `pnpm run check:mobile`과 같은 SHA의 GitHub Static Checks run `30771469667`이 통과했다. `check:release`의 AppsInToss·정책 콘솔·실기기 QA·외부 승인 blocker는 유지했다.
 - GitHub Google Play run `30776280174`는 signed AAB 빌드와 WIF 인증까지 성공했지만 Android Publisher `edits` 권한 403으로 업로드가 실패했다. 동일 AAB를 기존 승인된 로컬 publisher credential로 한 번 업로드했고, API에서 internal `1.0.2`/`1000002`, `status=draft`를 확인했다. internal 활성화·테스터 배포·production 승격은 하지 않았다.
 - 로컬 JDK 21 signed AAB는 package `com.seorilabs.babycare`, version `1.0.2`/`1000002`, target SDK 36, release 서명과 SHA-256 `4a04f25eb8fcb4abce7559a56717a8ae91dc9fcac0bf4e312f51a26a5d240a78`을 검증했다.
-- Xcode Cloud workflow는 App Store 배포 audience와 tag start condition이 연결되지 않았고 최근 run도 실패 상태라 검증된 로컬 fallback을 사용했다. bundle `com.seorilabs.babycare`, version `1.0.2`/`1000002`, App Store profile·Apple Distribution·Firebase plist·아이콘·codesign을 포함한 device archive는 성공했다.
-- 그러나 source와 최종 archive `Info.plist`에 `ITSAppUsesNonExemptEncryption`이 없어서 iOS 업로드를 중단했다. ASC에는 기존 `1.0.1`/`1000001`만 `VALID`이며 내부 그룹 `서리랩스 내부테스터`의 모든 빌드 접근 상태도 그대로다. 선언을 source에 반영·검증한 커밋에서 기존 태그를 이동하지 않고 다음 patch 후보로 재시도한다.
+- Xcode Cloud workflow는 App Store 배포 audience와 tag start condition이 연결되지 않았고 최근 run도 실패 상태라 로컬 fallback을 점검했다. bundle `com.seorilabs.babycare`, version `1.0.2`/`1000002`, App Store profile·Firebase plist·아이콘을 포함한 arm64 device archive는 생성됐다.
+- 그러나 source와 최종 archive `Info.plist`에 `ITSAppUsesNonExemptEncryption`이 없고 strict codesign도 `CSSMERR_TP_NOT_TRUSTED`로 실패해 iOS 업로드를 중단했다. ASC에는 기존 `1.0.1`/`1000001`만 `VALID`이며 내부 그룹 `서리랩스 내부테스터`의 모든 빌드 접근 상태도 그대로다. 선언을 source에 반영하고 유효 서명으로 검증한 커밋에서 기존 태그를 이동하지 않고 다음 patch 후보로 재시도한다.
 
 ## 2026-08-03 — 구성원 갱신 오류의 내부 진단 노출 차단
 

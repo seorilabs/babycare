@@ -39,7 +39,7 @@
 ## Release
 
 - Signing team (Team ID) / Apple Distribution 인증서: ✅ `main@8c5196e`(`v1.0.1`) 기준 `1.0.1`(`1000001`) archive→export→App Store Connect 업로드, ASC `VALID` 확인(2026-07-29). **단 CI 업로드용 secret(Environment `app-store`)은 미구성** — 현재까지 업로드는 로컬 수동
-- 1.0.2 후보: `main@d11bbfa`(`v1.0.2`)에서 App Store profile·Apple Distribution·Firebase plist·아이콘을 포함한 device archive(`1.0.2`/`1000002`)와 codesign을 검증했으나, 최종 archive에 암호화 선언 키가 없어 업로드하지 않음(2026-08-03). source 수정 후 기존 태그를 이동하지 않고 새 후보를 만든다.
+- 1.0.2 후보: `main@d11bbfa`(`v1.0.2`)에서 App Store profile·Firebase plist·아이콘을 포함한 device archive(`1.0.2`/`1000002`)를 생성했으나, 최종 archive에 암호화 선언 키가 없고 strict codesign이 `CSSMERR_TP_NOT_TRUSTED`로 실패해 업로드하지 않음(2026-08-03). source와 유효 서명 경로를 수정한 뒤 기존 태그를 이동하지 않고 새 후보를 만든다.
 - App Store provisioning profile: ✅ App Store profile로 export 완료
 - TestFlight group: ✅ 내부 그룹 `서리랩스 내부테스터` 존재, 모든 빌드 접근 활성화 / 실제 테스터 설치·실기기 QA는 남음
 - Release notes: `확정 필요`
