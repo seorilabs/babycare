@@ -79,10 +79,6 @@ const EMPTY_OVERVIEW: CareEventOverviewFeedState = {
   status: 'loading',
 };
 
-function errorValue(error: unknown, fallback: string): Error {
-  return error instanceof Error ? error : new Error(fallback);
-}
-
 function userFacingError(message: string, cause: unknown): Error {
   const error = new Error(message);
   Object.defineProperty(error, 'cause', {value: cause});
@@ -376,9 +372,9 @@ export function FirebaseBabyCareApp() {
               if (mounted.current) {
                 setState({
                   kind: 'error',
-                  error: errorValue(
-                    error,
+                  error: userFacingError(
                     '해제된 공동 돌봄 정보를 기기에서 지우지 못했어요',
+                    error,
                   ),
                 });
               }

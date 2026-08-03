@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-04 — 접근 해제 캐시 삭제 오류의 내부 진단 노출 차단
+
+- 멤버십 또는 계정 상태 변경으로 공동 기록 접근이 해제된 뒤 로컬 공동돌봄 캐시 삭제가 실패하면 `[storage/unavailable]`과 내부 캐시 키를 전체 연결 오류 화면에 그대로 노출했다.
+- 접근 해제와 민감 캐시 삭제 시도는 유지하고, 실패 화면에는 `해제된 공동 돌봄 정보를 기기에서 지우지 못했어요`만 전달하며 원래 저장소 오류는 렌더하지 않는 `cause`로 보존했다.
+- Firebase 제품 root 회귀 테스트가 실제 세션 복원 뒤 `membership_removed` lifecycle callback과 캐시 삭제 실패를 재현해 제품 문구와 내부 진단 분리를 검증한다. 테스트는 수정 전 저장소 오류 원문 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/264건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA, iOS 암호화 선언·유효 서명과 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 부팅된 iOS Simulator와 연결된 Android device가 없어 접근 해제 오류 화면을 실제 기기로 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-04 — 공동 기록 세션 복구 오류의 내부 진단 노출 차단
 
 - 인증·멤버십 확인 또는 원격 동기화 복구가 실패해 session lifecycle이 `onError`를 호출하면 `[firestore/unavailable] Membership verification failed` 같은 SDK 코드와 영문 내부 진단을 상단 오류 배너에 그대로 노출했다.

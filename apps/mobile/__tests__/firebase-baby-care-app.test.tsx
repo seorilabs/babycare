@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import {Alert, SectionList, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
@@ -193,7 +194,7 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('Firebase');
   });
 
-  it('hides technical details when session recovery fails', async () => {
+  it('hides technical details when session recovery or revoked-cache cleanup fails', async () => {
     const now = new Date('2026-08-04T00:00:00+09:00').getTime();
     const {baby, group, identity, membership} = readySessionFixture(now);
     const container = emptyCareContainer();
@@ -247,6 +248,24 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('Membership verification');
     const dashboard = renderer.root.findByType(FirebaseCareDashboard);
     expect(dashboard.props.runtimeError.cause).toBe(technicalError);
+
+    const purgeTechnicalError = new Error(
+      '[storage/unavailable] Failed to remove @babycare/cloud-care-context/v1.',
+    );
+    jest
+      .mocked(AsyncStorage.removeItem)
+      .mockRejectedValueOnce(purgeTechnicalError);
+    await ReactTestRenderer.act(async () => {
+      lifecycleCallbacks?.onRevoked('membership_removed');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(visibleText(renderer)).toContain(
+      '해제된 공동 돌봄 정보를 기기에서 지우지 못했어요',
+    );
+    expect(visibleText(renderer)).not.toContain('storage/unavailable');
+    expect(visibleText(renderer)).not.toContain('cloud-care-context');
   });
 
   it('hides technical details when runtime operations fail', async () => {
