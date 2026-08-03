@@ -20,6 +20,7 @@ import {
   type FirebaseRuntime,
 } from '../src/app/firebase-runtime';
 import type {ReadyFirebaseSession} from '../src/app/firebase-session';
+import {CloudCareContextHydrationError} from '../src/adapters/local/cloud-care-context-cache';
 import {
   FirebaseBabyCareApp,
   FirebaseCareDashboard,
@@ -192,6 +193,58 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).toContain('공동 기록을 시작하지 못했어요');
     expect(visibleText(renderer)).not.toContain('native client configuration');
     expect(visibleText(renderer)).not.toContain('Firebase');
+  });
+
+  it('hides cache schema details after recovering a damaged session', async () => {
+    const now = new Date('2026-08-04T04:00:00+09:00').getTime();
+    const {baby, group, identity, membership} = readySessionFixture(now);
+    const container = emptyCareContainer();
+    jest.mocked(AsyncStorage.getItem).mockResolvedValueOnce(
+      JSON.stringify({
+        version: 1,
+        context: 'internal-context-schema',
+        memberships: [],
+      }),
+    );
+    const runtime = {
+      kind: 'firebase',
+      mode: 'cloud',
+      label: 'Firebase Cloud',
+      source: 'native',
+      sessionServices: {
+        auth: {currentUser: jest.fn(async () => identity)},
+        groups: {
+          listForUser: jest.fn(async () => [group]),
+          findMembership: jest.fn(async () => membership),
+          listMemberships: jest.fn(async () => [membership]),
+        },
+        babies: {list: jest.fn(async () => [baby])},
+      },
+      createCareContainer: jest.fn(async () => container),
+      refreshMemberships: jest.fn(async () => [membership]),
+    } as unknown as FirebaseRuntime;
+    bootstrap.mockResolvedValue(runtime);
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+      for (let count = 0; count < 12; count += 1) {
+        await Promise.resolve();
+      }
+    });
+    if (!renderer) {
+      throw new Error('손상된 공동 기록 세션을 복구하지 못했어요');
+    }
+
+    expect(visibleText(renderer)).toContain(
+      '저장된 공동 돌봄 정보를 새로 불러왔어요',
+    );
+    expect(visibleText(renderer)).not.toContain('context');
+    expect(visibleText(renderer)).not.toContain('현재 형식');
+    expect(AsyncStorage.removeItem).toHaveBeenCalled();
+    const dashboard = renderer.root.findByType(FirebaseCareDashboard);
+    expect(dashboard.props.runtimeError.cause).toBeInstanceOf(
+      CloudCareContextHydrationError,
+    );
   });
 
   it('hides technical details when session recovery or revoked-cache cleanup fails', async () => {

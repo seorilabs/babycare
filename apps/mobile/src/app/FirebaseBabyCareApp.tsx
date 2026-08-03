@@ -453,7 +453,12 @@ export function FirebaseBabyCareApp() {
             if (!(error instanceof CloudCareContextHydrationError)) {
               throw error;
             }
-            setRuntimeError(error);
+            setRuntimeError(
+              userFacingError(
+                '저장된 공동 돌봄 정보를 새로 불러왔어요',
+                error,
+              ),
+            );
           }
         }
         const restored = await restoreFirebaseSession(runtime.sessionServices);

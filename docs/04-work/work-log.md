@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-04 — 손상 캐시 복구 배너의 내부 schema 노출 차단
+
+- UID-scoped 공동돌봄 캐시가 손상되면 캐시를 purge하고 서버 세션을 정상 복구하면서도 `돌봄 context 값이 객체가 아닙니다` 같은 내부 schema 진단을 상단 배너에 그대로 노출했다.
+- 기존 캐시 purge와 서버 세션 복구는 유지하고, 화면에는 `저장된 공동 돌봄 정보를 새로 불러왔어요`만 전달하며 원래 hydration 오류는 렌더하지 않는 `cause`로 보존했다.
+- Firebase 제품 root 회귀 테스트가 손상된 cache envelope를 주입해 purge 뒤 실제 서버 세션 복구와 제품 문구·진단 원인 분리를 검증한다. 테스트는 수정 전 내부 `context` 진단 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/265건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA, iOS 암호화 선언·유효 서명과 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 부팅된 iOS Simulator와 연결된 Android device가 없어 손상 캐시 복구 배너를 실제 화면으로 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-04 — 접근 해제 캐시 삭제 오류의 내부 진단 노출 차단
 
 - 멤버십 또는 계정 상태 변경으로 공동 기록 접근이 해제된 뒤 로컬 공동돌봄 캐시 삭제가 실패하면 `[storage/unavailable]`과 내부 캐시 키를 전체 연결 오류 화면에 그대로 노출했다.
