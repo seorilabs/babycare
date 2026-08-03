@@ -23,7 +23,7 @@
 
 - Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시·ASC appInfo(ko/en-US) 반영 완료
 - Age rating: `4+` (아동 대상 아님, 부적절 콘텐츠 없음)
-- Export compliance: `ITSAppUsesNonExemptEncryption = false` (표준 TLS/Firebase만)
+- Export compliance: 정책 판단은 `false`(표준 TLS/Firebase만)이나, `main@d11bbfa`의 source `Info.plist`와 1.0.2 archive에 `ITSAppUsesNonExemptEncryption` 키가 없어 수정 전 업로드 금지
 - Review notes: `app-store/app-store.config.json`의 `review.notes` (공동 기록 데모 절차 포함)
 - Demo account: 심사용 데모 계정 2개(owner/member) `확정 필요`
 - App Privacy 답변: `docs/05-markets/store-data-disclosure.md` (Tracking 없음)
@@ -39,6 +39,7 @@
 ## Release
 
 - Signing team (Team ID) / Apple Distribution 인증서: ✅ `main@8c5196e`(`v1.0.1`) 기준 `1.0.1`(`1000001`) archive→export→App Store Connect 업로드, ASC `VALID` 확인(2026-07-29). **단 CI 업로드용 secret(Environment `app-store`)은 미구성** — 현재까지 업로드는 로컬 수동
+- 1.0.2 후보: `main@d11bbfa`(`v1.0.2`)에서 App Store profile·Apple Distribution·Firebase plist·아이콘을 포함한 device archive(`1.0.2`/`1000002`)와 codesign을 검증했으나, 최종 archive에 암호화 선언 키가 없어 업로드하지 않음(2026-08-03). source 수정 후 기존 태그를 이동하지 않고 새 후보를 만든다.
 - App Store provisioning profile: ✅ App Store profile로 export 완료
 - TestFlight group: ✅ 내부 그룹 `서리랩스 내부테스터` 존재, 모든 빌드 접근 활성화 / 실제 테스터 설치·실기기 QA는 남음
 - Release notes: `확정 필요`

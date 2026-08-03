@@ -26,10 +26,10 @@
 
 ## Release
 
-- Signing key / Play App Signing: ✅ 업로드 keystore·서명 완료, signed AAB 업로드로 Play App Signing 등록 확인. **단 CI 업로드용 secret(Environment `google-play`)은 미구성** — 현재까지 업로드는 로컬 수동
-- Internal testing track: ✅ `main@8c5196e`(`v1.0.1`) signed AAB(`1.0.1`/`1000001`) draft 업로드 및 Android Publisher API readback 완료(2026-07-29) / internal 릴리스 활성화·테스터 배포는 남음
+- Signing key / Play App Signing: ✅ 업로드 keystore·서명 완료, signed AAB 업로드로 Play App Signing 등록 확인. GitHub WIF 인증은 성공하지만 Play Console 권한이 없어 workflow run `30776280174`의 업로드가 403으로 실패했고, 기존 승인된 로컬 publisher credential fallback을 사용했다.
+- Internal testing track: ✅ `main@d11bbfa`(`v1.0.2`) signed AAB(`1.0.2`/`1000002`, target SDK 36) draft 업로드 및 Android Publisher API readback 완료(2026-08-03) / internal 릴리스 활성화·테스터 배포는 남음
 - Production rollout policy: `확정 필요` (승인 후 결정)
-- Release notes: `확정 필요`
+- Release notes: `함께봄 브랜드 노출과 기록 화면 안정성을 개선하고, Platform custom token 인증 브리지를 반영했습니다.`
 
 ## Policy
 
