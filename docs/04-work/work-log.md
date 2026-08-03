@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-03 — 기록 변경 오류의 내부 진단 노출 차단
+
+- 본인 기록 삭제와 진행 중 수면 종료가 실패하면 `[firestore/unavailable]`, `[firestore/aborted]` 같은 Firestore 코드와 영문 내부 진단을 Alert와 상단 오류 상태에 그대로 노출했다.
+- 원래 오류는 화면에 렌더하지 않는 `cause`로 보존하고, 삭제는 `기록을 삭제하지 못했어요`, 수면 종료는 `수면을 종료하지 못했어요`와 연결 확인·재시도 안내만 표시하도록 같은 기록 변경 오류 handler를 보정했다.
+- Firebase dashboard 회귀 테스트가 실제 삭제·수면 종료 handler에 기술 오류를 주입해 동작별 제품 안내만 Alert·runtime error 경계로 전달하는지 검증한다. 테스트는 수정 전 삭제 오류 원문 노출로 실패했고 수정 후 두 경로 모두 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/263건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA, iOS 암호화 선언·유효 서명과 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device로 삭제·수면 종료 실패 UI를 직접 확인하지 않았다.
+
 ## 2026-08-03 — 초대 공유 오류의 내부 진단 노출 차단
 
 - 유효한 양육자 초대 코드를 공유할 때 기기 공유 시트 호출이 실패하면 `[share/unavailable]` 같은 OS/SDK 코드와 영문 내부 진단을 Alert에 그대로 노출했다.

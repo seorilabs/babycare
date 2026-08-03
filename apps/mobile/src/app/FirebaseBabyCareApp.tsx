@@ -89,7 +89,7 @@ function userFacingError(message: string, cause: unknown): Error {
   return error;
 }
 
-function FirebaseCareDashboard(props: {
+export function FirebaseCareDashboard(props: {
   readonly runtime: FirebaseRuntime;
   readonly ready: ReadyFirebaseSession;
   readonly container: CareContainer;
@@ -161,8 +161,8 @@ function FirebaseCareDashboard(props: {
     }
   }, [onRuntimeError, overview.error, overview.status]);
 
-  const showError = (title: string, error: unknown) => {
-    const value = errorValue(error, '잠시 후 다시 시도해 주세요.');
+  const showError = (title: string, message: string, error: unknown) => {
+    const value = userFacingError(message, error);
     onRuntimeError(value);
     Alert.alert(title, value.message);
   };
@@ -187,7 +187,11 @@ function FirebaseCareDashboard(props: {
               });
               setSavedMessage('기록을 삭제했어요');
             } catch (error) {
-              showError('삭제할 수 없어요', error);
+              showError(
+                '삭제할 수 없어요',
+                '기록을 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+                error,
+              );
             }
           }}
           onLoadMore={() => props.container.timelineFeed.loadMore()}
@@ -230,7 +234,11 @@ function FirebaseCareDashboard(props: {
             setNow(Date.now());
             setSavedMessage('수면 시간을 기록했어요');
           } catch (error) {
-            showError('수면을 종료할 수 없어요', error);
+            showError(
+              '수면을 종료할 수 없어요',
+              '수면을 종료하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+              error,
+            );
           }
         }}
         session={session}
