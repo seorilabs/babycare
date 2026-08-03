@@ -386,7 +386,12 @@ export function FirebaseBabyCareApp() {
         },
         onError: error => {
           if (mounted.current && sessionStore.isCurrent(sessionToken)) {
-            setRuntimeError(error);
+            setRuntimeError(
+              userFacingError(
+                '공동 기록 연결 상태를 확인하지 못했어요',
+                error,
+              ),
+            );
           }
         },
       });

@@ -13,7 +13,11 @@ import {
   type Membership,
 } from '@babycare/product-core';
 
-import {bootstrapFirebaseRuntime} from '../src/app/firebase-runtime';
+import {
+  bootstrapFirebaseRuntime,
+  type FirebaseCareEventRuntimeCallbacks,
+  type FirebaseRuntime,
+} from '../src/app/firebase-runtime';
 import type {ReadyFirebaseSession} from '../src/app/firebase-session';
 import {
   FirebaseBabyCareApp,
@@ -63,6 +67,86 @@ function visibleText(renderer: ReactTestRenderer.ReactTestRenderer): string {
     .join(' ');
 }
 
+function readySessionFixture(now: number) {
+  const identity: AuthIdentity = {
+    userId: userId('owner-1'),
+    displayName: '엄마',
+    isAnonymous: false,
+  };
+  const group: CareGroup = {
+    id: groupId('group-1'),
+    name: '하루',
+    ownerId: identity.userId,
+    babyIds: [babyId('baby-1')],
+    createdAt: now,
+    updatedAt: now,
+  };
+  const membership: Membership = {
+    userId: identity.userId,
+    groupId: group.id,
+    caregiverRole: 'other',
+    membershipRole: 'owner',
+    displayName: '엄마',
+    color: '#5FB49C',
+    joinedAt: now,
+  };
+  const baby: Baby = {
+    id: group.babyIds[0]!,
+    groupId: group.id,
+    name: '하루',
+    birthDate: '2026-01-01',
+    sex: 'unspecified',
+    createdAt: now,
+    updatedAt: now,
+  };
+  const ready: ReadyFirebaseSession = {
+    context: {identity, group, membership, baby},
+    memberships: [membership],
+  };
+  return {baby, group, identity, membership, ready};
+}
+
+function emptyCareContainer(): DashboardContainer {
+  return {
+    overviewFeed: {
+      start: (
+        observe: Parameters<DashboardContainer['overviewFeed']['start']>[0],
+      ) => {
+        observe({
+          events: [],
+          activeSleep: undefined,
+          status: 'server_confirmed',
+        });
+        return jest.fn();
+      },
+      refresh: jest.fn(async () => undefined),
+    },
+    timelineFeed: {
+      start: (
+        observe: Parameters<DashboardContainer['timelineFeed']['start']>[0],
+      ) => {
+        observe({
+          events: [],
+          hasMore: false,
+          loadingMore: false,
+          loadMoreError: undefined,
+          capped: false,
+        });
+        return jest.fn();
+      },
+      loadMore: jest.fn(async () => undefined),
+      retryLoadMore: jest.fn(async () => undefined),
+      refresh: jest.fn(async () => undefined),
+    },
+    observeSyncState: jest.fn(() => jest.fn()),
+    dispose: jest.fn(async () => undefined),
+    softDeleteCareEvent: jest.fn(async () => undefined),
+    endSleepSession: jest.fn(async () => undefined),
+    syncNow: jest.fn(async () => undefined),
+    recordCareEvent: jest.fn(),
+  } as unknown as DashboardContainer;
+}
+
 describe('FirebaseBabyCareApp product copy', () => {
   let renderer: ReactTestRenderer.ReactTestRenderer | undefined;
 
@@ -109,43 +193,65 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('Firebase');
   });
 
+  it('hides technical details when session recovery fails', async () => {
+    const now = new Date('2026-08-04T00:00:00+09:00').getTime();
+    const {baby, group, identity, membership} = readySessionFixture(now);
+    const container = emptyCareContainer();
+    let lifecycleCallbacks: FirebaseCareEventRuntimeCallbacks | undefined;
+    const runtime = {
+      kind: 'firebase',
+      mode: 'cloud',
+      label: 'Firebase Cloud',
+      source: 'native',
+      sessionServices: {
+        auth: {currentUser: jest.fn(async () => identity)},
+        groups: {
+          listForUser: jest.fn(async () => [group]),
+          findMembership: jest.fn(async () => membership),
+          listMemberships: jest.fn(async () => [membership]),
+        },
+        babies: {list: jest.fn(async () => [baby])},
+      },
+      createCareContainer: jest.fn(
+        async (
+          _ready: ReadyFirebaseSession,
+          callbacks: FirebaseCareEventRuntimeCallbacks,
+        ) => {
+          lifecycleCallbacks = callbacks;
+          return container;
+        },
+      ),
+      refreshMemberships: jest.fn(async () => [membership]),
+    } as unknown as FirebaseRuntime;
+    bootstrap.mockResolvedValue(runtime);
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+      for (let count = 0; count < 12; count += 1) {
+        await Promise.resolve();
+      }
+    });
+    if (!renderer || !lifecycleCallbacks) {
+      throw new Error('공동 기록 세션 화면을 준비하지 못했어요');
+    }
+
+    const technicalError = new Error(
+      '[firestore/unavailable] Membership verification failed.',
+    );
+    ReactTestRenderer.act(() => lifecycleCallbacks?.onError(technicalError));
+
+    expect(visibleText(renderer)).toContain(
+      '공동 기록 연결 상태를 확인하지 못했어요',
+    );
+    expect(visibleText(renderer)).not.toContain('firestore');
+    expect(visibleText(renderer)).not.toContain('Membership verification');
+    const dashboard = renderer.root.findByType(FirebaseCareDashboard);
+    expect(dashboard.props.runtimeError.cause).toBe(technicalError);
+  });
+
   it('hides technical details when runtime operations fail', async () => {
     const now = new Date('2026-08-03T16:00:00+09:00').getTime();
-    const identity: AuthIdentity = {
-      userId: userId('owner-1'),
-      displayName: '엄마',
-      isAnonymous: false,
-    };
-    const group: CareGroup = {
-      id: groupId('group-1'),
-      name: '하루',
-      ownerId: identity.userId,
-      babyIds: [babyId('baby-1')],
-      createdAt: now,
-      updatedAt: now,
-    };
-    const membership: Membership = {
-      userId: identity.userId,
-      groupId: group.id,
-      caregiverRole: 'other',
-      membershipRole: 'owner',
-      displayName: '엄마',
-      color: '#5FB49C',
-      joinedAt: now,
-    };
-    const baby: Baby = {
-      id: group.babyIds[0]!,
-      groupId: group.id,
-      name: '하루',
-      birthDate: '2026-01-01',
-      sex: 'unspecified',
-      createdAt: now,
-      updatedAt: now,
-    };
-    const ready: ReadyFirebaseSession = {
-      context: {identity, group, membership, baby},
-      memberships: [membership],
-    };
+    const {baby, group, identity, ready} = readySessionFixture(now);
     const event = createCareEvent(
       {
         groupId: group.id,
@@ -195,7 +301,7 @@ describe('FirebaseBabyCareApp product copy', () => {
           observe({
             events: [event, activeSleep],
             activeSleep,
-            status: 'ready',
+            status: 'server_confirmed',
           });
           return jest.fn();
         },
