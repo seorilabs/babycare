@@ -81,10 +81,10 @@ export function MoreScreen(props: {
   const shareInvite = () => {
     Share.share({
       message: `함께봄 돌봄 그룹 초대 코드: ${props.session.inviteCode}`,
-    }).catch(error =>
+    }).catch(() =>
       Alert.alert(
         '초대 코드를 공유하지 못했어요',
-        error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+        '기기의 공유 기능을 열지 못했어요. 다시 시도해 주세요.',
       ),
     );
   };

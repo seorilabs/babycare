@@ -82,6 +82,56 @@ describe('MoreScreen', () => {
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
+  it('hides technical details when invite sharing fails', async () => {
+    const technicalMessage =
+      '[share/unavailable] Native share sheet is unavailable.';
+    const share = jest.spyOn(Share, 'share').mockRejectedValue(
+      new Error(technicalMessage),
+    );
+    share.mockClear();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: 'ABC234',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드 공유'})
+        .props.onPress();
+    });
+    await ReactTestRenderer.act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(share).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledWith(
+      '초대 코드를 공유하지 못했어요',
+      '기기의 공유 기능을 열지 못했어요. 다시 시도해 주세요.',
+    );
+    expect(JSON.stringify(alert.mock.calls)).not.toContain(technicalMessage);
+    expect(JSON.stringify(alert.mock.calls)).not.toContain('share/unavailable');
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('does not expose an expired invite for sharing and offers a replacement', async () => {
     const createInvite = jest.fn(async () => undefined);
     const share = jest.spyOn(Share, 'share').mockResolvedValue({

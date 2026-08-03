@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-03 — 초대 공유 오류의 내부 진단 노출 차단
+
+- 유효한 양육자 초대 코드를 공유할 때 기기 공유 시트 호출이 실패하면 `[share/unavailable]` 같은 OS/SDK 코드와 영문 내부 진단을 Alert에 그대로 노출했다.
+- 공유 실패 Alert는 `기기의 공유 기능을 열지 못했어요. 다시 시도해 주세요.`로 제한하고, 기존 초대 코드와 `Share.share` 호출 동작은 유지했다.
+- More 화면 회귀 테스트가 실제 기술 오류를 주입해 제품 안내만 표시하고 SDK 코드와 영문 진단을 숨기는지 검증한다. 테스트는 수정 전 기술 오류 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/262건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA, iOS 암호화 선언·유효 서명과 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 이번 실행에서는 simulator/device에서 기기 공유 시트 실패 Alert를 직접 확인하지 않았다.
+
 ## 2026-08-03 — v1.0.2 스토어 후보 부분 업로드
 
 - 마지막 양쪽 성공 후보 `v1.0.1` 이후 `origin/main@d11bbfaa3dcea221067d60c43fd888f4c0e93f55`에 production 인증 bridge, 제품 브랜딩과 런타임 오류 문구 등 실질 변경이 있어 `v1.0.2`(`1000002`) 후보를 생성했다. 태그는 검증한 SHA에만 push했다.
