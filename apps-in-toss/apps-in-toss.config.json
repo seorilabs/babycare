@@ -13,6 +13,14 @@
   },
   "release": {
     "artifact": "apps/ait/*.ait",
-    "sandboxQa": "미검증"
+    "sandboxQa": "미검증",
+    "latestPrivateUpload": {
+      "tag": "v1.0.3",
+      "sourceSha": "089eb0c888f54dd4636a58458f62e44d346103a4",
+      "workflowRun": 30909365541,
+      "deploymentId": "019fccc1-8e5b-775f-99a4-ab190d4d1726",
+      "status": "uploaded",
+      "uploadedAt": "2026-08-04T21:31:44+09:00"
+    }
   }
 }

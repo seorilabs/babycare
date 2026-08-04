@@ -30,6 +30,36 @@ test('AppsInToss target matches the approved Console identity', async () => {
   assert.equal(registration.appName, 'babynest');
 });
 
+test('latest AppsInToss private upload evidence stays consistent', async () => {
+  const [registration, market, checklist, workLog] = await Promise.all([
+    json('apps-in-toss/apps-in-toss.config.json'),
+    read('docs/05-markets/apps-in-toss.md'),
+    read('docs/06-release/release-checklist.md'),
+    read('docs/04-work/work-log.md'),
+  ]);
+  const upload = registration.release.latestPrivateUpload;
+
+  assert.deepEqual(upload, {
+    tag: 'v1.0.3',
+    sourceSha: '089eb0c888f54dd4636a58458f62e44d346103a4',
+    workflowRun: 30909365541,
+    deploymentId: '019fccc1-8e5b-775f-99a4-ab190d4d1726',
+    status: 'uploaded',
+    uploadedAt: '2026-08-04T21:31:44+09:00',
+  });
+  assert.equal(registration.release.sandboxQa, '미검증');
+
+  for (const document of [market, checklist, workLog]) {
+    assert.match(document, /v1\.0\.3/);
+    assert.match(document, /089eb0c/);
+    assert.match(document, /30909365541/);
+    assert.match(document, /019fccc1-8e5b-775f-99a4-ab190d4d1726/);
+  }
+
+  assert.match(checklist, /- \[ \] AppsInToss private build sandbox/);
+  assert.match(checklist, /- \[ \] AppsInToss production release 승인/);
+});
+
 test('AIT build workflow creates only a candidate artifact', async () => {
   const workflow = await read('.github/workflows/build-ait.yml');
 

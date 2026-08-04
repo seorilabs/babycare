@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-04 — BabyNest v1.0.3 AppsInToss 비공개 빌드 업로드
+
+- 기존 `Deploy AppsInToss`는 ARM64 ARC에서 실행되어 `v1.0.2`의 미초기화 target 실패 뒤에도 BabyNest Granite의 x86-64 Hermes compiler와 호환되지 않는 경로였다.
+- PR #18에서 deploy job을 `ubuntu-latest` x64로 전환하고 API 키 fail-closed, `babynest.ait` 존재 확인, 3일 artifact 보관과 명시적 `ait deploy --location` 계약을 추가했다.
+- Seori 가이드 thread를 인수조건·테스트 근거로 소명해 Resolve했고 Static Checks·Firebase Emulator·Seori Review 통과 후 `3dbba5b`로 squash merge했다.
+- `v1.0.3` source `089eb0c`를 workflow run `30909365541`에서 다시 빌드해 artifact `8892413606`을 생성하고 AppsInToss 비공개 업로드를 완료했다. deployment ID는 `019fccc1-8e5b-775f-99a4-ab190d4d1726`이다.
+- 이번 완료 범위는 private build upload까지다. sandbox 실기기 설치·초기 route·로그인/공동 기록 QA, 정책 답변과 production 공개는 미완료로 유지한다.
+
 ## 2026-08-04 — 빠른 기록 시각 조정 행의 작은 화면 줄바꿈 보강
 
 - 수유·기저귀·수면이 공통으로 쓰는 빠른 기록 모달은 시각 안내와 `−10분`·`지금` 버튼을 줄바꿈 없는 한 행에 배치해 작은 화면·큰 글꼴에서 안내와 버튼이 겹칠 수 있었다.
