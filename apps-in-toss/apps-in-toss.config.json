@@ -1,0 +1,18 @@
+{
+  "appName": "babynest",
+  "displayName": {
+    "ko": "함께봄: 아기돌봄 기록",
+    "en": "BabyNest"
+  },
+  "brand": {
+    "primaryColor": "#5FB49C",
+    "iconUrl": "https://static.toss.im/appsintoss/38345/ceacbe07-dffd-4218-8417-5c1f2a1694a0.png"
+  },
+  "support": {
+    "email": "cs@seorilabs.com"
+  },
+  "release": {
+    "artifact": "apps/ait/*.ait",
+    "sandboxQa": "미검증"
+  }
+}

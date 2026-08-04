@@ -2,33 +2,33 @@
 
 ## App Identity
 
-- appName: `확정 필요`
-- Korean display name: `확정 필요`
-- English display name: `확정 필요`
-- Category: `확정 필요`
+- appName: `babynest` (2026-08-04 Console readback)
+- Korean display name: `함께봄: 아기돌봄 기록`
+- English display name: `BabyNest`
+- Category: `생활 > 일상 > 가족`
 - Support email: `cs@seorilabs.com`
 
 ## Runtime
 
 - Framework: Granite React Native
 - TDS: `@toss/tds-react-native`
-- Entry scheme: `intoss://확정 필요/`
+- Entry scheme: `intoss://babynest/`
 - Local storage: AppsInToss `Storage` 우선
 
 ## Registration
 
-- Logo 600x600: `확정 필요`
+- Logo: AppsInToss Console 등록 완료
 - Thumbnail 1932x828: `확정 필요`
 - Vertical screenshots 636x1048: `확정 필요`
-- Brand color: `확정 필요`
-- Initial route branding: `확정 필요`
+- Brand color: `#5FB49C`
+- Initial route branding: `함께봄` 제품 화면 반영
 - Feature URL / Terms / Privacy: `확정 필요`
 
 ## Release
 
-- `.ait` artifact: `확정 필요`
+- `.ait` artifact: `apps/ait/*.ait`
 - Sandbox QA device: `확정 필요`
-- Console review fields: `확정 필요`
+- Console review: 승인 완료(2026-08-04 readback)
 - Ads/payment policy answers: `확정 필요`
 
 ## 주의

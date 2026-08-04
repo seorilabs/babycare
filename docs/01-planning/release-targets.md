@@ -13,13 +13,13 @@
 | --- | --- | --- |
 | Android application ID | `com.seorilabs.babycare` | Debug/Release 공통, 2026-07-13 확정 |
 | iOS bundle ID | `com.seorilabs.babycare` | Debug/Release 공통, 2026-07-13 확정 |
-| AppsInToss `appName` | target 미생성 | `확정 필요` |
+| AppsInToss `appName` | `babynest` | Console 승인·readback 완료, 2026-08-04 |
 | 한국어 앱 이름 | `함께봄` (Play 타이틀 `함께봄: 수유, 기저귀, 아기돌봄 기록 어플`) | 2026-07-18 사용자 확정 |
 | 영어 앱 이름 | `BabyNest` | 2026-07-18 사용자 확정 |
 | 대표 색상 | `#5FB49C` | 2026-07-18 사용자 확정 |
 | native target 이름 | `BabyCare` | 기술 이름, 상품명 아님 |
 
-Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `.dev` 앱과 별도 앱·별도 로컬 데이터 컨테이너가 된다. 향후 Debug/Release도 같은 식별자라 한 기기에 병렬 설치할 수 없다. 동일 signing/provisioning으로 업데이트 설치되면 컨테이너를 이어 쓰지만, signing/provisioning이 호환되지 않으면 설치가 거부되어 기존 앱을 삭제해야 할 수 있고 이 경우 로컬 데이터도 삭제된다. `BabyCare` target name은 최종 상품명으로 승격하지 않는다. AppsInToss `appName`은 영구 식별자 변경 리스크와 정책 적합성을 확인한 뒤 target 생성 전에 확정한다.
+Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `.dev` 앱과 별도 앱·별도 로컬 데이터 컨테이너가 된다. 향후 Debug/Release도 같은 식별자라 한 기기에 병렬 설치할 수 없다. 동일 signing/provisioning으로 업데이트 설치되면 컨테이너를 이어 쓰지만, signing/provisioning이 호환되지 않으면 설치가 거부되어 기존 앱을 삭제해야 할 수 있고 이 경우 로컬 데이터도 삭제된다. `BabyCare` target name은 최종 상품명으로 승격하지 않는다. AppsInToss 영구 `appName`은 Console 승인값 `babynest`를 사용한다.
 
 ## 타깃 상태
 
@@ -27,12 +27,12 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 | --- | --- | --- | --- | --- |
 | Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **`main@8c5196e`(`v1.0.1`) AAB(1.0.1/1000001)를 internal draft 업로드하고 API readback 완료**. 남음: App content 설문·internal 릴리스 활성화 | App content 설문 → internal 테스터 릴리스 |
 | App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명(cert/profile). **`main@8c5196e`(`v1.0.1`) 1.0.1(1000001) archive→export→업로드, ASC `VALID`**. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. 남음: App Privacy·실기기 QA | TestFlight 테스트 → 심사 제출(승인 후) |
-| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite target 미초기화 | 정책 적합성·영구 `appName` 확정 → 초기화 → sandbox |
+| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS target 및 build-only workflow 구성 | `.ait` CI 검증 → sandbox 실기기 QA |
 | **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firebase Firestore·Functions·Rules는 LIVE. platform custom token bridge도 production 활성화했고 신규·합성 legacy UID live smoke와 후속 main 배포 호환성 readback을 통과 | App Check 또는 edge rate limit → 실제 기존 사용자 migration·2기기 QA |
 
 ## 공통 Blocker
 
-- ~~최종 한국어/영어 앱 이름 확정~~ 완료(`함께봄`/`BabyNest`, 2026-07-18). AppsInToss `appName`은 여전히 `확정 필요`.
+- ~~최종 한국어/영어 앱 이름과 AppsInToss `appName` 확정~~ 완료(`함께봄`/`BabyNest`, `babynest`).
 - 실제 비프로덕션/프로덕션 Firebase project 전략과 환경별 client config 확정.
 - platform custom token의 실제 기존 사용자·실기기 UID 보존 migration. signer SA/IAM, registry sync, API 배포와 신규·합성 legacy UID live smoke는 2026-08-02 완료했다.
 - App Check 또는 edge rate limit, 실시간/offline sync, 멤버 제거와 cache purge 통합 검증.

@@ -34,7 +34,7 @@
 | 영어 앱 이름 | `BabyNest` | 2026-07-18 사용자 확정 |
 | Android application ID | `com.seorilabs.babycare` | 2026-07-13 사용자 확정 |
 | iOS bundle ID | `com.seorilabs.babycare` | 2026-07-13 사용자 확정 |
-| AppsInToss `appName` | `확정 필요` | 정책 확인 후, target 생성 전에 확정 |
+| AppsInToss `appName` | `babynest` | Console 승인·readback 완료, 2026-08-04 |
 | 대표 색상 | `#5FB49C` | 2026-07-18 사용자 확정 |
 | 고객지원 이메일 | `cs@seorilabs.com` | 해당 마켓에 사용 |
 

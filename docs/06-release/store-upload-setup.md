@@ -87,4 +87,4 @@ flowchart TD
 3. **Google Play backend** — babycare Play publisher SA 확정 + WIF 바인딩(`principalSet .../attribute.repository/seorilabs/babycare`) + Play Console API 권한. (gcloud 확인 필요)
 4. **Xcode Cloud workflow(ASC 수동 1회)** — babycare 앱에 workflow 생성(workspace `apps/mobile/ios/BabyCare.xcworkspace`, scheme `BabyCare`), 매니지드 서명, **배포 준비=App Store Connect**, 시작 조건=태그 `v*.*.*`.
 5. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
-6. **AppsInToss** — target 미초기화(별도 트랙).
+6. **AppsInToss** — Granite target과 build-only 경로 구성 완료. sandbox 기능·실기기 QA 및 production 배포 승인은 별도 트랙.

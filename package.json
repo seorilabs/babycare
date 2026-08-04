@@ -9,8 +9,9 @@
     "pnpm": ">=11 <12"
   },
   "scripts": {
-    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run test:firebase:mobile-flow && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
-    "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:functions && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs",
+    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run test:firebase:mobile-flow && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run test:build-workflows",
+    "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:functions && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run test:build-workflows",
+    "test:build-workflows": "node --test scripts/check-build-workflows.test.mjs",
     "test:core": "bash scripts/test_core.sh",
     "test:mobile": "pnpm --dir apps/mobile test",
     "test:firebase": "firebase emulators:exec --config firebase/firebase.json --project babycare-rules-test --only firestore,storage \"node --test --test-concurrency=1 firebase/tests/security-rules.test.mjs\"",

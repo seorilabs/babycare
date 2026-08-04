@@ -5,7 +5,7 @@
 - [x] Planning approval 완료 — 2026-07-12
 - [x] Product spec와 MVP 범위 repo 원장 반영
 - [x] Android package name / iOS bundle ID 확정 — `com.seorilabs.babycare`, 2026-07-13
-- [ ] AppsInToss `appName` 확정
+- [x] AppsInToss `appName` 확정 — Console 승인값 `babynest`, 2026-08-04 readback
 - [ ] Firebase project strategy 확정
 
 ## Architecture Gate
@@ -19,7 +19,7 @@
 
 - [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.2/1000002 internal draft 업로드 완료 / 남음: Play Console privacy URL·data safety·content rating 확정
 - [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9" 스크린샷 5컷, signing·ASC 앱 생성, 1.0.1/1000001 `VALID` 완료 / 1.0.2 archive는 암호화 선언 누락으로 미업로드 / 남음: 선언 수정과 새 후보, App Privacy 콘솔 확정
-- [ ] AppsInToss metadata와 config 확정
+- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상과 `apps-in-toss.config.json` 반영 / 남음: thumbnail·vertical screenshots·URL·정책 답변
 - [x] Firebase rules/indexes/functions와 local test 코드 구현
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
 - [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — 최초 활성화 workflow run `30750253253`, revision `platform-api-00015-xpx`
