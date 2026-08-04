@@ -9,7 +9,7 @@
 | `build-android.yml` / `Build Android Candidate` | dispatch | Play 업로드 없는 signed AAB artifact |
 | `release-inventory.yml` / `Release Inventory` | dispatch | `check_release_readiness.sh`; placeholder가 남아 있어 현재 실패가 정상 |
 | `release-tag.yml` / `Release Tag` | dispatch | 명시적 SemVer tag |
-| `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | AIT build·배포 caller; 별도 deployment approval 필요 |
+| `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | x64 AIT build·비공개 업로드; 별도 deployment approval 필요 |
 | `deploy-google-play.yml` / `Deploy Google Play` | dispatch/call | x64 Linux AAB·선택 upload caller; signing/config 미구성 |
 | `deploy-app-store.yml` / `Deploy App Store` | dispatch/call | macOS archive·선택 upload caller; production 입력 미구성 |
 | `deploy-all.yml` / `Deploy All` | dispatch | tag 기준 마켓 fan-out |
@@ -19,7 +19,8 @@
 ## Runner Routing
 
 - 현재 `seorilabs/babycare`는 private repo다. caller는 public/private 양쪽을 고려해 `github.event.repository.private` 조건을 둔다.
-- private repo의 JS/TS/docs/AIT candidate는 `seorilabs-rpi-arm64`를 우선 사용한다.
+- private repo의 JS/TS/docs와 ARM64 호환 AIT candidate는 `seorilabs-rpi-arm64`를 우선 사용한다.
+- Babycare Granite AIT build·업로드는 Linux Hermes compiler가 x86-64 바이너리이므로 `ubuntu-latest`를 사용한다.
 - Firebase Emulator job도 private repo에서는 `seorilabs-rpi-arm64`를 사용하되 runner image의 Java를 가정하지 않고 `actions/setup-java@v5`로 Temurin 21을 준비한다.
 - public repo 또는 public PR path에서는 `ubuntu-latest` fallback을 사용한다.
 - Android release build는 RPI ARC로 보내지 않고 `ubuntu-latest` x64 Linux runner를 사용한다.

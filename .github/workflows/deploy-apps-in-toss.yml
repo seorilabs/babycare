@@ -1,17 +1,17 @@
-# AIT(.ait) 빌드 + AppsInToss 배포 — ARC. org 재사용 워크플로우 호출.
-# dispatch 직접 실행 또는 deploy-all.yml에서 workflow_call.
+# AIT(.ait) 빌드 + AppsInToss 비공개 업로드.
+# Granite Linux Hermes compiler가 x86-64 전용이므로 ubuntu x64에서 실행한다.
 name: Deploy AppsInToss
 
 on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "배포할 릴리즈 태그. 비우면 호출 ref."
+        description: "업로드할 릴리즈 태그. 비우면 호출 ref."
         type: string
         required: false
         default: ""
       memo:
-        description: "배포 메모(선택)"
+        description: "업로드 메모(선택)"
         type: string
         required: false
         default: ""
@@ -29,15 +29,114 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: babycare-apps-in-toss-${{ inputs.release_tag || github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  ait:
-    uses: seorilabs/.github/.github/workflows/rn-deploy-ait.yml@main
-    secrets: inherit
-    with:
-      release_tag: ${{ inputs.release_tag }}
-      memo: ${{ inputs.memo }}
-      ait_dir: apps/ait
-      package_manager: pnpm
-      install_command: "pnpm install --frozen-lockfile=false"
-      build_command: "pnpm --dir apps/ait build"
-      artifact_path: "apps/ait/*.ait"
+  deploy:
+    name: Build and upload .ait
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: apps-in-toss
+
+    env:
+      APPS_IN_TOSS_API_KEY: ${{ secrets.APPS_IN_TOSS_API_KEY }}
+      RELEASE_REF: ${{ inputs.release_tag }}
+      INPUT_MEMO: ${{ inputs.memo }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Validate AppsInToss secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "$APPS_IN_TOSS_API_KEY" ] || {
+            echo "APPS_IN_TOSS_API_KEY secret is required." >&2
+            exit 1
+          }
+
+      - name: Resolve upload ref
+        id: ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="$RELEASE_REF"
+          [ -n "$ref" ] || ref="${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)}"
+          {
+            echo "ref=$ref"
+            echo "short_sha=$(git rev-parse --short HEAD)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.16.0
+          check-latest: false
+
+      - name: Enable pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.14.0 --activate
+
+      - name: Install dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Build .ait bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir apps/ait build
+          test -f apps/ait/babynest.ait
+
+      - name: Upload .ait artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ait-babycare-${{ steps.ref.outputs.ref }}-${{ steps.ref.outputs.short_sha }}
+          path: apps/ait/babynest.ait
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Upload to AppsInToss
+        shell: bash
+        env:
+          DEPLOY_REF: ${{ steps.ref.outputs.ref }}
+          DEPLOY_SHORT_SHA: ${{ steps.ref.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          memo="$INPUT_MEMO"
+          if [ -z "$memo" ]; then
+            memo="GitHub Actions ${DEPLOY_REF}@${DEPLOY_SHORT_SHA}"
+          else
+            memo="${DEPLOY_REF} · ${memo}"
+          fi
+
+          pnpm --dir apps/ait exec ait deploy \
+            --api-key "$APPS_IN_TOSS_API_KEY" \
+            --location ./babynest.ait \
+            --memo "$memo" \
+            --timeout 300
+
+      - name: Summary
+        shell: bash
+        env:
+          DEPLOY_REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          {
+            echo "### AppsInToss build upload"
+            echo ""
+            echo "- ref: $DEPLOY_REF"
+            echo "- runner: ubuntu-latest x64"
+            echo "- artifact: apps/ait/babynest.ait"
+            echo "- production release: not requested"
+          } >> "$GITHUB_STEP_SUMMARY"
