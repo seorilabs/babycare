@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-04 — 빠른 기록 시각 조정 행의 작은 화면 줄바꿈 보강
+
+- 수유·기저귀·수면이 공통으로 쓰는 빠른 기록 모달은 시각 안내와 `−10분`·`지금` 버튼을 줄바꿈 없는 한 행에 배치해 작은 화면·큰 글꼴에서 안내와 버튼이 겹칠 수 있었다.
+- 시각 행을 줄바꿈 가능한 flex 컨테이너로 바꾸고 안내 영역에는 축소 가능한 최소 너비를, 버튼 묶음에는 고정 축소 경계를 적용해 공간이 부족하면 버튼 전체가 다음 줄로 이동하도록 했다.
+- Quick record 회귀 테스트가 시각 행의 줄바꿈, 안내 영역의 유연한 너비, 버튼 묶음의 고정 경계를 검증한다. 테스트는 수정 전 줄바꿈 컨테이너가 없어 실패했고 수정 후 3건이 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/269건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA, iOS 암호화 선언·유효 서명과 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 부팅된 iOS Simulator와 연결된 Android device가 없어 작은 화면·큰 글꼴 화면을 실제로 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-04 — 긴 아기 이름과 상태 배지의 작은 화면 충돌 방지
 
 - 제품 입력 계약은 아기 이름을 최대 80자까지 허용하지만, 홈과 더보기 상단은 이름 영역과 `공동 기록` 상태 배지를 축소 경계 없이 한 행에 배치해 작은 화면·큰 글꼴에서 서로 겹칠 수 있었다.

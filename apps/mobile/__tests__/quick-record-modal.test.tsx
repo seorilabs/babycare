@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import type {LocalSession} from '../src/app/session';
@@ -128,5 +128,52 @@ describe('QuickRecordModal', () => {
     );
     expect(visibleText(renderer)).not.toContain(technicalMessage);
     expect(visibleText(renderer)).not.toContain('firestore');
+  });
+
+  it('lets the record-time controls wrap on narrow screens', () => {
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          kind="diaper"
+          onClose={jest.fn()}
+          onSave={jest.fn(async () => undefined)}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('빠른 기록 모달을 렌더링하지 못했어요');
+    }
+
+    const hasText = (
+      node: ReactTestRenderer.ReactTestInstance,
+      text: string,
+    ) => node.findAllByType(Text).some(child => child.props.children === text);
+    const timeRow = renderer.root.findAll(node => {
+      const style = StyleSheet.flatten(node.props.style);
+      return style?.flexWrap === 'wrap' && style?.gap === 12 && hasText(node, '−10분');
+    })[0];
+    const timeCopy = renderer.root.findAll(node => {
+      const style = StyleSheet.flatten(node.props.style);
+      return style?.flexBasis === 120 && hasText(node, '선택한 시각으로 저장');
+    })[0];
+    const timeButtons = renderer.root.findAll(node => {
+      const style = StyleSheet.flatten(node.props.style);
+      return style?.flexShrink === 0 && hasText(node, '−10분');
+    })[0];
+
+    expect(StyleSheet.flatten(timeRow?.props.style)).toMatchObject({
+      flexWrap: 'wrap',
+      gap: 12,
+    });
+    expect(StyleSheet.flatten(timeCopy?.props.style)).toMatchObject({
+      flexBasis: 120,
+      flexGrow: 1,
+      minWidth: 0,
+    });
+    expect(StyleSheet.flatten(timeButtons?.props.style)).toMatchObject({
+      flexShrink: 0,
+    });
   });
 });

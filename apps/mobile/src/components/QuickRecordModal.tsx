@@ -334,7 +334,7 @@ export function QuickRecordModal(props: {
 
           <Text style={[styles.label, {color: props.theme.colors.text}]}>기록 시각</Text>
           <View style={[styles.timeRow, {backgroundColor: props.theme.colors.surface}]}>
-            <View>
+            <View style={styles.timeCopy}>
               <Text style={[styles.timeValue, {color: props.theme.colors.text}]}>
                 {new Intl.DateTimeFormat('ko-KR', {hour: 'numeric', minute: '2-digit'}).format(selectedOccurredAt)}
               </Text>
@@ -440,10 +440,11 @@ const styles = StyleSheet.create({
   sleepNotice: {alignItems: 'center', borderRadius: 16, flexDirection: 'row', marginTop: 18, padding: 15},
   sleepIcon: {fontSize: 24, marginRight: 12},
   sleepText: {flex: 1, fontSize: 13, lineHeight: 20},
-  timeRow: {alignItems: 'center', borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', padding: 15},
+  timeRow: {alignItems: 'center', borderRadius: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', padding: 15},
+  timeCopy: {flexBasis: 120, flexGrow: 1, minWidth: 0},
   timeValue: {fontSize: 17, fontWeight: '800'},
   timeHint: {fontSize: 10, marginTop: 3},
-  timeButtons: {flexDirection: 'row', gap: 7},
+  timeButtons: {flexDirection: 'row', flexShrink: 0, gap: 7},
   smallButton: {borderRadius: 10, borderWidth: 1, paddingHorizontal: 11, paddingVertical: 9},
   smallButtonText: {fontSize: 11, fontWeight: '700'},
   note: {borderRadius: 15, borderWidth: 1, fontSize: 15, minHeight: 95, padding: 14, textAlignVertical: 'top'},
