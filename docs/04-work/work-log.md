@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-04 — 긴 아기 이름과 상태 배지의 작은 화면 충돌 방지
+
+- 제품 입력 계약은 아기 이름을 최대 80자까지 허용하지만, 홈과 더보기 상단은 이름 영역과 `공동 기록` 상태 배지를 축소 경계 없이 한 행에 배치해 작은 화면·큰 글꼴에서 서로 겹칠 수 있었다.
+- 두 화면의 이름 영역에 `flex: 1`·`minWidth: 0`을 적용하고 이름을 최대 두 줄로 제한했으며, 상태 배지는 `flexShrink: 0`과 간격을 가져 이름만 안전하게 줄바꿈·말줄임되도록 했다.
+- Home/More 회귀 테스트가 허용 상한인 80자 이름에서 두 줄 제한, 이름 영역 축소, 배지 고정 계약을 검증한다. 테스트는 수정 전 `numberOfLines`가 없어 두 화면 모두 실패했고 수정 후 13건이 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/268건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `pnpm run check:docs`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA, iOS 암호화 선언·유효 서명과 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 부팅된 iOS Simulator와 연결된 Android device가 없어 작은 화면·큰 글꼴 화면을 실제로 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-04 — 공동 기록 화면 로딩 실패의 내부 진단·막힘 해소
 
 - 프로덕션 진입점이 공동 기록 화면 모듈을 불러오지 못하면 `Cannot find module ./src/app/FirebaseBabyCareApp` 같은 내부 모듈 경로를 그대로 표시하고, 앱 안에서 다시 시도할 동작도 제공하지 않았다.

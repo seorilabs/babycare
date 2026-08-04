@@ -101,6 +101,45 @@ describe('HomeScreen', () => {
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
+  it('keeps the longest allowed baby name clear of the sync badge', () => {
+    const longBabyName = '아'.repeat(80);
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <HomeScreen
+          activeSleep={undefined}
+          caregiverNames={new Map()}
+          events={[]}
+          now={new Date('2026-07-31T09:00:00+09:00').getTime()}
+          onMore={jest.fn()}
+          onRecord={jest.fn()}
+          onStopSleep={jest.fn()}
+          session={{...session, babyName: longBabyName}}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const babyName = renderer.root.findAllByType(Text).find(
+      node => node.props.children === longBabyName,
+    );
+    const syncBadge = renderer.root.findAllByType(Text).find(
+      node => node.props.children === '공동 기록',
+    )?.parent;
+
+    expect(babyName?.props.numberOfLines).toBe(2);
+    expect(StyleSheet.flatten(babyName?.parent?.props.style)).toMatchObject({
+      flex: 1,
+      minWidth: 0,
+    });
+    expect(StyleSheet.flatten(syncBadge?.props.style)).toMatchObject({
+      flexShrink: 0,
+      marginLeft: 12,
+    });
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('shows the authoritative active sleep when the bounded event list is empty', () => {
     const now = new Date('2026-07-31T09:00:00+09:00').getTime();
     const activeSleep = createCareEvent(

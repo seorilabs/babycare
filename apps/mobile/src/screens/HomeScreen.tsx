@@ -175,8 +175,10 @@ export function HomeScreen(props: {
       showsVerticalScrollIndicator={false}
       style={{backgroundColor: props.theme.colors.background}}>
       <View style={styles.header}>
-        <View>
-          <Text style={[styles.babyName, {color: props.theme.colors.text}]}>
+        <View style={styles.headerCopy}>
+          <Text
+            numberOfLines={2}
+            style={[styles.babyName, {color: props.theme.colors.text}]}>
             {props.session.babyName}
           </Text>
           <Text style={[styles.date, {color: props.theme.colors.textMuted}]}>
@@ -301,9 +303,10 @@ export function HomeScreen(props: {
 const styles = StyleSheet.create({
   content: {paddingBottom: 28, paddingHorizontal: 18, paddingTop: 12},
   header: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 26},
+  headerCopy: {flex: 1, minWidth: 0},
   babyName: {fontSize: 25, fontWeight: '800', letterSpacing: -0.7},
   date: {fontSize: 13, marginTop: 5},
-  syncBadge: {alignItems: 'center', borderRadius: 999, flexDirection: 'row', paddingHorizontal: 10, paddingVertical: 7},
+  syncBadge: {alignItems: 'center', borderRadius: 999, flexDirection: 'row', flexShrink: 0, marginLeft: 12, paddingHorizontal: 10, paddingVertical: 7},
   syncDot: {borderRadius: 4, height: 7, marginRight: 6, width: 7},
   syncText: {fontSize: 11, fontWeight: '700'},
   sectionEyebrow: {fontSize: 12, fontWeight: '700', letterSpacing: 0.5, marginBottom: 9, textTransform: 'uppercase'},

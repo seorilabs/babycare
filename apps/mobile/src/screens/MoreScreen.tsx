@@ -108,9 +108,13 @@ export function MoreScreen(props: {
 
       <View style={[styles.groupCard, {backgroundColor: props.theme.colors.surface}]}>
         <View style={styles.groupHeader}>
-          <View>
+          <View style={styles.groupCopy}>
             <Text style={[styles.groupEyebrow, {color: props.theme.colors.primary}]}>돌봄 그룹</Text>
-            <Text style={[styles.groupName, {color: props.theme.colors.text}]}>{props.session.babyName}이네</Text>
+            <Text
+              numberOfLines={2}
+              style={[styles.groupName, {color: props.theme.colors.text}]}>
+              {props.session.babyName}이네
+            </Text>
           </View>
           <View style={[styles.localBadge, {backgroundColor: props.theme.colors.surfaceMuted}]}>
             <Text style={[styles.localText, {color: props.theme.colors.textMuted}]}>
@@ -274,9 +278,10 @@ const styles = StyleSheet.create({
   subtitle: {fontSize: 12, marginTop: 5},
   groupCard: {borderRadius: 20, marginTop: 20, padding: 17},
   groupHeader: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'},
+  groupCopy: {flex: 1, minWidth: 0},
   groupEyebrow: {fontSize: 10, fontWeight: '900', letterSpacing: 0.8},
   groupName: {fontSize: 21, fontWeight: '900', marginTop: 4},
-  localBadge: {borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6},
+  localBadge: {borderRadius: 999, flexShrink: 0, marginLeft: 12, paddingHorizontal: 9, paddingVertical: 6},
   localText: {fontSize: 9, fontWeight: '700'},
   member: {alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', marginTop: 16, paddingTop: 16},
   additionalMember: {marginTop: 10, paddingTop: 10},

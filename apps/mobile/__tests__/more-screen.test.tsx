@@ -1,5 +1,5 @@
 import React from 'react';
-import {Alert, Share, Text} from 'react-native';
+import {Alert, Share, StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {createTheme} from '../src/app/theme';
@@ -37,6 +37,51 @@ describe('MoreScreen', () => {
     expect(visibleText).not.toContain('데이터 내보내기');
     expect(visibleText).not.toContain('준비 중');
     expect(visibleText).not.toContain('개발 빌드 0.1.0');
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('keeps the longest allowed baby name clear of the mode badge', () => {
+    const longBabyName = '아'.repeat(80);
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: longBabyName,
+            birthDate: '2026-01-01',
+            inviteCode: 'ABC234',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const groupName = renderer.root.findAllByType(Text).find(
+      node =>
+        Array.isArray(node.props.children) &&
+        node.props.children[0] === longBabyName,
+    );
+    const modeBadge = renderer.root.findAllByType(Text).find(
+      node => node.props.children === '공동 기록 모드',
+    )?.parent;
+
+    expect(groupName?.props.numberOfLines).toBe(2);
+    expect(StyleSheet.flatten(groupName?.parent?.props.style)).toMatchObject({
+      flex: 1,
+      minWidth: 0,
+    });
+    expect(StyleSheet.flatten(modeBadge?.props.style)).toMatchObject({
+      flexShrink: 0,
+      marginLeft: 12,
+    });
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
