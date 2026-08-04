@@ -105,9 +105,13 @@ export function StatsScreen(props: {
       style={{backgroundColor: props.theme.colors.background}}>
       <Text style={[styles.title, {color: props.theme.colors.text}]}>통계</Text>
       <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>돌봄 패턴을 참고용으로 확인해요</Text>
-      <View style={[styles.periods, {backgroundColor: props.theme.colors.surfaceMuted}]}>
+      <View
+        accessibilityRole="tablist"
+        style={[styles.periods, {backgroundColor: props.theme.colors.surfaceMuted}]}>
         {(['12h', '7d', '30d'] as const).map(value => (
           <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{selected: period === value}}
             key={value}
             onPress={() => setPeriod(value)}
             style={[

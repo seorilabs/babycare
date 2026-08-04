@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-05 — 통계 기간 선택 상태 접근성 보강
+
+- 통계 화면의 `12시간`·`7일`·`30일` 선택기는 실제 기간 상태와 선택 강조를 바꾸지만, 접근성 트리에는 선택기 역할과 현재 선택 상태가 없어 스크린 리더 사용자가 어떤 기간의 통계인지 구분할 수 없었다.
+- 선택기 묶음에 `tablist`, 각 기간 버튼에 `tab` 역할과 실제 `period` 상태에 연결된 `selected` 상태를 추가했다. 기존 기간 변경 handler와 통계 계산 동작은 그대로 유지했다.
+- Stats 회귀 테스트는 수정 전 `tablist`가 0개라 실패했고, 수정 후 초기 `7일` 선택과 `12시간` 전환 시 선택 상태가 함께 바뀌는 것을 포함해 3건이 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/271건, Functions 10건, build-workflow 6건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`도 통과했다.
+- `pnpm run check:release`는 AIT 자산·URL·정책·sandbox QA, Firebase project/App Check·실기기 migration, Play/App Store 설문·서명·승인 등 기존 외부 blocker로 예상대로 실패했다. 부팅된 iOS Simulator와 연결된 Android device가 없어 실제 화면·스크린 리더·다크 모드·작은 화면·큰 글꼴은 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-05 — 생년월일 안내의 미지원 성장 기능 약속 제거
 
 - 공동 기록 생성의 생년월일 단계는 값을 홈의 `생후 N일` 표시에 사용하지만, 화면 문구는 MVP 밖인 `성장 기록`을 이해하는 데 쓴다고 안내해 지원하지 않는 기능을 약속하고 있었다.

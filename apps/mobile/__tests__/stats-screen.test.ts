@@ -1,3 +1,5 @@
+import React from 'react';
+import ReactTestRenderer from 'react-test-renderer';
 import {
   babyId,
   createCareEvent,
@@ -6,7 +8,8 @@ import {
   userId,
 } from '@babycare/product-core';
 
-import { buildStatsBuckets } from '../src/screens/StatsScreen';
+import { createTheme } from '../src/app/theme';
+import { buildStatsBuckets, StatsScreen } from '../src/screens/StatsScreen';
 
 describe('buildStatsBuckets', () => {
   it('clips active sleep at the real current time in the rolling 12-hour range', () => {
@@ -44,5 +47,44 @@ describe('buildStatsBuckets', () => {
     expect(buckets.at(-1)?.from).toBe(now);
     expect(buckets.at(-1)?.to).toBe(now);
     expect(buckets.at(-1)?.summary.sleepDurationSeconds).toBe(0);
+  });
+});
+
+describe('StatsScreen', () => {
+  it('exposes the period selector and its current selection to accessibility', () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        React.createElement(StatsScreen, {
+          events: [],
+          now: new Date('2026-07-12T12:37:00+09:00').getTime(),
+          theme: createTheme(false),
+        }),
+      );
+    });
+
+    const nodesWithRole = (role: string) =>
+      renderer.root
+        .findAllByProps({ accessibilityRole: role })
+        .filter(node => node.parent?.props.accessibilityRole !== role);
+    expect(
+      nodesWithRole('tablist'),
+    ).toHaveLength(1);
+    let tabs = nodesWithRole('tab');
+    expect(tabs).toHaveLength(3);
+    expect(tabs.map(tab => tab.props.accessibilityState)).toEqual([
+      { selected: false },
+      { selected: true },
+      { selected: false },
+    ]);
+
+    ReactTestRenderer.act(() => tabs[0]!.props.onPress());
+    tabs = nodesWithRole('tab');
+    expect(tabs.map(tab => tab.props.accessibilityState)).toEqual([
+      { selected: true },
+      { selected: false },
+      { selected: false },
+    ]);
+    ReactTestRenderer.act(() => renderer.unmount());
   });
 });
