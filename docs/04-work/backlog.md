@@ -25,8 +25,8 @@
 | 상태 | 작업 | 완료 증거 / Blocker |
 | --- | --- | --- |
 | 결정 대기 | 아동 정보·계정·그룹 공유·클라우드 저장 정책 적합성 확인 | 공식 정책/콘솔 기준 근거 기록 |
-| 결정 대기 | AppsInToss 영구 `appName` 확정 | 제품명은 `함께봄`/`BabyNest`로 확정. 영구 식별자는 target 생성 전 사용자 결정 필요 |
-| 대기 | `apps/ait` Granite RN + TDS 초기화 | 현재 example 문서만 존재. `appName` 확정 뒤 생성, `pnpm run check:ait` |
+| 완료 | AppsInToss 영구 `appName` 확정 | Console 승인값 `babynest` readback 완료(2026-08-04) |
+| 진행 | `apps/ait` Granite RN + TDS 초기화 | target·build-only workflow 구성, sandbox 기능 QA와 adapter 연결 남음 |
 | 대기 | AIT auth/storage/realtime adapter | native Firebase module, App Check, 알림 지원 범위를 실제 sandbox에서 검증 |
 | 대기 | AIT 핵심 흐름과 실제 기기 sandbox QA | mobile과 같은 수유·기저귀·수면·홈·타임라인·통계 흐름 |
 

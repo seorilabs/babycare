@@ -1,31 +1,19 @@
-# AppsInToss Target
+# 함께봄 AppsInToss target
 
-AppsInToss Granite React Native target 자리다.
+AppsInToss Console에서 승인된 `babynest` Granite React Native target이다.
 
-## 선택한 방향
-
-- Granite React Native
-- TDS React Native 필수
-- AppsInToss runtime API는 adapter로 격리
-- normal React Native native module이 Toss runtime에서 동작한다고 가정하지 않는다.
-
-## 초기화
+## 명령
 
 ```bash
-pnpm run bootstrap:ait -- <app-name>
-pnpm --dir apps/ait add @apps-in-toss/framework @toss/tds-react-native
-pnpm --dir apps/ait ait init --template react-native --app-name <app-name>
+pnpm --dir apps/ait lint
+pnpm --dir apps/ait typecheck
+pnpm --dir apps/ait test
+pnpm --dir apps/ait build
 ```
 
-초기화 후 확인할 것:
+- sandbox scheme: `intoss://babynest/`
+- build artifact: `apps/ait/*.ait`
+- TDS React Native와 `react-native-safe-area-context`를 사용한다.
 
-- `apps/ait/granite.config.ts`
-- `apps/ait/src/_app.tsx`
-- `TDSProvider`
-- AppsInToss `Storage` adapter
-- route와 sandbox scheme
-
-## Release
-
-- `.ait` 파일은 커밋하지 않는다.
-- `.ait` build 성공은 console 등록, 이미지, 광고, sandbox QA 완료를 의미하지 않는다.
+현재 첫 화면은 build·sandbox 검증용 후보이며, 로그인·공동 기록·AppsInToss Storage adapter는
+아직 연결하지 않았다. `.ait` 생성 성공은 sandbox 실기기 QA나 production 출시 승인이 아니다.

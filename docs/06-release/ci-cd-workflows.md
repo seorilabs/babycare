@@ -7,6 +7,8 @@
 | 파일 | 트리거 | 역할 | 러너 |
 |---|---|---|---|
 | `static-checks.yml` | push/PR→main, dispatch | 정적 게이트(`pnpm run test`) | ARC(private)/ubuntu |
+| `build-ait.yml` | dispatch | 업로드 없는 `.ait` 후보 빌드 | ubuntu(x64) |
+| `build-android.yml` | dispatch | 업로드 없는 signed AAB 후보 빌드 | ubuntu(x64) |
 | `release-tag.yml` | dispatch | 명시적 SemVer 태그 | ARC |
 | `deploy-apps-in-toss.yml` | dispatch, call | .ait build + AppsInToss | ARC |
 | `deploy-google-play.yml` | dispatch, call | 서명 AAB + Google Play | ubuntu |
@@ -21,8 +23,8 @@
 
 ## 현재 실행 Blocker
 
-1. `apps/ait` target이 없으므로 AppsInToss와 nightly workflow는 현재 실행할 수 없다.
-2. Google Play/App Store 식별자는 `com.seorilabs.babycare`로 확정했지만 signing, Firebase client config와 console app이 없다. `upload=true`를 사용하지 않는다.
+1. AppsInToss target은 초기화됐지만 로그인·공동 기록 adapter와 sandbox 실기기 QA가 남아 있다.
+2. Google Play/App Store 식별자는 `com.seorilabs.babycare`로 확정했다. build-only workflow는 업로드 권한·WIF 없이 artifact만 만든다.
 3. `deploy-app-store.yml`의 `ios_scheme`/`ios_workspace`/`ios_bundle_id`는 dispatch 또는 caller 입력이 필요하며 `ios_bundle_id`에는 확정값 `com.seorilabs.babycare`를 전달한다.
 4. org workflow가 기대하는 다음 repo-local 표준 스크립트는 아직 없다. release workflow 실행 전에 구현·검증해야 한다.
 
@@ -34,4 +36,4 @@
 
 ## @ref 핀
 
-caller의 `uses: seorilabs/.github/.github/workflows/*.yml@main`은 upstream 변경을 즉시 받는다. release gate 안정화 전 태그 또는 SHA pinning을 결정한다.
+build-only caller는 검증한 공용 workflow merge SHA에 고정한다. 기존 deploy caller의 `@main` 고정 전환은 별도 release pipeline 정비 범위다.

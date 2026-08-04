@@ -5,13 +5,15 @@
 | 파일 / 표시 이름 | 트리거 | 현재 역할 |
 | --- | --- | --- |
 | `static-checks.yml` / `Static Checks` | PR·push→`main`, dispatch | org RN static workflow로 `test:static`, 별도 Java 21 job으로 Firebase Emulator |
+| `build-ait.yml` / `Build Mini-app Candidate` | dispatch | 마켓 업로드 없는 `.ait` artifact |
+| `build-android.yml` / `Build Android Candidate` | dispatch | Play 업로드 없는 signed AAB artifact |
 | `release-inventory.yml` / `Release Inventory` | dispatch | `check_release_readiness.sh`; placeholder가 남아 있어 현재 실패가 정상 |
 | `release-tag.yml` / `Release Tag` | dispatch | 명시적 SemVer tag |
-| `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | AIT build·배포 caller; target 미초기화 |
+| `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | AIT build·배포 caller; 별도 deployment approval 필요 |
 | `deploy-google-play.yml` / `Deploy Google Play` | dispatch/call | x64 Linux AAB·선택 upload caller; signing/config 미구성 |
 | `deploy-app-store.yml` / `Deploy App Store` | dispatch/call | macOS archive·선택 upload caller; production 입력 미구성 |
 | `deploy-all.yml` / `Deploy All` | dispatch | tag 기준 마켓 fan-out |
-| `nightly.yml` / `Nightly` | dispatch, schedule 주석 | 새 commit이 있을 때 AIT test build; 현재 target 없어 실행 불가 |
+| `nightly.yml` / `Nightly` | dispatch, schedule 주석 | 새 commit이 있을 때 AIT test build |
 | `cleanup-actions-storage.yml` / `Cleanup Actions Storage` | dispatch | Actions artifact/cache 정리 |
 
 ## Runner Routing

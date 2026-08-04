@@ -1,0 +1,29 @@
+name: Build Android Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "빌드할 SemVer 태그. 비우면 최신 vX.Y.Z"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: babycare-android-build-${{ inputs.release_tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  candidate:
+    uses: seorilabs/.github/.github/workflows/rn-build-android.yml@bf14204ee13dba657e31dcf1a71a64c0dc526ae3
+    secrets: inherit
+    with:
+      release_tag: ${{ inputs.release_tag }}
+      package_manager: pnpm
+      pnpm_version: 11.14.0
+      node_version: 24.16.0
+      java_version: "21"
+      android_dir: apps/mobile/android

@@ -19,7 +19,7 @@
 | Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded projection, transaction receipt·active lock, Firebase runtime host/config, session restore·그룹 생성·초대 합류, strict cloud context cache, cloud onboarding UI |
 | Mobile lint | RN source 정적 검사 | `pnpm --filter @babycare/mobile lint` | mobile source |
 | Mobile target | RN Android/iOS target과 iOS launch | `pnpm run check:mobile` | native project 존재, framework launch 문구 탐지 |
-| AIT target | Granite target 초기화 | `pnpm run check:ait` | 현재 미초기화라 실패가 정상 |
+| AIT target | Granite·TDS 구성과 Console 식별자 | `pnpm run check:ait`, `pnpm --dir apps/ait check`, `pnpm --dir apps/ait build` | 자동 build 후보, sandbox 실기기 QA 미검증 |
 | Release inventory | market/release blocker | `pnpm run check:release` | placeholder와 필수 market config; 현재 실패가 정상 |
 
 전체 개발 게이트:
@@ -121,7 +121,7 @@ Firebase root는 platform custom token Auth session restore, owner 그룹·아�
 | --- | --- | --- | --- |
 | Android | debug device/emulator, 이후 signed AAB internal | 작은 화면·back·offline·cold start | RN `0.85.3`/RNFirebase JDK 21 debug build 통과, 실기기 설치·process 기동 확인. 잠금 상태로 최종 visual 미확인 |
 | iOS | simulator/device, 이후 archive/TestFlight | safe area·keyboard·dark mode·cold start | RN `0.85.3`/RNFirebase arm64 Simulator clean/incremental build, iPhone 16 Pro light와 SE(3세대) dark first-screen 통과 |
-| AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/realtime, 재실행 | target 미초기화 |
+| AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/realtime, 재실행 | Granite RN·TDS target과 `.ait` 로컬 빌드 통과. sandbox 기능·실기기 QA 미검증 |
 
 ## Regression Rules
 
