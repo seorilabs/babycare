@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-04 — 공동 기록 화면 로딩 실패의 내부 진단·막힘 해소
+
+- 프로덕션 진입점이 공동 기록 화면 모듈을 불러오지 못하면 `Cannot find module ./src/app/FirebaseBabyCareApp` 같은 내부 모듈 경로를 그대로 표시하고, 앱 안에서 다시 시도할 동작도 제공하지 않았다.
+- 실패 화면은 `공동 기록 화면을 준비하지 못했어요. 다시 시도해 주세요.`만 표시하고, 명시적 `다시 시도` 버튼이 오류 상태를 지운 뒤 같은 제품 화면 loader를 다시 실행하도록 연결했다.
+- RuntimeApp 회귀 테스트가 실제 loader의 첫 실패와 다음 성공을 주입해 내부 진단 비노출, 재시도 버튼, 두 번째 로드 후 제품 화면 전환을 검증한다. 테스트는 수정 전 내부 모듈 경로 노출로 실패했고 수정 후 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/266건, Functions 10건과 typecheck, lint, architecture, docs gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다.
+- `pnpm run check:release`는 AppsInToss target/`appName`, App Check 또는 edge rate limit, 마켓 정책·privacy 답변, 실제 기존 사용자 migration·기기 QA, iOS 암호화 선언·유효 서명과 deployment approval 등 기존 blocker로 예상대로 실패했다.
+- 부팅된 iOS Simulator와 연결된 Android device가 없어 모듈 로딩 실패·재시도 화면을 실제 기기로 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-04 — 손상 캐시 복구 배너의 내부 schema 노출 차단
 
 - UID-scoped 공동돌봄 캐시가 손상되면 캐시를 purge하고 서버 세션을 정상 복구하면서도 `돌봄 context 값이 객체가 아닙니다` 같은 내부 schema 진단을 상단 배너에 그대로 노출했다.

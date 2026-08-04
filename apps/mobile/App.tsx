@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useRef, useState, type ComponentType} from 'react';
-import {Alert, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
+import {Alert, Pressable, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {type CareEventKind} from '@babycare/product-core';
 
@@ -234,38 +234,48 @@ function BabyCareApp() {
   );
 }
 
-function RuntimeApp() {
+async function loadFirebaseBabyCareApp(): Promise<ComponentType> {
+  const module = await import('./src/app/FirebaseBabyCareApp');
+  return module.FirebaseBabyCareApp;
+}
+
+export function RuntimeApp(props: {
+  readonly localPreview?: boolean;
+  readonly loadFirebaseApp?: () => Promise<ComponentType>;
+} = {}) {
   const dark = useColorScheme() === 'dark';
   const [localPreview] = useState(
-    () => typeof jest !== 'undefined',
+    () => props.localPreview ?? typeof jest !== 'undefined',
   );
+  const loadFirebaseApp =
+    props.loadFirebaseApp ?? loadFirebaseBabyCareApp;
   const [FirebaseApp, setFirebaseApp] = useState<ComponentType>();
   const [runtimeLoadError, setRuntimeLoadError] = useState<string>();
+  const [runtimeLoadRetryKey, setRuntimeLoadRetryKey] = useState(0);
 
   useEffect(() => {
     if (localPreview || FirebaseApp) {
       return undefined;
     }
     let active = true;
-    import('./src/app/FirebaseBabyCareApp')
-      .then(module => {
+    loadFirebaseApp()
+      .then(component => {
         if (active) {
-          setFirebaseApp(() => module.FirebaseBabyCareApp);
+          setRuntimeLoadError(undefined);
+          setFirebaseApp(() => component);
         }
       })
-      .catch(error => {
+      .catch(() => {
         if (active) {
           setRuntimeLoadError(
-            error instanceof Error
-              ? error.message
-              : 'Firebase 화면을 불러오지 못했어요',
+            '공동 기록 화면을 준비하지 못했어요. 다시 시도해 주세요.',
           );
         }
       });
     return () => {
       active = false;
     };
-  }, [FirebaseApp, localPreview]);
+  }, [FirebaseApp, loadFirebaseApp, localPreview, runtimeLoadRetryKey]);
 
   if (localPreview) {
     return <BabyCareApp />;
@@ -279,6 +289,16 @@ function RuntimeApp() {
         <Text style={[styles.runtimeLoadError, {color: theme.colors.textMuted}]}>
           {runtimeLoadError}
         </Text>
+        <Pressable
+          accessibilityLabel="공동 기록 화면 다시 열기"
+          accessibilityRole="button"
+          onPress={() => {
+            setRuntimeLoadError(undefined);
+            setRuntimeLoadRetryKey(value => value + 1);
+          }}
+          style={[styles.retryButton, {backgroundColor: theme.colors.primary}]}>
+          <Text style={styles.retryButtonText}>다시 시도</Text>
+        </Pressable>
       </View>
     );
   }
@@ -305,6 +325,8 @@ const styles = StyleSheet.create({
   loadingTitle: {fontSize: 24, fontWeight: '900', marginTop: 18},
   loadingText: {fontSize: 12, marginTop: 6},
   runtimeLoadError: {fontSize: 12, lineHeight: 18, marginTop: 10, paddingHorizontal: 28, textAlign: 'center'},
+  retryButton: {borderRadius: 14, marginTop: 18, paddingHorizontal: 22, paddingVertical: 12},
+  retryButtonText: {color: '#FFFFFF', fontSize: 13, fontWeight: '800'},
   toast: {alignSelf: 'center', borderRadius: 999, bottom: 78, paddingHorizontal: 18, paddingVertical: 11, position: 'absolute', zIndex: 10},
   toastText: {fontSize: 12, fontWeight: '800'},
 });

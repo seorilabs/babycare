@@ -15,7 +15,7 @@ import {
   type SleepEvent,
 } from '@babycare/product-core';
 
-import App from '../App';
+import App, {RuntimeApp} from '../App';
 import {
   appContainer,
   selectVisibleCareEventOverview,
@@ -154,6 +154,47 @@ async function renderLoadedApp(): Promise<ReactTestRenderer.ReactTestRenderer> {
   activeRenderers.add(renderer);
   return renderer;
 }
+
+test('hides runtime loader details and allows retrying the product screen', async () => {
+  const LoadedFirebaseApp = () => <Text>공동 기록 화면 준비 완료</Text>;
+  const loadFirebaseApp = jest
+    .fn<Promise<React.ComponentType>, []>()
+    .mockRejectedValueOnce(
+      new Error('Cannot find module ./src/app/FirebaseBabyCareApp'),
+    )
+    .mockResolvedValueOnce(LoadedFirebaseApp);
+  let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      <RuntimeApp
+        loadFirebaseApp={loadFirebaseApp}
+        localPreview={false}
+      />,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  activeRenderers.add(renderer);
+
+  expect(textOf(renderer.root)).toContain(
+    '공동 기록 화면을 준비하지 못했어요. 다시 시도해 주세요.',
+  );
+  expect(textOf(renderer.root)).not.toContain('Cannot find module');
+  expect(textOf(renderer.root)).not.toContain('FirebaseBabyCareApp');
+
+  const retry = renderer.root.findByProps({
+    accessibilityLabel: '공동 기록 화면 다시 열기',
+  });
+  await ReactTestRenderer.act(async () => {
+    retry.props.onPress();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+
+  expect(loadFirebaseApp).toHaveBeenCalledTimes(2);
+  expect(textOf(renderer.root)).toContain('공동 기록 화면 준비 완료');
+});
 
 test('connects local pagination through App and preserves its scoped tab state', async () => {
   const events = careEvents(45);
