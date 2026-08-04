@@ -285,7 +285,7 @@ export function CloudOnboardingScreen(props: {
                 : step === 'babyName'
                 ? '돌봄 그룹에서 사용할 아기 이름이에요.'
                 : step === 'birthDate'
-                ? '정확한 날짜는 성장 기록을 이해하는 데 도움이 돼요.'
+                ? '홈에서 아기의 생후 일수를 표시하는 데 사용해요.'
                 : '그룹 소유자에게 받은 6자리 코드예요.'}
             </Text>
             <View style={styles.fieldArea}>

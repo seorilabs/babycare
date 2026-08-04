@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-05 — 생년월일 안내의 미지원 성장 기능 약속 제거
+
+- 공동 기록 생성의 생년월일 단계는 값을 홈의 `생후 N일` 표시에 사용하지만, 화면 문구는 MVP 밖인 `성장 기록`을 이해하는 데 쓴다고 안내해 지원하지 않는 기능을 약속하고 있었다.
+- 생년월일 안내를 실제 렌더 경로와 일치하는 `홈에서 아기의 생후 일수를 표시하는 데 사용해요.`로 바꾸고, 날짜 선택·그룹 생성 payload와 생후 일수 계산 동작은 그대로 유지했다.
+- Cloud onboarding 회귀 테스트는 수정 전 새 제품 문구가 없어 실패했고 수정 후 실제 용도 안내와 `성장 기록` 비노출을 포함해 8건이 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/270건, Functions 10건, build-workflow 6건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`도 통과했다.
+- `pnpm run check:release`는 AIT 자산·URL·정책·sandbox QA, Firebase project/App Check·실기기 migration, Play/App Store 설문·서명·승인 등 기존 외부 blocker로 예상대로 실패했다. 부팅된 iOS Simulator와 연결된 Android device가 없어 실제 화면·다크 모드·작은 화면·큰 글꼴은 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-05 — AppsInToss 미완 기능·내부 상태 문구 비노출
 
 - AppsInToss 첫 화면은 인증·저장·실시간 adapter나 버튼 handler가 없는데도 `수유`·`기저귀`·`수면` 기능 카드를 노출하고 `build-only 후보`, `sandbox` 같은 내부 배포 상태를 사용자에게 안내하고 있었다.

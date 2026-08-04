@@ -138,6 +138,26 @@ describe('CloudOnboardingScreen', () => {
     ReactTestRenderer.act(() => state.renderer.unmount());
   });
 
+  it('explains the actual birth-date use without promising growth records', () => {
+    const state = setup();
+    press(state.renderer, '처음 시작하기');
+    changeText(state.renderer, '양육자 이름', '엄마');
+    press(state.renderer, '다음');
+    changeText(state.renderer, '아기 이름', '하루');
+    press(state.renderer, '다음');
+
+    const visibleText = state.renderer.root
+      .findAllByType(Text)
+      .flatMap(node => node.props.children)
+      .filter(value => typeof value === 'string')
+      .join(' ');
+    expect(visibleText).toContain(
+      '홈에서 아기의 생후 일수를 표시하는 데 사용해요.',
+    );
+    expect(visibleText).not.toContain('성장 기록');
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
   it('submits only one group creation request while setup is in progress', async () => {
     let finishCreate!: () => void;
     const createRequest = new Promise<void>(resolve => {
