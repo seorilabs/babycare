@@ -27,7 +27,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 | --- | --- | --- | --- | --- |
 | Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **`main@8c5196e`(`v1.0.1`) AAB(1.0.1/1000001)를 internal draft 업로드하고 API readback 완료**. 남음: App content 설문·internal 릴리스 활성화 | App content 설문 → internal 테스터 릴리스 |
 | App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명(cert/profile). **`main@8c5196e`(`v1.0.1`) 1.0.1(1000001) archive→export→업로드, ASC `VALID`**. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. 남음: App Privacy·실기기 QA | TestFlight 테스트 → 심사 제출(승인 후) |
-| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS target 및 build-only workflow 구성 | `.ait` CI 검증 → sandbox 실기기 QA |
+| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS target 구성. `main@089eb0c`(`v1.0.3`) `.ait`를 비공개 업로드하고 deployment readback 완료 | sandbox 실기기 QA → 정책 답변·프로덕션 승인 |
 | **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firebase Firestore·Functions·Rules는 LIVE. platform custom token bridge도 production 활성화했고 신규·합성 legacy UID live smoke와 후속 main 배포 호환성 readback을 통과 | App Check 또는 edge rate limit → 실제 기존 사용자 migration·2기기 QA |
 
 ## 공통 Blocker
@@ -65,12 +65,12 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 ## AppsInToss Blocker
 
 - 아동 관련 민감정보, 계정 로그인, 그룹 공유, 클라우드 저장과 향후 구독의 AppsInToss 정책 적합성 확인.
-- 영구 `appName`과 제품명을 확정한 뒤 `apps/ait` Granite RN target 생성.
+- ~~영구 `appName`과 제품명 확정, `apps/ait` Granite RN target 생성~~ 완료(`babynest`, `함께봄`/`BabyNest`).
 - TDS React Native UI, AppsInToss `Storage`, 인증/Firebase bridge, realtime listener, App Check와 알림 지원 범위 검증.
 - native Firebase module이 없는 runtime을 전제로 adapter와 server API 경계를 확정.
 - sandbox 실제 기기에서 로그인·초대·기록·재실행·네트워크 복귀 QA.
 - console metadata, 600×600 logo, 1932×828 thumbnail, 636×1048 screenshots와 customer support email 등록.
-- `apps-in-toss/apps-in-toss.config.json`과 `apps/ait/granite.config.ts` 작성.
+- ~~`apps-in-toss/apps-in-toss.config.json`과 `apps/ait/granite.config.ts` 작성~~ 완료.
 
 ## Release 순서
 

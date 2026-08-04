@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-05 — AppsInToss 미완 기능·내부 상태 문구 비노출
+
+- AppsInToss 첫 화면은 인증·저장·실시간 adapter나 버튼 handler가 없는데도 `수유`·`기저귀`·`수면` 기능 카드를 노출하고 `build-only 후보`, `sandbox` 같은 내부 배포 상태를 사용자에게 안내하고 있었다.
+- 동작하지 않는 기능 카드와 내부 상태 안내를 제거하고, 브랜드와 성인 양육자 대상·비의료 고지만 남겼다. 인증·공동 기록·동기화·sandbox QA blocker는 제품 화면에서 완료처럼 보이게 숨기지 않고 planning/release 원장에 명시적으로 유지했다.
+- AIT 회귀 테스트는 수정 전 `수유` 기능 약속 노출로 실패했고 수정 후 브랜드·비의료 고지는 유지하면서 미완 기능명과 내부 상태 문자열 8종이 없는지 검증해 1건 통과했다. 기존 `@types/jest`를 AIT TypeScript types에 연결해 lint·typecheck·test도 함께 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/269건, Functions 10건, build-workflow 6건과 typecheck·lint·architecture·docs gate가 통과했다. `pnpm run check:mobile`, `pnpm run check:ait`, `pnpm --dir apps/ait check`, `pnpm run check:docs`, `git diff --check`도 통과했다.
+- `pnpm --dir apps/ait build`는 Android/iOS RN 0.84.0·0.72.6 bundle을 오류·경고 없이 만들고 로컬 `babynest.ait` artifact를 생성했다. `deploy`는 실행하지 않아 신규 비공개 업로드나 Console processing·sandbox QA 증거는 아니다.
+- `pnpm run check:release`는 AIT thumbnail·vertical screenshots·URL·정책 답변·sandbox QA, Firebase project/App Check·실기기 migration, Play/App Store 설문·서명·승인 등 기존 외부 blocker로 예상대로 실패했다. 부팅된 iOS Simulator와 연결된 Android device가 없어 실제 화면·다크 모드·작은 화면·큰 글꼴은 확인하지 않았다.
+
 ## 2026-08-04 — BabyNest v1.0.3 AppsInToss 비공개 빌드 업로드
 
 - 기존 `Deploy AppsInToss`는 ARM64 ARC에서 실행되어 `v1.0.2`의 미초기화 target 실패 뒤에도 BabyNest Granite의 x86-64 Hermes compiler와 호환되지 않는 경로였다.
