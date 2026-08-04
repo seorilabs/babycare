@@ -45,6 +45,23 @@ test('AIT build workflow creates only a candidate artifact', async () => {
   assert.doesNotMatch(workflow, /APPS_IN_TOSS_API_KEY|ait deploy|run deploy/i);
 });
 
+test('AppsInToss upload workflow uses the x64 Hermes path', async () => {
+  const workflow = await read('.github/workflows/deploy-apps-in-toss.yml');
+
+  assert.match(workflow, /^name: Deploy AppsInToss$/m);
+  assert.match(workflow, /runs-on: ubuntu-latest/);
+  assert.match(workflow, /environment: apps-in-toss/);
+  assert.match(workflow, /node-version: 24\.16\.0/);
+  assert.match(workflow, /pnpm@11\.14\.0/);
+  assert.match(workflow, /pnpm --dir apps\/ait build/);
+  assert.match(workflow, /test -f apps\/ait\/babynest\.ait/);
+  assert.match(workflow, /APPS_IN_TOSS_API_KEY/);
+  assert.match(workflow, /pnpm --dir apps\/ait exec ait deploy/);
+  assert.match(workflow, /--location \.\/babynest\.ait/);
+  assert.match(workflow, /--timeout 300/);
+  assert.doesNotMatch(workflow, /seorilabs-rpi-arm64|rn-deploy-ait\.yml/);
+});
+
 test('Android build workflow creates a signed AAB without Play upload', async () => {
   const [workflow, gradle] = await Promise.all([
     read('.github/workflows/build-android.yml'),
