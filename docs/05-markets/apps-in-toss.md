@@ -27,11 +27,14 @@
 ## Release
 
 - `.ait` artifact: `apps/ait/*.ait`
+- Latest private upload: `v1.0.3` / source `089eb0c` / workflow run `30909365541`
+- AppsInToss deployment ID: `019fccc1-8e5b-775f-99a4-ab190d4d1726` (2026-08-04 21:31 KST 업로드 완료)
+- Private entry: `intoss-private://babynest?_deploymentId=019fccc1-8e5b-775f-99a4-ab190d4d1726`
 - Sandbox QA device: `확정 필요`
 - Console review: 승인 완료(2026-08-04 readback)
 - Ads/payment policy answers: `확정 필요`
 
 ## 주의
 
-`.ait` build 성공은 console 등록, sandbox QA, 이미지, 광고, 심사 준비 완료를 의미하지 않는다.
+비공개 `.ait` 업로드 성공은 sandbox 실기기 QA, 이미지, 광고, 심사 준비나 production 공개 완료를 의미하지 않는다.
 최초 route에서 framework template 화면이나 빈 화면이 먼저 보이면 release blocker로 본다.
