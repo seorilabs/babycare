@@ -121,6 +121,9 @@ export function QuickRecordModal(props: {
   const saveDisabled =
     props.kind === 'feeding' && feedingType === 'breast' && elapsed.totalMs < 1_000;
   const saveOpacity = saving ? 0.65 : 1;
+  const timerActionLabel = `${breastSide === 'left' ? '왼쪽' : '오른쪽'} 모유 타이머 ${
+    timerStartedAt ? '일시정지' : elapsed.totalMs ? '계속' : '시작'
+  }`;
 
   const save = async () => {
     if (saveRequestInFlight.current) {
@@ -252,6 +255,8 @@ export function QuickRecordModal(props: {
                   </View>
                   <View style={styles.timerActions}>
                     <Pressable
+                      accessibilityLabel={timerActionLabel}
+                      accessibilityRole="button"
                       onPress={() => {
                         if (timerStartedAt) {
                           const pausedAt = Date.now();
@@ -274,6 +279,8 @@ export function QuickRecordModal(props: {
                       </Text>
                     </Pressable>
                     <Pressable
+                      accessibilityLabel="모유 타이머 초기화"
+                      accessibilityRole="button"
                       onPress={() => {
                         setTimerStartedAt(undefined);
                         setActiveTimerSide(undefined);

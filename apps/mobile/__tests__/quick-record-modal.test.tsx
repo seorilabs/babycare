@@ -225,6 +225,65 @@ describe('QuickRecordModal', () => {
     );
   });
 
+  it('announces and saves the measured breastfeeding timer', async () => {
+    const startedAt = new Date('2026-08-06T00:00:00+09:00');
+    jest.setSystemTime(startedAt);
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          kind="feeding"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('빠른 기록 모달을 렌더링하지 못했어요');
+    }
+
+    const feedingChoices = renderer.root
+      .findAllByProps({accessibilityRole: 'radio'})
+      .filter(node => node.parent?.props.accessibilityRole !== 'radio');
+    ReactTestRenderer.act(() => feedingChoices[0]!.props.onPress());
+
+    const startButton = renderer.root.findByProps({
+      accessibilityLabel: '왼쪽 모유 타이머 시작',
+    });
+    const resetButton = renderer.root.findByProps({
+      accessibilityLabel: '모유 타이머 초기화',
+    });
+    expect(startButton.props.accessibilityRole).toBe('button');
+    expect(resetButton.props.accessibilityRole).toBe('button');
+
+    ReactTestRenderer.act(() => startButton.props.onPress());
+    const pauseButton = renderer.root.findByProps({
+      accessibilityLabel: '왼쪽 모유 타이머 일시정지',
+    });
+    jest.setSystemTime(new Date(startedAt.getTime() + 5_000));
+    ReactTestRenderer.act(() => pauseButton.props.onPress());
+    expect(
+      renderer.root.findByProps({
+        accessibilityLabel: '왼쪽 모유 타이머 계속',
+      }),
+    ).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feedingType: 'breast',
+        kind: 'feeding',
+        leftDurationSeconds: 5,
+      }),
+    );
+  });
+
   it('lets the record-time controls wrap on narrow screens', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
