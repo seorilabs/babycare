@@ -23,14 +23,14 @@ GH workflow_dispatch 가 아니라 App Store Connect `POST /v1/ciBuildRuns` 로 
 `project.pbxproj` 의 `MARKETING_VERSION` 기본값이 그대로 아카이브되어 **구버전 표기 빌드가
 스토어로 나가는 것을 원천 차단**한다. `ci_pre_xcodebuild.sh` 는 다음 계약만 허용한다.
 
-1. **`CI_TAG`(vX.Y.Z) 트리거 빌드** → 그 태그로 `scripts/resolve-release-version.mjs` 가
-   `CFBundleShortVersionString`(marketing) / `CFBundleVersion`(build number)을 산출해
-   `agvtool` 로 주입. build number = `major*1_000_000 + minor*1_000 + patch`
-   (예: v1.0.0 → marketing `1.0.0`, build `1000000`). SemVer 증가에 따라 단조 증가.
-2. **`CI_TAG` 부재(브랜치/잘못된 API 호출)** → **비-제로 종료**로 archive를 실패시킨다.
+1. **`CI_TAG`(vX.Y.Z) 트리거 빌드** → 그 태그로 `scripts/resolve-release-version.mjs`가
+   `CFBundleShortVersionString`을 산출하고, Xcode Cloud의 `CI_BUILD_NUMBER`를
+   `CFBundleVersion`으로 `agvtool`에 주입한다.
+2. **`CI_TAG` 또는 `CI_BUILD_NUMBER` 부재(브랜치/잘못된 API 호출)** → **비-제로 종료**로
+   archive를 실패시킨다.
 
-> Xcode Cloud UI 의 자체 빌드번호(monotonic auto-increment)와 무관하게, `agvtool` 주입이
-> archive 시점의 `CFBundleVersion` authoritative 소스다. 최종 버전 소스는 항상 릴리즈 태그다.
+> 마케팅 버전의 정본은 릴리즈 태그이고, build number의 정본은 Xcode Cloud의 monotonic
+> `CI_BUILD_NUMBER`다. `v1.0.5` 실제 App Store Connect readback은 `1.0.5`/`52`였다.
 
 ## App Store Connect 쪽 수동 설정(1회)
 
@@ -53,7 +53,7 @@ repo 파일만으로는 완결되지 않는다. App Store Connect / Xcode 에서
 
 ```sh
 # CI_TAG 경로
-CI_TAG=v1.0.0 CI_PRE_XCODEBUILD_DRY_RUN=1 sh apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh
-# 실패 경로 (CI_TAG 없음 — 항상 실패가 정상)
+CI_TAG=v1.0.0 CI_BUILD_NUMBER=52 CI_PRE_XCODEBUILD_DRY_RUN=1 sh apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh
+# 실패 경로 (CI_TAG 또는 CI_BUILD_NUMBER 없음 — 항상 실패가 정상)
 CI_PRE_XCODEBUILD_DRY_RUN=1 sh apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh
 ```

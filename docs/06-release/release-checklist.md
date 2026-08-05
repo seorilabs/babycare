@@ -18,7 +18,7 @@
 ## Market Gate
 
 - [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.2/1000002 internal draft 업로드 완료 / 남음: Play Console privacy URL·data safety·content rating 확정
-- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9" 스크린샷 5컷, signing·ASC 앱 생성, 1.0.1/1000001 `VALID`, export compliance 선언과 Xcode Cloud 태그·secret·App Store Connect 배포 준비 구성 완료 / 남음: 수정 소스의 새 후보 빌드, App Privacy 콘솔 확정
+- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9" 스크린샷 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.5/52 `VALID`·`APP_STORE_ELIGIBLE`, export compliance false 확인 완료 / 남음: App Privacy 콘솔 확정
 - [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상과 `apps-in-toss.config.json` 반영 / 남음: thumbnail·vertical screenshots·URL·정책 답변
 - [x] Firebase rules/indexes/functions와 local test 코드 구현
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
@@ -48,7 +48,8 @@
 - [x] App Store 1.0.1/1000001 업로드·ASC `VALID`, 내부 그룹 모든 빌드 접근 확인
 - [x] Google Play 1.0.2/1000002 internal draft 업로드·API readback — `v1.0.2` / `d11bbfaa3dcea221067d60c43fd888f4c0e93f55`, 2026-08-03
 - [x] AppsInToss `v1.0.3` 비공개 빌드 업로드 — source `089eb0c`, workflow run `30909365541`, deployment `019fccc1-8e5b-775f-99a4-ab190d4d1726`, 2026-08-04
-- [ ] App Store 수정 후보 업로드 — `ITSAppUsesNonExemptEncryption=false`, Xcode Cloud Automatic managed signing, redacted Firebase plist secret, 태그 `v*` 시작 조건, App Store Connect 배포 준비를 반영·readback 완료. 수정 커밋의 새 태그 빌드와 ASC processing 확인 필요
+- [x] App Store 수정 후보 업로드 — `v1.0.5` / `f972da16f5f2f81468f576b233434a59a5863680`, Xcode Cloud run `137ca847-3c34-4d5b-8931-4f70c5b023d8`, ASC build `5ca352a5-449e-4997-b730-315ead4d02e8`, 실제 `1.0.5`/`52`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 2026-08-05
+- [ ] Google Play `v1.0.5` internal 업로드 재실행 — workflow run `31006207820`에서 signed AAB 생성·GitHub OIDC 성공. 기존 공용 publisher SA에 babycare repo principal의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐으며 Play upload는 시작되지 않음
 - [ ] Google Play internal 릴리스 활성화·테스터 배포 또는 production 승격 승인
 - [ ] App Store 실제 테스터 설치·실기기 QA 또는 App Review 제출 승인
 - [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA

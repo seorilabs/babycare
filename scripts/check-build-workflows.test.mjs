@@ -140,6 +140,7 @@ test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', 
   ]);
 
   assert.match(prebuild, /RELEASE_TAG="\$\{CI_TAG:-\}"/);
+  assert.match(prebuild, /BUILD="\$\{CI_BUILD_NUMBER:-\}"/);
   assert.doesNotMatch(prebuild, /git[^\n]*describe/);
   assert.match(postClone, /brew install node@24 cocoapods/);
   assert.match(postClone, /FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:-/);
@@ -152,6 +153,51 @@ test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', 
   );
   assert.match(readme, /시작 조건=태그\s*`v\*\.\*\.\*`/);
   assert.match(readme, /FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64/);
+});
+
+test('latest App Store candidate evidence stays consistent', async () => {
+  const [config, market, checklist, setup, workLog] = await Promise.all([
+    json('app-store/app-store.config.json'),
+    read('docs/05-markets/app-store.md'),
+    read('docs/06-release/release-checklist.md'),
+    read('docs/06-release/store-upload-setup.md'),
+    read('docs/04-work/work-log.md'),
+  ]);
+  const release = config.release;
+
+  assert.deepEqual(
+    {
+      marketingVersion: release.marketingVersion,
+      buildNumber: release.buildNumber,
+      sourceTag: release.sourceTag,
+      sourceCommit: release.sourceCommit,
+      buildId: release.buildId,
+      processingState: release.processingState,
+      buildAudienceType: release.buildAudienceType,
+      usesNonExemptEncryption: release.usesNonExemptEncryption,
+      uploadedDate: release.uploadedDate,
+      artifactSha256: release.artifactSha256,
+    },
+    {
+      marketingVersion: '1.0.5',
+      buildNumber: '52',
+      sourceTag: 'v1.0.5',
+      sourceCommit: 'f972da16f5f2f81468f576b233434a59a5863680',
+      buildId: '5ca352a5-449e-4997-b730-315ead4d02e8',
+      processingState: 'VALID',
+      buildAudienceType: 'APP_STORE_ELIGIBLE',
+      usesNonExemptEncryption: false,
+      uploadedDate: '2026-08-05T05:45:26-07:00',
+      artifactSha256: null,
+    },
+  );
+
+  for (const document of [market, checklist, setup, workLog]) {
+    assert.match(document, /v1\.0\.5/);
+    assert.match(document, /137ca847-3c34-4d5b-8931-4f70c5b023d8/);
+    assert.match(document, /5ca352a5-449e-4997-b730-315ead4d02e8/);
+    assert.match(document, /APP_STORE_ELIGIBLE/);
+  }
 });
 
 test('candidate workflow names are not market deployment workflows', async () => {
