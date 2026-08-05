@@ -1,5 +1,5 @@
 import React from 'react';
-import {Alert, Share, StyleSheet, Text} from 'react-native';
+import {Alert, Linking, Share, StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {createTheme} from '../src/app/theme';
@@ -335,6 +335,61 @@ describe('MoreScreen', () => {
     );
     expect(JSON.stringify(alert.mock.calls)).not.toContain(technicalMessage);
     expect(JSON.stringify(alert.mock.calls)).not.toContain('functions');
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('opens the published privacy policy without exposing technical failures', async () => {
+    const technicalMessage =
+      '[linking/unavailable] No application can open this URL.';
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: 'ABC234',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const privacyPolicy = renderer.root.findByProps({
+      accessibilityLabel: '개인정보 처리방침',
+    });
+    expect(privacyPolicy.props.accessibilityRole).toBe('button');
+
+    ReactTestRenderer.act(() => privacyPolicy.props.onPress());
+    await ReactTestRenderer.act(async () => {
+      await Promise.resolve();
+    });
+    expect(openURL).toHaveBeenCalledWith('https://www.seorilabs.com/privacy/');
+
+    openURL.mockRejectedValueOnce(new Error(technicalMessage));
+    ReactTestRenderer.act(() => privacyPolicy.props.onPress());
+    await ReactTestRenderer.act(async () => {
+      await Promise.resolve();
+    });
+    expect(alert).toHaveBeenCalledWith(
+      '개인정보 처리방침을 열지 못했어요',
+      '인터넷 연결을 확인하고 다시 시도해 주세요.',
+    );
+    expect(JSON.stringify(alert.mock.calls)).not.toContain(technicalMessage);
+    expect(JSON.stringify(alert.mock.calls)).not.toContain('linking');
+
+    openURL.mockRestore();
     alert.mockRestore();
     ReactTestRenderer.act(() => renderer.unmount());
   });

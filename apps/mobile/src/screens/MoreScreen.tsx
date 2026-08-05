@@ -1,9 +1,11 @@
 import {useRef, useState} from 'react';
-import {Alert, Pressable, ScrollView, Share, StyleSheet, Text, View} from 'react-native';
+import {Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View} from 'react-native';
 import type {Membership} from '@babycare/product-core';
 
 import type {LocalSession} from '../app/session';
 import type {AppTheme} from '../app/theme';
+
+const privacyPolicyUrl = 'https://www.seorilabs.com/privacy/';
 
 function SettingRow(props: {
   readonly icon: string;
@@ -94,6 +96,15 @@ export function MoreScreen(props: {
       Alert.alert(
         '구성원 목록을 새로고침하지 못했어요',
         '연결을 확인하고 다시 시도해 주세요.',
+      ),
+    );
+  };
+
+  const openPrivacyPolicy = () => {
+    Linking.openURL(privacyPolicyUrl).catch(() =>
+      Alert.alert(
+        '개인정보 처리방침을 열지 못했어요',
+        '인터넷 연결을 확인하고 다시 시도해 주세요.',
       ),
     );
   };
@@ -243,7 +254,13 @@ export function MoreScreen(props: {
 
       <Text style={[styles.sectionLabel, {color: props.theme.colors.textMuted}]}>데이터와 개인정보</Text>
       <View style={[styles.settings, {backgroundColor: props.theme.colors.surface}]}>
-        <SettingRow detail="성인 양육자용 · 비의료 목적" icon="🔒" theme={props.theme} title="개인정보 보호" />
+        <SettingRow
+          detail="성인 양육자용 · 비의료 목적"
+          icon="🔒"
+          onPress={openPrivacyPolicy}
+          theme={props.theme}
+          title="개인정보 처리방침"
+        />
       </View>
 
       {!firebase ? <Pressable

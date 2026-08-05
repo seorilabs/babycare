@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-05 — 앱 내 개인정보 처리방침 연결
+
+- 더보기의 `개인정보 보호` 행은 회사 공용 개인정보 처리방침이 게시·마켓 원장에 확정돼 있는데도 handler와 이동 표시가 없는 정적 문구라 사용자가 앱에서 정책을 직접 확인할 수 없었다.
+- 행을 `개인정보 처리방침` 버튼으로 바꾸고 확정 URL `https://www.seorilabs.com/privacy/`을 여는 실제 handler를 연결했다. 열기 실패 시 SDK 진단 대신 연결 확인 안내만 표시한다.
+- More 화면 회귀 테스트는 수정 전 정책 버튼을 찾지 못해 실패했고, 수정 후 URL 호출과 기술 오류 비노출을 포함해 9건이 통과했다. 같은 URL은 `curl -fsSIL`에서 HTTP 200을 반환했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/273건, Functions 10건, build-workflow 6건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`도 통과했다.
+- `pnpm run check:release`는 AIT 자산·URL·정책·sandbox QA, Firebase project/App Check·실기기 migration, Play/App Store 설문·서명·승인 등 기존 외부 blocker로 예상대로 실패했다. 부팅된 iOS Simulator와 연결된 Android device가 없어 실제 외부 브라우저 전환·화면·다크 모드·작은 화면·큰 글꼴은 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-05 — 빠른 기록 선택 상태 접근성 보강
 
 - 수유 유형·모유 방향·기저귀 상태·수면 유형 선택지는 실제 저장 payload와 시각 강조를 바꾸지만, 접근성 트리에는 현재 선택 상태가 없어 스크린 리더 사용자가 어떤 값으로 저장되는지 구분할 수 없었다.
