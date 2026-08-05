@@ -113,6 +113,47 @@ test('Android build workflow creates a signed AAB without Play upload', async ()
   );
 });
 
+test('Google Play deployment pins the shared publisher toolchain contract', async () => {
+  const [workflow, setup] = await Promise.all([
+    read('.github/workflows/deploy-google-play.yml'),
+    read('docs/06-release/store-upload-setup.md'),
+  ]);
+
+  assert.match(workflow, /pnpm_version: 11\.14\.0/);
+  assert.match(workflow, /node_version: 24\.16\.0/);
+  assert.match(workflow, /java_version: "21"/);
+  assert.match(workflow, /android_dir: apps\/mobile\/android/);
+  assert.match(
+    setup,
+    /seorilabs-play-publisher@seorilabs-gws\.iam\.gserviceaccount\.com/,
+  );
+  assert.doesNotMatch(setup, /babycare-play-publisher@/);
+});
+
+test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', async () => {
+  const [prebuild, postClone, project, plist, readme] = await Promise.all([
+    read('apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh'),
+    read('apps/mobile/ios/ci_scripts/ci_post_clone.sh'),
+    read('apps/mobile/ios/BabyCare.xcodeproj/project.pbxproj'),
+    read('apps/mobile/ios/BabyCare/Info.plist'),
+    read('apps/mobile/ios/ci_scripts/README.md'),
+  ]);
+
+  assert.match(prebuild, /RELEASE_TAG="\$\{CI_TAG:-\}"/);
+  assert.doesNotMatch(prebuild, /git[^\n]*describe/);
+  assert.match(postClone, /brew install node@24 cocoapods/);
+  assert.match(postClone, /FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:-/);
+  assert.match(postClone, /FIREBASE_BUNDLE_ID/);
+  assert.match(project, /CODE_SIGN_STYLE = Automatic;/);
+  assert.doesNotMatch(project, /PROVISIONING_PROFILE_SPECIFIER/);
+  assert.match(
+    plist,
+    /<key>ITSAppUsesNonExemptEncryption<\/key>\s*<false\/>/,
+  );
+  assert.match(readme, /시작 조건=태그\s*`v\*\.\*\.\*`/);
+  assert.match(readme, /FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64/);
+});
+
 test('candidate workflow names are not market deployment workflows', async () => {
   const workflows = await Promise.all([
     read('.github/workflows/build-ait.yml'),

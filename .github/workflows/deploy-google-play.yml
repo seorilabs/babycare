@@ -52,3 +52,7 @@ jobs:
       track: ${{ inputs.track }}
       release_status: ${{ inputs.release_status }}
       package_manager: pnpm
+      pnpm_version: 11.14.0
+      node_version: 24.16.0
+      java_version: "21"
+      android_dir: apps/mobile/android
