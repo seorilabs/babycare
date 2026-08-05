@@ -130,6 +130,52 @@ describe('QuickRecordModal', () => {
     expect(visibleText(renderer)).not.toContain('firestore');
   });
 
+  it('exposes and updates the selected care option before saving', async () => {
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          kind="diaper"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('빠른 기록 모달을 렌더링하지 못했어요');
+    }
+
+    const radios = () =>
+      renderer?.root
+        .findAllByProps({accessibilityRole: 'radio'})
+        .filter(node => node.parent?.props.accessibilityRole !== 'radio') ?? [];
+
+    expect(radios()).toHaveLength(3);
+    expect(radios().map(node => node.props.accessibilityState)).toEqual([
+      {selected: true},
+      {selected: false},
+      {selected: false},
+    ]);
+
+    ReactTestRenderer.act(() => radios()[1]!.props.onPress());
+    expect(radios().map(node => node.props.accessibilityState)).toEqual([
+      {selected: false},
+      {selected: true},
+      {selected: false},
+    ]);
+
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({diaperType: 'dirty', kind: 'diaper'}),
+    );
+  });
+
   it('lets the record-time controls wrap on narrow screens', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(

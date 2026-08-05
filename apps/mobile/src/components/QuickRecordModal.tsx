@@ -34,6 +34,8 @@ function Choice<T extends string>(props: {
   const choiceColor = active ? '#FFFFFF' : props.theme.colors.text;
   return (
     <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{selected: active}}
       onPress={() => props.onSelect(props.value)}
       style={[
         styles.choice,
