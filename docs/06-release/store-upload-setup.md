@@ -46,8 +46,9 @@ flowchart TD
 | `apps/mobile/ios/ci_scripts/` (ci_post_clone / ci_pre_xcodebuild) | ✅ 추가됨 |
 | 워크플로우 caller (deploy-all/google-play/app-store/apps-in-toss, release-tag) | ✅ |
 
-버전 규칙: SemVer 태그 → `versionCode/apple_build_number = major*1_000_000 + minor*1_000 + patch`
-(예: v1.0.0 → `1000000`). Google Play·Xcode Cloud 모두 같은 resolver 로 산출.
+버전 규칙: SemVer 태그 → Google Play `versionCode = major*1_000_000 + minor*1_000 + patch`
+(예: v1.0.0 → `1000000`). Xcode Cloud는 같은 resolver로 marketing version을 주입하고,
+`CI_BUILD_NUMBER`를 `CFBundleVersion`으로 사용한다. App Store Connect의 실제 build number를 원장에 기록한다.
 
 ## GitHub secrets / variables / environments
 
@@ -81,8 +82,11 @@ flowchart TD
 
 ## 남은 blocker
 
-1. **Google Play 후보 readback** — 기존 공용 publisher SA의 Play API 권한은 edit 생성·삭제로 확인. repo WIF 경로의 실제 internal upload 재검증 필요.
-2. **App Store 후보 readback** — Xcode Cloud `Default` workflow의 활성 App Store archive(`APP_STORE_ELIGIBLE`), 태그 시작 조건, redacted Firebase secret을 확인. 수정 커밋의 새 태그 빌드와 ASC processing 확인 필요.
-3. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
-4. **출시 승인** — Google Play production 승격, App Review 제출·공개 출시, AppsInToss production release는 별도 승인 필요.
-5. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
+1. **Google Play WIF impersonation** — 기존 공용 publisher SA의 Play API edit 생성·삭제는 성공했다. `v1.0.5` run `31006207820`도 signed AAB 생성과 GitHub OIDC credential 구성까지 성공했지만, 공용 SA에 `principalSet://iam.googleapis.com/projects/138773558853/locations/global/workloadIdentityPools/github-actions/attribute.repository/seorilabs/babycare`의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. GCP owner 조직 재인증 후 이 binding만 추가하고 같은 후보를 재실행한다. 새 SA는 만들지 않는다.
+2. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
+3. **출시 승인** — Google Play production 승격, App Review 제출·공개 출시, AppsInToss production release는 별도 승인 필요.
+4. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
+
+## 완료된 후보 readback
+
+- **App Store** — `v1.0.5` Xcode Cloud run `137ca847-3c34-4d5b-8931-4f70c5b023d8` 성공. ASC build `5ca352a5-449e-4997-b730-315ead4d02e8`에서 실제 `1.0.5`/`52`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인.

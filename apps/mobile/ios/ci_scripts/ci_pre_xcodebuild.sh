@@ -10,8 +10,8 @@
 # 버전 소스:
 #   CI_TAG(vX.Y.Z) 트리거 빌드만 허용한다. 브랜치 push나 태그가 아닌 API 호출은
 #   비-제로 종료해 기본 프로젝트 버전의 archive를 차단한다.
-# 산출은 scripts/resolve-release-version.mjs 로 marketing/build number 를 계산한다
-# (GitHub Actions Google Play 배포 경로와 동일 로직 재사용). node 는 ci_post_clone 에서 설치됨.
+# marketing version은 scripts/resolve-release-version.mjs 로 계산하고, build number는
+# Xcode Cloud가 단조 증가시키는 CI_BUILD_NUMBER를 사용한다. node 는 ci_post_clone 에서 설치됨.
 #
 # 검증: CI_PRE_XCODEBUILD_DRY_RUN=1 로 실행하면 agvtool 없이 산출 버전만 출력한다.
 
@@ -38,10 +38,10 @@ trap 'rm -f "${OUTFILE}"' EXIT
 GITHUB_OUTPUT="${OUTFILE}" node "${RESOLVER}" --tag "${RELEASE_TAG}" --github-output >/dev/null
 
 MARKETING="$(grep '^apple_marketing_version=' "${OUTFILE}" | cut -d= -f2)"
-BUILD="$(grep '^apple_build_number=' "${OUTFILE}" | cut -d= -f2)"
+BUILD="${CI_BUILD_NUMBER:-}"
 
 if [ -z "${MARKETING}" ] || [ -z "${BUILD}" ]; then
-  echo "  릴리즈 버전 산출 실패 (tag=${RELEASE_TAG})" >&2
+  echo "  릴리즈 버전 산출 실패 (tag=${RELEASE_TAG}, CI_BUILD_NUMBER 필수)" >&2
   exit 1
 fi
 

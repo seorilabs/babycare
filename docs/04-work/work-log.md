@@ -1,5 +1,12 @@
 # Work Log
 
+## 2026-08-05 — 스토어 빌드 경로 복구 및 v1.0.5 검증
+
+- PR #20(`f972da16f5f2f81468f576b233434a59a5863680`)에서 Google Play 배포 toolchain을 Node 24.16.0·pnpm 11.14.0·Temurin 21로 고정하고, Xcode Cloud의 Automatic managed signing·태그 전용 시작·redacted Firebase plist 복원·암호화 선언을 반영했다. Static Checks run `31005828559`와 로컬 iOS Release Simulator build가 통과했다.
+- Google Play publisher는 새 계정을 만들지 않고 기존 `seorilabs-play-publisher@seorilabs-gws.iam.gserviceaccount.com`만 사용하도록 repo variable과 원장을 정렬했다. 이 계정으로 Android Publisher edit 생성·삭제가 성공해 Play API 권한은 확인됐다.
+- `v1.0.5` Xcode Cloud run `137ca847-3c34-4d5b-8931-4f70c5b023d8`은 source `f972da1`에서 성공했다. ASC build `5ca352a5-449e-4997-b730-315ead4d02e8`은 실제 `1.0.5`/`52`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 내부 beta testing 준비 상태다. 실제 테스터 설치·실기기 QA, App Review 제출·공개 출시는 수행하지 않았다.
+- Google Play run `31006207820`은 같은 태그의 signed AAB 생성과 GitHub OIDC credential 구성까지 성공했다. 공용 publisher SA에 babycare repo principal의 `roles/iam.workloadIdentityUser`가 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐고 Android Publisher edit/upload는 시작되지 않았다. GCP owner 조직 재인증 후 이 단일 binding을 추가하고 재실행해야 하며, 최신 실제 internal 업로드는 계속 1.0.2/1000002 draft다.
+
 ## 2026-08-05 — 수유량 조절 접근성 보강
 
 - 빠른 수유 기록의 분유·유축·이유식 수유량은 `−`·`＋` 아이콘으로만 조절해, 화면낭독기 사용자가 버튼 동작과 현재 저장될 양을 알 수 없었다.
