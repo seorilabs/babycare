@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-06 — 기록 시각 조정 동작 접근성 보강
+
+- 수유·기저귀·수면 빠른 기록의 `−10분`·`지금`은 실제 기록 시각을 바꾸는 handler가 있지만 접근성 역할과 동작 이름이 없어, 화면낭독기 사용자가 어떤 시각 조정인지 구분하기 어려웠다.
+- 두 동작을 `button`으로 노출하고 각각 `기록 시각 10분 앞당기기`, `기록 시각을 지금으로 설정`이라는 이름을 부여했다. 기존 시각 변경·저장 handler는 유지했다.
+- Quick record 회귀 테스트는 수정 전 새 접근성 이름을 찾지 못해 실패했고, 수정 후 두 버튼 역할과 `−10분` 조작 뒤 실제 `diaper`·10분 이전 `occurredAt` 저장 payload를 포함해 7건이 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/276건, Functions 10건, build-workflow 9건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`도 통과했다.
+- Android API 36 emulator에서 Temurin 21·Node 24.16.0으로 현재 소스의 debug APK를 빌드했다. 첫 AVD 설치는 저장 공간 부족으로 실패했지만 사용자 데이터를 지우지 않고 여유 공간이 있는 대체 AVD에 설치해 cold start를 확인했다. 접근성 계층에서 두 동작이 실제 `Button`과 지정한 이름으로 노출되고 `−10분` 조작 후 화면 시각이 오전 4:09에서 3:59로 바뀌는 것을 스크린샷과 UI 계층으로 확인했다. 실제 TalkBack 음성 탐색과 iOS·AppsInToss 화면은 확인하지 않았다.
+- `pnpm run check:release`는 Play Data Safety·등급·WIF binding, App Store privacy·review 정보, AIT 자산·URL·정책·sandbox QA, production Firebase·App Check·실기기 migration 등 기존 외부 blocker로 예상대로 실패했다. 빌드 artifact의 마켓 업로드·processing·테스터 QA·공개 출시는 수행하지 않았다.
+
 ## 2026-08-06 — 모유 타이머 동작 접근성 보강
 
 - 빠른 모유 기록의 `시작`·`일시정지`·`계속`과 `초기화`는 실제 측정·저장 handler가 있지만 접근성 역할과 동작 이름이 없어, 화면낭독기 사용자가 어느 쪽 타이머를 어떻게 조작하는지 구분하기 어려웠다.

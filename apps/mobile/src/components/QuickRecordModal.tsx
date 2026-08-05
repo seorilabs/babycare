@@ -359,6 +359,8 @@ export function QuickRecordModal(props: {
             </View>
             <View style={styles.timeButtons}>
               <Pressable
+                accessibilityLabel="기록 시각 10분 앞당기기"
+                accessibilityRole="button"
                 onPress={() => {
                   setOccurredAt(selectedOccurredAt - 10 * 60_000);
                   setTimeEdited(true);
@@ -367,6 +369,8 @@ export function QuickRecordModal(props: {
                 <Text style={[styles.smallButtonText, {color: props.theme.colors.text}]}>−10분</Text>
               </Pressable>
               <Pressable
+                accessibilityLabel="기록 시각을 지금으로 설정"
+                accessibilityRole="button"
                 onPress={() => {
                   setOccurredAt(Date.now());
                   setTimeEdited(false);

@@ -284,6 +284,48 @@ describe('QuickRecordModal', () => {
     );
   });
 
+  it('announces and saves an adjusted record time', async () => {
+    const startedAt = new Date('2026-08-06T04:00:00+09:00');
+    jest.setSystemTime(startedAt);
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          kind="diaper"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('빠른 기록 모달을 렌더링하지 못했어요');
+    }
+
+    const decreaseButton = renderer.root.findByProps({
+      accessibilityLabel: '기록 시각 10분 앞당기기',
+    });
+    const nowButton = renderer.root.findByProps({
+      accessibilityLabel: '기록 시각을 지금으로 설정',
+    });
+    expect(decreaseButton.props.accessibilityRole).toBe('button');
+    expect(nowButton.props.accessibilityRole).toBe('button');
+
+    ReactTestRenderer.act(() => decreaseButton.props.onPress());
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'diaper',
+        occurredAt: startedAt.getTime() - 10 * 60_000,
+      }),
+    );
+  });
+
   it('lets the record-time controls wrap on narrow screens', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
