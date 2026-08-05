@@ -290,15 +290,23 @@ export function QuickRecordModal(props: {
                   <Text style={[styles.label, {color: props.theme.colors.text}]}>양</Text>
                   <View style={[styles.stepper, {backgroundColor: props.theme.colors.surface}]}>
                     <Pressable
+                      accessibilityLabel="수유량 10밀리리터 줄이기"
+                      accessibilityRole="button"
                       onPress={() => setVolumeMl(value => Math.max(10, value - 10))}
                       style={[styles.stepButton, {borderColor: props.theme.colors.border}]}>
                       <Text style={[styles.stepText, {color: props.theme.colors.text}]}>−</Text>
                     </Pressable>
-                    <View style={styles.amount}>
+                    <View
+                      accessibilityLabel={`수유량 ${volumeMl}밀리리터`}
+                      accessibilityLiveRegion="polite"
+                      accessible
+                      style={styles.amount}>
                       <Text style={[styles.amountValue, {color: props.theme.colors.text}]}>{volumeMl}</Text>
                       <Text style={[styles.amountUnit, {color: props.theme.colors.textMuted}]}>ml</Text>
                     </View>
                     <Pressable
+                      accessibilityLabel="수유량 10밀리리터 늘리기"
+                      accessibilityRole="button"
                       onPress={() => setVolumeMl(value => Math.min(2_000, value + 10))}
                       style={[styles.stepButton, {borderColor: props.theme.colors.border}]}>
                       <Text style={[styles.stepText, {color: props.theme.colors.text}]}>＋</Text>

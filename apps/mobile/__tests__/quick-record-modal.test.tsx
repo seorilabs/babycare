@@ -176,6 +176,55 @@ describe('QuickRecordModal', () => {
     );
   });
 
+  it('announces and saves the adjusted feeding volume', async () => {
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          kind="feeding"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('빠른 기록 모달을 렌더링하지 못했어요');
+    }
+
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '수유량 120밀리리터'})
+        .props,
+    ).toMatchObject({accessible: true, accessibilityLiveRegion: 'polite'});
+    const decreaseButton = renderer.root.findByProps({
+      accessibilityLabel: '수유량 10밀리리터 줄이기',
+    });
+    const increaseButton = renderer.root.findByProps({
+      accessibilityLabel: '수유량 10밀리리터 늘리기',
+    });
+    expect(decreaseButton.props.accessibilityRole).toBe('button');
+    expect(increaseButton.props.accessibilityRole).toBe('button');
+
+    ReactTestRenderer.act(() => increaseButton.props.onPress());
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '수유량 130밀리리터'}),
+    ).toBeDefined();
+
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feedingType: 'formula',
+        kind: 'feeding',
+        volumeMl: 130,
+      }),
+    );
+  });
+
   it('lets the record-time controls wrap on narrow screens', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(

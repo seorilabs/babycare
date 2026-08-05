@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-05 — 수유량 조절 접근성 보강
+
+- 빠른 수유 기록의 분유·유축·이유식 수유량은 `−`·`＋` 아이콘으로만 조절해, 화면낭독기 사용자가 버튼 동작과 현재 저장될 양을 알 수 없었다.
+- 두 증감 동작에 `button` 역할과 10밀리리터 단위의 명확한 이름을 부여하고, 현재 수유량을 하나의 접근성 문구와 `polite` 갱신 영역으로 묶었다. 기존 10~2,000ml 범위와 저장 handler는 유지했다.
+- Quick record 회귀 테스트는 수정 전 `수유량 120밀리리터` 접근성 정보를 찾지 못해 실패했고, 수정 후 120→130ml 변경과 실제 `formula`·`volumeMl: 130` 저장 payload를 포함해 5건이 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/274건, Functions 10건, build-workflow 6건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`도 통과했다.
+- `pnpm run check:release`는 AIT 자산·URL·정책·sandbox QA, Firebase project/App Check·실기기 migration, Play/App Store 설문·서명·승인 등 기존 외부 blocker로 예상대로 실패했다. 부팅된 iOS Simulator와 연결된 Android device가 없어 실제 화면낭독기·화면·다크 모드·작은 화면·큰 글꼴은 확인하지 않았고, 빌드·마켓 업로드도 실행하지 않았다.
+
 ## 2026-08-05 — 앱 내 개인정보 처리방침 연결
 
 - 더보기의 `개인정보 보호` 행은 회사 공용 개인정보 처리방침이 게시·마켓 원장에 확정돼 있는데도 handler와 이동 표시가 없는 정적 문구라 사용자가 앱에서 정책을 직접 확인할 수 없었다.
