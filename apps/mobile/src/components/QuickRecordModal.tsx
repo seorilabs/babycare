@@ -120,6 +120,9 @@ export function QuickRecordModal(props: {
   const title = props.kind === 'feeding' ? '수유 기록' : props.kind === 'diaper' ? '기저귀 기록' : '수면 시작';
   const saveDisabled =
     props.kind === 'feeding' && feedingType === 'breast' && elapsed.totalMs < 1_000;
+  const saveGuidance = saveDisabled
+    ? '모유 타이머를 1초 이상 측정하면 저장할 수 있어요.'
+    : undefined;
   const saveOpacity = saving ? 0.65 : 1;
   const timerActionLabel = `${breastSide === 'left' ? '왼쪽' : '오른쪽'} 모유 타이머 ${
     timerStartedAt ? '일시정지' : elapsed.totalMs ? '계속' : '시작'
@@ -412,7 +415,15 @@ export function QuickRecordModal(props: {
               {errorMessage}
             </Text>
           ) : null}
+          {saveGuidance ? (
+            <Text
+              accessibilityLiveRegion="polite"
+              style={[styles.saveGuidance, {color: props.theme.colors.textMuted}]}>
+              {saveGuidance}
+            </Text>
+          ) : null}
           <Pressable
+            accessibilityHint={saveGuidance}
             accessibilityLabel={saving ? '돌봄 기록 저장 중' : '돌봄 기록 저장'}
             accessibilityRole="button"
             accessibilityState={{busy: saving, disabled: saving || saveDisabled}}
@@ -471,6 +482,7 @@ const styles = StyleSheet.create({
   note: {borderRadius: 15, borderWidth: 1, fontSize: 15, minHeight: 95, padding: 14, textAlignVertical: 'top'},
   footer: {borderTopWidth: StyleSheet.hairlineWidth, padding: 16},
   error: {fontSize: 11, fontWeight: '700', marginBottom: 9, textAlign: 'center'},
+  saveGuidance: {fontSize: 11, marginBottom: 9, textAlign: 'center'},
   saveButton: {alignItems: 'center', borderRadius: 15, justifyContent: 'center', minHeight: 55},
   saveText: {color: '#FFFFFF', fontSize: 16, fontWeight: '800'},
 });

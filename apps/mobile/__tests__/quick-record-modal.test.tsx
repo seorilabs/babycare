@@ -284,6 +284,59 @@ describe('QuickRecordModal', () => {
     );
   });
 
+  it('explains when a breastfeeding record can be saved', () => {
+    const startedAt = new Date('2026-08-06T08:00:00+09:00');
+    jest.setSystemTime(startedAt);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          kind="feeding"
+          onClose={jest.fn()}
+          onSave={jest.fn(async () => undefined)}
+          session={session}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('빠른 기록 모달을 렌더링하지 못했어요');
+    }
+
+    const feedingChoices = renderer.root
+      .findAllByProps({accessibilityRole: 'radio'})
+      .filter(node => node.parent?.props.accessibilityRole !== 'radio');
+    ReactTestRenderer.act(() => feedingChoices[0]!.props.onPress());
+
+    const guidance = '모유 타이머를 1초 이상 측정하면 저장할 수 있어요.';
+    const disabledSave = renderer.root.findByProps({
+      accessibilityLabel: '돌봄 기록 저장',
+    });
+    expect(disabledSave.props.accessibilityState).toEqual({
+      busy: false,
+      disabled: true,
+    });
+    expect(disabledSave.props.accessibilityHint).toBe(guidance);
+    expect(visibleText(renderer)).toContain(guidance);
+
+    ReactTestRenderer.act(() => {
+      renderer?.root
+        .findByProps({accessibilityLabel: '왼쪽 모유 타이머 시작'})
+        .props.onPress();
+    });
+    jest.setSystemTime(new Date(startedAt.getTime() + 1_000));
+    ReactTestRenderer.act(() => jest.advanceTimersByTime(250));
+
+    const enabledSave = renderer.root.findByProps({
+      accessibilityLabel: '돌봄 기록 저장',
+    });
+    expect(enabledSave.props.accessibilityState).toEqual({
+      busy: false,
+      disabled: false,
+    });
+    expect(enabledSave.props.accessibilityHint).toBeUndefined();
+    expect(visibleText(renderer)).not.toContain(guidance);
+  });
+
   it('announces and saves an adjusted record time', async () => {
     const startedAt = new Date('2026-08-06T04:00:00+09:00');
     jest.setSystemTime(startedAt);

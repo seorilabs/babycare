@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-06 — 모유 기록 저장 조건 안내
+
+- 빠른 모유 기록은 좌·우 타이머가 1초 미만이면 도메인 규칙에 맞춰 저장 버튼을 비활성화하지만, 화면에는 이유가 없어 사용자가 핵심 수유 기록을 왜 저장할 수 없는지 알기 어려웠다.
+- 저장 버튼의 접근성 힌트와 `polite` 안내로 `모유 타이머를 1초 이상 측정하면 저장할 수 있어요.`를 표시하고, 1초 이상 측정하면 안내가 사라지면서 기존 저장 동작이 활성화되도록 했다. 타이머·도메인 검증·저장 handler는 변경하지 않았다.
+- Quick record 회귀 테스트는 수정 전 비활성 저장 버튼의 안내가 없어 실패했고, 수정 후 안내와 비활성 상태, 1초 측정 뒤 안내 해제와 활성 상태를 포함해 8건이 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 33 suites/277건, Functions 10건, build-workflow 9건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`도 통과했다.
+- Android API 36 emulator에서 Temurin 21·Node 24.16.0으로 현재 소스의 debug APK를 빌드·설치해 cold start를 확인했다. UI 계층에서 안내 노출·저장 버튼 비활성화를 확인하고, 타이머 시작 뒤 안내가 사라지며 저장 버튼이 활성화되는 것을 대조했다. 기본·다크 모드와 시스템 글자 크기 130% 화면에서 하단 안내·저장 버튼의 잘림·겹침이 없음을 스크린샷으로 확인했다. 실제 TalkBack 음성 탐색과 iOS·AppsInToss 화면은 확인하지 않았다.
+- `pnpm run check:release`는 Play Data Safety·등급·WIF binding, App Store privacy·review 정보, AIT 자산·URL·정책·sandbox QA, production Firebase·App Check·실기기 migration 등 기존 외부 blocker로 예상대로 실패했다. 빌드 artifact의 마켓 업로드·processing·테스터 QA·공개 출시는 수행하지 않았다.
+
 ## 2026-08-06 — 기록 시각 조정 동작 접근성 보강
 
 - 수유·기저귀·수면 빠른 기록의 `−10분`·`지금`은 실제 기록 시각을 바꾸는 handler가 있지만 접근성 역할과 동작 이름이 없어, 화면낭독기 사용자가 어떤 시각 조정인지 구분하기 어려웠다.
