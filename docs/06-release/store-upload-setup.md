@@ -1,9 +1,8 @@
 # 스토어 업로드 자동화 세팅 (백오피스 구동)
 
-> **상태: 체계 구축 중(gated).** `release-targets.md` 의 deployment approval **미승인**.
-> 워크플로우·스크립트·ci_scripts 는 준비됐고 일부 repo 설정을 주입했으나, 실제 업로드는
-> 승인·서명 secret 주입·백오피스 등록·마켓별 backend(Play SA/WIF, Xcode Cloud workflow)가
-> 갖춰진 뒤에만 수행한다. `main` push 는 정적 게이트(static-checks)만 돌고 업로드하지 않는다.
+> **상태: 내부 후보 업로드 경로 구성 완료, 실제 후보 재검증 중.** Google Play internal과
+> App Store Connect/TestFlight 업로드는 승인됐지만 production 승격·App Review 제출·공개 출시는
+> 별도 승인 전까지 금지한다. `main` push 는 정적 게이트(static-checks)만 돌고 업로드하지 않는다.
 
 ## 운영 진입점 = 백오피스/Telegram
 
@@ -43,7 +42,7 @@ flowchart TD
 | `scripts/restore-mobile-firebase-config.mjs` (`--android`/`--ios --require`) | ✅ |
 | Android gradle `-PversionNameOverride`/`-PversionCodeOverride` | ✅ |
 | `apps/mobile/ios/Podfile` static framework + RNFB 혼합 링키지 | ✅ (Xcode 26 archive 전제) |
-| `apps/mobile/ios/GoogleService-Info.plist` 커밋 + pbxproj 참조 (prod) | ✅ (Xcode Cloud 는 시크릿 대신 커밋본 사용) |
+| `apps/mobile/ios/GoogleService-Info.plist` pbxproj 참조 + Xcode Cloud secret 복원 | ✅ (파일은 커밋하지 않고 누락 시 fail-closed) |
 | `apps/mobile/ios/ci_scripts/` (ci_post_clone / ci_pre_xcodebuild) | ✅ 추가됨 |
 | 워크플로우 caller (deploy-all/google-play/app-store/apps-in-toss, release-tag) | ✅ |
 
@@ -67,24 +66,23 @@ flowchart TD
 | --- | --- | --- | --- |
 | var | `GOOGLE_PLAY_UPLOAD_KEY_ALIAS` | ✅ 설정됨 | `upload` (org `seorilabs-upload` override) |
 | env | `google-play`, `app-store` | ✅ 생성됨 | 보호규칙(필수 리뷰어)은 현재 요금제 미지원 → 프로세스 게이트로 유지 |
-| var | `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` | ⏳ 대기 | babycare Play publisher SA 확정 후(예: `babycare-play-publisher@seorilabs-gws...`). WIF 바인딩·Play Console 권한 필요 |
-| secret | `GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64` | ⏳ 승인 대기 | `~/.config/seorilabs/play-store/babycare-upload.jks` (babycare 전용 키, alias `upload`) |
-| secret | `GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD` / `GOOGLE_PLAY_UPLOAD_KEY_PASSWORD` | ⏳ 승인 대기 | `apps/mobile/android/key.properties` |
-| secret | `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64` | ⏳ 승인 대기 | 커밋된 prod `google-services.json` (org 워크플로우가 `--require`) |
+| var | `GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL` | ✅ 설정됨 | 기존 공용 `seorilabs-play-publisher@seorilabs-gws.iam.gserviceaccount.com` 사용. 새 SA 생성 금지 |
+| secret | `GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64` | ✅ repo secret 설정됨 | `~/.config/seorilabs/play-store/babycare-upload.jks` (babycare 전용 키, alias `upload`) |
+| secret | `GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD` / `GOOGLE_PLAY_UPLOAD_KEY_PASSWORD` | ✅ repo secret 설정됨 | `apps/mobile/android/key.properties` |
+| secret | `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64` | ✅ repo secret 설정됨 | prod `google-services.json` (org 워크플로우가 `--require`) |
 
 > **주의(서명 키):** babycare Play 앱은 **전용 업로드 키**(`babycare-upload.jks`, alias `upload`)로
 > 등록됐다. org 공용 keystore(alias `seorilabs-upload`)로 서명하면 Play 가 업로드를 거부한다.
 > 반드시 위 repo-level 값으로 override 해야 한다.
 
-> **App Store(Xcode Cloud)는 신규 repo secret 불필요.** 매니지드 서명 + 커밋된 plist +
-> 팀 공용 ASC 키. (`APPLE_PROVISIONING_PROFILE_BASE64`·`FIREBASE_IOS_..._PLIST_BASE64` 는
-> GH fallback 경로에서만 필요.)
+> **App Store(Xcode Cloud)는 매니지드 서명을 사용한다.** 인증서·provisioning secret은
+> 불필요하지만 `FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64`는 Xcode Cloud secret으로
+> 반드시 주입한다. 저장소에는 Firebase plist를 커밋하지 않는다.
 
-## 남은 blocker (실제 업로드 전)
+## 남은 blocker
 
-1. **Deployment approval** — 미승인. `upload=true`/production 승격 금지.
-2. **서명 secret 주입** — 위 repo-level Google Play secret 4종(keystore·비번2·firebase). 값 확보됨, 주입만 승인 필요.
-3. **Google Play backend** — babycare Play publisher SA 확정 + WIF 바인딩(`principalSet .../attribute.repository/seorilabs/babycare`) + Play Console API 권한. (gcloud 확인 필요)
-4. **Xcode Cloud workflow(ASC 수동 1회)** — babycare 앱에 workflow 생성(workspace `apps/mobile/ios/BabyCare.xcworkspace`, scheme `BabyCare`), 매니지드 서명, **배포 준비=App Store Connect**, 시작 조건=태그 `v*.*.*`.
-5. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
-6. **AppsInToss** — Granite target과 build-only 경로 구성 완료. sandbox 기능·실기기 QA 및 production 배포 승인은 별도 트랙.
+1. **Google Play 후보 readback** — 기존 공용 publisher SA의 Play API 권한은 edit 생성·삭제로 확인. repo WIF 경로의 실제 internal upload 재검증 필요.
+2. **App Store 후보 readback** — Xcode Cloud `Default` workflow의 활성 App Store archive(`APP_STORE_ELIGIBLE`), 태그 시작 조건, redacted Firebase secret을 확인. 수정 커밋의 새 태그 빌드와 ASC processing 확인 필요.
+3. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
+4. **출시 승인** — Google Play production 승격, App Review 제출·공개 출시, AppsInToss production release는 별도 승인 필요.
+5. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.

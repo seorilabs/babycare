@@ -94,7 +94,7 @@
     "appStoreNameEn": "App Store en-US 표시 이름은 'BabyNest: Shared Baby Care Log'(2026-07-18 확정 반영). 단독 'BabyNest'는 타 계정 선점이라 Play 타이틀과 동일한 고유 문자열을 사용. 브랜드명은 여전히 BabyNest.",
     "remaining": "App Privacy 콘솔 답변, 내부 테스터 실제 설치·2기기 QA, 심사 제출(승인 후).",
     "assetsDone": "아이콘 1024·iPhone 6.9\" 스크린샷 5컷 생성 완료. iPad 13\"는 iPad 지원 결정 후. Xcode AppIcon.appiconset에는 iPhone/iPad/marketing 아이콘 반영 완료.",
-    "signingDone": "Team ID·Apple Distribution 인증서·App Store provisioning으로 main@8c5196e(v1.0.1) 1.0.1/1000001 로컬 서명·업로드 완료(ASC VALID). 내부 그룹 '서리랩스 내부테스터'는 모든 빌드 접근 활성화. 단 CI 업로드용 secret(Environment app-store)은 미구성.",
+    "signingDone": "Team ID·Apple Distribution 인증서·App Store provisioning으로 main@8c5196e(v1.0.1) 1.0.1/1000001 로컬 서명·업로드 완료(ASC VALID). Xcode Cloud Default workflow는 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret 구성을 2026-08-05 UI·ASC API로 확인. 수정 소스의 새 후보 빌드는 별도 검증 필요.",
     "urls": "privacyPolicyUrl·supportUrl·marketingUrl 확정 반영(2026-07-18). ASC 콘솔에도 privacy(appInfo)·support(version loc) PATCH 완료."
   }
 }
