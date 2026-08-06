@@ -34,8 +34,8 @@
 
 - [x] Android debug build·실기기 설치·process 기동 smoke
 - [x] iOS RNFirebase arm64 Simulator build·light/dark first-screen smoke
-- [ ] Android/iOS cold-start에서 제품 브랜딩 스플래시만 노출됨
-- [ ] React Native/프레임워크 기본 런치 화면 문구가 노출되지 않음
+- [x] Android 1.0.8 AAB의 제품 브랜드 launcher icon·cold-start splash·온보딩 전환 확인 — 격리 API 36 AVD, `LaunchState: COLD`, template 문구 없음
+- [ ] iOS TestFlight cold-start에서 제품 브랜딩 스플래시만 노출되고 React Native/프레임워크 문구가 없음
 - [ ] AppsInToss sandbox smoke — 운영 두 계정 API E2E와 `main@707df10` 비공개 deployment 업로드 통과 / 남음: 실제 Toss sandbox의 Storage·초대·기록·재실행·네트워크 복귀
 - [ ] Offline/local-first smoke
 - [ ] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀
@@ -62,5 +62,5 @@
 - [x] Google Play internal 릴리스 활성화·테스터 배포 — `1.0.8`/`1000008`, `status=completed` API readback
 - [ ] Google Play production 승격 승인·심사·공개 배포
 - [ ] App Store 실제 테스터 설치·실기기 QA와 App Review 제출
-- [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA
+- [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA — `intoss-private://babynest?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec`, 검토 요청 전 실제 테스트 최소 1회 필요
 - [ ] AppsInToss production release 승인

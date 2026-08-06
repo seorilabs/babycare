@@ -1,5 +1,11 @@
 # Work Log
 
+## 2026-08-07 — Android v1.0.8 브랜드 아이콘·cold start 검증
+
+- Google Play internal과 같은 AAB SHA-256 `2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84`에서 API 36 arm64 기기별 APK를 생성해 사용자 상태가 없는 격리 AVD에 설치했다. package `com.seorilabs.babycare`, `1.0.8`/`1000008`을 readback했다.
+- Pixel Launcher에서 기본 Android 아이콘이 아닌 함께봄 민트색 잎사귀 adaptive icon과 label `함께봄`을 확인했다. 기존 1.0.7 AVD는 서명 불일치로 update가 거부됐고 사용자 데이터를 삭제하지 않았다.
+- `am start -W` cold launch는 `LaunchState: COLD`, `TotalTime: 554ms`였고, 녹화 frame에서 브랜드 잎사귀 launch 화면→공동 기록 로딩→온보딩으로 전환됐다. React Native/template 문구와 치명적 AndroidRuntime 오류는 없었다. 이는 upload-signed AAB 설치 증거이며 Play Store app-signing 설치본 App Check token 증거는 아니다.
+
 ## 2026-08-07 — AppsInToss 핵심 기능 후보와 등록 자산 준비
 
 - AppsInToss 브랜드 셸을 Granite RN·TDS 기반 제품 흐름으로 교체했다. Platform custom-token/Firebase Auth REST 로그인, AppsInToss `Storage` session, Firestore REST 그룹·아기·기록·조회, callable 초대·수락·계정 삭제를 연결하고 홈·타임라인·통계·더보기에서 수유·기저귀·수면을 사용할 수 있게 했다.

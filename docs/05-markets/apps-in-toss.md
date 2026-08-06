@@ -25,7 +25,9 @@
 - Vertical screenshots: `apps-in-toss/screenshots/*.png` — 636×1048 RGB 5장 검증
 - Brand color: `#5FB49C`
 - Initial route branding: `함께봄` 제품 화면 반영
-- Feature URL / Terms / Privacy: `확정 필요`
+- Privacy URL: `https://www.seorilabs.com/privacy/`
+- In-app feature candidate: 한국어 `돌봄 기록하기`, 영어 `Log baby care`, route `/`. 비게임은 최소 1개 등록·검토가 필요하며 현재 root route로 정상 진입 가능
+- Terms / 추가 feature URL: `확정 필요`
 
 현재 screenshot은 같은 제품의 native 화면을 AppsInToss 규격에 맞춘 후보다. 실제 AIT sandbox UI를
 캡처해 기능·화면 일치성을 확인한 뒤 Console 등록본을 교체한다.
@@ -40,6 +42,7 @@
 - Sandbox QA device: `확정 필요`
 - Console review: 승인 완료(2026-08-04 readback)
 - Ads/payment policy answers: `확정 필요`
+- Release review prerequisite: private scheme을 실제 Toss 앱에서 최소 1회 테스트하고 in-app feature를 함께 등록
 
 ## 주의
 
