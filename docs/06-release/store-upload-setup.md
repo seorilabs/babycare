@@ -81,14 +81,18 @@ flowchart TD
 > 불필요하지만 `FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64`는 Xcode Cloud secret으로
 > 반드시 주입한다. 저장소에는 Firebase plist를 커밋하지 않는다.
 
+## Google Play WIF 복구
+
+- 2026-08-07 `seorilabs-gws`에서 `iam.googleapis.com`을 활성화하고, 공용 publisher SA의 기존 정책을 보존한 채 `principalSet://iam.googleapis.com/projects/138773558853/locations/global/workloadIdentityPools/github-actions/attribute.repository/seorilabs/babycare`에 `roles/iam.workloadIdentityUser`를 추가·readback했다.
+- GitHub Actions run `31132461743`에서 GitHub OIDC 인증과 Android Publisher commit이 성공했다. AAB를 중복 업로드하지 않고 기존 `1000008`을 `internal → internal`로 재적용했으며 API readback은 `v1.0.8`/`1000008`, `completed`다. 기존 WIF impersonation blocker는 해소됐다.
+
 ## 남은 blocker
 
-1. **Google Play WIF impersonation** — 기존 공용 publisher SA의 Play API edit 생성·삭제는 성공했다. `v1.0.6` deploy run `31009039603`도 signed AAB 생성과 GitHub OIDC credential 구성까지 성공했지만, 공용 SA에 `principalSet://iam.googleapis.com/projects/138773558853/locations/global/workloadIdentityPools/github-actions/attribute.repository/seorilabs/babycare`의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. `v1.0.8`은 build run `31116493641`의 signed AAB를 승인된 로컬 publisher credential로 internal `completed` 업로드해 보완했다. 다음 자동 업로드 전 GCP owner 조직 재인증 후 이 binding만 추가하며 새 SA는 만들지 않는다.
-2. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
-3. **Console·QA gate** — 진행 승인은 완료. Google Play production 승격, App Review 제출, AppsInToss production release 전 국가 availability·법적 사업자·정책 설문과 실기기 QA를 완료해야 한다.
-4. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
+1. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
+2. **Console·QA gate** — 진행 승인은 완료. Google Play production 승격, App Review 제출, AppsInToss production release 전 국가 availability·법적 사업자·정책 설문과 실기기 QA를 완료해야 한다.
+3. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
 
 ## 완료된 후보 readback
 
-- **Google Play** — `v1.0.8` / `c66f7e7` AAB를 x64/JDK 21 build run `31116493641`에서 생성·서명·브랜드 icon 검증하고 승인된 로컬 publisher credential로 internal `1.0.8`/`1000008`, `completed` 업로드·API readback 완료. production 승격은 하지 않음.
+- **Google Play** — `v1.0.8` / `c66f7e7` AAB를 x64/JDK 21 build run `31116493641`에서 생성·서명·브랜드 icon 검증하고 internal `1.0.8`/`1000008`, `completed` 업로드를 완료했다. WIF 복구 뒤 run `31132461743`에서 동일 versionCode를 `internal → internal`로 재배포해 GitHub OIDC·Android Publisher 권한과 `v1.0.8`/`1000008`, `completed` API readback을 확인했다. production 승격은 하지 않음.
 - **App Store** — `v1.0.8` Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962` 성공. ASC build `454e15f2-4075-4828-b613-a67085b3e7d4`에서 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인. 내부 그룹 `서리랩스 내부테스터`에 build를 명시적으로 연결해 `IN_BETA_TESTING`, 테스터 2명 readback 완료.

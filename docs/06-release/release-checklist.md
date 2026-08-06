@@ -58,7 +58,7 @@
 - [x] App Store `v1.0.8` 내부 TestFlight 후보 — source `c66f7e763470f041ea8eec79f1a24a9a13352589`, Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962`, ASC build `454e15f2-4075-4828-b613-a67085b3e7d4`, 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 내부 그룹 연결·`IN_BETA_TESTING` readback, 2026-08-06
 - [x] AppsInToss 기능 후보 local build·production API E2E — Platform custom-token/Firebase Auth REST, Storage session, Firestore 기록·조회, callable 초대·삭제로 독립 두 계정 공동 기록 및 정리 통과, exact-size 등록 자산 검증, 2026-08-07
 - [x] AppsInToss 기능 후보 비공개 업로드 — source `707df10`, workflow run `31123595821`, artifact `8974273502`, deployment `019fd827-571d-791d-bd50-08f2da35afec`, 2026-08-07
-- [ ] Google Play WIF 자동 업로드 복구 — deploy run `31009039603`은 공용 publisher SA에 babycare repo principal의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단. 이번 후보는 로컬 fallback으로 보완했지만 다음 자동 업로드 전 binding 필요
+- [x] Google Play WIF 자동 업로드 복구 — `iam.googleapis.com` 활성화, 공용 publisher SA에 repo-scoped `seorilabs/babycare` principal의 `roles/iam.workloadIdentityUser` 추가·readback. run `31132461743`에서 GitHub OIDC 인증과 `internal → internal` 재배포가 성공했고 API에서 `v1.0.8`/`1000008`, `completed` 확인, 2026-08-07
 - [x] Google Play internal 릴리스 활성화·테스터 배포 — `1.0.8`/`1000008`, `status=completed` API readback
 - [ ] Google Play production 승격 승인·심사·공개 배포
 - [ ] App Store 실제 테스터 설치·실기기 QA와 App Review 제출

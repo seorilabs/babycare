@@ -1,5 +1,11 @@
 # Work Log
 
+## 2026-08-07 — Google Play WIF 권한 복구·내부 트랙 재배포
+
+- `seorilabs-gws` 프로젝트에서 `iam.googleapis.com`을 활성화하고, 공용 publisher 서비스 계정에 `seorilabs/babycare` 저장소 principal만 `roles/iam.workloadIdentityUser`로 추가했다. 기존 다른 저장소 binding과 역할은 유지했으며 새 서비스 계정이나 정적 키를 만들지 않았다.
+- GitHub Actions run `31132461743`에서 `google-github-actions/auth@v3`의 GitHub OIDC 인증과 Android Publisher API 호출이 성공했다. AAB를 중복 업로드하지 않고 기존 내부 트랙을 `internal → internal`로 재적용해 `versionCode=1000008`, `status=completed`를 확인했다.
+- 재배포 뒤 Android Publisher API readback은 `v1.0.8`/`1000008`, 한국어·영어 출시노트, `completed`다. 이로써 WIF impersonation과 Play Console publisher 권한을 분리해 모두 검증했으며 production 승격은 하지 않았다.
+
 ## 2026-08-07 — AppsInToss 최신 번들 본인 테스트 발송
 
 - AppsInToss Console 연동에서 `babynest` miniApp ID `54868`의 앱정보가 `APPROVED`, release·review request decision이 모두 `ALLOWED`임을 readback했다. 아직 라이브 번들과 번들 검수 요청은 없다.
