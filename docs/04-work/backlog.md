@@ -28,7 +28,7 @@
 | 완료 | AppsInToss 영구 `appName` 확정 | Console 승인값 `babynest` readback 완료(2026-08-04) |
 | 구현·운영 API E2E 완료 | `apps/ait` Granite RN + TDS 핵심 흐름 | 수유·기저귀·수면·홈·타임라인·통계·초대·삭제 구현, `.ait` local build 통과 |
 | 구현·sandbox 대기 | AIT auth/storage/Firestore adapter | Platform/Firebase Auth REST, AppsInToss Storage session, Firestore REST/callable production 2계정 E2E 통과. realtime/offline queue·App Check/edge 보호는 남음 |
-| 대기 | AIT 실제 기기 sandbox QA | 새 비공개 build 업로드 후 Storage·초대·기록·재실행·네트워크 복귀 검증 |
+| 비공개 배포 완료·실기기 대기 | AIT 실제 기기 sandbox QA | `main@707df10` deployment `019fd827-571d-791d-bd50-08f2da35afec`에서 Storage·초대·기록·재실행·네트워크 복귀 검증 |
 
 ## P1 — Release candidate 준비
 

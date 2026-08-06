@@ -6,7 +6,8 @@
 - 기록은 product-core validation과 canonical payload hash를 재사용해 event, mutation receipt, active-sleep lock을 원자 commit한다. 운영 두 계정으로 그룹 생성→수유·기저귀·수면 시작/종료→초대→합류→공동 조회→member/owner 삭제 E2E를 통과했고 남은 시험 Auth·Firestore·Platform 데이터를 exact target으로 정리한 뒤 QA prefix 0건을 readback했다.
 - `FIREBASE_WEB_API_KEY`를 AppsInToss environment secret에서 build-time 주입하도록 workflow를 보강했다. local `.ait` build와 lint·typecheck·Jest를 통과했으며 build 성공을 Console 비공개 업로드나 sandbox 실기기 QA로 간주하지 않는다.
 - 기존 승인 icon·feature graphic·iPhone screenshot을 source로 600×600 logo, 1932×828 thumbnail, 636×1048 vertical screenshot 5장을 RGB·무알파로 만들고 공통·AppsInToss validator를 통과했다. screenshot은 실제 AIT sandbox UI 캡처로 교체한 뒤 Console에 등록한다.
-- 남음: PR merge 후 새 비공개 `.ait` 업로드·deployment readback, 실제 Toss sandbox의 Storage·초대·기록·재실행·네트워크 복귀 QA, App Check 또는 edge 보호, Console 정책·URL·실화면 자산 등록과 production 심사·공개 배포.
+- PR #25를 squash merge해 `main@707df10`에 반영했다. workflow run `31123595821`은 artifact `8974273502`를 만들고 AppsInToss 비공개 deployment `019fd827-571d-791d-bd50-08f2da35afec` 업로드를 완료했다.
+- 남음: 실제 Toss sandbox의 Storage·초대·기록·재실행·네트워크 복귀 QA, App Check 또는 edge 보호, Console 정책·URL·실화면 자산 등록과 production 심사·공개 배포.
 
 ## 2026-08-06 — v1.0.8 내부 후보와 production 보호 경계 검증
 

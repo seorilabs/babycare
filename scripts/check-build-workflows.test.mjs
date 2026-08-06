@@ -40,21 +40,25 @@ test('latest AppsInToss private upload evidence stays consistent', async () => {
   const upload = registration.release.latestPrivateUpload;
 
   assert.deepEqual(upload, {
-    tag: 'v1.0.3',
-    sourceSha: '089eb0c888f54dd4636a58458f62e44d346103a4',
-    workflowRun: 30909365541,
-    deploymentId: '019fccc1-8e5b-775f-99a4-ab190d4d1726',
+    ref: 'main',
+    sourceSha: '707df1045324c3a5f93ded7ee8aed0e6637e9583',
+    workflowRun: 31123595821,
+    artifactId: 8974273502,
+    deploymentId: '019fd827-571d-791d-bd50-08f2da35afec',
     status: 'uploaded',
-    uploadedAt: '2026-08-04T21:31:44+09:00',
+    uploadedAt: '2026-08-07T02:38:38+09:00',
   });
   assert.equal(registration.release.sandboxQa, '미검증');
 
   for (const document of [market, checklist, workLog]) {
-    assert.match(document, /v1\.0\.3/);
-    assert.match(document, /089eb0c/);
-    assert.match(document, /30909365541/);
-    assert.match(document, /019fccc1-8e5b-775f-99a4-ab190d4d1726/);
+    assert.match(document, /707df10/);
+    assert.match(document, /31123595821/);
+    assert.match(document, /019fd827-571d-791d-bd50-08f2da35afec/);
   }
+  assert.match(
+    market,
+    /intoss-private:\/\/babynest\?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec/,
+  );
 
   assert.match(checklist, /- \[ \] AppsInToss private build sandbox/);
   assert.match(checklist, /- \[ \] AppsInToss production release 승인/);

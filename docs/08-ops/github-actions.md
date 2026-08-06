@@ -9,7 +9,7 @@
 | `build-android.yml` / `Build Android Candidate` | dispatch | Play 업로드 없는 signed AAB artifact |
 | `release-inventory.yml` / `Release Inventory` | dispatch | `check_release_readiness.sh`; placeholder가 남아 있어 현재 실패가 정상 |
 | `release-tag.yml` / `Release Tag` | dispatch | 명시적 SemVer tag |
-| `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | x64 AIT build·비공개 업로드; 별도 deployment approval 필요 |
+| `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | x64 AIT build·비공개 업로드; production release는 Console 정책·QA gate 필요 |
 | `deploy-google-play.yml` / `Deploy Google Play` | dispatch/call | x64 Linux AAB·선택 upload caller; signing/config 미구성 |
 | `deploy-app-store.yml` / `Deploy App Store` | dispatch/call | macOS archive·선택 upload caller; production 입력 미구성 |
 | `deploy-all.yml` / `Deploy All` | dispatch | tag 기준 마켓 fan-out |
