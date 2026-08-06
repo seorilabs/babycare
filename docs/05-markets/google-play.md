@@ -29,6 +29,7 @@
 
 - Signing key / Play App Signing: ✅ 업로드 keystore·서명 완료, signed AAB 업로드로 Play App Signing 등록 확인. 기존 공용 publisher `seorilabs-play-publisher@seorilabs-gws.iam.gserviceaccount.com`의 Android Publisher API edit 생성·삭제도 성공했다. `v1.0.6` deploy run `31009039603`은 signed AAB 생성과 GitHub OIDC까지 통과했지만, 이 repo principal에 공용 SA의 `roles/iam.workloadIdentityUser`가 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. 새 SA는 만들지 않는다.
 - Internal testing track: ✅ `v1.0.8` / `c66f7e7` signed AAB(`1.0.8`/`1000008`, target SDK 36, SHA-256 `2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84`)를 x64/JDK 21 build run `31116493641`에서 생성했다. package·version·target SDK·upload certificate 서명·브랜드 launcher icon을 검증한 뒤 internal `completed` 업로드 및 Android Publisher API readback 완료(2026-08-06).
+- Device candidate QA: 같은 AAB에서 생성한 upload-signed 기기별 APK를 격리 API 36 AVD에 설치해 `1.0.8`/`1000008`, 함께봄 adaptive icon·label, 잎사귀 splash→온보딩 cold start, no-crash를 확인했다(2026-08-07). Play Store app-signing 설치본 token QA는 별도다.
 - Play App Signing/App Check: Play가 운영하는 app signing SHA-256 `7D:B2:8B:B6:FA:A6:65:16:B8:28:25:A2:7C:F2:C5:E5:E6:1F:B9:3E:0A:FC:7E:9B:97:3C:E9:69:14:4B:EE:07`을 Firebase Android 앱에 등록했고 Play Integrity API를 활성화했다. sideload 허용과 debug SHA는 QA 뒤 제거했으며, 실제 Play Store 설치본 token 확인 전 enforcement는 false다.
 - Production rollout policy: 심사 승인 뒤 staged rollout로 시작하고 crash/ANR·핵심 흐름을 확인해 100% 승격. 최초 비율·간격은 production 승격 시 운영자가 확정
 - Release notes: `서비스 안정성과 앱 사용 성능을 개선했습니다.`

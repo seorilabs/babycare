@@ -119,7 +119,7 @@ Firebase root는 platform custom token Auth session restore, owner 그룹·아�
 
 | Target | 빌드/실행 | 사람 QA | 현재 상태 |
 | --- | --- | --- | --- |
-| Android | debug device/emulator, 이후 signed AAB internal | 작은 화면·back·offline·cold start | RN `0.85.3`/RNFirebase JDK 21 debug build 통과, 실기기 설치·process 기동 확인. 잠금 상태로 최종 visual 미확인 |
+| Android | debug device/emulator, 이후 signed AAB internal | 작은 화면·back·offline·cold start | 1.0.8 upload-signed AAB를 격리 API 36 AVD에 설치. 브랜드 adaptive icon·label, 잎사귀 splash→온보딩 cold start와 no-crash 확인. Play Store app-signing 설치·App Check token은 미검증 |
 | iOS | simulator/device, 이후 archive/TestFlight | safe area·keyboard·dark mode·cold start | RN `0.85.3`/RNFirebase arm64 Simulator clean/incremental build, iPhone 16 Pro light와 SE(3세대) dark first-screen 통과 |
 | AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/realtime, 재실행 | Granite RN·TDS UI, `.ait` 로컬 빌드, production 두 계정의 그룹·기록·초대·공동 조회·삭제 API E2E 통과. 실제 sandbox Storage·화면·재실행·네트워크 복귀 미검증 |
 
