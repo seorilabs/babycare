@@ -1,5 +1,15 @@
 # Work Log
 
+## 2026-08-06 — TestFlight 초대 callable 진입 복구
+
+- TestFlight `1.0.6`에서 `초대코드 만들기`를 누른 운영 요청 두 건을 Cloud Run request log에서 확인했다. `2026-08-06T06:50:08.978505Z`, `06:50:14.928695Z` 모두 `createInvite` 함수 코드에 도달하기 전 Cloud Run Invoker IAM에서 HTTP 401로 거부됐다.
+- production `createInvite`·`acceptInvite`는 `asia-northeast3`에서 ACTIVE였고 HMAC Secret Manager 연결도 유지돼 있어 region·배포·secret 누락은 원인이 아니었다. 두 Cloud Run service에는 invoker binding이 없었고 조직 Domain Restricted Sharing 정책은 `allUsers` binding 추가도 거부했다.
+- DRS 환경의 공개 callable 진입 계약에 맞춰 두 service의 Invoker IAM check를 비활성화했다. 기존 ready revision은 각각 `createinvite-00001-rar`, `acceptinvite-00001-hud`이며 새 함수 코드나 앱 바이너리는 만들지 않았다.
+- 변경 뒤 인증 없는 callable probe는 두 endpoint 모두 Firebase callable의 HTTP 401 `UNAUTHENTICATED` 응답까지 도달했다. 따라서 Cloud Run 앞단 차단은 제거됐고 Firebase Auth token 검증과 함수의 owner/membership 검사는 유지된다. 실제 TestFlight 인증 owner의 코드 발급과 다른 계정 수락은 사용자 재시도 증거가 필요하다.
+- `firebase/callable-access.json`에 project·region·service 계약을 기록하고 callable export·mobile region drift를 막는 정적 검사와 운영 readback/apply 명령을 추가했다.
+- `pnpm run test:static`에서 core 40건, mobile 34 suites/279건, Functions 10건, Firebase 설정 3건, build-workflow 9건과 typecheck·lint·architecture·docs gate가 통과했다. `pnpm run check:mobile`, Rules 23건, Functions transaction Emulator 5건, Firebase mobile 2계정 초대 흐름 1건, 권한 있는 운영 구성의 callable readback도 통과했다.
+- `pnpm run check:release`는 App Check 또는 edge rate limit, TestFlight 2계정 재확인, 마켓 정책·자산·QA 등 기존 blocker로 예상대로 실패했다. 새 TestFlight/Play artifact나 업로드는 만들지 않았다.
+
 ## 2026-08-06 — TestFlight 돌봄 그룹 생성 복구
 
 - TestFlight에서 이름·생년월일 입력 후 `돌봄 그룹 만들기`가 실패한 시각의 운영 로그를 확인했다. Platform custom-token 요청은 HTTP 200이었고 Firebase 사용자도 같은 시각 생성되어 인증·연결 단계는 통과했다.

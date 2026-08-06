@@ -4,13 +4,13 @@
 
 - Planning approval: `완료` (2026-07-12)
 - Firebase 사용: `확정` — Auth, 실시간 공동 기록, 클라우드 보존이 제품 핵심이다.
-- Project strategy: `babycare 전용 Firebase project` 권장안 — `확정 필요`
-  - 아동의 이름·생년월일·돌봄 기록을 다루므로 다른 앱과 Auth, Rules, Analytics, 운영 권한을 분리하는 안이 기본이다. 실제 project 생성 전 사용자 확정을 받는다.
-- Firebase project ID: `확정 필요`
-- Region: `확정 필요`
+- Project strategy: `babycare 전용 Firebase project` — production 적용 완료
+  - 아동의 이름·생년월일·돌봄 기록을 다른 앱과 분리한 전용 Auth, Rules, Functions 운영 경계를 사용한다.
+- Firebase project ID: `seorilabs-babycare`
+- Region: `asia-northeast3`
 - Billing plan: `확정 필요`
-- Production project provisioning/deploy: deployment approval 전 금지
-- Functions invite slice: 로컬 구현 완료. unit 10건·Firestore transaction Emulator 5건 통과, 실제 callable deploy 미실행
+- Production project provisioning/deploy: Auth·Firestore Rules/indexes·초대 callable 운영 중
+- Functions invite slice: unit 10건·Firestore transaction Emulator 5건 통과, `createInvite`·`acceptInvite` production ACTIVE. Secret Manager 연결과 callable 진입 계약 확인
 
 로컬 규칙 검증은 실제 project나 자격증명 없이 `babycare-rules-test`라는 Emulator 전용 project ID로만 실행한다.
 
@@ -19,15 +19,15 @@
 | Service | 사용 여부 | 용도/경계 |
 | --- | --- | --- |
 | Auth | 예 | 성인 양육자 신원과 그룹 멤버십 연결. production mobile은 platform custom token bridge, 개발 Emulator는 direct anonymous |
-| Firestore | 예 | 그룹, 멤버십, 아기, 돌봄 이벤트 실시간 동기화. adapter는 구현됐지만 app composition과 project config는 미연결 |
+| Firestore | 예 | 그룹, 멤버십, 아기, 돌봄 이벤트 실시간 동기화. native app composition과 production project 연결 완료 |
 | Storage | Rules만 준비 | 그룹 경로의 지원 이미지, 파일당 10 MiB 이하만 허용. 현재 MVP UI에 upload 흐름 없음 |
-| Cloud Functions / Run | 예 | `createInvite`, `acceptInvite` 로컬 구현. 실제 callable deploy와 App Check/Secret Manager 미검증 |
+| Cloud Functions / Run | 예 | `createInvite`, `acceptInvite` production ACTIVE. HMAC secret과 DRS 호환 callable 진입 계약 확인. App Check는 미강제 |
 | Remote Config | MVP 미사용 | 후속 기능 flag/tuning 후보. 보안 결정에는 사용하지 않음 |
 | Analytics | 연결 전 | event type 등 PII-free allowlist만 허용. 현재 app composition은 no-op |
 | Crashlytics | 연결 전 | PII/돌봄 기록 값을 log·custom key에 넣지 않음 |
 | Performance | `확정 필요` | privacy disclosure와 필요성 확인 후 추가 |
 | FCM | MVP 밖 | 후속 opt-in 리마인더·공동 기록 알림 후보. 민감 내용을 잠금화면에 기본 노출하지 않음 |
-| App Check | 예 | mobile 적용 예정. AppsInToss 호환성과 debug token 운영은 확정 필요 |
+| App Check | 예 | mobile 적용 예정. 현재 `ENFORCE_APP_CHECK=false`이며 AppsInToss 호환성과 복구 절차 확인 뒤 강제 여부 확정 필요 |
 
 ## Firestore Model
 
@@ -197,12 +197,21 @@ sequenceDiagram
 
 | Param | 종류 | 상태/기본값 |
 | --- | --- | --- |
-| `FUNCTIONS_REGION` | `defineString` | `확정 필요`, 기본값 없음 |
-| `INVITE_CODE_HMAC_KEY` | `defineSecret` | `확정 필요`, 최소 32 bytes, repo/client 금지 |
+| `FUNCTIONS_REGION` | `defineString` | production `asia-northeast3`, 기본값 없음 |
+| `INVITE_CODE_HMAC_KEY` | `defineSecret` | production Secret Manager 연결 완료, 값은 repo/client 금지 |
 | `INVITE_TTL_HOURS` | `defineInt` | 기본 24 |
 | `INVITE_CREATE_LIMIT_PER_HOUR` | `defineInt` | 기본 10/UID |
 | `INVITE_ACCEPT_LIMIT_PER_HOUR` | `defineInt` | 기본 20/UID |
 | `ENFORCE_APP_CHECK` | `defineBoolean` | 기본 false, AppsInToss 검증 후 출시 전 true 결정 |
+
+Production `FUNCTIONS_REGION`은 `asia-northeast3`이다. `firebase/callable-access.json`은 callable의 project·region·Cloud Run service 접근 계약 원장이며, 다음 명령으로 운영 상태를 읽기 전용 확인하거나 명시적으로 복구한다.
+
+```bash
+pnpm run check:firebase:live-callables
+pnpm run configure:firebase:callable-access
+```
+
+조직의 Domain Restricted Sharing 정책 때문에 `allUsers` IAM binding은 허용되지 않는다. 두 callable은 Cloud Run Invoker IAM check를 비활성화해 Firebase SDK 요청이 함수까지 도달하게 하고, Firebase callable middleware의 Auth token 검증과 함수의 owner/membership 검사를 애플리케이션 권한 경계로 유지한다.
 
 ## Indexes
 
@@ -213,7 +222,7 @@ sequenceDiagram
 - `events`: `babyId ASC, isDeleted ASC, occurredAt DESC` (legacy/filtered event query)
 - `events`: `babyId ASC, isDeleted ASC, kind ASC, occurredAt DESC` (종류별 latest)
 
-local adapter/Jest가 query shape와 server-confirmed filtering을 검증하지만 실제 project에서 index build, listener 재연결과 read 비용을 확인하기 전에는 통합 완료가 아니다.
+local adapter/Jest가 query shape와 server-confirmed filtering을 검증한다. production의 네 index는 `READY`이며 `members.userId` collection-group query도 확인했다. listener 재연결·read 비용·기기 2대 경계는 별도 QA가 필요하다.
 
 ## Rules와 Emulator 검증
 
@@ -231,15 +240,15 @@ pnpm run test:functions
 pnpm run test:functions:emulator
 ```
 
-Rules 23건은 비멤버 차단, 멤버 read/record, 동일 timestamp raw timeline cursor, 자기 membership query, owner-only 관리, event/receipt/active-lock 원자성, receipt missing/existing exact-get·list/query 경계, soft delete, invite 차단, Storage 권한을 다룬다. Functions unit 10건과 transaction Emulator 5건은 HMAC/raw-code 비저장, owner gate, expiry, UID rate limit, audit actor, idempotent replay와 동시 accept single-use를 다룬다. 실제 project/callable/App Check/IAM 검증은 별도다.
+Rules 23건은 비멤버 차단, 멤버 read/record, 동일 timestamp raw timeline cursor, 자기 membership query, owner-only 관리, event/receipt/active-lock 원자성, receipt missing/existing exact-get·list/query 경계, soft delete, invite 차단, Storage 권한을 다룬다. Functions unit 10건과 transaction Emulator 5건은 HMAC/raw-code 비저장, owner gate, expiry, UID rate limit, audit actor, idempotent replay와 동시 accept single-use를 다룬다. production callable deploy·Secret Manager·Cloud Run 진입은 확인했으며 App Check와 인증된 TestFlight 2계정 흐름은 별도다.
 
 ## Deployment Gates
 
 - service account JSON, private key, Admin SDK credential을 client나 repo에 포함하지 않는다.
-- 실제 Firebase project 생성, rules/index deploy, IAM 연결은 deployment approval 뒤 non-production 환경부터 진행한다.
-- `FUNCTIONS_REGION`과 `INVITE_CODE_HMAC_KEY`는 실제 non-production 환경에서 먼저 확정한다. MVP HMAC rotation 정책은 previous key fallback 없이 모든 미사용 초대를 무효화하고 owner가 재발급하는 방식이다. 기본 TTL이 최대 24시간이므로 계획 rotation은 만료 대기 후 수행하고, 긴급 rotation은 즉시 재발급 안내한다.
+- production project·rules/index·Functions·Secret Manager는 운영 중이다. 환경 분리와 추가 IAM 변경은 deployment approval과 이 원장의 계약을 따른다.
+- `FUNCTIONS_REGION`은 `asia-northeast3`, `INVITE_CODE_HMAC_KEY`는 production Secret Manager에 연결됐다. MVP HMAC rotation 정책은 previous key fallback 없이 모든 미사용 초대를 무효화하고 owner가 재발급하는 방식이다. 기본 TTL이 최대 24시간이므로 계획 rotation은 만료 대기 후 수행하고, 긴급 rotation은 즉시 재발급 안내한다.
 - 6자리 code는 30-bit이므로 UID rate limit만으로 충분하지 않다. production uid는 platform custom token bridge가 서버에서 만들고 기존 uid는 서명된 Firebase ID token으로만 승계한다. 공개 bootstrap 남용 억제를 위해 App Check 또는 edge rate limit을 별도 release gate로 둔다.
-- `ENFORCE_APP_CHECK=false`는 AppsInToss 호환 검증용 임시값이다. 실제 Functions/Auth emulator callable protocol, App Check, Secret Manager binding, IAM은 non-production smoke 전 release-ready가 아니다.
+- `ENFORCE_APP_CHECK=false`는 AppsInToss 호환 검증용 임시값이다. callable protocol·Secret Manager·Cloud Run 진입은 확인했지만 App Check 또는 edge rate limit 전에는 release-ready가 아니다.
 - Storage Rules가 Firestore membership을 조회하므로 실제 project에서 두 서비스 연결용 IAM 설정을 확인한다.
 - 계정 삭제, 그룹/아기 recursive delete+tombstone, export, 소유권 이전, 제거된 멤버의 로컬 캐시 삭제는 server/app workflow 구현 전 release blocker다. 삭제 workflow는 membership부터 회수한 뒤 파일·하위 문서·상위 문서를 정리하고 ID 재사용을 막아야 한다.
 - mutation receipt가 revision 당시 event payload를 중복 보존하므로 offline retry window와 충돌하지 않는 보존 기간·cleanup/export/완전 삭제 정책을 실제 project 배포 전에 확정한다. 신규 transaction을 위한 미존재 valid-ID get은 허용하므로 exact ID 존재 여부 oracle도 abuse 검토에 포함한다.

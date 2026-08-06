@@ -6,7 +6,7 @@
 - [x] Product spec와 MVP 범위 repo 원장 반영
 - [x] Android package name / iOS bundle ID 확정 — `com.seorilabs.babycare`, 2026-07-13
 - [x] AppsInToss `appName` 확정 — Console 승인값 `babynest`, 2026-08-04 readback
-- [ ] Firebase project strategy 확정
+- [x] Firebase 전용 production project와 Functions region 확정 — `seorilabs-babycare`, `asia-northeast3`
 
 ## Architecture Gate
 
@@ -24,7 +24,8 @@
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
 - [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — 최초 활성화 workflow run `30750253253`, revision `platform-api-00015-xpx`
 - [x] live custom token 신규 로그인과 합성 legacy UID 보존 smoke — UID 주입 거부·no-store·Firebase 교환·cleanup 포함
-- [ ] 실제 project의 App Check 또는 edge rate limit, Secret Manager/IAM 통합 확정
+- [x] production 초대 callable Secret Manager·Cloud Run 진입 계약 확인 — Domain Restricted Sharing 환경에서 `createInvite`·`acceptInvite` Invoker IAM check 비활성화, Firebase Auth/owner 검사는 유지
+- [ ] 실제 project의 App Check 또는 edge rate limit 확정 — 현재 `ENFORCE_APP_CHECK=false`
 - [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
 - [ ] Privacy/data safety/review notes 확정 — 진행: **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`, App Store ASC + config 반영), review notes·store-data-disclosure 작성 / 남음: Play Console '앱 콘텐츠' 개인정보 URL 수동 입력·Data safety·연령등급 콘솔 제출, App Privacy 답변
 
@@ -37,6 +38,7 @@
 - [ ] AppsInToss sandbox smoke
 - [ ] Offline/local-first smoke
 - [ ] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀
+- [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — Cloud Run 앞단 401은 2026-08-06 복구, 실제 사용자 재시도 대기
 - [ ] cross-device active sleep 단일성
 - [ ] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge
 - [ ] Analytics/crash/ad/purchase smoke, 해당 시

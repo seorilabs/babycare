@@ -1,0 +1,16 @@
+{
+  "projectId": "seorilabs-babycare",
+  "region": "asia-northeast3",
+  "services": [
+    {
+      "functionName": "acceptInvite",
+      "serviceName": "acceptinvite",
+      "invokerIamCheck": "disabled"
+    },
+    {
+      "functionName": "createInvite",
+      "serviceName": "createinvite",
+      "invokerIamCheck": "disabled"
+    }
+  ]
+}
