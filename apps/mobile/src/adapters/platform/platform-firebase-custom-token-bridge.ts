@@ -44,11 +44,27 @@ export interface PlatformFirebaseCustomTokenBridgeOptions {
   readonly baseUrl?: string;
   readonly appId?: string;
   readonly fetch?: typeof fetch;
-  readonly appCheckToken?: () => Promise<string>;
+  readonly appCheckToken?: () => Promise<string | undefined>;
 }
 
 function nonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+async function resolveAppCheckToken(
+  source?: () => Promise<string | undefined>,
+): Promise<string | undefined> {
+  if (!source) {
+    return undefined;
+  }
+  try {
+    return nonEmptyString(await source());
+  } catch {
+    // App Check enforcement belongs to the server. Omitting an unavailable
+    // token keeps rollout and recovery paths usable while enforcement is off;
+    // an enforcing server still rejects this request.
+    return undefined;
+  }
 }
 
 function decodeResult(
@@ -113,7 +129,7 @@ export class PlatformFirebaseCustomTokenBridge
   readonly #baseUrl: string;
   readonly #appId: string;
   readonly #fetch: typeof fetch;
-  readonly #appCheckToken?: () => Promise<string>;
+  readonly #appCheckToken?: () => Promise<string | undefined>;
 
   constructor(options: PlatformFirebaseCustomTokenBridgeOptions = {}) {
     this.#baseUrl = (
@@ -130,7 +146,7 @@ export class PlatformFirebaseCustomTokenBridge
     const existingFirebaseIdToken = nonEmptyString(
       input.existingFirebaseIdToken,
     );
-    const appCheckToken = nonEmptyString(await this.#appCheckToken?.());
+    const appCheckToken = await resolveAppCheckToken(this.#appCheckToken);
     const response = await this.#fetch(
       `${this.#baseUrl}/v1/auth/firebase-custom-token`,
       {
@@ -173,7 +189,7 @@ export class PlatformFirebaseCustomTokenBridge
         400,
       );
     }
-    const appCheckToken = nonEmptyString(await this.#appCheckToken?.());
+    const appCheckToken = await resolveAppCheckToken(this.#appCheckToken);
     const response = await this.#fetch(
       `${this.#baseUrl}/v1/auth/firebase-account`,
       {

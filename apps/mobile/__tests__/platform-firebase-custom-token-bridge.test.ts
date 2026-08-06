@@ -74,6 +74,36 @@ describe('PlatformFirebaseCustomTokenBridge', () => {
     });
   });
 
+  it('continues without an App Check header when token issuance is unavailable', async () => {
+    const fetchMock = jest.fn(async () =>
+      response(200, {
+        ok: true,
+        result: {firebaseCustomToken: 'custom-token', appUserId: 'pb-new'},
+      }),
+    );
+    const bridge = new PlatformFirebaseCustomTokenBridge({
+      baseUrl: 'https://platform.test',
+      fetch: fetchMock as unknown as typeof fetch,
+      appCheckToken: async () => {
+        throw new Error('App attestation failed');
+      },
+    });
+
+    await expect(bridge.createFirebaseCustomToken({})).resolves.toEqual({
+      firebaseCustomToken: 'custom-token',
+      appUserId: 'pb-new',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://platform.test/v1/auth/firebase-custom-token',
+      expect.objectContaining({
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Seori-App': 'babycare',
+        },
+      }),
+    );
+  });
+
   it('deletes the verified Firebase account mapping with App Check', async () => {
     const fetchMock = jest.fn(async () =>
       response(200, {ok: true, result: {deleted: true}}),
