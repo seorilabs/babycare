@@ -39,7 +39,8 @@ if (config.inAppFeatures?.length !== 1 || config.inAppFeatures[0]?.route !== "/"
   process.exit(1);
 }
 if (config.release?.sandboxQa !==
-    "official-ios-sandbox-installed: console-login-and-runtime-qa-pending") {
+    "latest-bundle-test-push-succeeded: runtime-qa-pending" ||
+    config.release?.latestPrivateUpload?.isTested !== true) {
   console.error("AIT sandbox state must distinguish installation from runtime QA completion.");
   process.exit(1);
 }

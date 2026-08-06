@@ -1,5 +1,11 @@
 # Work Log
 
+## 2026-08-07 — AppsInToss 최신 번들 본인 테스트 발송
+
+- AppsInToss Console 연동에서 `babynest` miniApp ID `54868`의 앱정보가 `APPROVED`, release·review request decision이 모두 `ALLOWED`임을 readback했다. 아직 라이브 번들과 번들 검수 요청은 없다.
+- 최신 deployment `019fd827-571d-791d-bd50-08f2da35afec` / version `20260807-3`을 요청자 본인 Toss 앱으로 test push했고 Console의 `isTested=true`를 확인했다.
+- 이 상태는 검수 요청의 시스템 사전조건만 충족한다. 실제 Toss 설치 기기에서 private scheme의 Storage·초대·기록·재실행·네트워크 복귀를 확인하기 전에는 번들 검수를 제출하지 않는다.
+
 ## 2026-08-07 — Apple App Privacy SDK manifest 재분류
 
 - Apple 공식 data type 정의와 iOS `Podfile.lock`의 Firebase 12.15.0 실제 privacy manifest를 대조했다. 양육자·아기 이름은 `Name`, 수유·기저귀·수면 기록은 `Health`, 자유 입력 메모는 `Other User Content`, 아기 생년월일은 `Other Data Types`, Firebase Auth UID는 `User ID`로 분리했다.
