@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "global": {
+    "collectsPersonalData": true,
+    "encryptedInTransit": true,
+    "supportsDeletionRequest": true,
+    "accountCreationMethods": ["PSL_ACM_OTHER"],
+    "accountCreationDescription": "A device-based Firebase account is created automatically without login credentials.",
+    "accountDeletionUrl": "https://www.seorilabs.com/apps/babycare/account-deletion/"
+  },
+  "dataTypes": [
+    {
+      "responseId": "PSL_NAME",
+      "collection": "required",
+      "purposes": ["PSL_APP_FUNCTIONALITY"]
+    },
+    {
+      "responseId": "PSL_USER_ACCOUNT",
+      "collection": "required",
+      "purposes": ["PSL_APP_FUNCTIONALITY", "PSL_ACCOUNT_MANAGEMENT"]
+    },
+    {
+      "responseId": "PSL_OTHER_PERSONAL",
+      "collection": "required",
+      "purposes": ["PSL_APP_FUNCTIONALITY"]
+    },
+    {
+      "responseId": "PSL_USER_GENERATED_CONTENT",
+      "collection": "optional",
+      "purposes": ["PSL_APP_FUNCTIONALITY"]
+    },
+    {
+      "responseId": "PSL_DEVICE_ID",
+      "collection": "required",
+      "purposes": ["PSL_APP_FUNCTIONALITY", "PSL_FRAUD_PREVENTION_SECURITY"]
+    }
+  ]
+}

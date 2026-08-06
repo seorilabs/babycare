@@ -39,18 +39,22 @@
 - 전송 중 암호화: **예 (HTTPS/TLS)**
 - 사용자 데이터 삭제 요청 제공: **예** (앱 내 계정 삭제 + `cs@seorilabs.com` 요청)
 - 제3자 **공유: 없음** (Firebase는 처리위탁 processor)
+- 계정 생성 방식: **기타** (별도 로그인 입력 없이 기기 기반 Firebase 계정을 자동 생성)
+- 계정 삭제 URL: `https://www.seorilabs.com/apps/babycare/account-deletion/`
 
 ### 수집 데이터 유형(모두 수집=예, 공유=아니요)
 | 카테고리 | 데이터 유형 | 목적 | 필수/선택 | 비고 |
 | --- | --- | --- | --- | --- |
-| 개인 정보 | 이름 | 앱 기능 | 필수 | 표시 이름(기록자) |
-| 개인 정보 | 기타 정보 | 앱 기능 | 필수 | **아기 이름·생년월일과 수유·기저귀·수면 돌봄 기록·메모** (2026-07-19 확정 분류) |
-| 기기 또는 기타 ID | 기기 또는 기타 ID | 앱 기능 | 필수 | Firebase 사용자 ID |
+| 개인 정보 | 이름 | 앱 기능 | 필수 | 양육자 표시 이름·아기 이름 |
+| 개인 정보 | 사용자 ID | 앱 기능·계정 관리 | 필수 | Firebase Authentication UID |
+| 개인 정보 | 기타 정보 | 앱 기능 | 필수 | 아기 생년월일 |
+| 앱 활동 | 기타 사용자 제작 콘텐츠 | 앱 기능 | 선택 | 수유·기저귀·수면 기록과 메모 |
+| 기기 또는 기타 ID | 기기 또는 기타 ID | 앱 기능·사기 방지/보안 | 필수 | Firebase Installation ID·Play Integrity/App Check attestation |
 
 - 미수집: 이메일, 위치, 금융 정보, 연락처, 사진·동영상, 메시지, 앱 활동·성능 진단, 광고 ID.
 
 ### 확정·참고
-1. **돌봄 기록 분류 = "개인 정보 > 기타 정보"** (2026-07-19 확정). 비의료 기록 도구 포지셔닝과 일관. "건강 정보"로 분류하지 않는다.
+1. **아기 생년월일 = "개인 정보 > 기타 정보", 돌봄 기록·메모 = "앱 활동 > 기타 사용자 제작 콘텐츠"**. Google Play 공식 예시에서 생년월일은 기타 개인 정보, notes/open-ended responses는 기타 사용자 제작 콘텐츠다. 비의료 기록 도구 포지셔닝에 따라 "건강 정보"로 분류하지 않는다.
 2. **계정 삭제 기능(참고)**: Data safety의 "삭제 요청 가능=예"는 앱 내 계정 삭제 + 외부 삭제 안내 페이지의 `cs@seorilabs.com` 이메일 요청으로 답한다. production `deleteAccount` 배포와 독립 owner/member 계정 E2E는 통과했고 실제 Store/TestFlight 설치본의 사람 QA가 남았다.
 
 ## 7. 기타 선언 (해당 없음)
@@ -60,5 +64,5 @@
 
 ## Data safety API 자동 반영에 대해
 - Android Publisher API에 `applications.dataSafety`(safetyLabels CSV) 쓰기 엔드포인트가 존재한다.
-- 단, Google Play Data safety CSV 형식이 정밀·비공개적이라 **손으로 만든 CSV를 라이브에 적용하면 잘못된 데이터 안전 신고 위험**이 있다. 자동 반영을 원하면 **Play Console → 데이터 보안 → CSV 내보내기로 정확한 템플릿을 받아** 이 시트대로 채운 뒤 import(또는 `apply_play_store_listing.py --apply-data-safety`)하는 것이 안전하다.
-- 현재는 위 표대로 **콘솔에서 직접 입력**을 권장한다.
+- 답변 원장은 `play-store/data-safety-responses.json`이다. Play Console에서 내보내거나 공식 도움말에서 받은 최신 CSV를 `scripts/apply-google-play-data-safety.py --template-csv <csv> --output <filled.csv>`로 생성한다.
+- 생성본을 검토한 뒤 `--apply`를 추가하면 Android Publisher API로 반영한다. API 성공은 빈 응답이므로 Play Console의 완료 상태를 별도로 readback한다.

@@ -36,7 +36,7 @@
 
 ## Policy
 
-- Data safety: 초안 `docs/05-markets/store-data-disclosure.md` — 콘솔 제출 `확정 필요`
+- Data safety: `play-store/data-safety-responses.json` 원장 기준으로 2026-08-07 Android Publisher API 제출 성공 — Play Console 완료 상태 readback 필요
 - Ads declaration: 광고 없음(`no`)
 - App access instructions: 제한된 로그인 없음. 앱이 기기 기반 계정을 자동 생성하며, 첫 기기에서 그룹 생성 후 초대 코드로 두 번째 기기가 합류함. 데모 계정 불필요
 - Target audience/content rating: 성인 양육자용, 아동 대상 아님 / IARC 전체이용가 예상 — 콘솔 설문 `확정 필요`

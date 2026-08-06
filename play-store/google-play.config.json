@@ -43,7 +43,7 @@
     "tenInchTabletScreenshots": []
   },
   "contentDeclarations": {
-    "dataSafety": "completed-in-play-console: 확정 필요",
+    "dataSafety": "submitted-via-android-publisher-api: console-readback-pending",
     "contentRating": "completed-in-play-console: 확정 필요",
     "targetAudience": "general-audience-not-children",
     "ads": "no",
@@ -58,10 +58,10 @@
     "iarcExpected": "전체이용가/Everyone 예상, 콘솔 설문으로 확정",
     "assetsDone": "아이콘 512·피처그래픽 1024x500·phone 스크린샷(홈/타임라인/통계, 1620x2880 9:16) 생성 완료. release-assets/manifest.*.json 참고.",
     "tabletScreenshots": "phone-first 앱으로 태블릿 스크린샷 미제공(선택 항목). validator의 tablet 최소 2장 경고는 Play 필수 아님.",
-    "dataSafety": "docs/05-markets/store-data-disclosure.md 근거, 콘솔 설문으로 완료 필요(CSV 미사용).",
-    "dataSafetyDetail": "docs/05-markets/store-data-disclosure.md 참고",
+    "dataSafety": "2026-08-07 최신 Play Console CSV schema와 play-store/data-safety-responses.json으로 생성해 applications.dataSafety API 제출 성공. API 성공 응답은 빈 본문이라 Console 완료 상태 readback 필요.",
+    "dataSafetyDetail": "이름·사용자 ID·생년월일·기타 사용자 제작 콘텐츠·Firebase Installation ID/Play Integrity를 수집, 공유 없음으로 신고. apps/mobile release runtime 의존성과 docs/05-markets/store-data-disclosure.md 참고.",
     "privacyPolicyDone": "privacyPolicyUrl 반영(https://www.seorilabs.com/privacy/, 회사 공용 다국어, 게시 확인). 계정 삭제 외부 경로는 accountDeletionUrl에 기록했다. 두 URL은 Play Console 앱 콘텐츠에 수동 입력 필요.",
-    "appContentSheet": "Play '앱 콘텐츠' 전 섹션 답변 시트: docs/05-markets/google-play-app-content.md (콘솔 수동 입력용). 돌봄 기록=개인정보>기타, 타깃 18+, 광고 없음, 예상 등급 전체이용가.",
+    "appContentSheet": "Play '앱 콘텐츠' 전 섹션 답변 시트: docs/05-markets/google-play-app-content.md. 생년월일=개인정보>기타, 돌봄 기록·메모=앱 활동>기타 사용자 제작 콘텐츠, 타깃 18+, 광고 없음, 예상 등급 전체이용가.",
     "latestUpload": "2026-08-06 main@c66f7e7(v1.0.8)의 signed AAB 1.0.8/1000008을 internal track completed로 업로드하고 Android Publisher API readback 완료. target SDK 36, 브랜드 launcher icon, upload certificate 서명, SHA-256 2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84를 검증했다. production 승격은 하지 않았다.",
     "internalCandidateQa": "2026-08-07 같은 AAB를 격리 API 36 AVD 2대에 sideload해 production owner/member 초대·양방향 기록, offline 기록·재실행·복귀·server readback, 교차 기기 active sleep 종료, member/owner 삭제와 cache purge를 통과하고 QA 데이터를 정리했다. Play Store app-signing 설치본과 물리 기기 Play Integrity App Check token은 미검증."
   }
