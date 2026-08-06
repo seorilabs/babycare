@@ -3,6 +3,12 @@ jest.mock('@react-native-firebase/app', () => ({
   initializeApp: jest.fn(),
 }));
 
+jest.mock('@react-native-firebase/app-check', () => ({
+  ReactNativeFirebaseAppCheckProvider: jest.fn(),
+  getToken: jest.fn(),
+  initializeAppCheck: jest.fn(),
+}));
+
 jest.mock('@react-native-firebase/auth', () => ({
   connectAuthEmulator: jest.fn(),
   getAuth: jest.fn(),
@@ -88,6 +94,7 @@ const firestore = {name: 'firestore'} as unknown as Awaited<
 const functions = {name: 'functions'} as unknown as ReturnType<
   typeof getFunctions
 >;
+const appCheck = jest.fn(async () => undefined);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -96,6 +103,7 @@ beforeEach(() => {
   mockGetAuth.mockReturnValue(auth);
   mockInitializeFirestore.mockResolvedValue(firestore);
   mockGetFunctions.mockReturnValue(functions);
+  appCheck.mockClear();
 });
 
 it('resolves a physical-device emulator host from the Metro script URL', () => {
@@ -125,12 +133,19 @@ it('creates a dummy dev app and connects every emulator before adapters are used
     platform: 'ios',
     metroScriptURL: 'http://192.168.0.24:8081/index.bundle',
     emulator: {functionsRegion: 'asia-northeast3'},
+    appCheck,
   });
 
   expect(mockInitializeApp).toHaveBeenCalledWith(
     expect.objectContaining({projectId: 'demo-babycare'}),
     expect.objectContaining({name: 'babycare-emulator'}),
   );
+  expect(appCheck).toHaveBeenCalledWith({
+    app: emulatorApp,
+    dev: true,
+    platform: 'ios',
+    source: 'emulator',
+  });
   expect(mockInitializeFirestore).toHaveBeenCalledWith(emulatorApp, {
     persistence: false,
   });
@@ -167,12 +182,22 @@ it('uses a native app without emulator connections and defaults to the deployed 
   // A native (release) Firebase app defaults the Functions region to the
   // deployed production region (asia-northeast3) rather than requiring an
   // injected region — see FIREBASE_CLOUD_RUNTIME_CONFIG.
-  const runtime = await createFirebaseRuntime({dev: false, platform: 'ios'});
+  const runtime = await createFirebaseRuntime({
+    dev: false,
+    platform: 'ios',
+    appCheck,
+  });
 
   expect(runtime.source).toBe('native');
   expect(runtime.functionsRegion).toBe('asia-northeast3');
   expect(mockInitializeApp).not.toHaveBeenCalled();
   expect(mockGetFunctions).toHaveBeenCalledWith(nativeApp, 'asia-northeast3');
+  expect(appCheck).toHaveBeenCalledWith({
+    app: nativeApp,
+    dev: false,
+    platform: 'ios',
+    source: 'native',
+  });
   expect(mockInitializeFirestore).toHaveBeenCalledWith(nativeApp, {
     persistence: false,
   });
@@ -188,6 +213,7 @@ it('lets an injected region override the native default', async () => {
     dev: false,
     platform: 'ios',
     functionsRegion: 'us-central1',
+    appCheck,
   });
 
   expect(runtime.source).toBe('native');
@@ -198,7 +224,7 @@ it('lets an injected region override the native default', async () => {
 
 it('fails explicitly when a release build has no native Firebase app', async () => {
   await expect(
-    createFirebaseRuntime({dev: false, platform: 'ios'}),
+    createFirebaseRuntime({dev: false, platform: 'ios', appCheck}),
   ).rejects.toThrow(
     'Firebase native client configuration is missing from this release build',
   );
@@ -243,6 +269,7 @@ it('builds the scoped care-event container from a ready Firebase session', async
     dev: true,
     platform: 'ios',
     metroScriptURL: 'http://127.0.0.1:8081/index.bundle',
+    appCheck,
   });
 
   await runtime.createCareEventRuntime(

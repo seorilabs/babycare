@@ -26,6 +26,7 @@ describe('PlatformFirebaseCustomTokenBridge', () => {
       baseUrl: 'https://platform.test/',
       appId: 'babycare',
       fetch: fetchMock as unknown as typeof fetch,
+      appCheckToken: async () => 'app-check-token',
     });
 
     await expect(
@@ -43,6 +44,7 @@ describe('PlatformFirebaseCustomTokenBridge', () => {
         headers: {
           'Content-Type': 'application/json',
           'X-Seori-App': 'babycare',
+          'X-Firebase-AppCheck': 'app-check-token',
         },
         body: JSON.stringify({
           appId: 'babycare',
@@ -70,6 +72,37 @@ describe('PlatformFirebaseCustomTokenBridge', () => {
     expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({
       appId: 'babycare',
     });
+  });
+
+  it('deletes the verified Firebase account mapping with App Check', async () => {
+    const fetchMock = jest.fn(async () =>
+      response(200, {ok: true, result: {deleted: true}}),
+    );
+    const bridge = new PlatformFirebaseCustomTokenBridge({
+      baseUrl: 'https://platform.test/',
+      appId: 'babycare',
+      fetch: fetchMock as unknown as typeof fetch,
+      appCheckToken: async () => 'app-check-token',
+    });
+
+    await expect(
+      bridge.deleteFirebaseAccount({firebaseIdToken: 'firebase-id-token'}),
+    ).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://platform.test/v1/auth/firebase-account',
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Seori-App': 'babycare',
+          'X-Firebase-AppCheck': 'app-check-token',
+        },
+        body: JSON.stringify({
+          appId: 'babycare',
+          firebaseIdToken: 'firebase-id-token',
+        }),
+      },
+    );
   });
 
   it('surfaces platform error codes without exposing malformed payloads', async () => {

@@ -27,6 +27,7 @@ import {
 } from '../src/app/FirebaseBabyCareApp';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
+  clear: jest.fn(async () => undefined),
   getItem: jest.fn(async () => null),
   setItem: jest.fn(async () => undefined),
   removeItem: jest.fn(async () => undefined),
@@ -195,57 +196,98 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('Firebase');
   });
 
-  it('hides cache schema details after recovering a damaged session', async () => {
-    const now = new Date('2026-08-04T04:00:00+09:00').getTime();
-    const {baby, group, identity, membership} = readySessionFixture(now);
-    const container = emptyCareContainer();
-    jest.mocked(AsyncStorage.getItem).mockResolvedValueOnce(
-      JSON.stringify({
-        version: 1,
-        context: 'internal-context-schema',
-        memberships: [],
-      }),
-    );
-    const runtime = {
-      kind: 'firebase',
-      mode: 'cloud',
-      label: 'Firebase Cloud',
-      source: 'native',
+  it('does not claim a pending account deletion completed without a verified user', async () => {
+    const deleteAccount = jest.fn(async () => undefined);
+    jest
+      .mocked(AsyncStorage.getItem)
+      .mockReset()
+      .mockResolvedValueOnce(JSON.stringify({userId: 'user-1'}));
+    jest.mocked(AsyncStorage.clear).mockClear();
+    bootstrap.mockResolvedValue({
       sessionServices: {
-        auth: {currentUser: jest.fn(async () => identity)},
-        groups: {
-          listForUser: jest.fn(async () => [group]),
-          findMembership: jest.fn(async () => membership),
-          listMemberships: jest.fn(async () => [membership]),
+        auth: {
+          verifyCurrentUser: jest.fn(async () => undefined),
         },
-        babies: {list: jest.fn(async () => [baby])},
       },
-      createCareContainer: jest.fn(async () => container),
-      refreshMemberships: jest.fn(async () => [membership]),
-    } as unknown as FirebaseRuntime;
-    bootstrap.mockResolvedValue(runtime);
+      deleteAccount,
+    } as unknown as FirebaseRuntime);
 
     await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
-      for (let count = 0; count < 12; count += 1) {
-        await Promise.resolve();
-      }
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
     if (!renderer) {
-      throw new Error('손상된 공동 기록 세션을 복구하지 못했어요');
+      throw new Error('계정 삭제 재시도 오류 화면을 렌더링하지 못했어요');
     }
 
-    expect(visibleText(renderer)).toContain(
-      '저장된 공동 돌봄 정보를 새로 불러왔어요',
+    expect(visibleText(renderer)).toContain('공동 기록을 시작하지 못했어요');
+    expect(visibleText(renderer)).not.toContain(
+      '계정과 연결된 데이터를 삭제했어요',
     );
-    expect(visibleText(renderer)).not.toContain('context');
-    expect(visibleText(renderer)).not.toContain('현재 형식');
-    expect(AsyncStorage.removeItem).toHaveBeenCalled();
-    const dashboard = renderer.root.findByType(FirebaseCareDashboard);
-    expect(dashboard.props.runtimeError.cause).toBeInstanceOf(
-      CloudCareContextHydrationError,
-    );
+    expect(deleteAccount).not.toHaveBeenCalled();
+    expect(AsyncStorage.clear).not.toHaveBeenCalled();
   });
+
+  it(
+    'hides cache schema details after recovering a damaged session',
+    async () => {
+      const now = new Date('2026-08-04T04:00:00+09:00').getTime();
+      const {baby, group, identity, membership} = readySessionFixture(now);
+      const container = emptyCareContainer();
+      jest
+        .mocked(AsyncStorage.getItem)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(
+          JSON.stringify({
+            version: 1,
+            context: 'internal-context-schema',
+            memberships: [],
+          }),
+        );
+      const runtime = {
+        kind: 'firebase',
+        mode: 'cloud',
+        label: 'Firebase Cloud',
+        source: 'native',
+        sessionServices: {
+          auth: {currentUser: jest.fn(async () => identity)},
+          groups: {
+            listForUser: jest.fn(async () => [group]),
+            findMembership: jest.fn(async () => membership),
+            listMemberships: jest.fn(async () => [membership]),
+          },
+          babies: {list: jest.fn(async () => [baby])},
+        },
+        createCareContainer: jest.fn(async () => container),
+        refreshMemberships: jest.fn(async () => [membership]),
+      } as unknown as FirebaseRuntime;
+      bootstrap.mockResolvedValue(runtime);
+
+      await ReactTestRenderer.act(async () => {
+        renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+        for (let count = 0; count < 12; count += 1) {
+          await Promise.resolve();
+        }
+      });
+      if (!renderer) {
+        throw new Error('손상된 공동 기록 세션을 복구하지 못했어요');
+      }
+
+      expect(visibleText(renderer)).toContain(
+        '저장된 공동 돌봄 정보를 새로 불러왔어요',
+      );
+      expect(visibleText(renderer)).not.toContain('context');
+      expect(visibleText(renderer)).not.toContain('현재 형식');
+      expect(AsyncStorage.removeItem).toHaveBeenCalled();
+      const dashboard = renderer.root.findByType(FirebaseCareDashboard);
+      expect(dashboard.props.runtimeError.cause).toBeInstanceOf(
+        CloudCareContextHydrationError,
+      );
+    },
+    15_000,
+  );
 
   it('hides technical details when session recovery or revoked-cache cleanup fails', async () => {
     const now = new Date('2026-08-04T00:00:00+09:00').getTime();
@@ -411,6 +453,7 @@ describe('FirebaseBabyCareApp product copy', () => {
         <FirebaseCareDashboard
           container={container}
           onInvite={async () => undefined}
+          onDeleteAccount={async () => undefined}
           onRefreshMembers={async () => undefined}
           onRuntimeError={onRuntimeError}
           ready={ready}
@@ -533,6 +576,7 @@ describe('FirebaseBabyCareApp product copy', () => {
         <FirebaseCareDashboard
           container={container}
           onInvite={async () => undefined}
+          onDeleteAccount={async () => undefined}
           onRefreshMembers={async () => undefined}
           onRuntimeError={onRuntimeError}
           ready={ready}

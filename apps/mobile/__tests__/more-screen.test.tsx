@@ -448,4 +448,116 @@ describe('MoreScreen', () => {
     expect(JSON.stringify(alert.mock.calls)).not.toContain('firestore');
     ReactTestRenderer.act(() => renderer.unmount());
   });
+
+  it('warns an owner that account deletion removes the shared group and submits once', async () => {
+    let finishDelete!: () => void;
+    const deleteAccount = jest.fn(
+      () =>
+        new Promise<void>(resolve => {
+          finishDelete = resolve;
+        }),
+    );
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onDeleteAccount={deleteAccount}
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: '',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    ReactTestRenderer.act(() => {
+      renderer.root.findByProps({accessibilityLabel: '계정 삭제'}).props.onPress();
+    });
+    const confirmation = alert.mock.calls.find(
+      ([title]) => title === '계정을 영구 삭제할까요?',
+    );
+    expect(confirmation?.[1]).toContain('모든 돌봄 기록');
+    expect(confirmation?.[1]).toContain('다른 구성원');
+    const destructive = confirmation?.[2]?.find(
+      action => action.style === 'destructive',
+    );
+
+    ReactTestRenderer.act(() => {
+      destructive?.onPress?.();
+      destructive?.onPress?.();
+    });
+    expect(deleteAccount).toHaveBeenCalledTimes(1);
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '계정 삭제 중…'}).props
+        .accessibilityState,
+    ).toEqual({disabled: true});
+
+    await ReactTestRenderer.act(async () => {
+      finishDelete();
+      await Promise.resolve();
+    });
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('does not expose technical details when account deletion fails', async () => {
+    const technicalMessage = '[functions/internal] recursiveDelete failed';
+    const deleteAccount = jest.fn(async () => {
+      throw new Error(technicalMessage);
+    });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onDeleteAccount={deleteAccount}
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'member-1',
+            caregiverName: '할머니',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: '',
+            runtimeMode: 'firebase',
+            membershipRole: 'member',
+          }}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    ReactTestRenderer.act(() => {
+      renderer.root.findByProps({accessibilityLabel: '계정 삭제'}).props.onPress();
+    });
+    const confirmation = alert.mock.calls.find(
+      ([title]) => title === '계정을 영구 삭제할까요?',
+    );
+    expect(confirmation?.[1]).toContain('내가 남긴 돌봄 기록');
+    await ReactTestRenderer.act(async () => {
+      confirmation?.[2]?.find(action => action.style === 'destructive')?.onPress?.();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(alert).toHaveBeenCalledWith(
+      '계정을 삭제하지 못했어요',
+      '연결을 확인하고 잠시 후 다시 시도해 주세요.',
+    );
+    expect(JSON.stringify(alert.mock.calls)).not.toContain(technicalMessage);
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
 });

@@ -4,7 +4,7 @@
 
 이 문서는 MVP의 `groups`, `members`, `babies`, `events`, `activeSleeps`, `eventMutationReceipts`, `invites`, 아기 이미지 Storage 경계를 다룬다. 앱의 직접 사용자는 성인 양육자지만 저장 대상에는 아동의 식별·돌봄·건강·사진 정보가 포함되므로 기본 공개나 추측 가능한 링크 공유를 허용하지 않는다.
 
-현재 증거는 로컬 Rules 테스트, client transaction adapter Jest, Functions 순수 unit/Firestore Admin transaction Emulator 테스트와 platform custom token bridge 단위 테스트다. 또한 실제 signer resource IAM·registry sync·API 배포, 신규 custom token 교환과 합성 legacy UID 보존 live smoke까지 검증했다. 실제 기존 사용자·실기기 migration, App Check와 계정 삭제 workflow는 아직 검증하지 않았다.
+현재 증거는 로컬 Rules 테스트, client transaction adapter Jest, Functions 순수 unit/Firestore Admin transaction Emulator 테스트와 platform custom token bridge 단위 테스트다. 또한 실제 signer resource IAM·registry sync·API 배포, 신규 custom token 교환과 합성 legacy UID 보존 live smoke까지 검증했다. App Check client/Platform 검증 경계와 계정 삭제 workflow는 구현·로컬 검증했으며, 실제 기존 사용자 migration, App Check 실기기 token, 계정 삭제 production callable·일회성 live QA가 남았다.
 
 ## Data Classification
 

@@ -40,6 +40,7 @@
 
 - Signing team (Team ID): `HCDUXX4Z3X`. Xcode Cloud Release는 Automatic managed signing을 사용하며, Firebase plist는 redacted Xcode Cloud secret으로 복원한다.
 - 최신 후보: `main@1d768c2`(`v1.0.6`)의 Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0`이 성공했다. App Store Connect build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`은 실제 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. Xcode Cloud build를 내부 그룹 `서리랩스 내부테스터`에 명시적으로 연결한 뒤 `IN_BETA_TESTING`과 테스터 2명을 API로 readback했다(2026-08-06). 실제 테스터 설치·실기기 QA와 App Review 제출은 하지 않았다.
+- 다음 후보: 현재 source의 iOS Release `1.0.7`/`55`를 production App Attest entitlement로 빌드·서명해 연결된 iPhone 12 Pro에 설치하고 버전을 readback했다. 기기 잠금으로 cold start·App Check token은 미확인이고 App Store Connect 업로드 전이다.
 - 1.0.2 후보(과거 실패): `main@d11bbfa`(`v1.0.2`)의 device archive는 암호화 선언 키 누락과 strict codesign `CSSMERR_TP_NOT_TRUSTED`로 업로드하지 않았다. 이 실패는 1.0.5 Xcode Cloud 성공으로 빌드 경로 기준 해결됐다.
 - App Store provisioning profile: ✅ App Store profile로 export 완료
 - TestFlight group: ✅ 내부 그룹 `서리랩스 내부테스터`에 `1.0.6`/`54` build 연결, `IN_BETA_TESTING`, 테스터 2명 API readback 완료 / 실제 테스터 설치·실기기 QA는 남음

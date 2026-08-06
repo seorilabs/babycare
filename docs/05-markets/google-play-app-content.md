@@ -5,6 +5,7 @@
 
 ## 1. 개인정보처리방침 (Privacy policy)
 - URL: `https://www.seorilabs.com/privacy/`
+- 계정 삭제 URL: `https://www.seorilabs.com/apps/babycare/account-deletion/`
 
 ## 2. 앱 액세스 (App access)
 - **일부 기능이 제한됨** 선택 후 지침 제공(또는 "모든 기능 이용 가능"). 앱은 별도 로그인 없이 익명 인증으로 자동 시작하므로 심사용 자격증명은 불필요.
@@ -53,7 +54,7 @@
 
 ### 확정·참고
 1. **돌봄 기록 분류 = "개인 정보 > 기타 정보"** (2026-07-19 확정). 비의료 기록 도구 포지셔닝과 일관. "건강 정보"로 분류하지 않는다.
-2. **계정 삭제 기능(참고)**: Data safety의 "삭제 요청 가능=예"는 앱 내 계정 삭제 + `cs@seorilabs.com` 이메일 요청으로 답한다. 단 실제 **앱 내 계정 삭제 UX 구현·검증은 릴리스 전 필요**(product-spec blocker) — 이메일 삭제 경로는 개인정보처리방침에 이미 명시.
+2. **계정 삭제 기능(참고)**: Data safety의 "삭제 요청 가능=예"는 앱 내 계정 삭제 + 외부 삭제 안내 페이지의 `cs@seorilabs.com` 이메일 요청으로 답한다. 앱 UX·server workflow·Emulator 검증은 완료했고 production callable 배포와 실기기 일회성 계정 QA가 남았다.
 
 ## 7. 기타 선언 (해당 없음)
 - 금융 기능: **없음**

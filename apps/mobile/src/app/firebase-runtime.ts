@@ -20,15 +20,22 @@ import {
   type Functions,
 } from '@react-native-firebase/functions';
 import type {
+  AccountDeletionPort,
   AnalyticsPort,
   CareGroupInvite,
   ClockPort,
   IdGeneratorPort,
   Membership,
+  UserId,
 } from '@babycare/product-core';
 import type {CareEventTimelineFeedConfig} from '@babycare/product-data';
 
 import {FirebaseAuthAdapter} from '../adapters/firebase/firebase-auth-adapter';
+import {
+  initializeFirebaseAppCheck,
+  type FirebaseAppCheckInitializer,
+} from '../adapters/firebase/firebase-app-check';
+import {FirebaseAccountDeletionService} from '../adapters/firebase/firebase-account-deletion-service';
 import {FirebaseBabyRepository} from '../adapters/firebase/firebase-baby-repository';
 import {FirebaseCareEventRemoteStore} from '../adapters/firebase/firebase-care-event-repository';
 import {FirebaseCareGroupRepository} from '../adapters/firebase/firebase-care-group-repository';
@@ -98,6 +105,8 @@ export interface FirebaseRuntimeOptions {
   readonly analytics?: AnalyticsPort;
   readonly timeline?: CareEventTimelineFeedConfig;
   readonly authBridge?: FirebaseCustomTokenBridge;
+  readonly accountDeletion?: AccountDeletionPort;
+  readonly appCheck?: FirebaseAppCheckInitializer;
 }
 
 export interface FirebaseCareEventRuntimeCallbacks {
@@ -122,6 +131,7 @@ export interface FirebaseRuntime {
     callbacks: FirebaseCareEventRuntimeCallbacks,
   ): ReturnType<typeof createCareEventContainer>;
   createInvite(session: ReadyFirebaseSession): Promise<CareGroupInvite>;
+  deleteAccount(userId: UserId): Promise<void>;
   refreshMemberships(
     session: ReadyFirebaseSession,
   ): Promise<readonly Membership[]>;
@@ -268,6 +278,13 @@ export async function createFirebaseRuntime(
     );
   }
 
+  const appCheck = await (options.appCheck ?? initializeFirebaseAppCheck)({
+    app: resolved.app,
+    dev,
+    platform,
+    source: resolved.source,
+  });
+
   const auth = getAuth(resolved.app);
   // The durable BabyCare outbox is the only disk-backed event queue. Configure
   // Firestore before any repository can issue a read or write.
@@ -310,7 +327,11 @@ export async function createFirebaseRuntime(
   const authBridge =
     options.authBridge ??
     (resolved.source === 'native'
-      ? new PlatformFirebaseCustomTokenBridge()
+      ? new PlatformFirebaseCustomTokenBridge({
+          appCheckToken: appCheck
+            ? () => appCheck.getToken()
+            : undefined,
+        })
       : undefined);
   const authAdapter = new FirebaseAuthAdapter(
     auth,
@@ -320,6 +341,14 @@ export async function createFirebaseRuntime(
   const groups = new FirebaseCareGroupRepository(firestore);
   const babies = new FirebaseBabyRepository(firestore);
   const invites = new FirebaseInviteService(functions, authAdapter);
+  const accountDeletion =
+    options.accountDeletion ??
+    new FirebaseAccountDeletionService(
+      functions,
+      authAdapter,
+      auth,
+      authBridge,
+    );
   const clock = options.clock ?? {now: () => Date.now()};
   const documentIds = options.documentIds ?? new RandomCareDocumentIdFactory();
   const eventIds = options.eventIds ?? new NativeIdGenerator();
@@ -377,6 +406,12 @@ export async function createFirebaseRuntime(
       return invites.createInvite({
         groupId: session.context.group.id,
         requestedBy: session.context.identity.userId,
+      });
+    },
+    deleteAccount(userId) {
+      return accountDeletion.deleteAccount({
+        userId,
+        confirmation: 'DELETE',
       });
     },
     refreshMemberships(session) {

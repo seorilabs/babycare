@@ -25,7 +25,11 @@ test('production callable exports have a DRS-compatible Cloud Run access contrac
     manifest.runtime.serviceAccountEmail,
     /^[^@]+@[^@]+\.iam\.gserviceaccount\.com$|^[^@]+@developer\.gserviceaccount\.com$/,
   );
-  assert.deepEqual(manifest.runtime.projectRoles, ['roles/datastore.user']);
+  assert.deepEqual(manifest.runtime.projectRoles, [
+    'roles/datastore.user',
+    'roles/firebaseauth.admin',
+    'roles/storage.objectAdmin',
+  ]);
   assert.ok(Array.isArray(manifest.services));
 
   const callableExports = sorted(

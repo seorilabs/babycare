@@ -12,6 +12,9 @@ export interface FirebaseCustomTokenBridge {
   createFirebaseCustomToken(input: {
     readonly existingFirebaseIdToken?: string;
   }): Promise<FirebaseCustomTokenBridgeResult>;
+  deleteFirebaseAccount?(input: {
+    readonly firebaseIdToken: string;
+  }): Promise<void>;
 }
 
 interface PlatformErrorBody {
@@ -41,6 +44,7 @@ export interface PlatformFirebaseCustomTokenBridgeOptions {
   readonly baseUrl?: string;
   readonly appId?: string;
   readonly fetch?: typeof fetch;
+  readonly appCheckToken?: () => Promise<string>;
 }
 
 function nonEmptyString(value: unknown): string | undefined {
@@ -78,12 +82,38 @@ function decodeResult(
   return { firebaseCustomToken, appUserId };
 }
 
+function assertDeleted(
+  response: Response,
+  envelope: PlatformEnvelope,
+): void {
+  if (!response.ok || envelope.ok !== true) {
+    const code = nonEmptyString(envelope.error?.code) ?? 'platform_unavailable';
+    const message =
+      nonEmptyString(envelope.error?.message) ??
+      '인증 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.';
+    throw new PlatformAuthBridgeError(code, message, response.status);
+  }
+  if (
+    !envelope.result ||
+    typeof envelope.result !== 'object' ||
+    !('deleted' in envelope.result) ||
+    envelope.result.deleted !== true
+  ) {
+    throw new PlatformAuthBridgeError(
+      'platform_response_invalid',
+      '계정 삭제 응답을 확인하지 못했어요.',
+      response.status,
+    );
+  }
+}
+
 export class PlatformFirebaseCustomTokenBridge
   implements FirebaseCustomTokenBridge
 {
   readonly #baseUrl: string;
   readonly #appId: string;
   readonly #fetch: typeof fetch;
+  readonly #appCheckToken?: () => Promise<string>;
 
   constructor(options: PlatformFirebaseCustomTokenBridgeOptions = {}) {
     this.#baseUrl = (
@@ -91,6 +121,7 @@ export class PlatformFirebaseCustomTokenBridge
     ).replace(/\/+$/, '');
     this.#appId = options.appId ?? PLATFORM_FIREBASE_AUTH_CONFIG.appId;
     this.#fetch = options.fetch ?? fetch;
+    this.#appCheckToken = options.appCheckToken;
   }
 
   async createFirebaseCustomToken(input: {
@@ -99,6 +130,7 @@ export class PlatformFirebaseCustomTokenBridge
     const existingFirebaseIdToken = nonEmptyString(
       input.existingFirebaseIdToken,
     );
+    const appCheckToken = nonEmptyString(await this.#appCheckToken?.());
     const response = await this.#fetch(
       `${this.#baseUrl}/v1/auth/firebase-custom-token`,
       {
@@ -106,6 +138,9 @@ export class PlatformFirebaseCustomTokenBridge
         headers: {
           'Content-Type': 'application/json',
           'X-Seori-App': this.#appId,
+          ...(appCheckToken
+            ? {'X-Firebase-AppCheck': appCheckToken}
+            : {}),
         },
         body: JSON.stringify({
           appId: this.#appId,
@@ -125,5 +160,48 @@ export class PlatformFirebaseCustomTokenBridge
       );
     }
     return decodeResult(response, envelope);
+  }
+
+  async deleteFirebaseAccount(input: {
+    readonly firebaseIdToken: string;
+  }): Promise<void> {
+    const firebaseIdToken = nonEmptyString(input.firebaseIdToken);
+    if (!firebaseIdToken) {
+      throw new PlatformAuthBridgeError(
+        'request_invalid',
+        '계정 확인 token이 필요해요.',
+        400,
+      );
+    }
+    const appCheckToken = nonEmptyString(await this.#appCheckToken?.());
+    const response = await this.#fetch(
+      `${this.#baseUrl}/v1/auth/firebase-account`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Seori-App': this.#appId,
+          ...(appCheckToken
+            ? {'X-Firebase-AppCheck': appCheckToken}
+            : {}),
+        },
+        body: JSON.stringify({
+          appId: this.#appId,
+          firebaseIdToken,
+        }),
+      },
+    );
+
+    let envelope: PlatformEnvelope;
+    try {
+      envelope = (await response.json()) as PlatformEnvelope;
+    } catch {
+      throw new PlatformAuthBridgeError(
+        'platform_response_invalid',
+        '계정 삭제 응답을 확인하지 못했어요.',
+        response.status,
+      );
+    }
+    assertDeleted(response, envelope);
   }
 }

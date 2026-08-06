@@ -13,12 +13,14 @@ function SettingRow(props: {
   readonly detail?: string;
   readonly theme: AppTheme;
   readonly onPress?: () => void;
+  readonly disabled?: boolean;
 }) {
   return (
     <Pressable
       accessibilityLabel={props.onPress ? props.title : undefined}
       accessibilityRole={props.onPress ? 'button' : undefined}
-      disabled={!props.onPress}
+      accessibilityState={props.onPress ? {disabled: props.disabled ?? false} : undefined}
+      disabled={!props.onPress || props.disabled}
       onPress={props.onPress}
       style={[styles.settingRow, {borderBottomColor: props.theme.colors.border}]}>
       <View style={[styles.settingIcon, {backgroundColor: props.theme.colors.surfaceMuted}]}>
@@ -41,6 +43,7 @@ export function MoreScreen(props: {
   readonly inviteExpiresAt?: number;
   readonly onCreateInvite?: () => Promise<void>;
   readonly onRefreshMembers?: () => Promise<void>;
+  readonly onDeleteAccount?: () => Promise<void>;
 }) {
   const firebase = props.session.runtimeMode === 'firebase';
   const owner = props.session.membershipRole !== 'member';
@@ -54,6 +57,8 @@ export function MoreScreen(props: {
     firebase && Boolean(props.session.inviteCode) && !inviteExpired;
   const inviteCreationInFlight = useRef(false);
   const [inviteCreationPending, setInviteCreationPending] = useState(false);
+  const accountDeletionInFlight = useRef(false);
+  const [accountDeletionPending, setAccountDeletionPending] = useState(false);
 
   const createInvite = () => {
     if (inviteCreationInFlight.current || !props.onCreateInvite) {
@@ -106,6 +111,50 @@ export function MoreScreen(props: {
         '개인정보 처리방침을 열지 못했어요',
         '인터넷 연결을 확인하고 다시 시도해 주세요.',
       ),
+    );
+  };
+
+  const deleteAccount = () => {
+    if (!props.onDeleteAccount || accountDeletionInFlight.current) {
+      return;
+    }
+    const consequence = owner
+      ? '계정과 이 돌봄 그룹의 아기 정보·모든 돌봄 기록이 영구 삭제됩니다. 다른 구성원도 이 그룹에 더 이상 접근할 수 없습니다.'
+      : '계정과 그룹 멤버십, 내가 남긴 돌봄 기록이 영구 삭제됩니다. 다른 구성원의 그룹과 기록은 유지됩니다.';
+    Alert.alert(
+      '계정을 영구 삭제할까요?',
+      `${consequence}\n\n삭제한 데이터는 복구할 수 없습니다.`,
+      [
+        {text: '취소', style: 'cancel'},
+        {
+          text: '계정 삭제',
+          style: 'destructive',
+          onPress: () => {
+            if (accountDeletionInFlight.current) {
+              return;
+            }
+            accountDeletionInFlight.current = true;
+            setAccountDeletionPending(true);
+            let request: Promise<void>;
+            try {
+              request = props.onDeleteAccount!();
+            } catch (error) {
+              request = Promise.reject(error);
+            }
+            request
+              .catch(() =>
+                Alert.alert(
+                  '계정을 삭제하지 못했어요',
+                  '연결을 확인하고 잠시 후 다시 시도해 주세요.',
+                ),
+              )
+              .finally(() => {
+                accountDeletionInFlight.current = false;
+                setAccountDeletionPending(false);
+              });
+          },
+        },
+      ],
     );
   };
 
@@ -261,6 +310,20 @@ export function MoreScreen(props: {
           theme={props.theme}
           title="개인정보 처리방침"
         />
+        {firebase ? (
+          <SettingRow
+            detail={
+              owner
+                ? '계정과 돌봄 그룹의 모든 데이터를 영구 삭제해요'
+                : '계정과 내 멤버십·작성 기록을 영구 삭제해요'
+            }
+            disabled={accountDeletionPending}
+            icon="⌫"
+            onPress={deleteAccount}
+            theme={props.theme}
+            title={accountDeletionPending ? '계정 삭제 중…' : '계정 삭제'}
+          />
+        ) : null}
       </View>
 
       {!firebase ? <Pressable

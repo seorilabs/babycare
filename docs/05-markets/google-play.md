@@ -19,6 +19,7 @@
 - Short description KO: `수유·기저귀·수면을 여러 양육자가 실시간으로 함께 기록하는 공동 돌봄 앱` (40/80)
 - Full description: `play-store/google-play.config.json`의 `storeListing.fullDescription` (KO 656자 / EN 1254자, 한도 4000 내)
 - App icon (512x512): `play-store/assets/icon-512.png` ✅ 생성
+- Android launcher icon: 제품 브랜드 legacy/adaptive icon ✅ `1.0.7` Release AAB에 포함 확인
 - Feature graphic (1024x500): `play-store/assets/feature-graphic-1024x500.png` ✅ 생성
 - Native splash screen: 구현됨(제품 브랜딩 launch 화면) — 최종 브랜딩 `확정 필요`
 - Phone screenshots (1620x2880, 9:16): 홈/타임라인/통계 3컷 ✅ `play-store/screenshots/phone/`
@@ -28,6 +29,7 @@
 
 - Signing key / Play App Signing: ✅ 업로드 keystore·서명 완료, signed AAB 업로드로 Play App Signing 등록 확인. 기존 공용 publisher `seorilabs-play-publisher@seorilabs-gws.iam.gserviceaccount.com`의 Android Publisher API edit 생성·삭제도 성공했다. `v1.0.6` deploy run `31009039603`은 signed AAB 생성과 GitHub OIDC까지 통과했지만, 이 repo principal에 공용 SA의 `roles/iam.workloadIdentityUser`가 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. 새 SA는 만들지 않는다.
 - Internal testing track: ✅ `v1.0.6` / `1d768c2` signed AAB(`1.0.6`/`1000006`, target SDK 36, SHA-256 `4589cc4b5d12646a06a33628dd15d669f8b047488926b79f2eefb5fbb17fe50e`)를 x64/JDK 21 build run `31061827436`에서 생성·서명 검증한 뒤 승인된 로컬 publisher credential로 internal `draft` 업로드 및 Android Publisher API readback 완료(2026-08-06) / internal 릴리스 활성화·테스터 배포는 남음
+- 다음 후보: 현재 source의 로컬 signed AAB `1.0.7`/`1000007`, target SDK 36, SHA-256 `f1dc8b6d9a46502a97f42adee8911621a71c4c9348f702d1233265fda426fcfe` 검증 완료. App Check·계정 삭제·브랜드 launcher icon 포함, Play 업로드 전
 - Production rollout policy: `확정 필요` (승인 후 결정)
 - Release notes: `서비스 안정성과 앱 사용 성능을 개선했습니다.`
 
@@ -39,3 +41,4 @@
 - Target audience/content rating: 성인 양육자용, 아동 대상 아님 / IARC 전체이용가 예상 — 콘솔 설문 `확정 필요`
 - Financial/payment features: 없음
 - Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시 완료. Play는 API로 안 써지므로 **Play Console '앱 콘텐츠 > 개인정보처리방침'에 수동 입력** 필요
+- Account deletion URL: `https://www.seorilabs.com/apps/babycare/account-deletion/` — GitHub Pages 배포 후 live 200 확인 및 Play Console 입력 필요

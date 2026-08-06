@@ -4,6 +4,7 @@ export * from './domain/care-group.ts';
 export * from './domain/ids.ts';
 export * from './domain/invite.ts';
 export * from './ports/analytics.ts';
+export * from './ports/account-deletion.ts';
 export * from './ports/auth.ts';
 export * from './ports/baby-repository.ts';
 export * from './ports/care-event-repository.ts';

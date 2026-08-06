@@ -4,7 +4,9 @@
   "runtime": {
     "serviceAccountEmail": "104011164568-compute@developer.gserviceaccount.com",
     "projectRoles": [
-      "roles/datastore.user"
+      "roles/datastore.user",
+      "roles/firebaseauth.admin",
+      "roles/storage.objectAdmin"
     ]
   },
   "services": [
@@ -16,6 +18,11 @@
     {
       "functionName": "createInvite",
       "serviceName": "createinvite",
+      "invokerIamCheck": "disabled"
+    },
+    {
+      "functionName": "deleteAccount",
+      "serviceName": "deleteaccount",
       "invokerIamCheck": "disabled"
     }
   ]
