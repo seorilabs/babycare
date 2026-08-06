@@ -36,7 +36,7 @@
   },
   "release": {
     "artifact": "apps/ait/*.ait",
-    "sandboxQa": "official-ios-sandbox-installed: console-login-and-runtime-qa-pending",
+    "sandboxQa": "latest-bundle-test-push-succeeded: runtime-qa-pending",
     "latestPrivateUpload": {
       "ref": "main",
       "sourceSha": "707df1045324c3a5f93ded7ee8aed0e6637e9583",
@@ -44,6 +44,7 @@
       "artifactId": 8974273502,
       "deploymentId": "019fd827-571d-791d-bd50-08f2da35afec",
       "status": "uploaded",
+      "isTested": true,
       "uploadedAt": "2026-08-07T02:38:38+09:00"
     }
   }
