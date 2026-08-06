@@ -22,7 +22,7 @@
 | 금융 정보 | 아니요 | — | — | 결제 없음 |
 
 - 전송 중 데이터 암호화: **예** (HTTPS/TLS)
-- 사용자가 데이터 삭제 요청 가능: **예** (계정 삭제 경로 — 구현·검증 `확정 필요`)
+- 사용자가 데이터 삭제 요청 가능: **예** (앱 내 계정 삭제 구현·Emulator 검증 완료, 외부 경로 `https://www.seorilabs.com/apps/babycare/account-deletion/`; production callable·실기기 QA 남음)
 - "공유(shared)"는 Firebase를 처리위탁(processor)으로 보아 제3자 공유에 해당하지 않는 것으로 판단. 콘솔 정책 문구로 최종 확인 필요.
 - 대상 연령: 아동 대상 아님(성인 양육자용). Families 정책 비대상.
 
@@ -44,6 +44,6 @@
 ## 미확정 (blocker)
 
 - Firebase Analytics/Crashlytics 실제 전송 필드 최종 점검(allowlist 준수 검증).
-- 계정 삭제·데이터 완전 삭제 절차 구현·검증.
+- 계정 삭제 production callable 배포와 일회성 owner/member 계정 실기기 검증.
 - 처리위탁/제3자 공유 판단 legal 확정.
 - 개인정보처리방침 호스팅 URL — `docs/legal/privacy-policy.md` 초안 참고.

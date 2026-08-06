@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-06 — 계정 삭제·App Check와 Android 브랜드 후보 준비
+
+- 더보기 화면에 owner/member 범위를 구분한 계정 삭제 확인 UX를 추가했다. callable `deleteAccount`는 `DELETE` 명시 확인 뒤 member의 멤버십·작성 기록·active sleep·mutation receipt를 삭제하거나, owner의 그룹 하위 데이터·Storage 객체·초대·감사 기록을 정리하고 재사용 방지 tombstone을 남긴 뒤 Firebase Auth 사용자를 삭제한다. 응답 유실 뒤 재실행을 위한 local deletion intent와 민감 cache purge도 추가했다.
+- mobile App Check를 앱 초기화보다 먼저 연결했다. Android Release는 Play Integrity, iOS Release는 App Attest와 DeviceCheck fallback, 개발 빌드는 debug provider를 사용하며 Platform custom-token·계정 삭제 요청에도 `X-Firebase-AppCheck`를 전달한다. production provider 구성은 readback했지만 기존 후보 보호를 위해 Platform `require_app_check`와 Functions `ENFORCE_APP_CHECK`는 새 후보 실기기 확인 전까지 false로 유지했다.
+- Platform에 Firebase ID token과 App Check를 검증하는 `DELETE /v1/auth/firebase-account`를 배포했다. PR #26 merge commit `bfa34a5`를 production runtime run `31108912145`로 배포했고, 네 service와 worker가 같은 image를 사용하며 API/IAP/ingest readiness 200과 삭제 경로의 400 입력 검증을 확인했다.
+- Android 기본 launcher icon을 제품 브랜드 legacy/adaptive icon으로 교체하고 회귀 검사를 mobile gate에 연결했다. 로컬 Release AAB `1.0.7`/`1000007`은 package `com.seorilabs.babycare`, target SDK 36, SHA-256 `f1dc8b6d9a46502a97f42adee8911621a71c4c9348f702d1233265fda426fcfe`이며 release 서명과 브랜드 icon 리소스를 확인했다. 아직 Play Console에는 업로드하지 않았다.
+- iOS Release `1.0.7`/`55`를 production App Attest entitlement로 빌드·서명해 연결된 iPhone 12 Pro에 설치했다. 기기 readback은 성공했지만 기기가 잠겨 있어 cold start와 App Check token 발급은 아직 확인하지 못했다. App Store Connect에는 업로드하지 않았다.
+- 전체 검증에서 core 40건, mobile 37 suites/294건, Rules 23건, Functions unit 14건, Functions Emulator 7건, mobile 2계정 emulator flow 1건, Firebase config 3건, build-workflow 9건과 typecheck·lint·architecture·docs gate가 통과했다. 남음: `deleteAccount` production 배포·일회성 계정 live QA, 새 양쪽 스토어 후보 업로드, 실제 2계정·2기기 흐름, App Check 강제 전환, 마켓 설문·심사·공개 배포.
+
 ## 2026-08-06 — 초대 함수 Firestore 런타임 권한 복구
 
 - Cloud Run Invoker IAM check 복구 뒤 TestFlight `1.0.6`의 인증된 `createInvite` 요청 두 건이 함수까지 도달했지만 HTTP 500으로 실패했다. 운영 그룹과 owner membership은 정상이고 `functionRateLimits/{uid}/actions/invite-create`가 생성되지 않아 첫 Firestore transaction 진입에서 실패한 것으로 특정했다.

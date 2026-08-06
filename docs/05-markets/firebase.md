@@ -9,8 +9,8 @@
 - Firebase project ID: `seorilabs-babycare`
 - Region: `asia-northeast3`
 - Billing plan: `확정 필요`
-- Production project provisioning/deploy: Auth·Firestore Rules/indexes·초대 callable 운영 중
-- Functions invite slice: unit 10건·Firestore transaction Emulator 5건 통과, `createInvite`·`acceptInvite` production ACTIVE. Secret Manager 연결과 callable 진입 계약 확인
+- Production project provisioning/deploy: Auth·Firestore Rules/indexes·초대 callable 운영 중. 계정 삭제 callable은 구현·검증 완료, production 배포 대기
+- Functions slice: unit 14건·Firestore transaction Emulator 7건 통과, `createInvite`·`acceptInvite` production ACTIVE. `deleteAccount`는 production 배포 대기
 
 로컬 규칙 검증은 실제 project나 자격증명 없이 `babycare-rules-test`라는 Emulator 전용 project ID로만 실행한다.
 
@@ -21,13 +21,13 @@
 | Auth | 예 | 성인 양육자 신원과 그룹 멤버십 연결. production mobile은 platform custom token bridge, 개발 Emulator는 direct anonymous |
 | Firestore | 예 | 그룹, 멤버십, 아기, 돌봄 이벤트 실시간 동기화. native app composition과 production project 연결 완료 |
 | Storage | Rules만 준비 | 그룹 경로의 지원 이미지, 파일당 10 MiB 이하만 허용. 현재 MVP UI에 upload 흐름 없음 |
-| Cloud Functions / Run | 예 | `createInvite`, `acceptInvite` production ACTIVE. HMAC secret과 DRS 호환 callable 진입 계약 확인. App Check는 미강제 |
+| Cloud Functions / Run | 예 | `createInvite`, `acceptInvite` production ACTIVE. `deleteAccount` 구현·검증 완료, 배포 대기. App Check는 미강제 |
 | Remote Config | MVP 미사용 | 후속 기능 flag/tuning 후보. 보안 결정에는 사용하지 않음 |
 | Analytics | 연결 전 | event type 등 PII-free allowlist만 허용. 현재 app composition은 no-op |
 | Crashlytics | 연결 전 | PII/돌봄 기록 값을 log·custom key에 넣지 않음 |
 | Performance | `확정 필요` | privacy disclosure와 필요성 확인 후 추가 |
 | FCM | MVP 밖 | 후속 opt-in 리마인더·공동 기록 알림 후보. 민감 내용을 잠금화면에 기본 노출하지 않음 |
-| App Check | 예 | mobile 적용 예정. 현재 `ENFORCE_APP_CHECK=false`이며 AppsInToss 호환성과 복구 절차 확인 뒤 강제 여부 확정 필요 |
+| App Check | 예 | mobile에 Play Integrity·App Attest·DeviceCheck fallback 적용. provider 운영 구성 readback 완료. 현재 `ENFORCE_APP_CHECK=false`이며 새 후보 실기기와 AppsInToss 호환성 확인 뒤 강제 전환 |
 
 ## Firestore Model
 
@@ -187,6 +187,7 @@ sequenceDiagram
 | --- | --- | --- | --- |
 | `createInvite` | Auth 필수, current group owner+owner membership | `groupId` | `code`, `createdAt`, `expiresAt`, `groupId`, `inviteId` |
 | `acceptInvite` | Auth 필수 | `code`, `displayName`, 선택 `caregiverRole`, `color` | 7-field membership |
+| `deleteAccount` | Auth 필수, `DELETE` 명시 확인 | `confirmation` | 삭제한 group·event·storage object 수와 owner 여부 |
 
 - code 존재/만료/타인 사용/이미 멤버/current owner 이상은 외부에서 구분할 수 없도록 동일 `failed-precondition`으로 반환한다.
 - 같은 UID가 네트워크 결과 유실 뒤 재호출하면 기존 membership을 idempotent하게 반환하지만 다른 UID의 재사용은 실패한다.
@@ -204,14 +205,14 @@ sequenceDiagram
 | `INVITE_ACCEPT_LIMIT_PER_HOUR` | `defineInt` | 기본 20/UID |
 | `ENFORCE_APP_CHECK` | `defineBoolean` | 기본 false, AppsInToss 검증 후 출시 전 true 결정 |
 
-Production `FUNCTIONS_REGION`은 `asia-northeast3`이다. `firebase/callable-access.json`은 callable의 project·region·Cloud Run service 접근 계약과 런타임 서비스 계정의 Firestore `roles/datastore.user` 역할 원장이며, 다음 명령으로 운영 상태를 읽기 전용 확인하거나 명시적으로 복구한다.
+Production `FUNCTIONS_REGION`은 `asia-northeast3`이다. `firebase/callable-access.json`은 callable의 project·region·Cloud Run service 접근 계약과 런타임 서비스 계정의 Firestore·Auth·Storage 역할 원장이며, 다음 명령으로 운영 상태를 읽기 전용 확인하거나 명시적으로 복구한다.
 
 ```bash
 pnpm run check:firebase:live-callables
 pnpm run configure:firebase:callable-access
 ```
 
-조직의 Domain Restricted Sharing 정책 때문에 `allUsers` IAM binding은 허용되지 않는다. 두 callable은 Cloud Run Invoker IAM check를 비활성화해 Firebase SDK 요청이 함수까지 도달하게 하고, Firebase callable middleware의 Auth token 검증과 함수의 owner/membership 검사를 애플리케이션 권한 경계로 유지한다.
+조직의 Domain Restricted Sharing 정책 때문에 `allUsers` IAM binding은 허용되지 않는다. callable Cloud Run service는 Invoker IAM check를 비활성화해 Firebase SDK 요청이 함수까지 도달하게 하고, Firebase callable middleware의 Auth token 검증과 함수의 owner/membership 검사를 애플리케이션 권한 경계로 유지한다.
 
 ## Indexes
 
@@ -231,8 +232,8 @@ local adapter/Jest가 query shape와 server-confirmed filtering을 검증한다.
 - Storage rules: `firebase/storage.rules`
 - Emulator tests: `firebase/tests/security-rules.test.mjs`
 - Functions source: `firebase/functions/src/`
-- Functions unit tests: `firebase/functions/tests/invite-service.test.ts`
-- Functions Firestore Emulator tests: `firebase/functions/tests/firestore-invite-repository.emulator.test.ts`
+- Functions unit tests: `firebase/functions/tests/`
+- Functions Firestore Emulator tests: `firebase/functions/tests/*.emulator.test.ts`
 
 ```bash
 pnpm run test:firebase
@@ -240,7 +241,7 @@ pnpm run test:functions
 pnpm run test:functions:emulator
 ```
 
-Rules 23건은 비멤버 차단, 멤버 read/record, 동일 timestamp raw timeline cursor, 자기 membership query, owner-only 관리, event/receipt/active-lock 원자성, receipt missing/existing exact-get·list/query 경계, soft delete, invite 차단, Storage 권한을 다룬다. Functions unit 10건과 transaction Emulator 5건은 HMAC/raw-code 비저장, owner gate, expiry, UID rate limit, audit actor, idempotent replay와 동시 accept single-use를 다룬다. production callable deploy·Secret Manager·Cloud Run 진입은 확인했으며 App Check와 인증된 TestFlight 2계정 흐름은 별도다.
+Rules 23건은 비멤버 차단, 멤버 read/record, 동일 timestamp raw timeline cursor, 자기 membership query, owner-only 관리, event/receipt/active-lock 원자성, receipt missing/existing exact-get·list/query 경계, soft delete, invite 차단, Storage 권한을 다룬다. Functions unit 14건과 transaction Emulator 7건은 HMAC/raw-code 비저장, owner gate, expiry, UID rate limit, audit actor, idempotent replay, 동시 accept single-use와 owner/member 계정 삭제 범위를 다룬다. 초대 callable deploy·Secret Manager·Cloud Run 진입은 확인했으며 계정 삭제 production 배포, App Check 실기기 token과 인증된 2계정 흐름은 별도다.
 
 ## Deployment Gates
 
@@ -250,7 +251,7 @@ Rules 23건은 비멤버 차단, 멤버 read/record, 동일 timestamp raw timeli
 - 6자리 code는 30-bit이므로 UID rate limit만으로 충분하지 않다. production uid는 platform custom token bridge가 서버에서 만들고 기존 uid는 서명된 Firebase ID token으로만 승계한다. 공개 bootstrap 남용 억제를 위해 App Check 또는 edge rate limit을 별도 release gate로 둔다.
 - `ENFORCE_APP_CHECK=false`는 AppsInToss 호환 검증용 임시값이다. callable protocol·Secret Manager·Cloud Run 진입은 확인했지만 App Check 또는 edge rate limit 전에는 release-ready가 아니다.
 - Storage Rules가 Firestore membership을 조회하므로 실제 project에서 두 서비스 연결용 IAM 설정을 확인한다.
-- 계정 삭제, 그룹/아기 recursive delete+tombstone, export, 소유권 이전, 제거된 멤버의 로컬 캐시 삭제는 server/app workflow 구현 전 release blocker다. 삭제 workflow는 membership부터 회수한 뒤 파일·하위 문서·상위 문서를 정리하고 ID 재사용을 막아야 한다.
+- 계정 삭제 server/app workflow와 그룹 recursive delete·tombstone·로컬 cache purge는 구현·Emulator 검증을 마쳤다. production callable 배포와 일회성 owner/member 계정 live QA는 release blocker로 남는다. 데이터 export와 소유권 이전은 별도 정책·기능 결정이 필요하다.
 - mutation receipt가 revision 당시 event payload를 중복 보존하므로 offline retry window와 충돌하지 않는 보존 기간·cleanup/export/완전 삭제 정책을 실제 project 배포 전에 확정한다. 신규 transaction을 위한 미존재 valid-ID get은 허용하므로 exact ID 존재 여부 oracle도 abuse 검토에 포함한다.
 - App Check를 강제하기 전 AppsInToss 실기기 호환성과 복구 절차를 검증한다.
 

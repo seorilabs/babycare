@@ -25,7 +25,8 @@
 - [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — 최초 활성화 workflow run `30750253253`, revision `platform-api-00015-xpx`
 - [x] live custom token 신규 로그인과 합성 legacy UID 보존 smoke — UID 주입 거부·no-store·Firebase 교환·cleanup 포함
 - [x] production 초대 callable Secret Manager·Cloud Run 진입 계약 확인 — Domain Restricted Sharing 환경에서 `createInvite`·`acceptInvite` Invoker IAM check 비활성화, Firebase Auth/owner 검사는 유지
-- [ ] 실제 project의 App Check 또는 edge rate limit 확정 — 현재 `ENFORCE_APP_CHECK=false`
+- [ ] 실제 project의 App Check 또는 edge rate limit 확정 — mobile Play Integrity·App Attest·DeviceCheck와 Platform 검증 경계 구현·provider 운영 구성 readback 완료. 새 후보 실기기 token 확인 전 `require_app_check=false`, `ENFORCE_APP_CHECK=false`
+- [ ] production 계정 삭제 callable과 외부 삭제 경로 — server/app 구현·Emulator 검증, Platform 삭제 mapping API 배포, 외부 안내 페이지 merge 완료 / 남음: Pages live 200, callable 배포·IAM 적용, 일회성 owner/member 계정 live QA
 - [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
 - [ ] Privacy/data safety/review notes 확정 — 진행: **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`, App Store ASC + config 반영), review notes·store-data-disclosure 작성 / 남음: Play Console '앱 콘텐츠' 개인정보 URL 수동 입력·Data safety·연령등급 콘솔 제출, App Privacy 답변
 
@@ -40,7 +41,7 @@
 - [ ] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀
 - [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — Cloud Run 앞단 401과 런타임 Firestore 권한 복구, production 합성 owner `createInvite` HTTP 200·문서 생성 확인 / 남음: 실제 TestFlight 화면과 다른 계정 수락
 - [ ] cross-device active sleep 단일성
-- [ ] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge
+- [ ] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge — 계정 삭제 intent·cache purge 회귀 구현 완료 / 남음: production 일회성 계정 실기기 QA
 - [ ] Analytics/crash/ad/purchase smoke, 해당 시
 
 ## Deployment Gate
@@ -53,6 +54,8 @@
 - [x] App Store 수정 후보 업로드 — `v1.0.5` / `f972da16f5f2f81468f576b233434a59a5863680`, Xcode Cloud run `137ca847-3c34-4d5b-8931-4f70c5b023d8`, ASC build `5ca352a5-449e-4997-b730-315ead4d02e8`, 실제 `1.0.5`/`52`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 2026-08-05
 - [x] App Store `v1.0.6` 내부 TestFlight 후보 — source `1d768c265740c91b6e0967ba20ca6ce380cc2def`, Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0`, ASC build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`, 실제 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 내부 그룹 연결·`IN_BETA_TESTING`·테스터 2명 readback, 2026-08-06
 - [x] Google Play `v1.0.6` internal draft 업로드 — x64/JDK 21 build run `31061827436`, source `1d768c265740c91b6e0967ba20ca6ce380cc2def`, AAB `1.0.6`/`1000006`, target SDK 36, SHA-256 `4589cc4b5d12646a06a33628dd15d669f8b047488926b79f2eefb5fbb17fe50e`, 승인된 로컬 publisher fallback 업로드·API readback, 2026-08-06
+- [x] 현재 source Android `1.0.7`/`1000007` 로컬 signed AAB — target SDK 36, 브랜드 launcher icon·App Check·계정 삭제 포함, SHA-256 `f1dc8b6d9a46502a97f42adee8911621a71c4c9348f702d1233265fda426fcfe`, Play 업로드 전
+- [x] 현재 source iOS `1.0.7`/`55` Release 실기기 설치 — production App Attest entitlement·deep codesign·기기 version readback, 기기 잠금으로 cold start 미확인, ASC 업로드 전
 - [ ] Google Play WIF 자동 업로드 복구 — deploy run `31009039603`은 공용 publisher SA에 babycare repo principal의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단. 이번 후보는 로컬 fallback으로 보완했지만 다음 자동 업로드 전 binding 필요
 - [ ] Google Play internal 릴리스 활성화·테스터 배포 또는 production 승격 승인
 - [ ] App Store 실제 테스터 설치·실기기 QA 또는 App Review 제출 승인
