@@ -21,6 +21,11 @@ function sorted(values) {
 test('production callable exports have a DRS-compatible Cloud Run access contract', () => {
   assert.equal(manifest.projectId, 'seorilabs-babycare');
   assert.match(manifest.region, /^[a-z]+-[a-z]+\d$/);
+  assert.match(
+    manifest.runtime.serviceAccountEmail,
+    /^[^@]+@[^@]+\.iam\.gserviceaccount\.com$|^[^@]+@developer\.gserviceaccount\.com$/,
+  );
+  assert.deepEqual(manifest.runtime.projectRoles, ['roles/datastore.user']);
   assert.ok(Array.isArray(manifest.services));
 
   const callableExports = sorted(

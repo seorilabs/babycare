@@ -204,7 +204,7 @@ sequenceDiagram
 | `INVITE_ACCEPT_LIMIT_PER_HOUR` | `defineInt` | 기본 20/UID |
 | `ENFORCE_APP_CHECK` | `defineBoolean` | 기본 false, AppsInToss 검증 후 출시 전 true 결정 |
 
-Production `FUNCTIONS_REGION`은 `asia-northeast3`이다. `firebase/callable-access.json`은 callable의 project·region·Cloud Run service 접근 계약 원장이며, 다음 명령으로 운영 상태를 읽기 전용 확인하거나 명시적으로 복구한다.
+Production `FUNCTIONS_REGION`은 `asia-northeast3`이다. `firebase/callable-access.json`은 callable의 project·region·Cloud Run service 접근 계약과 런타임 서비스 계정의 Firestore `roles/datastore.user` 역할 원장이며, 다음 명령으로 운영 상태를 읽기 전용 확인하거나 명시적으로 복구한다.
 
 ```bash
 pnpm run check:firebase:live-callables
