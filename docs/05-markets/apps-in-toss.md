@@ -40,7 +40,7 @@
 - AppsInToss deployment ID: `019fd827-571d-791d-bd50-08f2da35afec` (2026-08-07 02:38 KST 업로드 완료)
 - Private entry: `intoss-private://babynest?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec`
 - Candidate evidence: Granite/TDS 핵심 UI, AppsInToss Storage, 운영 Auth/Firestore/Functions adapter 구현. production 두 계정 그룹 생성→기록→초대→합류→공동 조회→삭제 E2E 통과
-- Sandbox QA device: `확정 필요`
+- Sandbox QA device: iOS 18.1 `iPhone 16 Pro` simulator (`07D9A5CC-AB1D-43AA-915F-7A8128044B5B`). 공식 `apps-in-toss-sandbox-202606022149.zip`의 `AppsInTossSandbox.app` (`com.vivarepublica.ent.cash.test`) 설치·로그인 화면 실행 완료 / Console 계정 로그인·Toss 인증 대기
 - Console review: 승인 완료(2026-08-04 readback)
 - Ads/payment policy answers: **광고 없음 · 인앱 결제 없음 · Toss Pay 없음** — v1 무료·무광고·무구독 ADR과 `apps/ait` 의존성·호출 기준 확정. Console readback은 로그인 세션 연결 뒤 확인
 - Release review prerequisite: private scheme을 실제 Toss 앱에서 최소 1회 테스트하고 in-app feature를 함께 등록

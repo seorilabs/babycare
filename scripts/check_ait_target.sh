@@ -38,6 +38,11 @@ if (config.inAppFeatures?.length !== 1 || config.inAppFeatures[0]?.route !== "/"
   console.error("AIT v1 must register exactly one root in-app feature.");
   process.exit(1);
 }
+if (config.release?.sandboxQa !==
+    "official-ios-sandbox-installed: console-login-and-runtime-qa-pending") {
+  console.error("AIT sandbox state must distinguish installation from runtime QA completion.");
+  process.exit(1);
+}
 '
 
 if rg -n 'createOneTimePurchaseOrder|getProductItemList|loadFullScreenAd|loadBannerAd|TossPay|tossPay|\bIAP\b' \

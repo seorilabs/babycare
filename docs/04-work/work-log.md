@@ -1,5 +1,11 @@
 # Work Log
 
+## 2026-08-07 — AppsInToss 공식 iOS sandbox 설치
+
+- 공식 개발자센터의 `apps-in-toss-sandbox-202606022149.zip`을 받아 `AppsInTossSandbox.app`이 arm64 iOS Simulator build, bundle ID `com.vivarepublica.ent.cash.test`임을 확인했다.
+- iOS 18.1 `iPhone 16 Pro` simulator에 설치·실행해 콘솔 Email·Password 로그인 화면까지 확인했다. QA 기기는 확정됐으며 다음 단계는 사용자의 Console 계정 로그인과 Toss 인증 후 `babynest` private scheme 기능 검증이다.
+- 이는 sandbox 설치 준비 완료이지 Storage·초대·기록·재실행·네트워크 복귀 QA 완료가 아니다. 실제 runtime 증거가 나오기 전 `sandboxQa`는 pending으로 유지한다.
+
 ## 2026-08-07 — AppsInToss v1 광고·결제 정책 확정
 
 - v1 수익화 ADR의 무료·무광고·무구독 결정과 `apps/ait/package.json`, AIT source 전체를 대조했다. 광고, AppsInToss IAP, Toss Pay SDK·API 의존성이나 호출이 없어 정책 답변을 모두 `없음`으로 확정했다.
