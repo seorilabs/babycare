@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-07 — Android 1.0.8 production 두 기기·offline·삭제 QA
+
+- Google Play internal과 같은 `1.0.8`/`1000008` upload-signed AAB를 서로 독립된 Android API 36 AVD 2대에 설치했다. owner `QAOwnerA`가 production 그룹 `QABabyA`를 만들고 분유 120ml·기저귀 소변·낮잠을 기록한 뒤, 비행기 모드에서 기저귀 대변을 추가하고 강제 종료·재실행해 local 보존과 `동기화 실패 1건` 표시를 확인했다.
+- 네트워크 복귀 뒤 수동 새로고침으로 오류 배너가 해제됐고, owner UI에서 발급한 6자리 초대 코드로 별도 production 계정 `QAMemberB`가 두 번째 기기에서 합류했다. member 홈이 offline 작성 대변을 포함한 기존 기록을 읽어 outbox의 server 반영을 확인했다.
+- owner 기기에서 낮잠을 시작하고 member 기기에서 종료해 단일 `낮잠 · 36초` 기록과 active lock 해제를 확인했다. member가 추가한 기저귀 소변은 owner 타임라인에 `QAMemberB` 작성자로 반영됐다.
+- member 계정 삭제는 본인 membership과 작성 기록만 제거하고 owner 기록을 유지했으며 member 기기는 온보딩으로 복귀했다. 이어 owner 계정 삭제가 그룹·아기·전체 기록을 제거하고 owner 기기도 온보딩으로 복귀했다. QA Auth·그룹·기록은 UI 삭제 경로로 정리했고 임시 AVD 2대도 종료했다.
+- 이번 증거는 upload certificate 서명의 sideload AAB와 emulator 기반이다. Play Store app signing 설치본, 물리 Android의 Play Integrity App Check token, iOS TestFlight 물리 기기, AppsInToss Toss 앱 runtime은 아직 별도 출시 게이트다.
+
 ## 2026-08-07 — Android v1.0.8 브랜드 아이콘·cold start 검증
 
 - Google Play internal과 같은 AAB SHA-256 `2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84`에서 API 36 arm64 기기별 APK를 생성해 사용자 상태가 없는 격리 AVD에 설치했다. package `com.seorilabs.babycare`, `1.0.8`/`1000008`을 readback했다.

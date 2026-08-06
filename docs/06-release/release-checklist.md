@@ -37,11 +37,11 @@
 - [x] Android 1.0.8 AAB의 제품 브랜드 launcher icon·cold-start splash·온보딩 전환 확인 — 격리 API 36 AVD, `LaunchState: COLD`, template 문구 없음
 - [ ] iOS TestFlight cold-start에서 제품 브랜딩 스플래시만 노출되고 React Native/프레임워크 문구가 없음
 - [ ] AppsInToss sandbox smoke — 운영 두 계정 API E2E와 `main@707df10` 비공개 deployment 업로드 통과 / 남음: 실제 Toss sandbox의 Storage·초대·기록·재실행·네트워크 복귀
-- [ ] Offline/local-first smoke
-- [ ] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀
+- [x] Offline/local-first smoke — Android 1.0.8 upload-signed AAB를 격리 API 36 AVD에 설치해 비행기 모드 기록·강제 종료·재실행 보존, online 복귀 뒤 수동 새로고침과 두 번째 기기 server readback 통과(2026-08-07)
+- [x] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀 — production custom-token 계정 `QAOwnerA`/`QAMemberB`, 격리 Android AVD 2대에서 초대·합류·양방향 기록자 반영·offline 기록 공유 통과. Play Store app-signing 설치본·물리 기기 App Check token은 별도 게이트
 - [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — 사용자가 iPhone에서 owner 초대 코드 발급 동작을 확인했고 production API의 독립 2계정 발급·수락 E2E도 통과 / 남음: TestFlight 1.0.8 실제 2기기 수락·실시간 동기화
-- [ ] cross-device active sleep 단일성
-- [ ] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge — 계정 삭제 intent·cache purge 회귀 구현 완료 / 남음: production 일회성 계정 실기기 QA
+- [x] cross-device active sleep 단일성 — owner 기기에서 시작한 낮잠을 member 기기에서 종료해 단일 `낮잠 · 36초` event와 active lock 해제를 양쪽에서 확인(2026-08-07)
+- [x] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge — member 삭제는 본인 membership·작성 기록만 제거하고 owner 기록 유지, owner 삭제는 그룹 전체 제거, 양쪽 기기 온보딩 복귀 확인. QA Auth·그룹·기록 정리 완료(2026-08-07)
 - [ ] Analytics/crash/ad/purchase smoke, 해당 시
 
 ## Deployment Gate
