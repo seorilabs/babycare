@@ -1,5 +1,10 @@
 # Work Log
 
+## 2026-08-07 — Firebase production Billing 활성 상태 확인
+
+- 자동화 service account로 `seorilabs-babycare`의 Cloud Billing 연결을 조회해 `billingEnabled=true`를 readback했다. 기존 `Billing plan: 확정 필요` 표시는 실제 운영 상태와 달라 `활성`으로 정정했다.
+- billing account 식별자는 출시 원장에 필요하지 않고 민감한 운영 정보이므로 기록하지 않았다. 이 확인은 Auth·Firestore·Functions가 이미 production에서 동작 중인 상태와 일치한다.
+
 ## 2026-08-07 — Google Play Data Safety API 제출
 
 - 현재 Android 1.0.8 release runtime을 다시 검사해 Firebase Authentication UID를 `사용자 ID`, transitive `firebase-installations`와 Play Integrity/App Check를 `기기 또는 기타 ID`로 분리했다. 생년월일은 `기타 개인 정보`, 사용자가 남기는 돌봄 기록·메모는 `기타 사용자 제작 콘텐츠`로 정렬했다. Analytics·Crashlytics·Performance·광고·결제는 현재 바이너리에 없어 신고하지 않았다.
