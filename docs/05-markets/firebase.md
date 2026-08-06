@@ -8,7 +8,7 @@
   - 아동의 이름·생년월일·돌봄 기록을 다른 앱과 분리한 전용 Auth, Rules, Functions 운영 경계를 사용한다.
 - Firebase project ID: `seorilabs-babycare`
 - Region: `asia-northeast3`
-- Billing plan: `확정 필요`
+- Cloud Billing: `활성` — 2026-08-07 `gcloud beta billing projects describe seorilabs-babycare`에서 `billingEnabled=true` readback. 연결된 billing account 식별자는 보안상 원장에 기록하지 않는다.
 - Production project provisioning/deploy: Auth·Firestore Rules/indexes·Storage·초대/계정 삭제 callable 운영 중
 - Functions slice: unit 14건·Firestore transaction Emulator 7건 통과, `createInvite`·`acceptInvite`·`deleteAccount` production ACTIVE
 
