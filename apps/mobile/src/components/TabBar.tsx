@@ -1,4 +1,5 @@
 import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import type {AppTheme} from '../app/theme';
 
@@ -16,12 +17,18 @@ export function TabBar(props: {
   readonly onChange: (tab: AppTab) => void;
   readonly theme: AppTheme;
 }) {
+  const insets = useSafeAreaInsets();
+
   return (
     <View
       accessibilityRole="tablist"
       style={[
         styles.container,
-        {backgroundColor: props.theme.colors.surface, borderTopColor: props.theme.colors.border},
+        {
+          backgroundColor: props.theme.colors.surface,
+          borderTopColor: props.theme.colors.border,
+          paddingBottom: Math.max(6, insets.bottom),
+        },
       ]}>
       {tabs.map(tab => {
         const selected = tab.id === props.active;

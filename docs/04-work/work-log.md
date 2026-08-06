@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-06 — 하단 탭 safe area 보강
+
+- mobile의 두 runtime root는 상단·좌우 safe area만 처리하지만 공통 `TabBar`는 하단 패딩을 6으로 고정해, 홈 인디케이터나 제스처 내비게이션 영역이 있는 기기에서 탭이 시스템 UI와 겹칠 수 있었다.
+- 기존 `SafeAreaProvider`의 bottom inset을 `TabBar`가 직접 읽고 최소 6 이상의 하단 패딩으로 반영했다. navigation과 각 탭 handler는 변경하지 않았으며 숨기거나 새로 약속한 기능은 없다.
+- TabBar 회귀 테스트는 수정 전 bottom inset 34를 반영하지 못해 실패했고, 수정 후 inset 34와 inset 0의 기존 최소 패딩을 포함해 2건이 통과했다.
+- `pnpm run test:static`에서 core 40건, mobile 34 suites/279건, Functions 10건, build-workflow 9건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`도 통과했다.
+- iPhone 16 Pro iOS 18.1 Simulator에서 현재 소스를 ad-hoc 서명으로 빌드·설치하고 cold start와 emulator 기반 그룹 생성을 거쳐 홈을 확인했다. 기본·다크 모드 모두 하단 탭이 홈 인디케이터 위에 분리되어 잘림·겹침이 없음을 스크린샷으로 확인했다. 저장소에 없는 `GoogleService-Info.plist`는 Simulator 명령에서만 제외했으며 실제 VoiceOver·큰 글꼴·Android·실기기는 확인하지 않았다.
+- `pnpm run check:release`는 Play Data Safety·등급·WIF binding, App Store privacy·review 정보, AIT 자산·URL·정책·sandbox QA, production Firebase·App Check·실기기 migration 등 기존 외부 blocker로 예상대로 실패했다. 마켓 artifact 생성·업로드·processing·테스터 QA·공개 출시는 수행하지 않았다.
+
 ## 2026-08-06 — v1.0.6 양 스토어 내부 후보 정합화
 
 - `v1.0.6` / `1d768c265740c91b6e0967ba20ca6ce380cc2def`은 App Store 업로드만 성공하고 Google Play가 WIF impersonation에서 실패한 부분 후보였다. 기존 태그를 이동하거나 새 버전을 만들지 않고 실패한 Play 쪽만 재시도했다.
