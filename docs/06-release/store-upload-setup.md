@@ -1,8 +1,9 @@
 # 스토어 업로드 자동화 세팅 (백오피스 구동)
 
-> **상태: 내부 후보 업로드 경로 구성 완료, 실제 후보 재검증 중.** Google Play internal과
-> App Store Connect/TestFlight 업로드는 승인됐지만 production 승격·App Review 제출·공개 출시는
-> 별도 승인 전까지 금지한다. `main` push 는 정적 게이트(static-checks)만 돌고 업로드하지 않는다.
+> **상태: 내부 후보 업로드 경로 구성 완료, 실제 후보 재검증 중.** 2026-08-06 사용자가
+> 재배포와 남은 출시 순서 진행을 승인했다. production 승격·App Review 제출·공개 출시는
+> Console 정책·법적 사업자 선택과 실기기 QA를 통과한 타깃부터 진행한다. `main` push 는
+> 정적 게이트(static-checks)만 돌고 업로드하지 않는다.
 
 ## 운영 진입점 = 백오피스/Telegram
 
@@ -82,12 +83,12 @@ flowchart TD
 
 ## 남은 blocker
 
-1. **Google Play WIF impersonation** — 기존 공용 publisher SA의 Play API edit 생성·삭제는 성공했다. `v1.0.6` deploy run `31009039603`도 signed AAB 생성과 GitHub OIDC credential 구성까지 성공했지만, 공용 SA에 `principalSet://iam.googleapis.com/projects/138773558853/locations/global/workloadIdentityPools/github-actions/attribute.repository/seorilabs/babycare`의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. 같은 후보는 x64/JDK 21 build run `31061827436`의 signed AAB를 승인된 로컬 publisher credential로 internal `draft` 업로드해 보완했다. 다음 자동 업로드 전 GCP owner 조직 재인증 후 이 binding만 추가하며 새 SA는 만들지 않는다.
+1. **Google Play WIF impersonation** — 기존 공용 publisher SA의 Play API edit 생성·삭제는 성공했다. `v1.0.6` deploy run `31009039603`도 signed AAB 생성과 GitHub OIDC credential 구성까지 성공했지만, 공용 SA에 `principalSet://iam.googleapis.com/projects/138773558853/locations/global/workloadIdentityPools/github-actions/attribute.repository/seorilabs/babycare`의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. `v1.0.8`은 build run `31116493641`의 signed AAB를 승인된 로컬 publisher credential로 internal `completed` 업로드해 보완했다. 다음 자동 업로드 전 GCP owner 조직 재인증 후 이 binding만 추가하며 새 SA는 만들지 않는다.
 2. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
-3. **출시 승인** — Google Play production 승격, App Review 제출·공개 출시, AppsInToss production release는 별도 승인 필요.
+3. **Console·QA gate** — 진행 승인은 완료. Google Play production 승격, App Review 제출, AppsInToss production release 전 국가 availability·법적 사업자·정책 설문과 실기기 QA를 완료해야 한다.
 4. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
 
 ## 완료된 후보 readback
 
-- **Google Play** — `v1.0.6` / `1d768c2` AAB를 x64/JDK 21 build run `31061827436`에서 생성·서명 검증하고 승인된 로컬 publisher credential로 internal `1.0.6`/`1000006`, `draft` 업로드·API readback 완료. internal 활성화·production 승격은 하지 않음.
-- **App Store** — `v1.0.6` Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0` 성공. ASC build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`에서 실제 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인. 내부 그룹 `서리랩스 내부테스터`에 build를 명시적으로 연결해 `IN_BETA_TESTING`, 테스터 2명 readback 완료.
+- **Google Play** — `v1.0.8` / `c66f7e7` AAB를 x64/JDK 21 build run `31116493641`에서 생성·서명·브랜드 icon 검증하고 승인된 로컬 publisher credential로 internal `1.0.8`/`1000008`, `completed` 업로드·API readback 완료. production 승격은 하지 않음.
+- **App Store** — `v1.0.8` Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962` 성공. ASC build `454e15f2-4075-4828-b613-a67085b3e7d4`에서 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인. 내부 그룹 `서리랩스 내부테스터`에 build를 명시적으로 연결해 `IN_BETA_TESTING`, 테스터 2명 readback 완료.

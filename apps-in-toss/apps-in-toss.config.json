@@ -11,9 +11,20 @@
   "support": {
     "email": "cs@seorilabs.com"
   },
+  "assets": {
+    "logo": "apps-in-toss/assets/logo-600.png",
+    "thumbnail": "apps-in-toss/assets/thumbnail-1932x828.png",
+    "screenshots": "apps-in-toss/screenshots/*.png",
+    "validatedAt": "2026-08-07"
+  },
   "release": {
     "artifact": "apps/ait/*.ait",
     "sandboxQa": "미검증",
+    "preparedCandidate": {
+      "sourceBranch": "feature/update-launch-readiness-1-0-8",
+      "status": "local-build-and-production-api-e2e-passed",
+      "preparedAt": "2026-08-07T02:20:00+09:00"
+    },
     "latestPrivateUpload": {
       "tag": "v1.0.3",
       "sourceSha": "089eb0c888f54dd4636a58458f62e44d346103a4",

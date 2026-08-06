@@ -46,7 +46,7 @@ pnpm --dir apps/mobile exec react-native run-ios --udid <DEVICE_UDID> --no-packa
 
 Android는 마지막 명령을 `pnpm --dir apps/mobile exec react-native run-android --no-packager`로 바꾼다. runtime은 Metro bundle URL의 host를 사용해 Auth 9099, Firestore 8085, Functions 5001에 연결한다. `firebase.mobile.json`은 Emulator를 LAN에 노출하므로 신뢰할 수 있는 개발 네트워크에서만 사용한다. 스크립트가 만드는 `firebase/functions/.secret.local`은 Emulator 전용 HMAC secret이며 ignore 대상이다.
 
-native Firebase app이 등록된 빌드는 Emulator로 fallback하지 않고 cloud mode를 사용한다. production native client config와 platform custom-token Auth bridge는 활성화됐고 Functions region은 `asia-northeast3`다. mobile App Check와 Platform 검증 경계는 구현했으며 새 후보 실기기 token 확인 전까지 강제하지 않는다. 실제 기기 2대 초대·동기화 QA도 남아 있다.
+native Firebase app이 등록된 빌드는 Emulator로 fallback하지 않고 cloud mode를 사용한다. production native client config와 platform custom-token Auth bridge는 활성화됐고 Functions region은 `asia-northeast3`다. Android Play app signing SHA-256과 Play Integrity API, iOS Team ID·App Store ID와 App Attest·DeviceCheck provider 설정을 운영에서 readback했다. mobile App Check와 Platform 검증 경계는 구현했으며 Play Store/TestFlight 1.0.8 실기기 token 확인 전까지 강제하지 않는다. sideload QA용 debug SHA와 unrecognized-version 허용은 제거했다. production 독립 2계정 초대·수락·계정 삭제 API E2E는 통과했고 실제 기기 2대 실시간·offline QA는 남아 있다.
 
 돌봄 기록 remote adapter는 `setDoc` offline queue를 UI completion으로 사용하지 않는다. user/group/baby scoped custom outbox가 revision mutation을 보존하고, online Firestore transaction이 event와 `eventMutationReceipts/{eventId@revision@payloadHash}`를 원자 적용한다. Rules는 event의 마지막 mutation metadata와 receipt를 양방향 결합하며 active sleep은 `activeSleeps/{babyId}` lock을 같은 transaction에서 만들고 제거한다. 실제 composition에서는 Firestore native disk persistence를 꺼 custom outbox를 유일한 durable queue로 유지해야 한다.
 

@@ -182,15 +182,15 @@ test('latest App Store candidate evidence stays consistent', async () => {
       betaTesterCount: release.betaTesterCount,
     },
     {
-      marketingVersion: '1.0.6',
-      buildNumber: '54',
-      sourceTag: 'v1.0.6',
-      sourceCommit: '1d768c265740c91b6e0967ba20ca6ce380cc2def',
-      buildId: 'fbe23a81-a5b5-4a39-bcae-da15e59e957d',
+      marketingVersion: '1.0.8',
+      buildNumber: '56',
+      sourceTag: 'v1.0.8',
+      sourceCommit: 'c66f7e763470f041ea8eec79f1a24a9a13352589',
+      buildId: '454e15f2-4075-4828-b613-a67085b3e7d4',
       processingState: 'VALID',
       buildAudienceType: 'APP_STORE_ELIGIBLE',
       usesNonExemptEncryption: false,
-      uploadedDate: '2026-08-05T06:22:22-07:00',
+      uploadedDate: '2026-08-06T08:45:29-07:00',
       artifactSha256: null,
       betaGroupBuildAssigned: true,
       internalBuildState: 'IN_BETA_TESTING',
@@ -199,9 +199,9 @@ test('latest App Store candidate evidence stays consistent', async () => {
   );
 
   for (const document of [market, checklist, setup, workLog]) {
-    assert.match(document, /v1\.0\.6/);
-    assert.match(document, /1341ac47-4e2e-438e-9713-739a837fb4f0/);
-    assert.match(document, /fbe23a81-a5b5-4a39-bcae-da15e59e957d/);
+    assert.match(document, /v1\.0\.8/);
+    assert.match(document, /a9c4b9b4-7c0e-4592-95ef-22039fa50962/);
+    assert.match(document, /454e15f2-4075-4828-b613-a67085b3e7d4/);
     assert.match(document, /APP_STORE_ELIGIBLE/);
   }
 });

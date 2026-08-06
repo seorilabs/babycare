@@ -48,7 +48,7 @@ fi
 
 if rg -n "확정 필요|TBD|TODO" "${scan_targets[@]}"; then
   echo
-  echo "Release blockers remain. Resolve placeholders before deployment approval." >&2
+  echo "Release blockers remain. Resolve placeholders before public submission or deployment." >&2
   blockers=1
 fi
 

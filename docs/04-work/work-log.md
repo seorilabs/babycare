@@ -1,5 +1,25 @@
 # Work Log
 
+## 2026-08-07 — AppsInToss 핵심 기능 후보와 등록 자산 준비
+
+- AppsInToss 브랜드 셸을 Granite RN·TDS 기반 제품 흐름으로 교체했다. Platform custom-token/Firebase Auth REST 로그인, AppsInToss `Storage` session, Firestore REST 그룹·아기·기록·조회, callable 초대·수락·계정 삭제를 연결하고 홈·타임라인·통계·더보기에서 수유·기저귀·수면을 사용할 수 있게 했다.
+- 기록은 product-core validation과 canonical payload hash를 재사용해 event, mutation receipt, active-sleep lock을 원자 commit한다. 운영 두 계정으로 그룹 생성→수유·기저귀·수면 시작/종료→초대→합류→공동 조회→member/owner 삭제 E2E를 통과했고 남은 시험 Auth·Firestore·Platform 데이터를 exact target으로 정리한 뒤 QA prefix 0건을 readback했다.
+- `FIREBASE_WEB_API_KEY`를 AppsInToss environment secret에서 build-time 주입하도록 workflow를 보강했다. local `.ait` build와 lint·typecheck·Jest를 통과했으며 build 성공을 Console 비공개 업로드나 sandbox 실기기 QA로 간주하지 않는다.
+- 기존 승인 icon·feature graphic·iPhone screenshot을 source로 600×600 logo, 1932×828 thumbnail, 636×1048 vertical screenshot 5장을 RGB·무알파로 만들고 공통·AppsInToss validator를 통과했다. screenshot은 실제 AIT sandbox UI 캡처로 교체한 뒤 Console에 등록한다.
+- 남음: PR merge 후 새 비공개 `.ait` 업로드·deployment readback, 실제 Toss sandbox의 Storage·초대·기록·재실행·네트워크 복귀 QA, App Check 또는 edge 보호, Console 정책·URL·실화면 자산 등록과 production 심사·공개 배포.
+
+## 2026-08-06 — v1.0.8 내부 후보와 production 보호 경계 검증
+
+- App Store Connect의 기존 version을 `1.0.8`로 정렬하고 Build 56을 연결했다. 4+ age rating, Lifestyle·Utilities 카테고리, third-party content 미사용, AFTER_APPROVAL, 검증된 심사 연락처와 로그인 없는 실제 심사 절차를 API로 반영·readback했다. App Privacy·availability·13" iPad 스크린샷·실기기 QA 전이라 `PREPARE_FOR_SUBMISSION`을 유지하고 심사 제출하지 않았다.
+- 현재 1.0.8 mobile 의존성과 composition을 다시 검사해 email/password login, Firebase Analytics, Crashlytics, Performance가 없고 analytics port가 no-op임을 확인했다. store disclosure에서 이메일·진단 수집 오신고를 제거하고 실제 수집인 양육자 표시 이름, 아기 이름·생년월일·돌봄 기록·메모, Firebase 사용자 ID로 정렬했다.
+- iPad Pro 13-inch iOS 26.5 Simulator용 Release build를 만들고 2064x2752 실제 화면에서 온보딩 레이아웃이 깨지지 않음을 확인했다. 첫 무서명 build는 simulator keychain entitlement가 없어 Firebase Auth 저장이 실패했고, ad-hoc 서명 build에서는 production 그룹 생성과 수유·기저귀·수면 기록을 모두 통과했다. 홈·타임라인·통계·수유 기록·더보기 5컷을 캡처해 한국어 `APP_IPAD_PRO_3GEN_129` set에 업로드하고 ASC `COMPLETE`를 readback했다.
+- App Check token 발급이 일시적으로 실패해도 Platform custom-token 요청 자체를 막지 않도록 client를 fail-open으로 보강했다. server enforcement가 켜진 환경에서는 기존대로 누락 token을 거부한다. PR #24를 merge했고 `pnpm run test:static`에서 core 40건, mobile 37 suites/296건, Functions 14건과 typecheck·lint·architecture·docs·workflow gate가 통과했다.
+- Android `v1.0.8` / source `c66f7e763470f041ea8eec79f1a24a9a13352589`를 workflow run `31116493641`에서 빌드했다. AAB `1.0.8`/`1000008`, target SDK 36, SHA-256 `2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84`, upload certificate 서명과 제품 브랜드 launcher icon을 검증하고 Google Play internal `completed` 업로드·API readback을 마쳤다.
+- iOS는 같은 source의 Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962`이 성공했다. ASC build `454e15f2-4075-4828-b613-a67085b3e7d4`는 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`이며 내부 그룹에 연결해 `IN_BETA_TESTING`을 readback했다.
+- Firebase Android 앱에는 Play app signing SHA-256을 등록하고 Play Integrity API를 활성화했다. iOS 앱에는 Team ID와 App Store ID를 등록하고 App Attest·DeviceCheck 설정을 readback했다. sideload QA에 사용한 debug SHA와 unrecognized-version 허용은 즉시 제거했다. 실제 Play Store/TestFlight 설치본 token 확인 전 Platform `require_app_check=false`, Functions `ENFORCE_APP_CHECK=false`를 유지한다.
+- `createInvite`, `acceptInvite`, `deleteAccount`는 production ACTIVE다. 기본 Storage bucket을 `asia-northeast3`에 만들고 rules를 배포했으며, 독립 owner/member 계정으로 초대 발급·수락·member 삭제·owner 삭제 E2E를 통과하고 시험 데이터를 정리했다. 계정 삭제 외부 안내 페이지도 한국어·영어 URL의 live 200을 확인했다.
+- 남음: 잠긴 iPhone을 해제한 뒤 TestFlight 1.0.8 App Check·초대/수락 실기기 QA, Play Store 내부 설치본 token QA, enforcement 전환, Play/App Store 정책 설문·심사·production 공개 배포, AppsInToss 제품 runtime·sandbox·production 배포.
+
 ## 2026-08-06 — 계정 삭제·App Check와 Android 브랜드 후보 준비
 
 - 더보기 화면에 owner/member 범위를 구분한 계정 삭제 확인 UX를 추가했다. callable `deleteAccount`는 `DELETE` 명시 확인 뒤 member의 멤버십·작성 기록·active sleep·mutation receipt를 삭제하거나, owner의 그룹 하위 데이터·Storage 객체·초대·감사 기록을 정리하고 재사용 방지 tombstone을 남긴 뒤 Firebase Auth 사용자를 삭제한다. 응답 유실 뒤 재실행을 위한 local deletion intent와 민감 cache purge도 추가했다.

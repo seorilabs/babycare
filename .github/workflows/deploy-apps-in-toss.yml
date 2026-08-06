@@ -42,6 +42,7 @@ jobs:
 
     env:
       APPS_IN_TOSS_API_KEY: ${{ secrets.APPS_IN_TOSS_API_KEY }}
+      FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
       RELEASE_REF: ${{ inputs.release_tag }}
       INPUT_MEMO: ${{ inputs.memo }}
 
@@ -54,12 +55,16 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      - name: Validate AppsInToss secret
+      - name: Validate AppsInToss and Firebase secrets
         shell: bash
         run: |
           set -euo pipefail
           [ -n "$APPS_IN_TOSS_API_KEY" ] || {
             echo "APPS_IN_TOSS_API_KEY secret is required." >&2
+            exit 1
+          }
+          [ -n "$FIREBASE_WEB_API_KEY" ] || {
+            echo "FIREBASE_WEB_API_KEY secret is required." >&2
             exit 1
           }
 

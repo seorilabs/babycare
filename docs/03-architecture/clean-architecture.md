@@ -20,8 +20,8 @@ flowchart LR
   ProductData --> Domain
   CloudRoot --> ProductData
   CloudRoot --> FirebaseAdapters
-  AITAdapters["apps/ait adapters<br/>구현 필요"] -.-> Ports
-  AITAdapters -.-> ProductData
+  AITAdapters["apps/ait adapters<br/>REST transport · Storage session"] --> Ports
+  AITAdapters --> Domain
 ```
 
 화살표는 import/구성 의존성을 뜻한다. Firestore 문서나 RN component가 core 타입을 직접 지배하지 않으며, adapter가 외부 표현과 core domain을 변환한다.
@@ -75,7 +75,9 @@ Firebase 연결 시 `CareEventRepositoryPort` 구현을 교체하고 core use ca
 
 ### `apps/ait`
 
-정책 적합성과 영구 `appName` 확정 전이라 아직 초기화하지 않았다. 생성 후 Granite RN + TDS UI, AppsInToss `Storage`, 인증/server API adapter를 둔다. mobile native Firebase module을 그대로 재사용할 수 있다고 가정하지 않는다.
+승인된 `appName=babynest`의 Granite RN + TDS target이다. AppsInToss `Storage`에 Firebase refresh token과 group session을 저장하고, Platform custom-token bridge와 Firebase Auth REST로 인증한다. Firestore REST commit/query와 Firebase callable로 그룹·아기·기록·초대·삭제를 처리한다. 기록 commit은 product-core domain validation과 canonical payload hash를 재사용해 event, mutation receipt, active-sleep lock을 원자 반영한다. native Firebase module은 사용하지 않는다.
+
+현재 AIT delivery는 핵심 수유·기저귀·수면과 홈·타임라인·통계 흐름을 제공하지만 mobile의 local-first outbox/realtime listener 전체를 그대로 재사용하지 않는다. 명시적 새로고침과 재실행 복구를 제공하며 offline queue·실시간 listener·App Check/edge 보호는 sandbox 이후 별도 gate다.
 
 ### `firebase`
 
@@ -90,14 +92,14 @@ MVP에 필요한 외부 기능만 port로 추가한다.
 
 | Capability | Core contract 후보 | 구현 위치 |
 | --- | --- | --- |
-| 인증/session | `AuthPort` + app-level session contract | mobile은 platform custom token bridge → RNFirebase, Emulator만 direct anonymous / AIT auth bridge 미구현 |
-| 그룹·아기 | `CareGroupRepositoryPort`, `BabyRepositoryPort` | mobile Firestore adapter 구현 / AIT adapter 미구현 |
+| 인증/session | `AuthPort` + app-level session contract | mobile은 platform custom token bridge → RNFirebase, Emulator만 direct anonymous / AIT는 Platform custom token → Firebase Auth REST + AppsInToss Storage |
+| 그룹·아기 | `CareGroupRepositoryPort`, `BabyRepositoryPort` | mobile Firebase adapter / AIT Firestore REST adapter |
 | 초대 | `InviteServicePort` | client adapter → privileged Functions |
 | 돌봄 기록 | `CareEventRepositoryPort` | AsyncStorage 개발 adapter. 화면이 기다리는 local durable write 계약 |
 | 원격 기록 transport | `CareEventRemoteStorePort` | revision mutation/result/error와 server-only raw page 계약. transaction receipt와 active-sleep lock을 쓰며 화면 repository로 직접 구성 금지 |
 | 타임라인 페이지 | `CareEventCursor`, `CareEventPageRequest` | `(occurredAt DESC, documentId DESC)` scalar cursor와 pure ordering/page 계약. Firebase SDK type 금지 |
 | 홈·통계·active projection | `CareEventProjectionRemotePort` | server-confirmed half-open window, 종류별 latest, `activeSleeps/{babyId}` singleton→event read/observe. bounded timeline completeness와 분리 |
-| 문자열 저장 | `StringStoragePort` | mobile AsyncStorage / 향후 AIT Storage. sync store에 주입하며 core는 SDK를 모름 |
+| 문자열 저장 | `StringStoragePort` | mobile AsyncStorage / AIT session은 AppsInToss Storage. core는 SDK를 모름 |
 | 분석 | 기존 `AnalyticsPort` | PII-free Firebase/AIT analytics adapter |
 | 시간·ID | 기존 `ClockPort`, `IdGeneratorPort` | target별 system adapter |
 

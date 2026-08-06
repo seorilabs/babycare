@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "rootDir": ".",
+    "rootDir": "../..",
     "baseUrl": "src",
     "target": "ESNext",
     "moduleResolution": "bundler",
@@ -12,6 +12,7 @@
     "isolatedModules": true,
     "strict": true,
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,

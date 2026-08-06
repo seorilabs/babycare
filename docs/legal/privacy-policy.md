@@ -11,12 +11,11 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 
 | 구분 | 항목 | 수집 방식 |
 | --- | --- | --- |
-| 계정 정보 | 이메일 주소, 사용자 식별자(UID), 표시 이름 | 회원가입·로그인 시 |
-| 돌봄 기록 | 아기의 이름·생년월일(선택), 수유·기저귀·수면 기록 값과 시각, 메모, 기록자 정보 | 이용자가 앱에서 직접 입력 |
+| 계정 정보 | 사용자 식별자(UID), 표시 이름 | 앱 최초 실행 시 기기 기반 계정 자동 생성, 이용자 직접 입력 |
+| 돌봄 기록 | 아기의 이름·생년월일, 수유·기저귀·수면 기록 값과 시각, 메모, 기록자 정보 | 이용자가 앱에서 직접 입력 |
 | 그룹 정보 | 돌봄 그룹 구성, 초대·합류 이력, 멤버십 | 그룹 생성·초대·합류 시 |
-| 진단 정보 | 비정상 종료 로그, 성능·이벤트 유형 등 진단 데이터(이벤트 종류 allowlist에 한함) | 앱 이용 중 자동 |
 
-- 아기의 이름·생년월일·사진 경로·기록 값·메모 등 **민감한 돌봄 데이터는 분석/오류 진단 도구로 전송하지 않습니다.** 진단 목적으로는 이벤트 유형 등 허용 목록(allowlist) 정보만 전송합니다.
+- 현재 1.0.8 앱은 Firebase Analytics, Crashlytics, Performance를 포함하거나 사용하지 않습니다.
 - 위치정보, 광고 식별자, 결제 정보는 수집하지 않습니다.
 
 ## 2. 개인정보의 처리 목적
@@ -24,7 +23,6 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 - 계정 인증 및 이용자 식별
 - 돌봄 기록의 저장, 실시간 동기화, 초대된 돌봄 그룹 내 공유
 - 오프라인 기록의 저장 및 재연결 시 동기화
-- 서비스 안정성 확보와 오류 진단·개선
 
 ## 3. 개인정보의 보관 및 파기
 
@@ -38,7 +36,7 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 
 | 수탁자 | 위탁 업무 | 관련 정보 |
 | --- | --- | --- |
-| Google (Firebase) | 인증, 데이터 저장·동기화, 서버 기능, 오류/성능 진단 | Firebase Authentication, Cloud Firestore, Cloud Functions, Crashlytics/Analytics |
+| Google (Firebase) | 기기 기반 계정 인증, 데이터 저장·동기화, 서버 기능 | Firebase Authentication, Cloud Firestore, Cloud Functions |
 
 - 돌봄 데이터는 **초대된 돌봄 그룹 구성원에게만** 표시되며, 공개 다운로드 토큰 URL을 저장하지 않습니다.
 
@@ -74,11 +72,11 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 
 **BabyNest** is a tool for adult caregivers to log and share a baby's feeding, diaper, and sleep records. It is not a medical service and is not directed to children as users.
 
-- **Data we collect:** account info (email, user ID, display name), care records you enter (baby name/birth date optional, feeding/diaper/sleep entries, notes), care-group membership, and diagnostics (crash/performance, event-type allowlist only).
-- **We do NOT send** baby names, birth dates, photo paths, record values, or notes to analytics/crash tools; only allowlisted event types are sent.
+- **Data we collect:** account info (automatically generated user ID and display name), care records you enter (baby name/birth date, feeding/diaper/sleep entries, notes), and care-group membership.
+- **The current 1.0.8 app does not include or use** Firebase Analytics, Crashlytics, or Performance.
 - **We do not collect** location or advertising identifiers, and we do not show ads or sell data.
 - **Purpose:** authentication, storing and real-time syncing of records within your invited care group, offline support, and reliability/diagnostics.
-- **Processors:** Google Firebase (Auth, Firestore, Cloud Functions, Crashlytics/Analytics).
+- **Processors:** Google Firebase (Auth, Firestore, Cloud Functions).
 - **Your rights:** access, correct, delete your data and account; removed members lose access to group data.
 - **Security:** TLS in transit, membership-based access control; no admin keys shipped in the app.
 - **Contact:** cs@seorilabs.com

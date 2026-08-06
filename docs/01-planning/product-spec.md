@@ -6,13 +6,13 @@
 | --- | --- |
 | Lifecycle state | `build` |
 | Planning approval | `approved` — 2026-07-12 |
-| Deployment approval | **미승인** |
+| Deployment approval | `approved` — 2026-08-06 재배포·남은 출시 순서 진행 지시. 국가 availability·법적 사업자 선택은 별도 확인 필요 |
 | 분류 / 기본 스택 | non-game / bare React Native + Firebase |
 | 출시 타깃 | Google Play / App Store / AppsInToss |
 | 기획 출처 | Obsidian `프로젝트/개인/babycare/01 기획서` |
 | 실행 source of truth | 이 repo의 `docs/` |
 
-기획 승인으로 제품 구현과 QA는 진행할 수 있다. 다만 스토어 제출, production track 승격, AppsInToss 프로덕션 릴리스와 공개 배포는 별도 deployment approval 전에는 수행하지 않는다.
+기획 승인으로 제품 구현과 QA를 진행했고, 2026-08-06 사용자가 재배포와 남은 출시 순서 완료를 승인했다. 다만 국가 availability, DSA trader 등 법적·사업자 선택은 임의로 정하지 않으며 해당 Console gate 확정 뒤 공개 제출한다.
 
 ## 제품 정의
 
@@ -112,8 +112,8 @@ flowchart LR
 | product core | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, `CareEvent`; 기록·수면종료·soft delete·대시보드 use case; Auth/그룹/아기/초대/기록·remote mutation·string storage port | 실제 non-production project와 기기 2대에서 전체 use-case 검증 |
 | mobile | 기본 개발 실행 경로에 Firebase composition root를 연결했다. native Firebase app이 없으면 `demo-babycare` Emulator에 Auth/Firestore/Functions를 연결하며, 개발용 익명 인증, owner 그룹·아기 생성, 6자리 초대 발급·합류 UI, UID-scoped cloud context cache, 실시간 Home/Timeline/Stats feed, 동기화 상태·재시도 배너와 멤버 목록을 제공한다. Firebase 초기화 오류는 fail-closed 재시도 화면으로 처리하고 local preview는 Jest에서만 사용한다. | 실제 Firebase client config와 Functions region, production Auth provider·계정 복구/삭제, 실제 기기 2대의 초대·offline/restart/reconnect·권한 회수 QA |
 | Firebase | Rules/Functions의 payload-bound mutation receipt와 baby별 active-sleep singleton lock을 검증한다. 별도 mobile shared-flow 테스트는 Auth Emulator의 익명 사용자 2명으로 owner 생성→초대 발급/수락→member 실시간 기록 수신→멤버 제거 후 접근 거부를 통과한다. | 실제 non-production project, App Check·Secret Manager·IAM·client config 통합 검증. Emulator의 두 client는 실제 기기 2대 증거가 아님 |
-| AppsInToss | Granite RN·TDS target과 제품 브랜드 shell을 구성했고 `v1.0.3` `.ait` 비공개 업로드를 완료했다. 인증·저장·실시간 adapter는 연결하지 않았다. | 정책 적합성, auth/storage/realtime adapter, sandbox 실제 기기 QA |
-| release | 3마켓 문서 구조, 제품명·대표 색상·세 타깃 식별자를 확정했고 Play internal draft, TestFlight upload, AppsInToss 비공개 업로드까지 완료했다. | 마켓 정책·privacy 답변, 남은 자산/콘솔 등록, 실제 계정·기기 QA, 별도 deployment approval |
+| AppsInToss | Granite RN·TDS UI, `Storage` session, Platform custom-token/Firebase Auth REST, Firestore REST 기록·조회, callable 초대·삭제 adapter를 연결했다. 운영 두 계정의 그룹 생성→기록→초대→합류→공동 조회→삭제 E2E와 `.ait` 로컬 빌드를 통과했다. | 새 비공개 업로드, 실제 sandbox에서 Storage·재실행·네트워크 복귀 QA, App Check/edge 보호, 실제 AIT 화면 screenshot |
+| release | 3마켓 식별자·자산·메타데이터 원장을 구성했고 Play internal 1.0.8, TestFlight 1.0.8, AppsInToss 기존 비공개 1.0.3까지 업로드했다. 사용자가 재배포와 남은 출시 순서 진행을 승인했다. | 마켓 Console privacy·정책 답변, 국가 availability·법적 사업자 선택, 실제 계정·기기 QA, 심사·공개 readback |
 
 RNFirebase adapter와 Firebase 개발 composition이 연결됐지만 production composition이 검증된 것은 아니다. `demo-babycare` Emulator의 익명 사용자 2명 테스트는 client·Rules·Functions 계약을 검증하는 로컬 증거이며, 실제 프로젝트의 App Check/IAM, production 인증, 클라우드 보존, 실제 기기 2대 공동 기록 완료 증거로 사용하지 않는다.
 
@@ -125,4 +125,4 @@ RNFirebase adapter와 Firebase 개발 composition이 연결됐지만 production 
 - Android/iOS/AIT에서 수유·기저귀·수면의 입력·홈·타임라인·기본 통계가 동등하게 동작한다.
 - native cold start에서 framework/template 문구가 노출되지 않는다.
 - privacy/data safety, 계정 삭제·export, signing, 스토어 자산과 review note blocker가 repo 원장에 반영된다.
-- release candidate가 준비되어도 deployment approval 전에는 제출하지 않는다.
+- release candidate는 승인된 범위에서 제출하되 국가 availability·법적 사업자·정책 답변을 임의로 채우지 않는다.

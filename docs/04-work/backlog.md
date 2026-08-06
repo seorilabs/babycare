@@ -1,6 +1,6 @@
 # Backlog
 
-기획은 2026-07-12 승인됐다. 아래 MVP 작업은 planning 재승인 없이 진행할 수 있지만, 범위 밖 제품 기능은 다음 planning approval을 거친다. 배포는 release candidate 이후 별도 deployment approval이 필요하다.
+기획은 2026-07-12 승인됐고 2026-08-06 재배포와 남은 출시 순서 진행 승인을 받았다. 범위 밖 제품 기능은 다음 planning approval을 거치며 국가 availability·법적 사업자 선택은 별도 확정한다.
 
 ## P0 — 공동 기록 MVP
 
@@ -26,22 +26,22 @@
 | --- | --- | --- |
 | 결정 대기 | 아동 정보·계정·그룹 공유·클라우드 저장 정책 적합성 확인 | 공식 정책/콘솔 기준 근거 기록 |
 | 완료 | AppsInToss 영구 `appName` 확정 | Console 승인값 `babynest` readback 완료(2026-08-04) |
-| 진행 | `apps/ait` Granite RN + TDS 초기화 | target·build-only workflow 구성, sandbox 기능 QA와 adapter 연결 남음 |
-| 대기 | AIT auth/storage/realtime adapter | native Firebase module, App Check, 알림 지원 범위를 실제 sandbox에서 검증 |
-| 대기 | AIT 핵심 흐름과 실제 기기 sandbox QA | mobile과 같은 수유·기저귀·수면·홈·타임라인·통계 흐름 |
+| 구현·운영 API E2E 완료 | `apps/ait` Granite RN + TDS 핵심 흐름 | 수유·기저귀·수면·홈·타임라인·통계·초대·삭제 구현, `.ait` local build 통과 |
+| 구현·sandbox 대기 | AIT auth/storage/Firestore adapter | Platform/Firebase Auth REST, AppsInToss Storage session, Firestore REST/callable production 2계정 E2E 통과. realtime/offline queue·App Check/edge 보호는 남음 |
+| 대기 | AIT 실제 기기 sandbox QA | 새 비공개 build 업로드 후 Storage·초대·기록·재실행·네트워크 복귀 검증 |
 
 ## P1 — Release candidate 준비
 
 | 상태 | 작업 | 완료 증거 / Blocker |
 | --- | --- | --- |
 | 완료 | 최종 앱 이름과 대표 색상 | `함께봄`/`BabyNest`, `#5FB49C`를 2026-07-18 사용자 확정. Android/iOS 표시 이름에 `함께봄` 반영 |
-| 대기 | Android release signing과 x64 Linux AAB | Play App Signing/upload key, internal track |
-| 대기 | iOS signing, archive/export와 TestFlight | macOS/Xcode, App ID/profile, 2인 TestFlight |
+| 내부 배포 완료·실기기 QA 대기 | Android release signing과 x64 Linux AAB | Play 1.0.8 internal `completed`, Play Store 설치본 QA 남음 |
+| 내부 배포 완료·실기기 QA 대기 | iOS signing, archive/export와 TestFlight | TestFlight 1.0.8 `IN_BETA_TESTING`, 2인 실제 기기 QA 남음 |
 | 대기 | 개인정보 처리방침·Data safety·Privacy Labels·연령등급 | 실제 SDK/데이터 흐름과 일치해야 함 |
 | 대기 | 계정·그룹 완전 삭제, 데이터 export, owner 이전 | privileged workflow와 재인증 필요. 미구현 export는 제품 UI에 노출하지 않음 |
-| 대기 | 3마켓 icon/thumbnail/screenshots/listing/review note | 최종 제품명·브랜딩 이후 생성 |
+| 진행 | 3마켓 icon/thumbnail/screenshots/listing/review note | Android/iOS 자산과 AIT exact-size 후보 완료. AIT sandbox 실화면 교체·Console 등록, policy 설문 남음 |
 | 대기 | 실제 project App Check/IAM/Rules/indexes 통합 QA | Emulator 통과만으로 완료 처리하지 않음 |
-| 차단 | store 제출·production promotion | **Deployment approval 미승인** |
+| 외부 입력 대기 | store 제출·production promotion | 진행 승인 완료. 국가 availability·법적 사업자 선택, Console privacy/policy 답변과 실기기 QA 필요 |
 
 ## P2 — 수익화(BM · 출시 후)
 

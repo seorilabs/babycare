@@ -121,7 +121,7 @@ Firebase root는 platform custom token Auth session restore, owner 그룹·아�
 | --- | --- | --- | --- |
 | Android | debug device/emulator, 이후 signed AAB internal | 작은 화면·back·offline·cold start | RN `0.85.3`/RNFirebase JDK 21 debug build 통과, 실기기 설치·process 기동 확인. 잠금 상태로 최종 visual 미확인 |
 | iOS | simulator/device, 이후 archive/TestFlight | safe area·keyboard·dark mode·cold start | RN `0.85.3`/RNFirebase arm64 Simulator clean/incremental build, iPhone 16 Pro light와 SE(3세대) dark first-screen 통과 |
-| AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/realtime, 재실행 | Granite RN·TDS target과 `.ait` 로컬 빌드 통과. sandbox 기능·실기기 QA 미검증 |
+| AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/realtime, 재실행 | Granite RN·TDS UI, `.ait` 로컬 빌드, production 두 계정의 그룹·기록·초대·공동 조회·삭제 API E2E 통과. 실제 sandbox Storage·화면·재실행·네트워크 복귀 미검증 |
 
 ## Regression Rules
 
