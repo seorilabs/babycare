@@ -20,14 +20,14 @@
     }
   },
   "release": {
-    "versionName": "1.0.1",
-    "versionCode": 1000001,
-    "sourceTag": "v1.0.1",
-    "sourceCommit": "8c5196e484f93b53630efb7ad6cbaaabfde56d58",
+    "versionName": "1.0.6",
+    "versionCode": 1000006,
+    "sourceTag": "v1.0.6",
+    "sourceCommit": "1d768c265740c91b6e0967ba20ca6ce380cc2def",
     "track": "internal",
     "status": "draft",
-    "uploadedDate": "2026-07-29",
-    "artifactSha256": "b594891b3b6554fad31cd20dc56e7eafecad5cdb12ff7751a9883c218bb6c91e",
+    "uploadedDate": "2026-08-06",
+    "artifactSha256": "4589cc4b5d12646a06a33628dd15d669f8b047488926b79f2eefb5fbb17fe50e",
     "productionRelease": false
   },
   "assets": {

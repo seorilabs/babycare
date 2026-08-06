@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-06 — v1.0.6 양 스토어 내부 후보 정합화
+
+- `v1.0.6` / `1d768c265740c91b6e0967ba20ca6ce380cc2def`은 App Store 업로드만 성공하고 Google Play가 WIF impersonation에서 실패한 부분 후보였다. 기존 태그를 이동하거나 새 버전을 만들지 않고 실패한 Play 쪽만 재시도했다.
+- `pnpm run test:static`, Firestore/Storage Rules 23건, Functions emulator 5건, Firebase mobile shared flow 1건, `pnpm run check:mobile`과 태그 SHA의 GitHub Static Checks run `31008932756`을 확인했다. 현재 `origin/main@ece5cb8`의 Static Checks run `31055508183`도 성공 상태다.
+- x64/JDK 21 Build Android Candidate run `31061827436`이 signed AAB를 생성했다. artifact는 package `com.seorilabs.babycare`, `1.0.6`/`1000006`, min SDK 24, target SDK 36, SHA-256 `4589cc4b5d12646a06a33628dd15d669f8b047488926b79f2eefb5fbb17fe50e`이며 strict JAR 검증과 babycare 전용 `upload` 인증서 fingerprint 일치를 확인했다.
+- GitHub deploy run `31009039603`은 `iam.serviceAccounts.getAccessToken` 권한 누락으로 실패했다. 같은 artifact를 승인된 로컬 publisher credential로 Google Play internal `draft`에 한 번 업로드했고 Android Publisher API에서 `1.0.6`/`1000006`, `status=draft`를 readback했다. completed 활성화·테스터 배포·production 승격은 하지 않았다.
+- Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0`의 ASC build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`은 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. 내부 그룹에는 과거 build만 연결돼 있어 `서리랩스 내부테스터`에 명시적으로 추가한 뒤 `IN_BETA_TESTING`과 테스터 2명을 API로 확인했다. 외부 TestFlight·App Review·공개 출시는 하지 않았다.
+- `v1.0.6` 이후 `origin/main`에는 모유 타이머·기록 시각·모유 저장 조건 안내의 실질 runtime 변경 3건이 남아 있다. 부분 후보 우선 수렴 규칙에 따라 이번 실행에서는 `v1.0.7`을 만들지 않았고, 다음 실행은 이 변경들을 새 양쪽 후보 비교 기준으로 삼는다.
+
 ## 2026-08-06 — 모유 기록 저장 조건 안내
 
 - 빠른 모유 기록은 좌·우 타이머가 1초 미만이면 도메인 규칙에 맞춰 저장 버튼을 비활성화하지만, 화면에는 이유가 없어 사용자가 핵심 수유 기록을 왜 저장할 수 없는지 알기 어려웠다.

@@ -17,8 +17,8 @@
 
 ## Market Gate
 
-- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.2/1000002 internal draft 업로드 완료 / 남음: Play Console privacy URL·data safety·content rating 확정
-- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9" 스크린샷 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.5/52 `VALID`·`APP_STORE_ELIGIBLE`, export compliance false 확인 완료 / 남음: App Privacy 콘솔 확정
+- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.6/1000006 internal draft 업로드 완료 / 남음: Play Console privacy URL·data safety·content rating 확정
+- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9" 스크린샷 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.6/54 `VALID`·`APP_STORE_ELIGIBLE`, export compliance false·내부 TestFlight 연결 확인 완료 / 남음: App Privacy 콘솔 확정
 - [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상과 `apps-in-toss.config.json` 반영 / 남음: thumbnail·vertical screenshots·URL·정책 답변
 - [x] Firebase rules/indexes/functions와 local test 코드 구현
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
@@ -49,7 +49,9 @@
 - [x] Google Play 1.0.2/1000002 internal draft 업로드·API readback — `v1.0.2` / `d11bbfaa3dcea221067d60c43fd888f4c0e93f55`, 2026-08-03
 - [x] AppsInToss `v1.0.3` 비공개 빌드 업로드 — source `089eb0c`, workflow run `30909365541`, deployment `019fccc1-8e5b-775f-99a4-ab190d4d1726`, 2026-08-04
 - [x] App Store 수정 후보 업로드 — `v1.0.5` / `f972da16f5f2f81468f576b233434a59a5863680`, Xcode Cloud run `137ca847-3c34-4d5b-8931-4f70c5b023d8`, ASC build `5ca352a5-449e-4997-b730-315ead4d02e8`, 실제 `1.0.5`/`52`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 2026-08-05
-- [ ] Google Play `v1.0.5` internal 업로드 재실행 — workflow run `31006207820`에서 signed AAB 생성·GitHub OIDC 성공. 기존 공용 publisher SA에 babycare repo principal의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐으며 Play upload는 시작되지 않음
+- [x] App Store `v1.0.6` 내부 TestFlight 후보 — source `1d768c265740c91b6e0967ba20ca6ce380cc2def`, Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0`, ASC build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`, 실제 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 내부 그룹 연결·`IN_BETA_TESTING`·테스터 2명 readback, 2026-08-06
+- [x] Google Play `v1.0.6` internal draft 업로드 — x64/JDK 21 build run `31061827436`, source `1d768c265740c91b6e0967ba20ca6ce380cc2def`, AAB `1.0.6`/`1000006`, target SDK 36, SHA-256 `4589cc4b5d12646a06a33628dd15d669f8b047488926b79f2eefb5fbb17fe50e`, 승인된 로컬 publisher fallback 업로드·API readback, 2026-08-06
+- [ ] Google Play WIF 자동 업로드 복구 — deploy run `31009039603`은 공용 publisher SA에 babycare repo principal의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단. 이번 후보는 로컬 fallback으로 보완했지만 다음 자동 업로드 전 binding 필요
 - [ ] Google Play internal 릴리스 활성화·테스터 배포 또는 production 승격 승인
 - [ ] App Store 실제 테스터 설치·실기기 QA 또는 App Review 제출 승인
 - [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA

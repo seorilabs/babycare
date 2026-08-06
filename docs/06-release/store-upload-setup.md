@@ -82,11 +82,12 @@ flowchart TD
 
 ## 남은 blocker
 
-1. **Google Play WIF impersonation** — 기존 공용 publisher SA의 Play API edit 생성·삭제는 성공했다. `v1.0.5` run `31006207820`도 signed AAB 생성과 GitHub OIDC credential 구성까지 성공했지만, 공용 SA에 `principalSet://iam.googleapis.com/projects/138773558853/locations/global/workloadIdentityPools/github-actions/attribute.repository/seorilabs/babycare`의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. GCP owner 조직 재인증 후 이 binding만 추가하고 같은 후보를 재실행한다. 새 SA는 만들지 않는다.
+1. **Google Play WIF impersonation** — 기존 공용 publisher SA의 Play API edit 생성·삭제는 성공했다. `v1.0.6` deploy run `31009039603`도 signed AAB 생성과 GitHub OIDC credential 구성까지 성공했지만, 공용 SA에 `principalSet://iam.googleapis.com/projects/138773558853/locations/global/workloadIdentityPools/github-actions/attribute.repository/seorilabs/babycare`의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. 같은 후보는 x64/JDK 21 build run `31061827436`의 signed AAB를 승인된 로컬 publisher credential로 internal `draft` 업로드해 보완했다. 다음 자동 업로드 전 GCP owner 조직 재인증 후 이 binding만 추가하며 새 SA는 만들지 않는다.
 2. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
 3. **출시 승인** — Google Play production 승격, App Review 제출·공개 출시, AppsInToss production release는 별도 승인 필요.
 4. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
 
 ## 완료된 후보 readback
 
-- **App Store** — `v1.0.5` Xcode Cloud run `137ca847-3c34-4d5b-8931-4f70c5b023d8` 성공. ASC build `5ca352a5-449e-4997-b730-315ead4d02e8`에서 실제 `1.0.5`/`52`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인.
+- **Google Play** — `v1.0.6` / `1d768c2` AAB를 x64/JDK 21 build run `31061827436`에서 생성·서명 검증하고 승인된 로컬 publisher credential로 internal `1.0.6`/`1000006`, `draft` 업로드·API readback 완료. internal 활성화·production 승격은 하지 않음.
+- **App Store** — `v1.0.6` Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0` 성공. ASC build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`에서 실제 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인. 내부 그룹 `서리랩스 내부테스터`에 build를 명시적으로 연결해 `IN_BETA_TESTING`, 테스터 2명 readback 완료.

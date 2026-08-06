@@ -26,10 +26,10 @@
 
 ## Release
 
-- Signing key / Play App Signing: ✅ 업로드 keystore·서명 완료, signed AAB 업로드로 Play App Signing 등록 확인. 기존 공용 publisher `seorilabs-play-publisher@seorilabs-gws.iam.gserviceaccount.com`의 Android Publisher API edit 생성·삭제도 성공했다. `v1.0.5` workflow run `31006207820`은 signed AAB 생성과 GitHub OIDC까지 통과했지만, 이 repo principal에 공용 SA의 `roles/iam.workloadIdentityUser`가 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. 새 SA는 만들지 않는다.
-- Internal testing track: ✅ `main@d11bbfa`(`v1.0.2`) signed AAB(`1.0.2`/`1000002`, target SDK 36) draft 업로드 및 Android Publisher API readback 완료(2026-08-03) / internal 릴리스 활성화·테스터 배포는 남음
+- Signing key / Play App Signing: ✅ 업로드 keystore·서명 완료, signed AAB 업로드로 Play App Signing 등록 확인. 기존 공용 publisher `seorilabs-play-publisher@seorilabs-gws.iam.gserviceaccount.com`의 Android Publisher API edit 생성·삭제도 성공했다. `v1.0.6` deploy run `31009039603`은 signed AAB 생성과 GitHub OIDC까지 통과했지만, 이 repo principal에 공용 SA의 `roles/iam.workloadIdentityUser`가 없어 `iam.serviceAccounts.getAccessToken`에서 중단됐다. 새 SA는 만들지 않는다.
+- Internal testing track: ✅ `v1.0.6` / `1d768c2` signed AAB(`1.0.6`/`1000006`, target SDK 36, SHA-256 `4589cc4b5d12646a06a33628dd15d669f8b047488926b79f2eefb5fbb17fe50e`)를 x64/JDK 21 build run `31061827436`에서 생성·서명 검증한 뒤 승인된 로컬 publisher credential로 internal `draft` 업로드 및 Android Publisher API readback 완료(2026-08-06) / internal 릴리스 활성화·테스터 배포는 남음
 - Production rollout policy: `확정 필요` (승인 후 결정)
-- Release notes: `함께봄 브랜드 노출과 기록 화면 안정성을 개선하고, Platform custom token 인증 브리지를 반영했습니다.`
+- Release notes: `서비스 안정성과 앱 사용 성능을 개선했습니다.`
 
 ## Policy
 

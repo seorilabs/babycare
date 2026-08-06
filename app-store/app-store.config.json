@@ -45,18 +45,21 @@
     "rationale": "표준 HTTPS/TLS와 Firebase SDK 전송 암호화만 사용, 비면제 커스텀 암호화 없음. Info.plist에 ITSAppUsesNonExemptEncryption=false 설정."
   },
   "release": {
-    "marketingVersion": "1.0.5",
-    "buildNumber": "52",
-    "sourceTag": "v1.0.5",
-    "sourceCommit": "f972da16f5f2f81468f576b233434a59a5863680",
-    "buildId": "5ca352a5-449e-4997-b730-315ead4d02e8",
+    "marketingVersion": "1.0.6",
+    "buildNumber": "54",
+    "sourceTag": "v1.0.6",
+    "sourceCommit": "1d768c265740c91b6e0967ba20ca6ce380cc2def",
+    "buildId": "fbe23a81-a5b5-4a39-bcae-da15e59e957d",
     "processingState": "VALID",
     "buildAudienceType": "APP_STORE_ELIGIBLE",
     "usesNonExemptEncryption": false,
-    "uploadedDate": "2026-08-05T05:45:26-07:00",
+    "uploadedDate": "2026-08-05T06:22:22-07:00",
     "artifactSha256": null,
     "betaGroup": "서리랩스 내부테스터",
     "betaGroupHasAccessToAllBuilds": true,
+    "betaGroupBuildAssigned": true,
+    "internalBuildState": "IN_BETA_TESTING",
+    "betaTesterCount": 2,
     "submittedForReview": false
   },
   "appPrivacy": {
@@ -96,7 +99,7 @@
     "appStoreNameEn": "App Store en-US 표시 이름은 'BabyNest: Shared Baby Care Log'(2026-07-18 확정 반영). 단독 'BabyNest'는 타 계정 선점이라 Play 타이틀과 동일한 고유 문자열을 사용. 브랜드명은 여전히 BabyNest.",
     "remaining": "App Privacy 콘솔 답변, 내부 테스터 실제 설치·2기기 QA, 심사 제출(승인 후).",
     "assetsDone": "아이콘 1024·iPhone 6.9\" 스크린샷 5컷 생성 완료. iPad 13\"는 iPad 지원 결정 후. Xcode AppIcon.appiconset에는 iPhone/iPad/marketing 아이콘 반영 완료.",
-    "signingDone": "Xcode Cloud Default workflow를 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret으로 구성했다. v1.0.5(source f972da1) Build 52가 성공했고 ASC에서 1.0.5/52, VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false를 확인했다. 실제 테스터 설치·실기기 QA와 App Review 제출은 별도 게이트다.",
+    "signingDone": "Xcode Cloud Default workflow를 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret으로 구성했다. v1.0.6(source 1d768c2) Build 54가 성공했고 ASC에서 1.0.6/54, VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false를 확인했다. 내부 그룹에 build를 명시적으로 연결해 IN_BETA_TESTING과 테스터 2명을 readback했다. 실제 테스터 설치·실기기 QA와 App Review 제출은 별도 게이트다.",
     "urls": "privacyPolicyUrl·supportUrl·marketingUrl 확정 반영(2026-07-18). ASC 콘솔에도 privacy(appInfo)·support(version loc) PATCH 완료."
   }
 }

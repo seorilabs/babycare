@@ -23,7 +23,7 @@
 
 - Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시·ASC appInfo(ko/en-US) 반영 완료
 - Age rating: `4+` (아동 대상 아님, 부적절 콘텐츠 없음)
-- Export compliance: `Info.plist`에 `ITSAppUsesNonExemptEncryption=false`를 반영했고, App Store Connect의 1.0.5/52 build readback에서도 `usesNonExemptEncryption=false`를 확인했다.
+- Export compliance: `Info.plist`에 `ITSAppUsesNonExemptEncryption=false`를 반영했고, App Store Connect의 1.0.6/54 build readback에서도 `usesNonExemptEncryption=false`를 확인했다.
 - Review notes: `app-store/app-store.config.json`의 `review.notes` (공동 기록 데모 절차 포함)
 - Demo account: 심사용 데모 계정 2개(owner/member) `확정 필요`
 - App Privacy 답변: `docs/05-markets/store-data-disclosure.md` (Tracking 없음)
@@ -39,8 +39,8 @@
 ## Release
 
 - Signing team (Team ID): `HCDUXX4Z3X`. Xcode Cloud Release는 Automatic managed signing을 사용하며, Firebase plist는 redacted Xcode Cloud secret으로 복원한다.
-- 최신 후보: `main@f972da1`(`v1.0.5`)을 태그 변경으로 자동 시작한 Xcode Cloud run `137ca847-3c34-4d5b-8931-4f70c5b023d8`이 성공했다. App Store Connect build `5ca352a5-449e-4997-b730-315ead4d02e8`은 실제 `1.0.5`/`52`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`이며 내부 beta testing 준비 상태다(2026-08-05). 실제 테스터 설치·실기기 QA와 App Review 제출은 하지 않았다.
+- 최신 후보: `main@1d768c2`(`v1.0.6`)의 Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0`이 성공했다. App Store Connect build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`은 실제 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. Xcode Cloud build를 내부 그룹 `서리랩스 내부테스터`에 명시적으로 연결한 뒤 `IN_BETA_TESTING`과 테스터 2명을 API로 readback했다(2026-08-06). 실제 테스터 설치·실기기 QA와 App Review 제출은 하지 않았다.
 - 1.0.2 후보(과거 실패): `main@d11bbfa`(`v1.0.2`)의 device archive는 암호화 선언 키 누락과 strict codesign `CSSMERR_TP_NOT_TRUSTED`로 업로드하지 않았다. 이 실패는 1.0.5 Xcode Cloud 성공으로 빌드 경로 기준 해결됐다.
 - App Store provisioning profile: ✅ App Store profile로 export 완료
-- TestFlight group: ✅ 내부 그룹 `서리랩스 내부테스터` 존재, 모든 빌드 접근 활성화 / 실제 테스터 설치·실기기 QA는 남음
+- TestFlight group: ✅ 내부 그룹 `서리랩스 내부테스터`에 `1.0.6`/`54` build 연결, `IN_BETA_TESTING`, 테스터 2명 API readback 완료 / 실제 테스터 설치·실기기 QA는 남음
 - Release notes: `확정 필요`
