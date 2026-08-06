@@ -55,6 +55,10 @@ test('latest AppsInToss private upload evidence stays consistent', async () => {
     assert.match(document, /31123595821/);
     assert.match(document, /019fd827-571d-791d-bd50-08f2da35afec/);
   }
+  assert.match(
+    market,
+    /intoss-private:\/\/babynest\?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec/,
+  );
 
   assert.match(checklist, /- \[ \] AppsInToss private build sandbox/);
   assert.match(checklist, /- \[ \] AppsInToss production release 승인/);
