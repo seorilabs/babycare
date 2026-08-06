@@ -61,24 +61,42 @@
     "submittedForReview": false
   },
   "appPrivacy": {
-    "tracking": "no",
+    "tracking": false,
     "collected": [
       {
         "type": "이름 (Contact Info)",
         "linked": true,
-        "purpose": "app-functionality",
-        "note": "양육자 표시 이름"
+        "purposes": ["app-functionality"],
+        "note": "양육자 표시 이름·아기 이름"
       },
       {
-        "type": "사용자 콘텐츠 - 돌봄 기록 (User Content)",
+        "type": "건강 (Health & Fitness)",
         "linked": true,
-        "purpose": "app-functionality",
-        "note": "아기 이름·생년월일, 수유·기저귀·수면 기록, 메모. 초대된 그룹 내부에서만 노출"
+        "purposes": ["app-functionality"],
+        "note": "아기의 수유·기저귀·수면 돌봄 기록. 비의료 도구 포지셔닝과 무관하게 Apple의 광범위한 Health 정의로 신고"
+      },
+      {
+        "type": "기타 사용자 콘텐츠 (User Content)",
+        "linked": true,
+        "purposes": ["app-functionality"],
+        "note": "사용자가 자유 입력하는 돌봄 메모. 초대된 그룹 내부에서만 노출"
+      },
+      {
+        "type": "기타 데이터 유형 (Other Data)",
+        "linked": true,
+        "purposes": ["app-functionality"],
+        "note": "아기 생년월일"
       },
       {
         "type": "사용자 ID (Identifiers)",
         "linked": true,
-        "purpose": "app-functionality"
+        "purposes": ["app-functionality"]
+      },
+      {
+        "type": "기타 진단 데이터 (Diagnostics)",
+        "linked": false,
+        "purposes": ["analytics", "app-functionality"],
+        "note": "FirebaseAuth·FirebaseFirestore privacy manifest의 SDK 품질 메타데이터와 FirebaseFunctions 호출 진단·보안 메타데이터"
       }
     ],
     "detailDoc": "docs/05-markets/store-data-disclosure.md"

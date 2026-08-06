@@ -32,10 +32,15 @@
 | 데이터 유형 | 수집 | 연결(linked) | 추적 | 목적 |
 | --- | --- | --- | --- | --- |
 | Contact Info — Name | 예 | 예 | 아니요 | App Functionality |
-| User Content — Other User Content(돌봄 기록) | 예 | 예 | 아니요 | App Functionality |
+| Health & Fitness — Health(수유·기저귀·수면 기록) | 예 | 예 | 아니요 | App Functionality |
+| User Content — Other User Content(자유 입력 메모) | 예 | 예 | 아니요 | App Functionality |
+| Other Data — Other Data Types(생년월일) | 예 | 예 | 아니요 | App Functionality |
 | Identifiers — User ID | 예 | 예 | 아니요 | App Functionality |
+| Diagnostics — Other Diagnostic Data | 예 | 아니요 | 아니요 | Analytics·App Functionality |
 | Location | 아니요 | — | — | — |
 
+- `Name`에는 양육자 표시 이름과 아기 이름, `Health`에는 구조화된 수유·기저귀·수면 기록, `Other User Content`에는 자유 입력 메모, `Other Data Types`에는 아기 생년월일을 답한다. 비의료 도구 포지셔닝은 Apple의 광범위한 Health data type 신고를 면제하지 않는다.
+- iOS `Podfile.lock`의 Firebase 12.15.0과 실제 `FirebaseAuth`·`FirebaseFirestore` privacy manifest는 `Other Diagnostic Data`를 비연결·비추적 Analytics 용도로 선언한다. Firebase Functions 호출 metadata는 보안·service operation을 위한 App Functionality에도 사용된다. 현재 release에 Crashlytics·Performance·Google Analytics SDK는 없다.
 - **Data Used to Track You: 없음** (ATT/IDFA 불필요, `NSUserTrackingUsageDescription` 불필요)
 - Export Compliance: `ITSAppUsesNonExemptEncryption = false` (표준 TLS/Firebase만 사용)
 - `PrivacyInfo.xcprivacy`는 App Privacy 콘솔 답변을 대체하지 않음 — 별도 유지.
