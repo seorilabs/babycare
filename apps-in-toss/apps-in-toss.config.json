@@ -36,7 +36,7 @@
   },
   "release": {
     "artifact": "apps/ait/*.ait",
-    "sandboxQa": "미검증",
+    "sandboxQa": "official-ios-sandbox-installed: console-login-and-runtime-qa-pending",
     "latestPrivateUpload": {
       "ref": "main",
       "sourceSha": "707df1045324c3a5f93ded7ee8aed0e6637e9583",
