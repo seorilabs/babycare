@@ -6,6 +6,7 @@ import { HttpsError } from 'firebase-functions/v2/https';
 
 let createInvite: typeof import('../src/index.js').createInvite;
 let acceptInvite: typeof import('../src/index.js').acceptInvite;
+let deleteAccount: typeof import('../src/index.js').deleteAccount;
 
 before(async () => {
   process.env.GCLOUD_PROJECT = 'babycare-callable-unit-test';
@@ -13,6 +14,7 @@ before(async () => {
   const functions = await import('../src/index.js');
   createInvite = functions.createInvite;
   acceptInvite = functions.acceptInvite;
+  deleteAccount = functions.deleteAccount;
 });
 
 after(async () => {
@@ -34,6 +36,20 @@ describe('callable boundary', () => {
       createInvite.run({
         auth: { uid: 'owner-user' },
         data: null,
+      } as never),
+      (error) => error instanceof HttpsError && error.code === 'invalid-argument',
+    );
+  });
+
+  it('deleteAccount도 Auth와 명시적 삭제 확인을 먼저 요구한다', async () => {
+    await assert.rejects(
+      deleteAccount.run({ data: { confirmation: 'DELETE' } } as never),
+      (error) => error instanceof HttpsError && error.code === 'unauthenticated',
+    );
+    await assert.rejects(
+      deleteAccount.run({
+        auth: { uid: 'owner-user' },
+        data: { confirmation: 'delete' },
       } as never),
       (error) => error instanceof HttpsError && error.code === 'invalid-argument',
     );

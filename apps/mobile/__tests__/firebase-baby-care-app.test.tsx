@@ -27,6 +27,7 @@ import {
 } from '../src/app/FirebaseBabyCareApp';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
+  clear: jest.fn(async () => undefined),
   getItem: jest.fn(async () => null),
   setItem: jest.fn(async () => undefined),
   removeItem: jest.fn(async () => undefined),
@@ -199,13 +200,16 @@ describe('FirebaseBabyCareApp product copy', () => {
     const now = new Date('2026-08-04T04:00:00+09:00').getTime();
     const {baby, group, identity, membership} = readySessionFixture(now);
     const container = emptyCareContainer();
-    jest.mocked(AsyncStorage.getItem).mockResolvedValueOnce(
-      JSON.stringify({
-        version: 1,
-        context: 'internal-context-schema',
-        memberships: [],
-      }),
-    );
+    jest
+      .mocked(AsyncStorage.getItem)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          version: 1,
+          context: 'internal-context-schema',
+          memberships: [],
+        }),
+      );
     const runtime = {
       kind: 'firebase',
       mode: 'cloud',
@@ -411,6 +415,7 @@ describe('FirebaseBabyCareApp product copy', () => {
         <FirebaseCareDashboard
           container={container}
           onInvite={async () => undefined}
+          onDeleteAccount={async () => undefined}
           onRefreshMembers={async () => undefined}
           onRuntimeError={onRuntimeError}
           ready={ready}
@@ -533,6 +538,7 @@ describe('FirebaseBabyCareApp product copy', () => {
         <FirebaseCareDashboard
           container={container}
           onInvite={async () => undefined}
+          onDeleteAccount={async () => undefined}
           onRefreshMembers={async () => undefined}
           onRuntimeError={onRuntimeError}
           ready={ready}

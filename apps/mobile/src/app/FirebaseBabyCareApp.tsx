@@ -9,6 +9,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {CareEventKind} from '@babycare/product-core';
 import type {
@@ -31,6 +32,7 @@ import {HomeScreen} from '../screens/HomeScreen';
 import {MoreScreen} from '../screens/MoreScreen';
 import {StatsScreen} from '../screens/StatsScreen';
 import {TimelineScreen} from '../screens/TimelineScreen';
+import {AccountDeletionIntentStore} from './account-deletion-intent-store';
 import {createTheme} from './theme';
 import {
   createOwnerFirebaseSession,
@@ -92,6 +94,7 @@ export function FirebaseCareDashboard(props: {
   readonly invite?: {readonly code: string; readonly expiresAt: number};
   readonly onInvite: () => Promise<void>;
   readonly onRefreshMembers: () => Promise<void>;
+  readonly onDeleteAccount: () => Promise<void>;
   readonly onRuntimeError: (error: Error | undefined) => void;
   readonly runtimeError?: Error;
 }) {
@@ -206,6 +209,7 @@ export function FirebaseCareDashboard(props: {
           inviteExpiresAt={props.invite?.expiresAt}
           memberships={props.ready.memberships}
           onCreateInvite={props.onInvite}
+          onDeleteAccount={props.onDeleteAccount}
           onRefreshMembers={props.onRefreshMembers}
           onReset={async () => undefined}
           session={session}
@@ -329,6 +333,10 @@ export function FirebaseBabyCareApp() {
     () => new CloudCareContextSessionStore(cache),
     [cache],
   );
+  const accountDeletionIntents = useMemo(
+    () => new AccountDeletionIntentStore(),
+    [],
+  );
   const mounted = useRef(true);
   const [state, setState] = useState<RootState>({kind: 'loading'});
   const [runtimeError, setRuntimeError] = useState<Error>();
@@ -441,6 +449,30 @@ export function FirebaseBabyCareApp() {
         if (!active) {
           return;
         }
+        const pendingDeletion = await accountDeletionIntents.load();
+        if (pendingDeletion) {
+          const verified = await runtime.sessionServices.auth.verifyCurrentUser();
+          if (verified && verified.userId !== pendingDeletion.userId) {
+            throw new Error(
+              'Pending account deletion belongs to a different user',
+            );
+          }
+          if (verified) {
+            await runtime.deleteAccount(pendingDeletion.userId);
+          }
+          await AsyncStorage.clear();
+          await runtime.sessionServices.auth.signOut();
+          if (!active) {
+            return;
+          }
+          setRuntimeError(undefined);
+          setState({
+            kind: 'setup',
+            runtime,
+            notice: '계정과 연결된 데이터를 삭제했어요',
+          });
+          return;
+        }
         const identity = await runtime.sessionServices.auth.currentUser();
         if (identity) {
           try {
@@ -484,7 +516,7 @@ export function FirebaseBabyCareApp() {
     return () => {
       active = false;
     };
-  }, [activateReadySession, cache, retryKey]);
+  }, [accountDeletionIntents, activateReadySession, cache, retryKey]);
 
   if (state.kind === 'loading') {
     return (
@@ -560,6 +592,29 @@ export function FirebaseBabyCareApp() {
               }
             : current,
         );
+      }}
+      onDeleteAccount={async () => {
+        const deletedUserId = state.ready.context.identity.userId;
+        await accountDeletionIntents.save({userId: deletedUserId});
+        await state.runtime.deleteAccount(deletedUserId);
+        state.container.stopSessionLifecycle();
+        try {
+          await state.container.purge();
+          const cleared = await sessionStore.clear(state.sessionToken);
+          if (!cleared) {
+            throw new Error('Deleted account session cache is no longer current');
+          }
+          await accountDeletionIntents.clear();
+        } catch {
+          await AsyncStorage.clear();
+        }
+        await state.runtime.sessionServices.auth.signOut();
+        setRuntimeError(undefined);
+        setState({
+          kind: 'setup',
+          runtime: state.runtime,
+          notice: '계정과 연결된 데이터를 삭제했어요',
+        });
       }}
       onRefreshMembers={async () => {
         const memberships = await state.runtime.refreshMemberships(state.ready);

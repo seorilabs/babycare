@@ -1,5 +1,7 @@
 import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import {
   defineBoolean,
   defineInt,
@@ -9,8 +11,16 @@ import {
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { FirestoreInviteRepository } from './firestore-invite-repository.js';
+import { AccountDeletionError } from './account-deletion-error.js';
+import {
+  AccountDeletionService,
+  requireDeletionConfirmation,
+} from './account-deletion-service.js';
+import { FirebaseGroupStorageDeletionRepository } from './firebase-group-storage-deletion-repository.js';
+import { FirestoreAccountDeletionRepository } from './firestore-account-deletion-repository.js';
 import { toInviteHttpsError } from './https-error.js';
 import { InviteService } from './invite-service.js';
+import { InviteServiceError } from './invite-error.js';
 import { requireAuthenticatedUid } from './validation.js';
 
 const FUNCTIONS_REGION = defineString('FUNCTIONS_REGION', {
@@ -49,6 +59,16 @@ function buildInviteService(): InviteService {
       acceptLimitPerWindow: INVITE_ACCEPT_LIMIT_PER_HOUR.value(),
     },
   });
+}
+
+function buildAccountDeletionService(): AccountDeletionService {
+  return new AccountDeletionService(
+    new FirestoreAccountDeletionRepository(
+      firestore,
+      new FirebaseGroupStorageDeletionRepository(getStorage(app).bucket()),
+    ),
+    getAuth(app),
+  );
 }
 
 function requestData(value: unknown): Record<string, unknown> {
@@ -98,5 +118,28 @@ export const acceptInvite = onCall(callableOptions, async (request) => {
       throw error;
     }
     throw toInviteHttpsError(error, 'accept');
+  }
+});
+
+export const deleteAccount = onCall(callableOptions, async (request) => {
+  try {
+    const uid = requireAuthenticatedUid(request.auth?.uid);
+    const data = requestData(request.data);
+    requireDeletionConfirmation(data.confirmation);
+    return await buildAccountDeletionService().deleteAccount({
+      uid,
+      confirmation: data.confirmation,
+    });
+  } catch (error) {
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    if (error instanceof AccountDeletionError) {
+      throw new HttpsError(error.code, error.message);
+    }
+    if (error instanceof InviteServiceError && error.code === 'unauthenticated') {
+      throw new HttpsError('unauthenticated', 'Authentication is required');
+    }
+    throw new HttpsError('internal', 'Account deletion failed');
   }
 });

@@ -17,6 +17,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   ) -> Bool {
     if FirebaseApp.app() == nil,
        Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist") != nil {
+      RNFBAppCheckModule.sharedInstance()
       FirebaseApp.configure()
     }
 
