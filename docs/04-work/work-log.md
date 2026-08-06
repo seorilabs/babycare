@@ -1,5 +1,12 @@
 # Work Log
 
+## 2026-08-07 — Google Play Data Safety API 제출
+
+- 현재 Android 1.0.8 release runtime을 다시 검사해 Firebase Authentication UID를 `사용자 ID`, transitive `firebase-installations`와 Play Integrity/App Check를 `기기 또는 기타 ID`로 분리했다. 생년월일은 `기타 개인 정보`, 사용자가 남기는 돌봄 기록·메모는 `기타 사용자 제작 콘텐츠`로 정렬했다. Analytics·Crashlytics·Performance·광고·결제는 현재 바이너리에 없어 신고하지 않았다.
+- 최신 Play Console CSV schema의 계정 생성·삭제 문항을 반영했다. 별도 자격증명 입력 없이 Firebase 계정을 자동 생성하므로 계정 생성 방식은 `기타`, 앱 내 삭제와 외부 삭제 URL을 제공하므로 두 삭제 URL에 운영 페이지를 답했다.
+- 답변 원장 `play-store/data-safety-responses.json`과 CSV 생성·제출 도구 `scripts/apply-google-play-data-safety.py`를 추가했다. 생성본은 782개 schema row 중 34개 응답만 활성화하며, `applications.dataSafety` API가 서버 검증 후 성공했다.
+- Data Safety API는 성공 시 빈 응답만 반환하고 GET readback을 제공하지 않는다. Play Console의 완료 표시 확인, 개인정보처리방침 URL·콘텐츠 등급 등 나머지 앱 콘텐츠 입력은 Chrome 로그인 세션 연결 뒤 계속한다.
+
 ## 2026-08-07 — Android 1.0.8 production 두 기기·offline·삭제 QA
 
 - Google Play internal과 같은 `1.0.8`/`1000008` upload-signed AAB를 서로 독립된 Android API 36 AVD 2대에 설치했다. owner `QAOwnerA`가 production 그룹 `QABabyA`를 만들고 분유 120ml·기저귀 소변·낮잠을 기록한 뒤, 비행기 모드에서 기저귀 대변을 추가하고 강제 종료·재실행해 local 보존과 `동기화 실패 1건` 표시를 확인했다.

@@ -17,7 +17,7 @@
 
 ## Market Gate
 
-- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.8/1000008 internal `completed` 업로드 완료 / 남음: Play Console privacy URL·data safety·content rating 확정
+- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.8/1000008 internal `completed` 업로드, Data Safety API 제출 성공 / 남음: Play Console Data Safety 완료 readback·privacy URL·content rating 확정
 - [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정
 - [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증 완료 / 남음: 실제 AIT sandbox 화면 screenshot 교체·Console 등록, URL·정책 답변
 - [x] Firebase rules/indexes/functions와 local test 코드 구현 — `members.userId` collection-group index 운영 `READY` 포함
@@ -28,7 +28,7 @@
 - [ ] 실제 project의 App Check 또는 edge rate limit 확정 — mobile Play Integrity·App Attest·DeviceCheck와 Platform 검증 경계 구현·provider 운영 구성 readback 완료. 새 후보 실기기 token 확인 전 `require_app_check=false`, `ENFORCE_APP_CHECK=false`
 - [x] production 계정 삭제 callable과 외부 삭제 경로 — `deleteAccount` ACTIVE·IAM 적용, Platform 삭제 mapping API production 배포, 외부 안내 페이지 live 200, 일회성 owner/member 계정 삭제·정리 live QA 완료
 - [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
-- [ ] Privacy/data safety/review notes 확정 — 진행: **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`, App Store ASC + config 반영), 실제 기기 기반 인증과 SDK 의존성 기준으로 email·diagnostics 오신고를 제거하고 review notes·store-data-disclosure 확정 / 남음: Play Console '앱 콘텐츠' 개인정보 URL 수동 입력·Data safety·연령등급 콘솔 제출, App Privacy 답변
+- [ ] Privacy/data safety/review notes 확정 — 진행: **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`, App Store ASC + config 반영), 실제 기기 기반 인증과 SDK 의존성 기준으로 Data Safety 답변을 재분류하고 2026-08-07 Android Publisher API 제출 성공 / 남음: Play Console Data Safety 완료 readback·개인정보 URL·연령등급 콘솔 제출, App Privacy 답변
 
 ## QA Gate
 
