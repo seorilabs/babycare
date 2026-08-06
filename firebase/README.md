@@ -5,7 +5,7 @@ Firebase Rules, indexes, Emulator 테스트와 privileged Functions를 둔다. �
 ## 구조
 
 - `firestore.rules`: 그룹 멤버십, event revision, active-sleep singleton lock, mutation receipt 접근 통제
-- `firestore.indexes.json`: 아기별/종류별 event 타임라인 index
+- `firestore.indexes.json`: 아기별/종류별 event 타임라인 index와 사용자별 그룹 복구를 위한 `members.userId` collection-group index
 - `storage.rules`: 그룹-scoped 아기 이미지 접근 통제
 - `firebase.json`: Firestore/Storage/Functions Emulator와 Node.js 22 runtime 설정
 - `firebase.mobile.json`: 실기기 개발을 위해 Auth/Firestore/Storage/Functions Emulator를 LAN에 bind하는 별도 설정

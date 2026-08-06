@@ -1,5 +1,12 @@
 # Work Log
 
+## 2026-08-06 — TestFlight 돌봄 그룹 생성 복구
+
+- TestFlight에서 이름·생년월일 입력 후 `돌봄 그룹 만들기`가 실패한 시각의 운영 로그를 확인했다. Platform custom-token 요청은 HTTP 200이었고 Firebase 사용자도 같은 시각 생성되어 인증·연결 단계는 통과했다.
+- 그룹 생성 전에 실행하는 `members.userId` collection-group 조회와 달리 운영 Firestore와 `firestore.indexes.json`에는 해당 collection-group scope index가 없었다. 운영 Rules는 저장소와 동일했으므로 Rules drift가 아닌 index 누락으로 특정했다.
+- 기존 collection 범위 index 3개를 보존하면서 `members.userId`의 ascending collection-group index를 선언하고 운영 프로젝트에 적용했다. 네 index가 모두 `READY`임을 확인했고, 빈 probe 값의 동일 collection-group query가 HTTP 200으로 완료됐다. 기존 TestFlight 바이너리에서 재시도할 수 있으며 새 앱 빌드는 필요하지 않다.
+- 필수 index가 다시 빠지거나 기존 범위를 지우면 static gate가 실패하도록 회귀 테스트를 추가했다. `pnpm run test:static`에서 core 40건, mobile 34 suites/279건, Functions 10건, index 1건, build-workflow 9건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`, Firestore/Storage Rules 23건, Firebase mobile shared-flow 1건도 통과했다. `pnpm run check:release`는 마켓 정책·App Check·실기기 QA 등 기존 외부 blocker로 예상대로 실패했다.
+
 ## 2026-08-06 — 하단 탭 safe area 보강
 
 - mobile의 두 runtime root는 상단·좌우 safe area만 처리하지만 공통 `TabBar`는 하단 패딩을 6으로 고정해, 홈 인디케이터나 제스처 내비게이션 영역이 있는 기기에서 탭이 시스템 UI와 겹칠 수 있었다.
