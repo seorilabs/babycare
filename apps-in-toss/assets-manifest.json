@@ -1,0 +1,84 @@
+{
+  "out_dir": ".",
+  "background": "#F5F8F6",
+  "rules": [
+    {
+      "kind": "screenshot",
+      "min": 3
+    }
+  ],
+  "items": [
+    {
+      "id": "logo",
+      "kind": "logo",
+      "path": "apps-in-toss/assets/logo-600.png",
+      "source": "app-store/assets/icon-1024.png",
+      "width": 600,
+      "height": 600,
+      "background": "#5FB49C",
+      "transparent": false,
+      "fit": "cover"
+    },
+    {
+      "id": "thumbnail",
+      "kind": "thumbnail",
+      "path": "apps-in-toss/assets/thumbnail-1932x828.png",
+      "source": "play-store/assets/feature-graphic-1024x500.png",
+      "width": 1932,
+      "height": 828,
+      "background": "#B8E5D4",
+      "transparent": false,
+      "fit": "cover"
+    },
+    {
+      "id": "screenshot-home",
+      "kind": "screenshot",
+      "path": "apps-in-toss/screenshots/01-home.png",
+      "source": "app-store/screenshots/6.9/01-home.png",
+      "width": 636,
+      "height": 1048,
+      "transparent": false,
+      "fit": "contain"
+    },
+    {
+      "id": "screenshot-timeline",
+      "kind": "screenshot",
+      "path": "apps-in-toss/screenshots/02-timeline.png",
+      "source": "app-store/screenshots/6.9/02-timeline.png",
+      "width": 636,
+      "height": 1048,
+      "transparent": false,
+      "fit": "contain"
+    },
+    {
+      "id": "screenshot-stats",
+      "kind": "screenshot",
+      "path": "apps-in-toss/screenshots/03-stats.png",
+      "source": "app-store/screenshots/6.9/03-stats.png",
+      "width": 636,
+      "height": 1048,
+      "transparent": false,
+      "fit": "contain"
+    },
+    {
+      "id": "screenshot-record",
+      "kind": "screenshot",
+      "path": "apps-in-toss/screenshots/04-record.png",
+      "source": "app-store/screenshots/6.9/04-record.png",
+      "width": 636,
+      "height": 1048,
+      "transparent": false,
+      "fit": "contain"
+    },
+    {
+      "id": "screenshot-more",
+      "kind": "screenshot",
+      "path": "apps-in-toss/screenshots/05-more.png",
+      "source": "app-store/screenshots/6.9/05-more.png",
+      "width": 636,
+      "height": 1048,
+      "transparent": false,
+      "fit": "contain"
+    }
+  ]
+}

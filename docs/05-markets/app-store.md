@@ -1,6 +1,6 @@
 # App Store
 
-> 등록 준비 원장. 확정값과 초안을 반영. 2026-07-29 승인 범위는 App Store Connect/TestFlight 빌드 업로드까지이며, 테스터 실기기 QA·App Review 제출·공개 출시는 미승인.
+> 등록·출시 준비 원장. 확정값과 실제 App Store Connect readback을 반영한다. 2026-08-06 사용자가 남은 출시 절차 진행을 승인했으며, 법적·사업자 선택은 확인값만 반영한다.
 > 기계 판독 source of truth: `app-store/app-store.config.json`
 
 ## App Identity
@@ -13,7 +13,7 @@
 - App name EN: `BabyNest`
 - Subtitle KO: `여러 양육자와 함께 실시간 공동 기록` (20/30)
 - Subtitle EN: `Shared baby care tracker` (24/30)
-- Category: primary `라이프스타일(Lifestyle)` / secondary `유틸리티(Utilities)` 제안 — 콘솔 확정
+- Category: primary `라이프스타일(Lifestyle)` / secondary `유틸리티(Utilities)` — ASC API 반영·readback 완료
 - Support URL: `https://www.seorilabs.com/support/` (ASC version loc 반영 완료)
 - Marketing URL: `https://www.seorilabs.com/`(선택)
 
@@ -22,26 +22,28 @@
 ## App Information
 
 - Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시·ASC appInfo(ko/en-US) 반영 완료
-- Age rating: `4+` (아동 대상 아님, 부적절 콘텐츠 없음)
-- Export compliance: `Info.plist`에 `ITSAppUsesNonExemptEncryption=false`를 반영했고, App Store Connect의 1.0.6/54 build readback에서도 `usesNonExemptEncryption=false`를 확인했다.
-- Review notes: `app-store/app-store.config.json`의 `review.notes` (공동 기록 데모 절차 포함)
-- Demo account: 심사용 데모 계정 2개(owner/member) `확정 필요`
-- App Privacy 답변: `docs/05-markets/store-data-disclosure.md` (Tracking 없음)
+- Age rating: `4+` — 건강·웰니스 주제와 사용자 생성 돌봄 기록을 신고하고 나머지 콘텐츠를 없음으로 반영한 ASC 자동 등급 readback 완료
+- Content rights: `DOES_NOT_USE_THIRD_PARTY_CONTENT` readback 완료
+- Export compliance: `Info.plist`에 `ITSAppUsesNonExemptEncryption=false`를 반영했고, App Store Connect의 1.0.8/56 build readback에서도 `usesNonExemptEncryption=false`를 확인했다.
+- Review notes: 로그인 없이 기기 기반 계정을 자동 생성하는 실제 온보딩·2기기 초대·계정 삭제 절차를 ASC에 반영 완료
+- Demo account: 불필요. `demoAccountRequired=false`와 검증된 운영 연락처를 ASC에 반영 완료
+- App Privacy 답변: `docs/05-markets/store-data-disclosure.md` (Tracking 없음, Name·Other User Content·User ID만 수집하는 현재 1.0.8 기준) / 콘솔 입력 남음
 - DSA/trader: `확정 필요` (EU 배포 여부 결정 후)
 
 ## Assets
 
 - App store icon (1024x1024): `app-store/assets/icon-1024.png` 및 Xcode `AppIcon.appiconset`(iPhone/iPad/marketing) ✅ 반영
-- Native launch screen: 구현됨 — 최종 브랜딩 `확정 필요`
+- Native launch screen: 제품명·브랜드 아이콘 기반 정적 화면 구현·release build 반영
 - iPhone screenshots (6.9" 1320x2868): 홈/타임라인/통계/수유기록/더보기 5컷 ✅ `app-store/screenshots/6.9/` (실제 앱 시뮬레이터 캡처)
-- iPad screenshots (13" 2064x2752): iPad 지원 여부 결정 후 `확정 필요`
+- iPad screenshots (13" 2064x2752): iPad target 유지. Release 시뮬레이터에서 production 그룹·수유·기저귀·수면 기록을 만든 실제 화면 5컷을 `app-store/screenshots/13/`에 캡처하고 한국어 `APP_IPAD_PRO_3GEN_129` set으로 업로드했다. ASC asset delivery state 5건 모두 `COMPLETE` readback 완료
 
 ## Release
 
 - Signing team (Team ID): `HCDUXX4Z3X`. Xcode Cloud Release는 Automatic managed signing을 사용하며, Firebase plist는 redacted Xcode Cloud secret으로 복원한다.
-- 최신 후보: `main@1d768c2`(`v1.0.6`)의 Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0`이 성공했다. App Store Connect build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`은 실제 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. Xcode Cloud build를 내부 그룹 `서리랩스 내부테스터`에 명시적으로 연결한 뒤 `IN_BETA_TESTING`과 테스터 2명을 API로 readback했다(2026-08-06). 실제 테스터 설치·실기기 QA와 App Review 제출은 하지 않았다.
-- 다음 후보: 현재 source의 iOS Release `1.0.7`/`55`를 production App Attest entitlement로 빌드·서명해 연결된 iPhone 12 Pro에 설치하고 버전을 readback했다. 기기 잠금으로 cold start·App Check token은 미확인이고 App Store Connect 업로드 전이다.
+- 최신 후보: `main@c66f7e7`(`v1.0.8`)의 Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962`이 성공했다. App Store Connect build `454e15f2-4075-4828-b613-a67085b3e7d4`는 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. Xcode Cloud build를 내부 그룹 `서리랩스 내부테스터`에 명시적으로 연결한 뒤 `IN_BETA_TESTING`을 API로 readback했다(2026-08-06). 실제 테스터 설치·실기기 QA와 App Review 제출은 하지 않았다.
+- App Store version: version string `1.0.8`, Build 56 관계, `AFTER_APPROVAL`, copyright `2026 Seorilabs`, review detail을 ASC API로 반영·readback했다. 현재 `PREPARE_FOR_SUBMISSION`이며 App Privacy·availability·실기기 QA 전이라 제출하지 않았다.
+- App Check: Firebase iOS 앱에 Team ID `HCDUXX4Z3X`와 App Store ID `6792193162`를 등록했고 App Attest·DeviceCheck provider 설정을 readback했다. 실제 TestFlight 1.0.8 token 확인 전 enforcement는 false다.
 - 1.0.2 후보(과거 실패): `main@d11bbfa`(`v1.0.2`)의 device archive는 암호화 선언 키 누락과 strict codesign `CSSMERR_TP_NOT_TRUSTED`로 업로드하지 않았다. 이 실패는 1.0.5 Xcode Cloud 성공으로 빌드 경로 기준 해결됐다.
 - App Store provisioning profile: ✅ App Store profile로 export 완료
-- TestFlight group: ✅ 내부 그룹 `서리랩스 내부테스터`에 `1.0.6`/`54` build 연결, `IN_BETA_TESTING`, 테스터 2명 API readback 완료 / 실제 테스터 설치·실기기 QA는 남음
-- Release notes: `확정 필요`
+- TestFlight group: ✅ 내부 그룹 `서리랩스 내부테스터`에 `1.0.8`/`56` build 연결, `IN_BETA_TESTING`, 테스터 2명 API readback 완료 / 실제 테스터 설치·실기기 QA는 남음
+- Release notes: 첫 공개 버전이므로 What's New 입력 대상이 아니다.

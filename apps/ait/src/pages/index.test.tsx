@@ -1,8 +1,26 @@
 import React from 'react';
-import { Text } from 'react-native';
+import {Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
-import { BabyNestHome } from './index';
+import {BabyNestHome} from './index';
+
+jest.mock('../services/babycare-backend', () => ({
+  bootstrapCareSession: jest.fn(async () => undefined),
+  createCareGroup: jest.fn(),
+  createInviteCode: jest.fn(),
+  deleteCareAccount: jest.fn(),
+  joinCareGroup: jest.fn(),
+  recordQuickCareEvent: jest.fn(),
+  reloadCareSession: jest.fn(),
+  todaySummary: jest.fn(() => ({
+    feedingCount: 0,
+    feedingVolumeMl: 0,
+    diaperCount: 0,
+    sleepCount: 0,
+    sleepDurationSeconds: 0,
+    latest: {},
+  })),
+}));
 
 function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
   const read = (value: unknown): string =>
@@ -20,29 +38,22 @@ function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
 }
 
 describe('BabyNestHome', () => {
-  it('does not expose non-working care features or internal candidate status', () => {
+  it('shows the functional create and invite onboarding paths', async () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
 
-    ReactTestRenderer.act(() => {
+    await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(<BabyNestHome />);
+      await Promise.resolve();
     });
 
     const visibleText = renderedText(renderer);
-    expect(visibleText).toContain('함께봄');
-    expect(visibleText).toContain('성인 양육자를 위한 함께봄');
+    expect(visibleText).toContain('함께 남기는 아기 돌봄 기록');
+    expect(visibleText).toContain('새 돌봄 시작');
+    expect(visibleText).toContain('초대 코드 참여');
+    expect(visibleText).toContain('수유, 기저귀, 수면');
     expect(visibleText).toContain('의료 판단이나 진단을 제공하지 않습니다.');
-    for (const hiddenText of [
-      '수유',
-      '기저귀',
-      '수면',
-      'AppsInToss',
-      'build-only',
-      '후보',
-      'sandbox',
-      '로그인과 공동 기록 연결',
-    ]) {
-      expect(visibleText).not.toContain(hiddenText);
-    }
+    expect(visibleText).not.toContain('build-only');
+    expect(visibleText).not.toContain('sandbox');
 
     ReactTestRenderer.act(() => renderer.unmount());
   });

@@ -4,6 +4,15 @@ import { defineConfig } from '@granite-js/react-native/config';
 export default defineConfig({
   scheme: 'intoss',
   appName: 'babynest',
+  build: {
+    esbuild: {
+      define: {
+        'process.env.FIREBASE_WEB_API_KEY': JSON.stringify(
+          process.env.FIREBASE_WEB_API_KEY ?? '',
+        ),
+      },
+    },
+  },
   plugins: [
     appsInToss({
       brand: {

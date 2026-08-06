@@ -3,8 +3,8 @@
 ## 원칙
 
 - Google Play, Apple App Store, AppsInToss를 모두 공식 타깃으로 준비한다.
-- 세 타깃의 release candidate 준비는 병행하되 최초 제출 순서는 `확정 필요`다.
-- 2026-07-29 Google Play internal draft와 App Store Connect/TestFlight 빌드 업로드만 승인·완료했다. 릴리스 활성화·테스터 배포·store review submission·production promotion·AppsInToss production release는 별도 승인 전까지 금지한다.
+- 세 타깃 release candidate 준비와 내부 배포를 병행하고, 실기기·정책 gate가 끝난 타깃부터 심사 제출한다.
+- 2026-08-06 Google Play internal `completed`와 App Store Connect/TestFlight 내부 배포까지 완료했다. store review submission·production promotion·AppsInToss production release는 아직 완료되지 않았다.
 - `.aab`, archive/`.ipa`, `.ait` 생성은 packaging 증거일 뿐 release-ready 증거가 아니다.
 
 ## 식별자 기준
@@ -25,22 +25,22 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 
 | Target | Repo 위치 | 목표 Artifact | 현재 상태 | 다음 Gate |
 | --- | --- | --- | --- | --- |
-| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **`main@8c5196e`(`v1.0.1`) AAB(1.0.1/1000001)를 internal draft 업로드하고 API readback 완료**. 남음: App content 설문·internal 릴리스 활성화 | App content 설문 → internal 테스터 릴리스 |
-| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명(cert/profile). **`main@8c5196e`(`v1.0.1`) 1.0.1(1000001) archive→export→업로드, ASC `VALID`**. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. 남음: App Privacy·실기기 QA | TestFlight 테스트 → 심사 제출(승인 후) |
-| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS target 구성. `main@089eb0c`(`v1.0.3`) `.ait`를 비공개 업로드하고 deployment readback 완료 | sandbox 실기기 QA → 정책 답변·프로덕션 승인 |
-| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firebase Firestore·Functions·Rules는 LIVE. platform custom token bridge도 production 활성화했고 신규·합성 legacy UID live smoke와 후속 main 배포 호환성 readback을 통과 | App Check 또는 edge rate limit → 실제 기존 사용자 migration·2기기 QA |
+| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **`main@c66f7e7`(`v1.0.8`) AAB(1.0.8/1000008)를 internal `completed` 업로드하고 API readback 완료**. 남음: App content 설문·실제 Play 설치본 QA | App content 설문·내부 QA → production 심사·승격 |
+| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명. **`main@c66f7e7`(`v1.0.8`) 1.0.8(56), ASC `VALID`·`APP_STORE_ELIGIBLE`·`IN_BETA_TESTING`**. 남음: App Privacy·실기기 QA | TestFlight 테스트 → 심사 제출 |
+| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. 두 계정 production API E2E와 새 `.ait` 로컬 build 통과. 기존 `main@089eb0c`(`v1.0.3`) 비공개 deployment readback 완료 | 새 비공개 업로드 → sandbox 실기기 QA → 정책 답변·프로덕션 승인 |
+| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firestore·Storage·Functions·Rules와 Platform bridge가 LIVE. 초대·수락·member/owner 계정 삭제 production E2E 통과. Play Integrity·App Attest·DeviceCheck provider 구성 완료, enforcement는 실제 store build token 확인 전 false | 실제 store build App Check·2기기 QA → enforcement |
 
 ## 공통 Blocker
 
 - ~~최종 한국어/영어 앱 이름과 AppsInToss `appName` 확정~~ 완료(`함께봄`/`BabyNest`, `babynest`).
-- 실제 비프로덕션/프로덕션 Firebase project 전략과 환경별 client config 확정.
+- ~~실제 production Firebase project와 Android/iOS client config 확정~~ 완료(`seorilabs-babycare`).
 - platform custom token의 실제 기존 사용자·실기기 UID 보존 migration. signer SA/IAM, registry sync, API 배포와 신규·합성 legacy UID live smoke는 2026-08-02 완료했다.
 - App Check 또는 edge rate limit, 실시간/offline sync, 멤버 제거와 cache purge 통합 검증.
-- 개인정보 처리방침, 아동 관련 정보·사진·건강/돌봄 기록 disclosure, 계정 삭제·데이터 export 절차.
+- 개인정보 처리방침과 계정 삭제 절차는 게시·운영 검증 완료. 아동 관련 정보·사진·돌봄 기록 disclosure의 콘솔 제출은 남음.
 - 연령등급, 성인 양육자용·비의료 목적 review note, 지역별 규제 검토.
-- 앱 아이콘, feature/thumbnail, phone screenshot, native launch 화면의 최종 제품명·브랜딩.
+- Google Play/App Store 앱 아이콘·feature graphic·phone screenshot은 완료. AppsInToss logo·thumbnail·vertical screenshot 후보는 exact size·RGB 검증 완료했으나 실제 AIT sandbox 화면으로 교체하고 Console 등록해야 한다. native launch 화면 사람 QA는 남음.
 - 서로 다른 계정·기기 2대의 초대·실시간·오프라인·접근 회수 사람 QA.
-- internal 빌드 활성화·테스터 배포·심사 제출·프로덕션 승격별 별도 deployment approval.
+- ~~Google Play internal과 TestFlight 내부 빌드 활성화~~ 완료. 심사 제출·프로덕션 승격·공개 검증은 남음.
 
 ## Google Play Blocker
 
@@ -66,8 +66,8 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 
 - 아동 관련 민감정보, 계정 로그인, 그룹 공유, 클라우드 저장과 향후 구독의 AppsInToss 정책 적합성 확인.
 - ~~영구 `appName`과 제품명 확정, `apps/ait` Granite RN target 생성~~ 완료(`babynest`, `함께봄`/`BabyNest`).
-- TDS React Native UI, AppsInToss `Storage`, 인증/Firebase bridge, realtime listener, App Check와 알림 지원 범위 검증.
-- native Firebase module이 없는 runtime을 전제로 adapter와 server API 경계를 확정.
+- ~~TDS React Native UI, AppsInToss `Storage`, 인증/Firebase bridge와 native Firebase module 없는 REST adapter 경계 확정~~ 완료. sandbox runtime 검증은 남음.
+- App Check 또는 edge rate limit과 알림 지원 범위 검증.
 - sandbox 실제 기기에서 로그인·초대·기록·재실행·네트워크 복귀 QA.
 - console metadata, 600×600 logo, 1932×828 thumbnail, 636×1048 screenshots와 customer support email 등록.
 - ~~`apps-in-toss/apps-in-toss.config.json`과 `apps/ait/granite.config.ts` 작성~~ 완료.
@@ -78,6 +78,6 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 2. Android/iOS mobile에서 2인 공동 기록과 offline sync를 검증한다.
 3. AppsInToss 정책·runtime 제약을 확인하고 같은 핵심 흐름을 별도 adapter로 검증한다.
 4. 세 타깃 release candidate와 blocker inventory를 사용자에게 제시한다.
-5. 사용자가 deployment approval을 명시한 타깃만 제출·승격한다.
+5. 2026-08-06 deployment 진행 승인을 기준으로 제출하되 국가 availability·법적 사업자·정책 선택은 사용자가 확정한 값만 사용한다.
 
-First submission target과 국가 availability는 `확정 필요`이며, listing 언어/i18n 확대와 별도 결정으로 관리한다.
+세 마켓 모두 출시 대상으로 승인됐다. 국가 availability는 법적·사업자 판단이 필요한 별도 Console gate이며 사용자의 확정값만 반영한다.

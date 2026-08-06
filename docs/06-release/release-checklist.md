@@ -17,18 +17,18 @@
 
 ## Market Gate
 
-- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.6/1000006 internal draft 업로드 완료 / 남음: Play Console privacy URL·data safety·content rating 확정
-- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9" 스크린샷 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.6/54 `VALID`·`APP_STORE_ELIGIBLE`, export compliance false·내부 TestFlight 연결 확인 완료 / 남음: App Privacy 콘솔 확정
-- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상과 `apps-in-toss.config.json` 반영 / 남음: thumbnail·vertical screenshots·URL·정책 답변
+- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.8/1000008 internal `completed` 업로드 완료 / 남음: Play Console privacy URL·data safety·content rating 확정
+- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정
+- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증 완료 / 남음: 실제 AIT sandbox 화면 screenshot 교체·Console 등록, URL·정책 답변
 - [x] Firebase rules/indexes/functions와 local test 코드 구현 — `members.userId` collection-group index 운영 `READY` 포함
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
 - [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — 최초 활성화 workflow run `30750253253`, revision `platform-api-00015-xpx`
 - [x] live custom token 신규 로그인과 합성 legacy UID 보존 smoke — UID 주입 거부·no-store·Firebase 교환·cleanup 포함
 - [x] production 초대 callable Secret Manager·Cloud Run 진입 계약 확인 — Domain Restricted Sharing 환경에서 `createInvite`·`acceptInvite` Invoker IAM check 비활성화, Firebase Auth/owner 검사는 유지
 - [ ] 실제 project의 App Check 또는 edge rate limit 확정 — mobile Play Integrity·App Attest·DeviceCheck와 Platform 검증 경계 구현·provider 운영 구성 readback 완료. 새 후보 실기기 token 확인 전 `require_app_check=false`, `ENFORCE_APP_CHECK=false`
-- [ ] production 계정 삭제 callable과 외부 삭제 경로 — server/app 구현·Emulator 검증, Platform 삭제 mapping API 배포, 외부 안내 페이지 merge 완료 / 남음: Pages live 200, callable 배포·IAM 적용, 일회성 owner/member 계정 live QA
+- [x] production 계정 삭제 callable과 외부 삭제 경로 — `deleteAccount` ACTIVE·IAM 적용, Platform 삭제 mapping API production 배포, 외부 안내 페이지 live 200, 일회성 owner/member 계정 삭제·정리 live QA 완료
 - [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
-- [ ] Privacy/data safety/review notes 확정 — 진행: **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`, App Store ASC + config 반영), review notes·store-data-disclosure 작성 / 남음: Play Console '앱 콘텐츠' 개인정보 URL 수동 입력·Data safety·연령등급 콘솔 제출, App Privacy 답변
+- [ ] Privacy/data safety/review notes 확정 — 진행: **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`, App Store ASC + config 반영), 실제 기기 기반 인증과 SDK 의존성 기준으로 email·diagnostics 오신고를 제거하고 review notes·store-data-disclosure 확정 / 남음: Play Console '앱 콘텐츠' 개인정보 URL 수동 입력·Data safety·연령등급 콘솔 제출, App Privacy 답변
 
 ## QA Gate
 
@@ -36,10 +36,10 @@
 - [x] iOS RNFirebase arm64 Simulator build·light/dark first-screen smoke
 - [ ] Android/iOS cold-start에서 제품 브랜딩 스플래시만 노출됨
 - [ ] React Native/프레임워크 기본 런치 화면 문구가 노출되지 않음
-- [ ] AppsInToss sandbox smoke
+- [ ] AppsInToss sandbox smoke — 운영 두 계정 API E2E와 `.ait` local build 통과 / 남음: 새 비공개 upload, 실제 Toss sandbox의 Storage·초대·기록·재실행·네트워크 복귀
 - [ ] Offline/local-first smoke
 - [ ] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀
-- [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — Cloud Run 앞단 401과 런타임 Firestore 권한 복구, production 합성 owner `createInvite` HTTP 200·문서 생성 확인 / 남음: 실제 TestFlight 화면과 다른 계정 수락
+- [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — 사용자가 iPhone에서 owner 초대 코드 발급 동작을 확인했고 production API의 독립 2계정 발급·수락 E2E도 통과 / 남음: TestFlight 1.0.8 실제 2기기 수락·실시간 동기화
 - [ ] cross-device active sleep 단일성
 - [ ] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge — 계정 삭제 intent·cache purge 회귀 구현 완료 / 남음: production 일회성 계정 실기기 QA
 - [ ] Analytics/crash/ad/purchase smoke, 해당 시
@@ -54,10 +54,12 @@
 - [x] App Store 수정 후보 업로드 — `v1.0.5` / `f972da16f5f2f81468f576b233434a59a5863680`, Xcode Cloud run `137ca847-3c34-4d5b-8931-4f70c5b023d8`, ASC build `5ca352a5-449e-4997-b730-315ead4d02e8`, 실제 `1.0.5`/`52`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 2026-08-05
 - [x] App Store `v1.0.6` 내부 TestFlight 후보 — source `1d768c265740c91b6e0967ba20ca6ce380cc2def`, Xcode Cloud run `1341ac47-4e2e-438e-9713-739a837fb4f0`, ASC build `fbe23a81-a5b5-4a39-bcae-da15e59e957d`, 실제 `1.0.6`/`54`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 내부 그룹 연결·`IN_BETA_TESTING`·테스터 2명 readback, 2026-08-06
 - [x] Google Play `v1.0.6` internal draft 업로드 — x64/JDK 21 build run `31061827436`, source `1d768c265740c91b6e0967ba20ca6ce380cc2def`, AAB `1.0.6`/`1000006`, target SDK 36, SHA-256 `4589cc4b5d12646a06a33628dd15d669f8b047488926b79f2eefb5fbb17fe50e`, 승인된 로컬 publisher fallback 업로드·API readback, 2026-08-06
-- [x] 현재 source Android `1.0.7`/`1000007` 로컬 signed AAB — target SDK 36, 브랜드 launcher icon·App Check·계정 삭제 포함, SHA-256 `f1dc8b6d9a46502a97f42adee8911621a71c4c9348f702d1233265fda426fcfe`, Play 업로드 전
-- [x] 현재 source iOS `1.0.7`/`55` Release 실기기 설치 — production App Attest entitlement·deep codesign·기기 version readback, 기기 잠금으로 cold start 미확인, ASC 업로드 전
+- [x] Google Play `v1.0.8` 내부 테스트 활성 후보 — source `c66f7e763470f041ea8eec79f1a24a9a13352589`, workflow run `31116493641`, AAB `1.0.8`/`1000008`, target SDK 36, SHA-256 `2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84`, 브랜드 launcher icon·upload certificate 서명 검증, internal `completed` API readback, 2026-08-06
+- [x] App Store `v1.0.8` 내부 TestFlight 후보 — source `c66f7e763470f041ea8eec79f1a24a9a13352589`, Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962`, ASC build `454e15f2-4075-4828-b613-a67085b3e7d4`, 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 내부 그룹 연결·`IN_BETA_TESTING` readback, 2026-08-06
+- [x] AppsInToss 기능 후보 local build·production API E2E — Platform custom-token/Firebase Auth REST, Storage session, Firestore 기록·조회, callable 초대·삭제로 독립 두 계정 공동 기록 및 정리 통과, exact-size 등록 자산 검증, 2026-08-07
 - [ ] Google Play WIF 자동 업로드 복구 — deploy run `31009039603`은 공용 publisher SA에 babycare repo principal의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단. 이번 후보는 로컬 fallback으로 보완했지만 다음 자동 업로드 전 binding 필요
-- [ ] Google Play internal 릴리스 활성화·테스터 배포 또는 production 승격 승인
-- [ ] App Store 실제 테스터 설치·실기기 QA 또는 App Review 제출 승인
+- [x] Google Play internal 릴리스 활성화·테스터 배포 — `1.0.8`/`1000008`, `status=completed` API readback
+- [ ] Google Play production 승격 승인·심사·공개 배포
+- [ ] App Store 실제 테스터 설치·실기기 QA와 App Review 제출
 - [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA
 - [ ] AppsInToss production release 승인
