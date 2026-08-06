@@ -10,6 +10,8 @@ required_files=(
   "apps/mobile/android/app/src/main/res/drawable/babycare_sprout.xml"
   "apps/mobile/android/app/src/main/res/values/styles.xml"
   "apps/mobile/android/app/src/main/res/values-v31/styles.xml"
+  "apps/mobile/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+  "apps/mobile/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
 )
 
 for file in "${required_files[@]}"; do
@@ -157,5 +159,7 @@ if ! rg -q 'android:windowSplashScreenBackground' \
   echo "Android 12+ AppTheme must define splash background and icon resources." >&2
   exit 1
 fi
+
+node scripts/check-android-launcher-icon.mjs
 
 echo "Mobile target is initialized."
