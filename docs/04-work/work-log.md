@@ -1,5 +1,10 @@
 # Work Log
 
+## 2026-08-07 — AppsInToss v1 광고·결제 정책 확정
+
+- v1 수익화 ADR의 무료·무광고·무구독 결정과 `apps/ait/package.json`, AIT source 전체를 대조했다. 광고, AppsInToss IAP, Toss Pay SDK·API 의존성이나 호출이 없어 정책 답변을 모두 `없음`으로 확정했다.
+- `apps-in-toss/apps-in-toss.config.json`에 machine-readable legal·in-app feature·monetization 값을 추가했다. 공용 Terms URL은 live 200을 확인했고 추가 feature는 두지 않는다. 실제 AppsInToss Console 값과 Toss 앱 sandbox QA는 로그인 세션 연결 뒤 별도 readback한다.
+
 ## 2026-08-07 — Firebase production Billing 활성 상태 확인
 
 - 자동화 service account로 `seorilabs-babycare`의 Cloud Billing 연결을 조회해 `billingEnabled=true`를 readback했다. 기존 `Billing plan: 확정 필요` 표시는 실제 운영 상태와 달라 `활성`으로 정정했다.

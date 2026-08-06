@@ -27,7 +27,8 @@
 - Initial route branding: `함께봄` 제품 화면 반영
 - Privacy URL: `https://www.seorilabs.com/privacy/`
 - In-app feature candidate: 한국어 `돌봄 기록하기`, 영어 `Log baby care`, route `/`. 비게임은 최소 1개 등록·검토가 필요하며 현재 root route로 정상 진입 가능
-- Terms / 추가 feature URL: `확정 필요`
+- Terms URL: `https://www.seorilabs.com/terms/` — Seorilabs 앱·서비스 공용 이용약관, 2026-08-07 live 200 확인
+- 추가 in-app feature: 없음 — v1은 root `/`의 `돌봄 기록하기` 1개만 Console 등록 후보로 유지
 
 현재 screenshot은 같은 제품의 native 화면을 AppsInToss 규격에 맞춘 후보다. 실제 AIT sandbox UI를
 캡처해 기능·화면 일치성을 확인한 뒤 Console 등록본을 교체한다.
@@ -41,7 +42,7 @@
 - Candidate evidence: Granite/TDS 핵심 UI, AppsInToss Storage, 운영 Auth/Firestore/Functions adapter 구현. production 두 계정 그룹 생성→기록→초대→합류→공동 조회→삭제 E2E 통과
 - Sandbox QA device: `확정 필요`
 - Console review: 승인 완료(2026-08-04 readback)
-- Ads/payment policy answers: `확정 필요`
+- Ads/payment policy answers: **광고 없음 · 인앱 결제 없음 · Toss Pay 없음** — v1 무료·무광고·무구독 ADR과 `apps/ait` 의존성·호출 기준 확정. Console readback은 로그인 세션 연결 뒤 확인
 - Release review prerequisite: private scheme을 실제 Toss 앱에서 최소 1회 테스트하고 in-app feature를 함께 등록
 
 ## 주의

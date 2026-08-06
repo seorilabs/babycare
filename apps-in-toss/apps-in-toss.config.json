@@ -11,6 +11,23 @@
   "support": {
     "email": "cs@seorilabs.com"
   },
+  "legal": {
+    "privacyUrl": "https://www.seorilabs.com/privacy/",
+    "termsUrl": "https://www.seorilabs.com/terms/"
+  },
+  "inAppFeatures": [
+    {
+      "nameKo": "돌봄 기록하기",
+      "nameEn": "Log baby care",
+      "route": "/"
+    }
+  ],
+  "monetization": {
+    "ads": false,
+    "inAppPurchase": false,
+    "tossPay": false,
+    "evidence": "v1은 무료·무광고·무구독이며 apps/ait에 광고·IAP·Toss Pay SDK나 호출이 없음. Console readback pending."
+  },
   "assets": {
     "logo": "apps-in-toss/assets/logo-600.png",
     "thumbnail": "apps-in-toss/assets/thumbnail-1932x828.png",
