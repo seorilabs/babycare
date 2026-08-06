@@ -196,6 +196,40 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('Firebase');
   });
 
+  it('does not claim a pending account deletion completed without a verified user', async () => {
+    const deleteAccount = jest.fn(async () => undefined);
+    jest
+      .mocked(AsyncStorage.getItem)
+      .mockReset()
+      .mockResolvedValueOnce(JSON.stringify({userId: 'user-1'}));
+    jest.mocked(AsyncStorage.clear).mockClear();
+    bootstrap.mockResolvedValue({
+      sessionServices: {
+        auth: {
+          verifyCurrentUser: jest.fn(async () => undefined),
+        },
+      },
+      deleteAccount,
+    } as unknown as FirebaseRuntime);
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    if (!renderer) {
+      throw new Error('계정 삭제 재시도 오류 화면을 렌더링하지 못했어요');
+    }
+
+    expect(visibleText(renderer)).toContain('공동 기록을 시작하지 못했어요');
+    expect(visibleText(renderer)).not.toContain(
+      '계정과 연결된 데이터를 삭제했어요',
+    );
+    expect(deleteAccount).not.toHaveBeenCalled();
+    expect(AsyncStorage.clear).not.toHaveBeenCalled();
+  });
+
   it(
     'hides cache schema details after recovering a damaged session',
     async () => {

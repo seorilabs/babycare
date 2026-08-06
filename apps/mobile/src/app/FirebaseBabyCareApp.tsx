@@ -452,14 +452,17 @@ export function FirebaseBabyCareApp() {
         const pendingDeletion = await accountDeletionIntents.load();
         if (pendingDeletion) {
           const verified = await runtime.sessionServices.auth.verifyCurrentUser();
-          if (verified && verified.userId !== pendingDeletion.userId) {
+          if (!verified) {
+            throw new Error(
+              'Pending account deletion requires a verified current user',
+            );
+          }
+          if (verified.userId !== pendingDeletion.userId) {
             throw new Error(
               'Pending account deletion belongs to a different user',
             );
           }
-          if (verified) {
-            await runtime.deleteAccount(pendingDeletion.userId);
-          }
+          await runtime.deleteAccount(pendingDeletion.userId);
           await AsyncStorage.clear();
           await runtime.sessionServices.auth.signOut();
           if (!active) {
