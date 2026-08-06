@@ -1,5 +1,11 @@
 # Work Log
 
+## 2026-08-07 — Apple App Privacy SDK manifest 재분류
+
+- Apple 공식 data type 정의와 iOS `Podfile.lock`의 Firebase 12.15.0 실제 privacy manifest를 대조했다. 양육자·아기 이름은 `Name`, 수유·기저귀·수면 기록은 `Health`, 자유 입력 메모는 `Other User Content`, 아기 생년월일은 `Other Data Types`, Firebase Auth UID는 `User ID`로 분리했다.
+- `FirebaseAuth`와 `FirebaseFirestore` privacy manifest가 `Other Diagnostic Data`를 unlinked·non-tracking·Analytics로 선언하고 Firebase Functions가 호출 metadata를 service operation에 사용하므로 Analytics·App Functionality로 보완했다. 현재 release에 Crashlytics·Performance·Google Analytics SDK는 없어 해당 data type은 추가하지 않았다.
+- 이 변경은 Console 입력 전 답변 원장 정정이며 App Store Connect 반영·Publish readback은 로그인 세션 연결 뒤 별도 수행한다.
+
 ## 2026-08-07 — AppsInToss 공식 iOS sandbox 설치
 
 - 공식 개발자센터의 `apps-in-toss-sandbox-202606022149.zip`을 받아 `AppsInTossSandbox.app`이 arm64 iOS Simulator build, bundle ID `com.vivarepublica.ent.cash.test`임을 확인했다.

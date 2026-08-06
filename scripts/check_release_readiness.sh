@@ -68,6 +68,11 @@ if [ -f "apps/ait/granite.config.ts" ] && ! bash scripts/check_ait_target.sh; th
   blockers=1
 fi
 
+if ! node scripts/check-app-privacy.mjs; then
+  echo "App Store privacy source-of-truth gate failed." >&2
+  blockers=1
+fi
+
 if [ "${blockers}" -ne 0 ]; then
   exit 1
 fi
