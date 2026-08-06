@@ -41,7 +41,7 @@
 - Candidate evidence: Granite/TDS 핵심 UI, AppsInToss Storage, 운영 Auth/Firestore/Functions adapter 구현. production 두 계정 그룹 생성→기록→초대→합류→공동 조회→삭제 E2E 통과
 - Sandbox QA device: `확정 필요`
 - Console review: 승인 완료(2026-08-04 readback)
-- Ads/payment policy answers: `확정 필요`
+- Ads/payment policy answers: **광고 없음 · 인앱 결제 없음 · Toss Pay 없음** — v1 무료·무광고·무구독 ADR과 `apps/ait` 의존성·호출 기준 확정. Console readback은 로그인 세션 연결 뒤 확인
 - Release review prerequisite: private scheme을 실제 Toss 앱에서 최소 1회 테스트하고 in-app feature를 함께 등록
 
 ## 주의

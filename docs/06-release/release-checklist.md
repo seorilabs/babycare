@@ -19,7 +19,7 @@
 
 - [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.8/1000008 internal `completed` 업로드, Data Safety API 제출 성공 / 남음: Play Console Data Safety 완료 readback·privacy URL·content rating 확정
 - [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정
-- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증 완료 / 남음: 실제 AIT sandbox 화면 screenshot 교체·Console 등록, URL·정책 답변
+- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증, v1 광고·인앱 결제·Toss Pay 없음 확정 / 남음: 실제 AIT sandbox 화면 screenshot 교체·Console readback, Terms·추가 feature URL
 - [x] Firebase rules/indexes/functions와 local test 코드 구현 — `members.userId` collection-group index 운영 `READY` 포함
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
 - [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — 최초 활성화 workflow run `30750253253`, revision `platform-api-00015-xpx`
