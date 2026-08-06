@@ -36,7 +36,7 @@
 - [x] iOS RNFirebase arm64 Simulator build·light/dark first-screen smoke
 - [ ] Android/iOS cold-start에서 제품 브랜딩 스플래시만 노출됨
 - [ ] React Native/프레임워크 기본 런치 화면 문구가 노출되지 않음
-- [ ] AppsInToss sandbox smoke — 운영 두 계정 API E2E와 `.ait` local build 통과 / 남음: 새 비공개 upload, 실제 Toss sandbox의 Storage·초대·기록·재실행·네트워크 복귀
+- [ ] AppsInToss sandbox smoke — 운영 두 계정 API E2E와 `main@707df10` 비공개 deployment 업로드 통과 / 남음: 실제 Toss sandbox의 Storage·초대·기록·재실행·네트워크 복귀
 - [ ] Offline/local-first smoke
 - [ ] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀
 - [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — 사용자가 iPhone에서 owner 초대 코드 발급 동작을 확인했고 production API의 독립 2계정 발급·수락 E2E도 통과 / 남음: TestFlight 1.0.8 실제 2기기 수락·실시간 동기화
@@ -57,6 +57,7 @@
 - [x] Google Play `v1.0.8` 내부 테스트 활성 후보 — source `c66f7e763470f041ea8eec79f1a24a9a13352589`, workflow run `31116493641`, AAB `1.0.8`/`1000008`, target SDK 36, SHA-256 `2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84`, 브랜드 launcher icon·upload certificate 서명 검증, internal `completed` API readback, 2026-08-06
 - [x] App Store `v1.0.8` 내부 TestFlight 후보 — source `c66f7e763470f041ea8eec79f1a24a9a13352589`, Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962`, ASC build `454e15f2-4075-4828-b613-a67085b3e7d4`, 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 내부 그룹 연결·`IN_BETA_TESTING` readback, 2026-08-06
 - [x] AppsInToss 기능 후보 local build·production API E2E — Platform custom-token/Firebase Auth REST, Storage session, Firestore 기록·조회, callable 초대·삭제로 독립 두 계정 공동 기록 및 정리 통과, exact-size 등록 자산 검증, 2026-08-07
+- [x] AppsInToss 기능 후보 비공개 업로드 — source `707df10`, workflow run `31123595821`, artifact `8974273502`, deployment `019fd827-571d-791d-bd50-08f2da35afec`, 2026-08-07
 - [ ] Google Play WIF 자동 업로드 복구 — deploy run `31009039603`은 공용 publisher SA에 babycare repo principal의 `roles/iam.workloadIdentityUser` binding이 없어 `iam.serviceAccounts.getAccessToken`에서 중단. 이번 후보는 로컬 fallback으로 보완했지만 다음 자동 업로드 전 binding 필요
 - [x] Google Play internal 릴리스 활성화·테스터 배포 — `1.0.8`/`1000008`, `status=completed` API readback
 - [ ] Google Play production 승격 승인·심사·공개 배포

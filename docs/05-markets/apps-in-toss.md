@@ -33,10 +33,10 @@
 ## Release
 
 - `.ait` artifact: `apps/ait/*.ait`
-- Latest private upload: `v1.0.3` / source `089eb0c` / workflow run `30909365541`
-- AppsInToss deployment ID: `019fccc1-8e5b-775f-99a4-ab190d4d1726` (2026-08-04 21:31 KST 업로드 완료)
-- Private entry: `intoss-private://babynest?_deploymentId=019fccc1-8e5b-775f-99a4-ab190d4d1726`
-- Prepared candidate: Granite/TDS 핵심 UI, AppsInToss Storage, 운영 Auth/Firestore/Functions adapter 구현. production 두 계정 그룹 생성→기록→초대→합류→공동 조회→삭제 E2E와 `.ait` local build 통과(2026-08-07)
+- Latest private upload: `main@707df10` / workflow run `31123595821` / artifact `8974273502`
+- AppsInToss deployment ID: `019fd827-571d-791d-bd50-08f2da35afec` (2026-08-07 02:38 KST 업로드 완료)
+- Private entry: `intoss-private://babynest?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec`
+- Candidate evidence: Granite/TDS 핵심 UI, AppsInToss Storage, 운영 Auth/Firestore/Functions adapter 구현. production 두 계정 그룹 생성→기록→초대→합류→공동 조회→삭제 E2E 통과
 - Sandbox QA device: `확정 필요`
 - Console review: 승인 완료(2026-08-04 readback)
 - Ads/payment policy answers: `확정 필요`

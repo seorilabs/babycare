@@ -27,7 +27,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 | --- | --- | --- | --- | --- |
 | Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ 앱 생성·리스팅 draft·서명 keystore. **`main@c66f7e7`(`v1.0.8`) AAB(1.0.8/1000008)를 internal `completed` 업로드하고 API readback 완료**. 남음: App content 설문·실제 Play 설치본 QA | App content 설문·내부 QA → production 심사·승격 |
 | App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ 앱 생성·리스팅·아이콘·스크린샷·서명. **`main@c66f7e7`(`v1.0.8`) 1.0.8(56), ASC `VALID`·`APP_STORE_ELIGIBLE`·`IN_BETA_TESTING`**. 남음: App Privacy·실기기 QA | TestFlight 테스트 → 심사 제출 |
-| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. 두 계정 production API E2E와 새 `.ait` 로컬 build 통과. 기존 `main@089eb0c`(`v1.0.3`) 비공개 deployment readback 완료 | 새 비공개 업로드 → sandbox 실기기 QA → 정책 답변·프로덕션 승인 |
+| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. 두 계정 production API E2E 통과 후 `main@707df10`을 workflow run `31123595821`에서 비공개 deployment `019fd827-571d-791d-bd50-08f2da35afec`로 업로드 | sandbox 실기기 QA → 정책 답변·프로덕션 승인 |
 | **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firestore·Storage·Functions·Rules와 Platform bridge가 LIVE. 초대·수락·member/owner 계정 삭제 production E2E 통과. Play Integrity·App Attest·DeviceCheck provider 구성 완료, enforcement는 실제 store build token 확인 전 false | 실제 store build App Check·2기기 QA → enforcement |
 
 ## 공통 Blocker
