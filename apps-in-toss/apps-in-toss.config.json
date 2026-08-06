@@ -11,6 +11,17 @@
   "support": {
     "email": "cs@seorilabs.com"
   },
+  "legal": {
+    "privacyUrl": "https://www.seorilabs.com/privacy/",
+    "termsUrl": "https://www.seorilabs.com/terms/"
+  },
+  "inAppFeatures": [
+    {
+      "nameKo": "돌봄 기록하기",
+      "nameEn": "Log baby care",
+      "route": "/"
+    }
+  ],
   "monetization": {
     "ads": false,
     "inAppPurchase": false,

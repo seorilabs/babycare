@@ -29,6 +29,15 @@ if (policy?.ads !== false || policy?.inAppPurchase !== false || policy?.tossPay 
   console.error("AIT v1 monetization policy must keep ads, IAP, and Toss Pay disabled.");
   process.exit(1);
 }
+if (config.legal?.privacyUrl !== "https://www.seorilabs.com/privacy/" ||
+    config.legal?.termsUrl !== "https://www.seorilabs.com/terms/") {
+  console.error("AIT legal URLs must use the verified Seorilabs pages.");
+  process.exit(1);
+}
+if (config.inAppFeatures?.length !== 1 || config.inAppFeatures[0]?.route !== "/") {
+  console.error("AIT v1 must register exactly one root in-app feature.");
+  process.exit(1);
+}
 '
 
 if rg -n 'createOneTimePurchaseOrder|getProductItemList|loadFullScreenAd|loadBannerAd|TossPay|tossPay|\bIAP\b' \
