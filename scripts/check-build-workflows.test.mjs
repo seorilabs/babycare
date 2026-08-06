@@ -46,15 +46,22 @@ test('latest AppsInToss private upload evidence stays consistent', async () => {
     artifactId: 8974273502,
     deploymentId: '019fd827-571d-791d-bd50-08f2da35afec',
     status: 'uploaded',
+    isTested: true,
     uploadedAt: '2026-08-07T02:38:38+09:00',
   });
-  assert.equal(registration.release.sandboxQa, '미검증');
+  assert.equal(
+    registration.release.sandboxQa,
+    'latest-bundle-test-push-succeeded: runtime-qa-pending',
+  );
 
   for (const document of [market, checklist, workLog]) {
     assert.match(document, /707df10/);
     assert.match(document, /31123595821/);
     assert.match(document, /019fd827-571d-791d-bd50-08f2da35afec/);
   }
+  assert.match(market, /isTested=true/);
+  assert.match(checklist, /isTested=true/);
+  assert.match(workLog, /isTested=true/);
   assert.match(
     market,
     /intoss-private:\/\/babynest\?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec/,
