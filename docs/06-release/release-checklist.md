@@ -38,7 +38,7 @@
 - [ ] AppsInToss sandbox smoke
 - [ ] Offline/local-first smoke
 - [ ] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀
-- [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — Cloud Run 앞단 401은 2026-08-06 복구, 실제 사용자 재시도 대기
+- [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — Cloud Run 앞단 401과 런타임 Firestore 권한 복구, production 합성 owner `createInvite` HTTP 200·문서 생성 확인 / 남음: 실제 TestFlight 화면과 다른 계정 수락
 - [ ] cross-device active sleep 단일성
 - [ ] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge
 - [ ] Analytics/crash/ad/purchase smoke, 해당 시

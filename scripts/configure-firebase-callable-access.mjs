@@ -22,6 +22,47 @@ function gcloud(arguments_) {
   });
 }
 
+const runtimeMember = `serviceAccount:${manifest.runtime.serviceAccountEmail}`;
+
+for (const role of manifest.runtime.projectRoles) {
+  if (apply) {
+    gcloud([
+      'projects',
+      'add-iam-policy-binding',
+      manifest.projectId,
+      `--member=${runtimeMember}`,
+      `--role=${role}`,
+      '--condition=None',
+      '--quiet',
+    ]);
+  }
+}
+
+const runtimeBindings = JSON.parse(
+  gcloud([
+    'projects',
+    'get-iam-policy',
+    manifest.projectId,
+    '--flatten=bindings[].members',
+    `--filter=bindings.members:${runtimeMember}`,
+    '--format=json(bindings.role)',
+  ]),
+);
+const runtimeRoles = new Set(
+  runtimeBindings.map(binding => binding.bindings?.role).filter(Boolean),
+);
+for (const role of manifest.runtime.projectRoles) {
+  if (!runtimeRoles.has(role)) {
+    throw new Error(
+      `${manifest.runtime.serviceAccountEmail}: 필수 project role ${role}이 없습니다.`,
+    );
+  }
+}
+
+console.log(
+  `${manifest.runtime.serviceAccountEmail}: ${manifest.runtime.projectRoles.join(', ')}`,
+);
+
 for (const service of manifest.services) {
   if (service.invokerIamCheck !== 'disabled') {
     throw new Error(
@@ -50,7 +91,7 @@ for (const service of manifest.services) {
       service.serviceName,
       `--region=${manifest.region}`,
       `--project=${manifest.projectId}`,
-      '--format=json(metadata.annotations,status.latestReadyRevisionName)',
+      '--format=json(metadata.annotations,spec.template.spec.serviceAccountName,status.latestReadyRevisionName)',
     ]),
   );
   const disabled =
@@ -59,6 +100,13 @@ for (const service of manifest.services) {
   if (disabled !== 'true') {
     throw new Error(
       `${service.functionName}: Cloud Run Invoker IAM check가 비활성화되지 않았습니다.`,
+    );
+  }
+
+  const liveServiceAccount = live.spec?.template?.spec?.serviceAccountName;
+  if (liveServiceAccount !== manifest.runtime.serviceAccountEmail) {
+    throw new Error(
+      `${service.functionName}: runtime service account가 ${liveServiceAccount ?? '없음'}입니다.`,
     );
   }
 

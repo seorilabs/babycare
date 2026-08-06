@@ -1,6 +1,12 @@
 {
   "projectId": "seorilabs-babycare",
   "region": "asia-northeast3",
+  "runtime": {
+    "serviceAccountEmail": "104011164568-compute@developer.gserviceaccount.com",
+    "projectRoles": [
+      "roles/datastore.user"
+    ]
+  },
   "services": [
     {
       "functionName": "acceptInvite",

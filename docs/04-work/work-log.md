@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-06 — 초대 함수 Firestore 런타임 권한 복구
+
+- Cloud Run Invoker IAM check 복구 뒤 TestFlight `1.0.6`의 인증된 `createInvite` 요청 두 건이 함수까지 도달했지만 HTTP 500으로 실패했다. 운영 그룹과 owner membership은 정상이고 `functionRateLimits/{uid}/actions/invite-create`가 생성되지 않아 첫 Firestore transaction 진입에서 실패한 것으로 특정했다.
+- `createInvite`·`acceptInvite`의 공통 런타임 계정 `104011164568-compute@developer.gserviceaccount.com`에는 `roles/cloudbuild.builds.builder`만 있고 Firestore data-plane 권한이 없었다. 같은 계정을 사용하는 Cloud Run service가 두 초대 함수뿐임을 확인하고 production project에 `roles/datastore.user`를 추가했다.
+- 최신 `origin/main@0d1e7e1`의 초대 함수만 재배포했다. 새 ready revision은 `createinvite-00003-ziv`, `acceptinvite-00003-qic`이며 두 함수 모두 ACTIVE다. Cloud Run Invoker IAM check 비활성화와 Firebase callable의 인증 없는 HTTP 401 `UNAUTHENTICATED` 경계도 유지됐다.
+- `firebase/callable-access.json`에 런타임 계정과 필수 project role을 추가하고 운영 readback/apply 명령이 서비스 계정·역할·두 Cloud Run service를 함께 검증하도록 보강했다. `pnpm run test:static`에서 core 40건, mobile 34 suites/279건, Functions 10건, Firebase 설정 3건, build-workflow 9건과 typecheck·lint·architecture·docs gate가 통과했고 `pnpm run check:mobile`과 운영 callable readback도 통과했다.
+- production Platform bridge로 일회성 사용자를 발급해 Firebase custom token을 교환하고 합성 owner 그룹에서 새 `createInvite`를 호출했다. HTTP 200과 rate-limit·invite·audit 문서 생성을 확인했으며 테스트 Firestore 문서와 Auth 사용자는 즉시 삭제했다. 남음: 실제 TestFlight owner 화면의 발급 표시와 다른 계정·기기의 `acceptInvite`를 확인한다.
+
 ## 2026-08-06 — TestFlight 초대 callable 진입 복구
 
 - TestFlight `1.0.6`에서 `초대코드 만들기`를 누른 운영 요청 두 건을 Cloud Run request log에서 확인했다. `2026-08-06T06:50:08.978505Z`, `06:50:14.928695Z` 모두 `createInvite` 함수 코드에 도달하기 전 Cloud Run Invoker IAM에서 HTTP 401로 거부됐다.
