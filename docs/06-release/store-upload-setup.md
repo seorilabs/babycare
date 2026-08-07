@@ -86,10 +86,15 @@ flowchart TD
 - 2026-08-07 `seorilabs-gws`에서 `iam.googleapis.com`을 활성화하고, 공용 publisher SA의 기존 정책을 보존한 채 `principalSet://iam.googleapis.com/projects/138773558853/locations/global/workloadIdentityPools/github-actions/attribute.repository/seorilabs/babycare`에 `roles/iam.workloadIdentityUser`를 추가·readback했다.
 - GitHub Actions run `31132461743`에서 GitHub OIDC 인증과 Android Publisher commit이 성공했다. AAB를 중복 업로드하지 않고 기존 `1000008`을 `internal → internal`로 재적용했으며 API readback은 `v1.0.8`/`1000008`, `completed`다. 기존 WIF impersonation blocker는 해소됐다.
 
+## Google Play Console 완료 상태
+
+- 2026-08-07 초기 설정 11개와 앱 콘텐츠를 입력·readback했다. Data Safety에는 건강 정보를 추가했고 IARC 한국 `12세 이상`, 타깃 만 18세 이상, `출산/육아`, 광고·광고 ID·정부·금융 해당 없음, 건강 기능 `영양 및 체중 관리`·`수면 관리`로 확정했다.
+- 게시 개요의 앱 콘텐츠 변경은 대기 중이지만 최초 production release 후보가 없어 심사 전송 버튼이 잠겨 있다. Play Store app-signing 내부 설치본 QA 뒤 production 후보를 구성하고 심사 전송한다.
+
 ## 남은 blocker
 
 1. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
-2. **Console·QA gate** — 진행 승인은 완료. Google Play production 승격, App Review 제출, AppsInToss production release 전 국가 availability·법적 사업자·정책 설문과 실기기 QA를 완료해야 한다.
+2. **Console·QA gate** — 진행 승인은 완료. Google Play는 정책 설문을 완료했고 Play Store app-signing 설치본 QA와 최초 production 후보 구성이 남았다. App Store는 App Privacy·availability·법적 사업자 선택과 실기기 QA, AppsInToss는 정책 확인과 sandbox QA가 남았다.
 3. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
 
 ## 완료된 후보 readback

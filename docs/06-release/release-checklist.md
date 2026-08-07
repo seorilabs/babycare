@@ -17,7 +17,7 @@
 
 ## Market Gate
 
-- [ ] Google Play metadata와 config 확정 — 진행: `play-store/google-play.config.json`(이름·설명·키워드), 개인정보처리방침 게시, 아이콘 512·피처그래픽·phone 스크린샷 생성, signed AAB 1.0.8/1000008 internal `completed` 업로드, Data Safety API 제출 성공 / 남음: Play Console Data Safety 완료 readback·privacy URL·content rating 확정
+- [x] Google Play metadata와 config 확정 — 초기 설정 11개, ko-KR·en-US 등록정보, 개인정보처리방침·계정 삭제 URL, Data Safety, IARC 한국 12세 이상, 타깃 만 18세 이상, 출산/육아 카테고리, 광고·광고 ID·정부·금융·건강 선언 Console readback 완료. signed AAB 1.0.8/1000008 internal `completed`
 - [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정
 - [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증, v1 광고·인앱 결제·Toss Pay 없음, Terms URL과 root in-app feature 1개 확정 / 남음: 실제 AIT sandbox 화면 screenshot 교체·Console readback
 - [x] Firebase rules/indexes/functions와 local test 코드 구현 — `members.userId` collection-group index 운영 `READY` 포함
@@ -28,7 +28,7 @@
 - [ ] 실제 project의 App Check 또는 edge rate limit 확정 — mobile Play Integrity·App Attest·DeviceCheck와 Platform 검증 경계 구현·provider 운영 구성 readback 완료. 새 후보 실기기 token 확인 전 `require_app_check=false`, `ENFORCE_APP_CHECK=false`
 - [x] production 계정 삭제 callable과 외부 삭제 경로 — `deleteAccount` ACTIVE·IAM 적용, Platform 삭제 mapping API production 배포, 외부 안내 페이지 live 200, 일회성 owner/member 계정 삭제·정리 live QA 완료
 - [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
-- [ ] Privacy/data safety/review notes 확정 — 진행: **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`, App Store ASC + config 반영), 실제 기기 기반 인증과 SDK 의존성 기준으로 Data Safety 답변을 재분류하고 2026-08-07 Android Publisher API 제출 성공 / 남음: Play Console Data Safety 완료 readback·개인정보 URL·연령등급 콘솔 제출, App Privacy 답변
+- [ ] Privacy/data safety/review notes 확정 — 진행: Google Play Data Safety·개인정보 URL·IARC·타깃·건강 선언 Console readback 완료, **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`) / 남음: Apple App Privacy 답변·readback
 
 ## QA Gate
 
@@ -60,6 +60,8 @@
 - [x] AppsInToss 기능 후보 비공개 업로드 — source `707df10`, workflow run `31123595821`, artifact `8974273502`, deployment `019fd827-571d-791d-bd50-08f2da35afec`, 2026-08-07
 - [x] Google Play WIF 자동 업로드 복구 — `iam.googleapis.com` 활성화, 공용 publisher SA에 repo-scoped `seorilabs/babycare` principal의 `roles/iam.workloadIdentityUser` 추가·readback. run `31132461743`에서 GitHub OIDC 인증과 `internal → internal` 재배포가 성공했고 API에서 `v1.0.8`/`1000008`, `completed` 확인, 2026-08-07
 - [x] Google Play internal 릴리스 활성화·테스터 배포 — `1.0.8`/`1000008`, `status=completed` API readback
+- [x] Google Play 초기 설정·앱 콘텐츠 — 대시보드 11개 완료, Data Safety 완료, IARC 한국 12세 이상, 타깃 18세 이상, 출산/육아, 건강 기능 `영양 및 체중 관리`·`수면 관리`, 2026-08-07
+- [ ] Google Play app-signing 내부 설치본의 로그인·초대·기록·App Check token QA
 - [ ] Google Play production 승격 승인·심사·공개 배포
 - [ ] App Store 실제 테스터 설치·실기기 QA와 App Review 제출
 - [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA — `intoss-private://babynest?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec`, 검토 요청 전 실제 테스트 최소 1회 필요

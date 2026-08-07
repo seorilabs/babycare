@@ -1,6 +1,6 @@
 # Google Play
 
-> 등록 준비 원장. 확정값과 초안을 반영. 2026-08-06 사용자가 재배포와 남은 출시 순서 진행을 승인했으며, Console 정책 설문·실기기 QA 뒤 production으로 승격한다.
+> 등록 준비 원장. 2026-08-07 Play Console 초기 설정 11개와 앱 콘텐츠를 완료·readback했다. Play Store app-signing 설치본 QA 뒤 production 후보를 구성한다.
 > 기계 판독 source of truth: `play-store/google-play.config.json`
 
 ## App Identity
@@ -9,7 +9,7 @@
 - Package name: `com.seorilabs.babycare` (2026-07-13 확정)
 - App name KO(타이틀): `함께봄: 수유, 기저귀, 아기돌봄 기록 어플` (24자, 사용자 확정)
 - App name EN(타이틀): `BabyNest: Shared Baby Care Log` (30자)
-- Category: `육아(Parenting)` 제안 — 콘솔에서 확정
+- Category: `출산/육아` ✅ Console 확정
 - Default language: `ko-KR`
 - Support email: `cs@seorilabs.com`
 - App type / 가격: `앱(비게임)` / `무료`, 광고 없음, 인앱결제 없음
@@ -36,10 +36,13 @@
 
 ## Policy
 
-- Data safety: `play-store/data-safety-responses.json` 원장 기준으로 2026-08-07 Android Publisher API 제출 성공 — Play Console 완료 상태 readback 필요
+- Data safety: ✅ `play-store/data-safety-responses.json` 원장 기준 Android Publisher API 제출 후 Play Console 완료 상태 readback. 이름·사용자 ID·생년월일·사용자 제작 콘텐츠·건강 정보·기기 ID를 수집, 공유 없음으로 신고
 - Ads declaration: 광고 없음(`no`)
 - App access instructions: 제한된 로그인 없음. 앱이 기기 기반 계정을 자동 생성하며, 첫 기기에서 그룹 생성 후 초대 코드로 두 번째 기기가 합류함. 데모 계정 불필요
-- Target audience/content rating: 성인 양육자용, 아동 대상 아님 / IARC 전체이용가 예상 — 콘솔 설문 `확정 필요`
+- Target audience/content rating: ✅ 만 18세 이상, 아동 대상 아님 / IARC 한국 `12세 이상`(초대된 친구 사이의 비공개 사용자 상호작용)
+- Health declaration: ✅ `영양 및 체중 관리`, `수면 관리`; 지역별 추가 요구사항 없음. 의료 진단·처방 기능은 없음
 - Financial/payment features: 없음
-- Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시 완료. Play는 API로 안 써지므로 **Play Console '앱 콘텐츠 > 개인정보처리방침'에 수동 입력** 필요
-- Account deletion URL: `https://www.seorilabs.com/apps/babycare/account-deletion/` ✅ live 200 확인 / Play Console 입력 필요
+- Advertising ID / government app: 광고 ID 사용 안 함 / 정부 앱 아님
+- Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시·Play Console readback
+- Account deletion URL: `https://www.seorilabs.com/apps/babycare/account-deletion/` ✅ live 200·Play Console readback
+- Review submission: 앱 콘텐츠 변경은 게시 개요에 대기 중. 최초 production release 후보가 없어 `검토를 위해 앱 전송` 비활성. Play Store 설치본 QA 뒤 production 후보를 구성하고 함께 제출
