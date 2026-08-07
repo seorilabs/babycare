@@ -43,26 +43,34 @@
     "tenInchTabletScreenshots": []
   },
   "contentDeclarations": {
-    "dataSafety": "submitted-via-android-publisher-api: console-readback-pending",
-    "contentRating": "completed-in-play-console: 확정 필요",
-    "targetAudience": "general-audience-not-children",
+    "dataSafety": "completed-in-play-console: health-info-included",
+    "contentRating": "completed-in-play-console: KR-12+",
+    "targetAudience": "18-and-over-not-children",
     "ads": "no",
+    "advertisingId": "no",
+    "governmentApp": "no",
+    "financialFeatures": "none",
+    "healthFeatures": [
+      "nutrition-and-weight-management",
+      "sleep-management"
+    ],
     "koreaDistribution": "yes",
     "koreaGameRating": "not-applicable-non-game"
   },
   "notes": {
-    "_comment": "이 파일은 확정값과 초안을 담은 등록 준비 원장이다. 2026-08-06 재배포와 남은 출시 순서 진행 승인을 받았다. production 승격은 Console 정책 설문과 실기기 QA를 통과한 뒤 수행하며 미확정 법적·사업자 항목은 '확정 필요'로 표기.",
+    "_comment": "2026-08-07 Play Console 초기 설정 11개와 앱 콘텐츠 readback을 마쳤다. Play Store app-signing 설치본 QA 뒤 최초 production 후보를 구성하고 심사 전송한다.",
     "appNameKoRationale": "사용자 확정 Play 타이틀(24자, 30자 제한 내). App Store는 이름 정책상 브랜드명 '함께봄'+subtitle로 분리(app-store.config.json 참고).",
     "brandColor": "#5FB49C (2026-07-18 사용자 확정, release-targets.md 대표 색상)",
-    "category": "육아(Parenting) 제안 — Play Console에서 확정",
-    "iarcExpected": "전체이용가/Everyone 예상, 콘솔 설문으로 확정",
+    "category": "출산/육아 — Play Console 확정",
+    "iarc": "대한민국 12세 이상 — 초대된 친구 사이의 비공개 사용자 상호작용",
     "assetsDone": "아이콘 512·피처그래픽 1024x500·phone 스크린샷(홈/타임라인/통계, 1620x2880 9:16) 생성 완료. release-assets/manifest.*.json 참고.",
     "tabletScreenshots": "phone-first 앱으로 태블릿 스크린샷 미제공(선택 항목). validator의 tablet 최소 2장 경고는 Play 필수 아님.",
-    "dataSafety": "2026-08-07 최신 Play Console CSV schema와 play-store/data-safety-responses.json으로 생성해 applications.dataSafety API 제출 성공. API 성공 응답은 빈 본문이라 Console 완료 상태 readback 필요.",
-    "dataSafetyDetail": "이름·사용자 ID·생년월일·기타 사용자 제작 콘텐츠·Firebase Installation ID/Play Integrity를 수집, 공유 없음으로 신고. apps/mobile release runtime 의존성과 docs/05-markets/store-data-disclosure.md 참고.",
-    "privacyPolicyDone": "privacyPolicyUrl 반영(https://www.seorilabs.com/privacy/, 회사 공용 다국어, 게시 확인). 계정 삭제 외부 경로는 accountDeletionUrl에 기록했다. 두 URL은 Play Console 앱 콘텐츠에 수동 입력 필요.",
-    "appContentSheet": "Play '앱 콘텐츠' 전 섹션 답변 시트: docs/05-markets/google-play-app-content.md. 생년월일=개인정보>기타, 돌봄 기록·메모=앱 활동>기타 사용자 제작 콘텐츠, 타깃 18+, 광고 없음, 예상 등급 전체이용가.",
-    "latestUpload": "2026-08-06 main@c66f7e7(v1.0.8)의 signed AAB 1.0.8/1000008을 internal track completed로 업로드하고 Android Publisher API readback 완료. target SDK 36, 브랜드 launcher icon, upload certificate 서명, SHA-256 2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84를 검증했다. production 승격은 하지 않았다.",
+    "dataSafety": "2026-08-07 applications.dataSafety API 제출 뒤 Play Console 완료 상태를 readback했다. 건강 및 피트니스 > 건강 정보를 선택 수집·공유 없음·앱 기능으로 포함했다.",
+    "dataSafetyDetail": "이름·사용자 ID·생년월일·기타 사용자 제작 콘텐츠·건강 정보·Firebase Installation ID/Play Integrity를 수집, 공유 없음으로 신고. apps/mobile release runtime 의존성과 docs/05-markets/store-data-disclosure.md 참고.",
+    "privacyPolicyDone": "privacyPolicyUrl과 accountDeletionUrl을 게시하고 Play Console에서 readback했다.",
+    "appContentSheet": "Play '앱 콘텐츠' 전 섹션 답변 원장: docs/05-markets/google-play-app-content.md. 타깃 18+, IARC 한국 12세 이상, 광고·광고 ID·정부·금융 없음, 건강 기능은 영양 및 체중 관리·수면 관리.",
+    "reviewSubmission": "앱 콘텐츠 변경은 게시 개요에 대기 중이나 최초 production release 후보가 없어 검토 전송 버튼이 비활성이다. Play Store app-signing 설치본 QA 뒤 production 후보와 함께 전송한다.",
+    "latestUpload": "2026-08-06 main@c66f7e7(v1.0.8)의 signed AAB 1.0.8/1000008을 internal track completed로 업로드했다. target SDK 36, 브랜드 launcher icon, upload certificate 서명, SHA-256 2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84를 검증했다. 2026-08-07 repo-scoped WIF binding 복구 뒤 GitHub Actions run 31132461743에서 AAB 재업로드 없이 internal→internal 재배포가 성공했고 Android Publisher API에서 v1.0.8/1000008, completed를 readback했다. production 승격은 하지 않았다.",
     "internalCandidateQa": "2026-08-07 같은 AAB를 격리 API 36 AVD 2대에 sideload해 production owner/member 초대·양방향 기록, offline 기록·재실행·복귀·server readback, 교차 기기 active sleep 종료, member/owner 삭제와 cache purge를 통과하고 QA 데이터를 정리했다. Play Store app-signing 설치본과 물리 기기 Play Integrity App Check token은 미검증."
   }
 }

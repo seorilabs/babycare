@@ -1,5 +1,18 @@
 # Work Log
 
+## 2026-08-07 — Google Play 초기 설정·앱 콘텐츠 완료
+
+- Play Console 대시보드의 초기 설정 11개를 모두 저장·readback했다. 광고·광고 ID·정부 앱·금융 기능은 모두 해당 없음, 타깃은 만 18세 이상, 카테고리는 `출산/육아`, 스토어 연락처는 `cs@seorilabs.com`·`https://www.seorilabs.com`으로 확정했다.
+- IARC는 초대된 친구 사이의 비공개 사용자 상호작용을 사실대로 신고해 한국 `12세 이상`으로 발급됐다. 공개 채팅·차단/신고·추천 콘텐츠·위치·구매·브라우저 기능은 없다고 답했다.
+- 수유·수면 기록은 비의료 도구이더라도 Google Play의 광범위한 건강 기능 분류에 해당하므로 건강 선언에서 `영양 및 체중 관리`와 `수면 관리`를 선택했다. Data Safety에도 `건강 및 피트니스 > 건강 정보`를 선택 수집·공유 없음·앱 기능 목적으로 추가하고 Console 완료 상태를 readback했다.
+- 개인정보처리방침·계정 삭제 URL과 한국어·영어 스토어 등록정보도 readback했다. 게시 개요에는 앱 콘텐츠 변경이 대기 중이지만 최초 production release 후보가 구성되지 않아 `검토를 위해 앱 전송`이 잠겨 있다. Play Store app-signing 설치본 QA 전에는 production 후보를 만들거나 승격하지 않는다.
+
+## 2026-08-07 — Google Play WIF 권한 복구·내부 트랙 재배포
+
+- `seorilabs-gws` 프로젝트에서 `iam.googleapis.com`을 활성화하고, 공용 publisher 서비스 계정에 `seorilabs/babycare` 저장소 principal만 `roles/iam.workloadIdentityUser`로 추가했다. 기존 다른 저장소 binding과 역할은 유지했으며 새 서비스 계정이나 정적 키를 만들지 않았다.
+- GitHub Actions run `31132461743`에서 `google-github-actions/auth@v3`의 GitHub OIDC 인증과 Android Publisher API 호출이 성공했다. AAB를 중복 업로드하지 않고 기존 내부 트랙을 `internal → internal`로 재적용해 `versionCode=1000008`, `status=completed`를 확인했다.
+- 재배포 뒤 Android Publisher API readback은 `v1.0.8`/`1000008`, 한국어·영어 출시노트, `completed`다. 이로써 WIF impersonation과 Play Console publisher 권한을 분리해 모두 검증했으며 production 승격은 하지 않았다.
+
 ## 2026-08-07 — AppsInToss 최신 번들 본인 테스트 발송
 
 - AppsInToss Console 연동에서 `babynest` miniApp ID `54868`의 앱정보가 `APPROVED`, release·review request decision이 모두 `ALLOWED`임을 readback했다. 아직 라이브 번들과 번들 검수 요청은 없다.

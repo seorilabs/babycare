@@ -1,6 +1,6 @@
 # 스토어 데이터 공개 (Data Safety / App Privacy)
 
-> **상태: 바이너리 기준 확정 초안.** Google Play Data Safety와 Apple App Privacy 콘솔 답변의 근거 원장이다. `apps/mobile/package.json`과 production composition을 기준으로 확인했다. Google Play는 2026-08-07 API 제출 성공·Console readback 대기, Apple은 콘솔 입력 대기다.
+> **상태: Google Play 제출·Console readback 완료, Apple 입력 대기.** `apps/mobile/package.json`과 production composition을 기준으로 확인한 스토어 공개 원장이다.
 
 ## 공통 원칙 (product-spec 근거)
 
@@ -17,6 +17,7 @@
 | 개인 정보 — 사용자 ID | 예(필수) | 아니요 | 앱 기능·계정 관리 | Firebase Authentication UID |
 | 개인 정보 — 기타 정보 | 예(필수) | 아니요 | 앱 기능 | 아기 생년월일 |
 | 앱 활동 — 기타 사용자 제작 콘텐츠 | 예(선택) | 아니요 | 앱 기능 | 수유·기저귀·수면 기록과 메모. 그룹 내부 공유 |
+| 건강 및 피트니스 — 건강 정보 | 예(선택) | 아니요 | 앱 기능 | 구조화된 수유·수면 등 돌봄 기록 |
 | 기기 또는 기타 ID | 예(필수) | 아니요 | 앱 기능·사기 방지/보안 | Firebase Installation ID·Play Integrity/App Check attestation |
 | 위치 | 아니요 | — | — | 미수집 |
 | 금융 정보 | 아니요 | — | — | 결제 없음 |
@@ -26,6 +27,7 @@
 - "공유(shared)"는 Firebase를 처리위탁(processor)으로 보아 제3자 공유에 해당하지 않고, 초대 그룹 공유는 사용자 주도 전송 예외로 판단했다.
 - Firebase Authentication UID는 공식 분류상 "사용자 ID"다. Android release runtime에 `firebase-installations`가 포함되고 App Check가 Play Integrity를 사용하므로 "기기 또는 기타 ID"도 별도로 신고한다.
 - 대상 연령: 아동 대상 아님(성인 양육자용). Families 정책 비대상.
+- 건강 선언은 Google Play 분류 기준으로 `영양 및 체중 관리`, `수면 관리`를 선택했다. 앱은 의료 진단·처방·치료를 제공하지 않는다.
 
 ## Apple — App Privacy
 
@@ -48,6 +50,5 @@
 ## 미확정 (blocker)
 
 - Apple App Privacy 콘솔 입력·readback.
-- Google Play Data Safety는 `play-store/data-safety-responses.json`을 원장으로 최신 Play Console CSV 템플릿에서 생성했다. 2026-08-07 `applications.dataSafety` 제출은 서버 검증을 통과했고, Console 완료 상태 readback이 남았다.
 - 실제 Play Store/TestFlight 1.0.8 설치본의 계정 삭제 화면·cache purge 사람 QA.
 - 처리위탁/제3자 공유 판단 legal 확정.

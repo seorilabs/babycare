@@ -30,6 +30,11 @@
       "purposes": ["PSL_APP_FUNCTIONALITY"]
     },
     {
+      "responseId": "PSL_HEALTH",
+      "collection": "optional",
+      "purposes": ["PSL_APP_FUNCTIONALITY"]
+    },
+    {
       "responseId": "PSL_DEVICE_ID",
       "collection": "required",
       "purposes": ["PSL_APP_FUNCTIONALITY", "PSL_FRAUD_PREVENTION_SECURITY"]
