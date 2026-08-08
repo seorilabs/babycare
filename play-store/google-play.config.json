@@ -46,8 +46,8 @@
     "dataSafety": "completed-in-play-console: health-info-included",
     "contentRating": "completed-in-play-console: KR-12+",
     "targetAudience": "18-and-over-not-children",
-    "ads": "no",
-    "advertisingId": "no",
+    "ads": "yes-pending-console-update",
+    "advertisingId": "yes-pending-console-update",
     "governmentApp": "no",
     "financialFeatures": "none",
     "healthFeatures": [
@@ -68,7 +68,8 @@
     "dataSafety": "2026-08-07 applications.dataSafety API 제출 뒤 Play Console 완료 상태를 readback했다. 건강 및 피트니스 > 건강 정보를 선택 수집·공유 없음·앱 기능으로 포함했다.",
     "dataSafetyDetail": "이름·사용자 ID·생년월일·기타 사용자 제작 콘텐츠·건강 정보·Firebase Installation ID/Play Integrity를 수집, 공유 없음으로 신고. apps/mobile release runtime 의존성과 docs/05-markets/store-data-disclosure.md 참고.",
     "privacyPolicyDone": "privacyPolicyUrl과 accountDeletionUrl을 게시하고 Play Console에서 readback했다.",
-    "appContentSheet": "Play '앱 콘텐츠' 전 섹션 답변 원장: docs/05-markets/google-play-app-content.md. 타깃 18+, IARC 한국 12세 이상, 광고·광고 ID·정부·금융 없음, 건강 기능은 영양 및 체중 관리·수면 관리.",
+    "appContentSheet": "Play '앱 콘텐츠' 답변 원장: docs/05-markets/google-play-app-content.md. 타깃 18+, IARC 한국 12세 이상, 선택형 리워드 광고·광고 ID 사용, 정부·금융 없음, 건강 기능은 영양 및 체중 관리·수면 관리. 광고 관련 Console 재입력 대기.",
+    "monetizationPending": "AdMob 운영 app ID/rewarded unit ID, UMP 메시지, Data Safety 재제출, 광고 있음·광고 ID Console readback, 실제 광고 QA",
     "reviewSubmission": "앱 콘텐츠 변경은 게시 개요에 대기 중이나 최초 production release 후보가 없어 검토 전송 버튼이 비활성이다. Play Store app-signing 설치본 QA 뒤 production 후보와 함께 전송한다.",
     "latestUpload": "2026-08-06 main@c66f7e7(v1.0.8)의 signed AAB 1.0.8/1000008을 internal track completed로 업로드했다. target SDK 36, 브랜드 launcher icon, upload certificate 서명, SHA-256 2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84를 검증했다. 2026-08-07 repo-scoped WIF binding 복구 뒤 GitHub Actions run 31132461743에서 AAB 재업로드 없이 internal→internal 재배포가 성공했고 Android Publisher API에서 v1.0.8/1000008, completed를 readback했다. production 승격은 하지 않았다.",
     "internalCandidateQa": "2026-08-07 같은 AAB를 격리 API 36 AVD 2대에 sideload해 production owner/member 초대·양방향 기록, offline 기록·재실행·복귀·server readback, 교차 기기 active sleep 종료, member/owner 삭제와 cache purge를 통과하고 QA 데이터를 정리했다. Play Store app-signing 설치본과 물리 기기 Play Integrity App Check token은 미검증."

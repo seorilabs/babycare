@@ -25,8 +25,11 @@ node -e '
 const {readFileSync} = require("node:fs");
 const config = JSON.parse(readFileSync("apps-in-toss/apps-in-toss.config.json", "utf8"));
 const policy = config.monetization;
-if (policy?.ads !== false || policy?.inAppPurchase !== false || policy?.tossPay !== false) {
-  console.error("AIT v1 monetization policy must keep ads, IAP, and Toss Pay disabled.");
+if (policy?.ads !== true || policy?.rewardedPlacement !== "stats_detail" ||
+    policy?.rewardDurationHours !== 24 ||
+    policy?.adGroupIdSource !== "AIT_REWARDED_AD_GROUP_ID" ||
+    policy?.inAppPurchase !== false || policy?.tossPay !== false) {
+  console.error("AIT monetization must allow only the 24-hour stats-detail rewarded placement.");
   process.exit(1);
 }
 if (config.legal?.privacyUrl !== "https://www.seorilabs.com/privacy/" ||
@@ -46,11 +49,14 @@ if (config.release?.sandboxQa !==
 }
 '
 
-if rg -n 'createOneTimePurchaseOrder|getProductItemList|loadFullScreenAd|loadBannerAd|TossPay|tossPay|\bIAP\b' \
+if rg -n 'createOneTimePurchaseOrder|getProductItemList|loadBannerAd|TossPay|tossPay|\bIAP\b' \
   apps/ait/package.json apps/ait/src; then
-  echo "AIT v1 contains an ad, IAP, or Toss Pay integration without a policy update." >&2
+  echo "AIT contains an unapproved banner, IAP, or Toss Pay integration." >&2
   exit 1
 fi
+
+rg -q 'loadFullScreenAd' apps/ait/src/services/rewarded-ad.ts
+rg -q 'userEarnedReward' apps/ait/src/services/rewarded-ad.ts
 
 if rg -n '확정 필요|Welcome|About Granite' \
   apps/ait/granite.config.ts apps/ait/src apps/ait/pages; then

@@ -23,10 +23,13 @@
     }
   ],
   "monetization": {
-    "ads": false,
+    "ads": true,
     "inAppPurchase": false,
     "tossPay": false,
-    "evidence": "v1은 무료·무광고·무구독이며 apps/ait에 광고·IAP·Toss Pay SDK나 호출이 없음. Console readback pending."
+    "rewardedPlacement": "stats_detail",
+    "rewardDurationHours": 24,
+    "adGroupIdSource": "AIT_REWARDED_AD_GROUP_ID",
+    "evidence": "통계 요약은 무료이며 상세 통계만 선택형 리워드 광고 완료 후 24시간 열린다. 운영 adGroupId 설정과 Console QR 실기기 검증은 남아 있다."
   },
   "assets": {
     "logo": "apps-in-toss/assets/logo-600.png",

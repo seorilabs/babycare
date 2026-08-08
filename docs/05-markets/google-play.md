@@ -13,7 +13,7 @@
 - Category: `출산/육아` ✅ Console 확정
 - Default language: `ko-KR`
 - Support email: `cs@seorilabs.com`
-- App type / 가격: `앱(비게임)` / `무료`, 광고 없음, 인앱결제 없음
+- App type / 가격: `앱(비게임)` / `무료`, 선택형 리워드 광고 1개, 인앱결제 없음
 
 ## Store Listing
 
@@ -38,13 +38,13 @@
 
 ## Policy
 
-- Data safety: ✅ `play-store/data-safety-responses.json` 원장 기준 Android Publisher API 제출 후 Play Console 완료 상태 readback. 이름·사용자 ID·생년월일·사용자 제작 콘텐츠·건강 정보·기기 ID를 수집, 공유 없음으로 신고
-- Ads declaration: 광고 없음(`no`)
+- Data safety: 기존 제출본은 광고/Analytics SDK 도입 전 기준이다. Google Mobile Ads/Firebase Analytics의 앱 상호작용·진단·기기 ID·IP 기반 대략적 위치 수집 및 광고 목적 제3자 공유를 반영해 재제출·Console readback해야 한다.
+- Ads declaration: **광고 있음(`yes`)으로 변경 필요** — 통계 상세의 선택형 리워드 광고
 - App access instructions: 제한된 로그인 없음. 앱이 기기 기반 계정을 자동 생성하며, 첫 기기에서 그룹 생성 후 초대 코드로 두 번째 기기가 합류함. 데모 계정 불필요
 - Target audience/content rating: ✅ 만 18세 이상, 아동 대상 아님 / IARC 한국 `12세 이상`(초대된 친구 사이의 비공개 사용자 상호작용)
 - Health declaration: ✅ `영양 및 체중 관리`, `수면 관리`; 지역별 추가 요구사항 없음. 의료 진단·처방 기능은 없음
 - Financial/payment features: 없음
-- Advertising ID / government app: 광고 ID 사용 안 함 / 정부 앱 아님
+- Advertising ID / government app: Google Mobile Ads SDK 사용으로 **광고 ID 사용 `yes` 변경 필요** / 정부 앱 아님
 - Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시·Play Console readback
 - Account deletion URL: `https://www.seorilabs.com/apps/babycare/account-deletion/` ✅ live 200·Play Console readback
 - Review submission: 앱 콘텐츠 변경은 게시 개요에 대기 중. 최초 production release 후보가 없어 `검토를 위해 앱 전송` 비활성. Play Store 설치본 QA 뒤 production 후보를 구성하고 함께 제출

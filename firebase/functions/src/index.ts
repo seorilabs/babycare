@@ -22,11 +22,20 @@ import { toInviteHttpsError } from './https-error.js';
 import { InviteService } from './invite-service.js';
 import { InviteServiceError } from './invite-error.js';
 import { requireAuthenticatedUid } from './validation.js';
+import {
+  parseAnalyticsClientId,
+  parseAnalyticsEvents,
+  relayAnalyticsToGa4,
+} from './analytics-service.js';
 
 const FUNCTIONS_REGION = defineString('FUNCTIONS_REGION', {
   description: '확정 필요: Firebase Functions deployment region',
 });
 const INVITE_CODE_HMAC_KEY = defineSecret('INVITE_CODE_HMAC_KEY');
+const GA4_API_SECRET = defineSecret('GA4_API_SECRET');
+const GA4_MEASUREMENT_ID = defineString('GA4_MEASUREMENT_ID', {
+  description: 'Babycare GA4 web stream measurement ID for AppsInToss relay',
+});
 const INVITE_TTL_HOURS = defineInt('INVITE_TTL_HOURS', {
   default: 24,
   description: 'Invite validity duration in hours',
@@ -85,6 +94,53 @@ const callableOptions = {
   timeoutSeconds: 30,
   memory: '256MiB' as const,
 };
+
+const analyticsCallableOptions = {
+  region: FUNCTIONS_REGION,
+  secrets: [GA4_API_SECRET],
+  enforceAppCheck: ENFORCE_APP_CHECK,
+  timeoutSeconds: 15,
+  memory: '256MiB' as const,
+};
+
+export const logAnalyticsEvents = onCall(
+  analyticsCallableOptions,
+  async request => {
+    const uid = requireAuthenticatedUid(request.auth?.uid);
+    const data = requestData(request.data);
+    let clientId: string;
+    let events;
+    try {
+      clientId = parseAnalyticsClientId(data.clientId);
+      events = parseAnalyticsEvents(data.events);
+    } catch (error) {
+      throw new HttpsError(
+        'invalid-argument',
+        error instanceof Error ? error.message : 'Invalid analytics payload',
+      );
+    }
+    const measurementId = GA4_MEASUREMENT_ID.value().trim();
+    const apiSecret = GA4_API_SECRET.value().trim();
+    if (!measurementId || !apiSecret) {
+      throw new HttpsError(
+        'failed-precondition',
+        'GA4 relay is not configured',
+      );
+    }
+    try {
+      await relayAnalyticsToGa4({
+        measurementId,
+        apiSecret,
+        clientId,
+        userId: uid,
+        events,
+      });
+      return {accepted: events.length};
+    } catch {
+      throw new HttpsError('unavailable', 'GA4 relay is unavailable');
+    }
+  },
+);
 
 export const createInvite = onCall(callableOptions, async (request) => {
   try {

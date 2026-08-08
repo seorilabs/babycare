@@ -7,6 +7,7 @@ import {
 import {
   connectAuthEmulator,
   getAuth,
+  getIdToken,
   type Auth,
 } from '@react-native-firebase/auth';
 import {
@@ -26,10 +27,17 @@ import type {
   ClockPort,
   IdGeneratorPort,
   Membership,
+  RewardedAdPort,
   UserId,
 } from '@babycare/product-core';
-import type {CareEventTimelineFeedConfig} from '@babycare/product-data';
+import {
+  FanOutAnalytics,
+  PlatformAnalytics,
+  type CareEventTimelineFeedConfig,
+} from '@babycare/product-data';
 
+import {FirebaseAnalyticsAdapter} from '../adapters/analytics/firebase-analytics-adapter';
+import {MobileRewardedAd} from '../adapters/ads/mobile-rewarded-ad';
 import {FirebaseAuthAdapter} from '../adapters/firebase/firebase-auth-adapter';
 import {
   initializeFirebaseAppCheck,
@@ -42,6 +50,7 @@ import {FirebaseCareGroupRepository} from '../adapters/firebase/firebase-care-gr
 import {FirebaseInviteService} from '../adapters/firebase/firebase-invite-service';
 import {NativeIdGenerator} from '../adapters/system/native-id-generator';
 import {
+  PLATFORM_FIREBASE_AUTH_CONFIG,
   PlatformFirebaseCustomTokenBridge,
   type FirebaseCustomTokenBridge,
 } from '../adapters/platform/platform-firebase-custom-token-bridge';
@@ -103,6 +112,7 @@ export interface FirebaseRuntimeOptions {
   readonly documentIds?: CareDocumentIdFactory;
   readonly eventIds?: IdGeneratorPort;
   readonly analytics?: AnalyticsPort;
+  readonly rewardedAd?: RewardedAdPort;
   readonly timeline?: CareEventTimelineFeedConfig;
   readonly authBridge?: FirebaseCustomTokenBridge;
   readonly accountDeletion?: AccountDeletionPort;
@@ -124,6 +134,8 @@ export interface FirebaseRuntime {
   readonly firestore: Firestore;
   readonly functions: Functions;
   readonly functionsRegion: string;
+  readonly analytics: AnalyticsPort;
+  readonly rewardedAd: RewardedAdPort;
   readonly emulatorHost?: string;
   readonly sessionServices: FirebaseSessionServices;
   createCareContainer(
@@ -352,7 +364,30 @@ export async function createFirebaseRuntime(
   const clock = options.clock ?? {now: () => Date.now()};
   const documentIds = options.documentIds ?? new RandomCareDocumentIdFactory();
   const eventIds = options.eventIds ?? new NativeIdGenerator();
-  const analytics = options.analytics ?? {track: async () => undefined};
+  const analytics =
+    options.analytics ??
+    (resolved.source === 'native'
+      ? new FanOutAnalytics([
+          new FirebaseAnalyticsAdapter(resolved.app),
+          new PlatformAnalytics({
+            baseUrl: PLATFORM_FIREBASE_AUTH_CONFIG.baseUrl,
+            firebaseIdToken: async () => {
+              const user = auth.currentUser;
+              return user ? getIdToken(user) : undefined;
+            },
+            context: {platform: platform === 'ios' ? 'ios' : 'android'},
+          }),
+        ])
+      : {track: async () => undefined});
+  const rewardedAd =
+    options.rewardedAd ??
+    (resolved.source === 'native'
+      ? new MobileRewardedAd()
+      : {
+          preload: async () => undefined,
+          show: async () => ({status: 'unavailable' as const}),
+        });
+  rewardedAd.preload().catch(() => undefined);
   const timeline = options.timeline ?? FIREBASE_CARE_EVENT_TIMELINE_CONFIG;
   const sessionServices: FirebaseSessionServices = {
     auth: authAdapter,
@@ -399,6 +434,8 @@ export async function createFirebaseRuntime(
     firestore,
     functions,
     functionsRegion,
+    analytics,
+    rewardedAd,
     ...(emulatorHost ? {emulatorHost} : {}),
     sessionServices,
     createCareContainer,

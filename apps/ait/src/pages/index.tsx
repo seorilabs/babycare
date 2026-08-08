@@ -11,6 +11,9 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {
+  buildCareStatsBuckets,
+} from '../../../../packages/product-core/src/index.ts';
 
 import {
   bootstrapCareSession,
@@ -23,6 +26,12 @@ import {
   todaySummary,
   type ReadyCareSession,
 } from '../services/babycare-backend';
+import {babycareAnalytics} from '../services/analytics';
+import {
+  appsInTossRewardedAd,
+  statsDetailUnlockedUntilOnAit,
+  unlockStatsDetailOnAit,
+} from '../services/rewarded-ad';
 
 export const Route = createRoute('/', {component: BabyNestHome});
 
@@ -130,11 +139,19 @@ function Onboarding({onReady}: {readonly onReady: (value: ReadyCareSession) => v
     setBusy(true);
     setError('');
     try {
-      onReady(
+      const ready =
         mode === 'create'
           ? await createCareGroup({caregiverName, babyName, birthDate})
-          : await joinCareGroup({caregiverName, code: inviteCode}),
-      );
+          : await joinCareGroup({caregiverName, code: inviteCode});
+      await babycareAnalytics.track({
+        name: mode === 'create' ? 'bc_group_created' : 'bc_invite_joined',
+        params: {},
+      });
+      await babycareAnalytics.track({
+        name: 'bc_onboarding_complete',
+        params: {mode},
+      });
+      onReady(ready);
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -316,6 +333,92 @@ function TimelineTab({ready}: {readonly ready: ReadyCareSession}) {
 
 function StatsTab({ready}: {readonly ready: ReadyCareSession}) {
   const summary = todaySummary(ready);
+  const [unlockedUntil, setUnlockedUntil] = useState<number>();
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [adError, setAdError] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const today = new Date(now).setHours(0, 0, 0, 0);
+  const ranges = useMemo(
+    () =>
+      Array.from({length: 7}, (_, index) => {
+        const from = today - (6 - index) * 86_400_000;
+        return {from, to: from + 86_400_000};
+      }),
+    [today],
+  );
+  const daily = useMemo(
+    () => buildCareStatsBuckets(ready.events, ranges, now),
+    [now, ranges, ready.events],
+  );
+
+  useEffect(() => {
+    let active = true;
+    const clock = setInterval(() => setNow(Date.now()), 30_000);
+    statsDetailUnlockedUntilOnAit(Date.now())
+      .then(expiry => {
+        if (active) {
+          setUnlockedUntil(expiry);
+          setLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setLoaded(true);
+        }
+      });
+    void appsInTossRewardedAd.preload();
+    return () => {
+      active = false;
+      clearInterval(clock);
+    };
+  }, []);
+
+  const unlock = useCallback(async () => {
+    if (busy) {
+      return;
+    }
+    setBusy(true);
+    setAdError(false);
+    try {
+      await babycareAnalytics.track({
+        name: 'core_ad_request',
+        params: {placement: 'stats_detail', ad_format: 'rewarded'},
+      });
+      const result = await appsInTossRewardedAd.show();
+      if (result.status !== 'unavailable') {
+        await babycareAnalytics.track({
+          name: 'core_ad_impression',
+          params: {
+            placement: 'stats_detail',
+            ad_format: 'rewarded',
+            network: result.network,
+          },
+        });
+      }
+      if (result.status === 'rewarded') {
+        const rewardedAt = Date.now();
+        setNow(rewardedAt);
+        setUnlockedUntil(await unlockStatsDetailOnAit(rewardedAt));
+        await babycareAnalytics.track({
+          name: 'core_ad_reward',
+          params: {
+            placement: 'stats_detail',
+            ad_format: 'rewarded',
+            reward_code: 'stats_detail_24h',
+            reward_amount: 1,
+          },
+        });
+      } else if (result.status === 'unavailable') {
+        setAdError(true);
+      }
+    } catch {
+      setAdError(true);
+    } finally {
+      setBusy(false);
+    }
+  }, [busy]);
+
   return (
     <>
       <Text style={styles.pageTitle}>오늘 통계</Text>
@@ -326,6 +429,47 @@ function StatsTab({ready}: {readonly ready: ReadyCareSession}) {
           {summary.feedingCount}회 · {summary.feedingVolumeMl}ml
         </Text>
       </View>
+      {!loaded ? (
+        <View style={styles.card}>
+          <Text style={styles.cardMeta}>상세 통계 이용 상태를 확인하고 있어요.</Text>
+        </View>
+      ) : unlockedUntil && unlockedUntil > now ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>최근 7일 상세</Text>
+          {daily.map(bucket => (
+            <View key={bucket.from} style={styles.detailRow}>
+              <Text style={styles.detailDate}>
+                {new Intl.DateTimeFormat('ko-KR', {
+                  month: 'numeric',
+                  day: 'numeric',
+                }).format(bucket.from)}
+              </Text>
+              <Text style={styles.detailValue}>
+                수유 {bucket.summary.feedingCount} · 기저귀{' '}
+                {bucket.summary.diaperCount} · 수면{' '}
+                {Math.round(bucket.summary.sleepDurationSeconds / 60)}분
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>상세 통계 24시간 열기</Text>
+          <Text style={styles.cardMeta}>
+            선택형 광고 한 편을 보면 최근 7일의 일별 상세 통계를 24시간 확인할 수 있어요.
+          </Text>
+          <ActionButton
+            disabled={busy}
+            label={busy ? '광고 준비 중…' : '광고 보고 상세 통계 열기'}
+            onPress={() => void unlock()}
+          />
+          {adError ? (
+            <Text style={styles.errorText}>
+              광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+            </Text>
+          ) : null}
+        </View>
+      )}
       <View style={styles.statCard}>
         <Text style={styles.statLabel}>기저귀</Text>
         <Text style={styles.statValue}>{summary.diaperCount}회</Text>
@@ -358,6 +502,7 @@ function MoreTab({
     setError('');
     try {
       setInvite(await createInviteCode(ready));
+      await babycareAnalytics.track({name: 'bc_invite_created', params: {}});
     } catch (caught) {
       setError(errorMessage(caught));
     }
@@ -450,6 +595,13 @@ export function BabyNestHome() {
     void bootstrap();
   }, [bootstrap]);
 
+  useEffect(() => {
+    void babycareAnalytics.track({
+      name: 'core_screen_view',
+      params: {screen_name: tab, screen_class: 'BabyNestHome'},
+    });
+  }, [tab]);
+
   const refresh = useCallback(async () => {
     if (!ready) {
       return;
@@ -473,7 +625,22 @@ export function BabyNestHome() {
       setBusy(true);
       setError('');
       try {
+        const activeSleep = ready.events.some(
+          event => event.kind === 'sleep' && event.endedAt === undefined,
+        );
+        const first = ready.events.length === 0;
         setReady(await recordQuickCareEvent(ready, kind));
+        const updated = kind === 'sleep' && activeSleep;
+        await babycareAnalytics.track({
+          name: updated ? 'bc_log_update' : 'bc_log_create',
+          params: {type: kind},
+        });
+        if (first && !updated) {
+          await babycareAnalytics.track({
+            name: 'bc_first_log',
+            params: {type: kind},
+          });
+        }
       } catch (caught) {
         setError(errorMessage(caught));
       } finally {
@@ -609,6 +776,9 @@ const styles = StyleSheet.create({
   statCard: {gap: 6, borderRadius: 18, backgroundColor: '#FFFFFF', padding: 18},
   statLabel: {color: '#667872', fontSize: 14, fontWeight: '700'},
   statValue: {color: '#27614F', fontSize: 23, fontWeight: '900'},
+  detailRow: {flexDirection: 'row', gap: 12, justifyContent: 'space-between'},
+  detailDate: {color: '#536962', fontSize: 13, fontWeight: '800'},
+  detailValue: {color: '#27614F', flex: 1, fontSize: 13, textAlign: 'right'},
   inviteBox: {alignItems: 'center', gap: 5, borderRadius: 16, backgroundColor: '#EAF6F1', padding: 16},
   inviteLabel: {color: '#536962', fontSize: 13, fontWeight: '700'},
   inviteCode: {color: '#27614F', fontSize: 30, fontWeight: '900', letterSpacing: 5},

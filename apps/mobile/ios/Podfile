@@ -12,6 +12,7 @@ prepare_react_native_project!
 # Firebase also requires its pods to opt into static-framework packaging.
 use_frameworks! :linkage => :static
 $RNFirebaseAsStaticFramework = true
+$RNFirebaseAnalyticsWithoutAdIdSupport = true
 
 # RNFirebase 25.x does not yet opt its pods into the static-library build type
 # required by RN 0.84+ prebuilt RNCore under use_frameworks. This is the RNFB

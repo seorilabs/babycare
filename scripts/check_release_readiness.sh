@@ -78,6 +78,14 @@ if ! node scripts/check-store-screenshots.mjs; then
   blockers=1
 fi
 
+if rg -n "ca-app-pub-3940256099942544|MOBILE_REWARDED_AD_UNIT_ID = ''" \
+  apps/mobile/app.json \
+  apps/mobile/src/adapters/ads/mobile-rewarded-ad.ts; then
+  echo
+  echo "Production AdMob app IDs and rewarded unit ID are not configured." >&2
+  blockers=1
+fi
+
 if [ "${blockers}" -ne 0 ]; then
   exit 1
 fi

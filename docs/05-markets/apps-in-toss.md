@@ -16,6 +16,8 @@
 - Local storage: AppsInToss `Storage` 우선
 - Auth: Platform custom token → Firebase Auth REST
 - Data: Firestore REST commit/query + Firebase callable invite/delete
+- Analytics: GA4 callable relay + Platform Events 이중 전송
+- Ads: 통계 상세의 선택형 통합 리워드 1개, 보상 완료 후 24시간 해제
 
 ## Registration
 
@@ -45,7 +47,7 @@ screenshot은 sandbox에서 실행한 미니앱 실제 화면이다. 저장소 �
 - **로컬 dev server 경로는 Console 로그인이 필요 없다 (2026-08-08 실측).** 샌드박스 앱이 실행 중일 때 `xcrun simctl openurl <UDID> "intoss-sandbox://babynest"`를 열고 iOS 확인 다이얼로그에서 `열기`를 누르면 Toss 호스트 chrome 안에서 미니앱이 로드된다. `granite dev`는 포트 8081이어야 하고, cold start로 열면 Console 로그인 화면으로 떨어진다. 절차는 `apps-in-toss/README.md` 참고
 - 이 경로로 2026-08-08에 온보딩→그룹 생성→수유·기저귀·수면 기록→탭 전환까지 운영 Firebase 대상으로 실행하고 화면을 캡처했다. Console 로그인이 필요한 것은 배포된 번들을 여는 경우다
 - Console review: 승인 완료(2026-08-04 readback)
-- Ads/payment policy answers: **광고 없음 · 인앱 결제 없음 · Toss Pay 없음** — v1 무료·무광고·무구독 ADR과 `apps/ait` 의존성·호출 기준 확정. Console readback은 로그인 세션 연결 뒤 확인
+- Ads/payment policy answers: **광고 있음 · 인앱 결제 없음 · Toss Pay 없음**으로 변경 필요. 운영 `AIT_REWARDED_AD_GROUP_ID` 등록과 Console QR/private bundle 실기기에서 load→show→`userEarnedReward`→24시간 해제를 확인해야 한다. Sandbox는 광고 검증 근거가 아니다.
 - Release review prerequisite: Console test push·`isTested=true`는 완료. 실제 Toss 앱에서 private scheme을 열어 기능을 확인한 뒤 in-app feature와 함께 검수 요청
 
 ## 주의

@@ -1,9 +1,15 @@
-import {useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   buildCareStatsBuckets,
+  statsDetailUnlockedUntil,
+  unlockStatsDetail,
+  type AnalyticsPort,
   type CareEvent,
   type CareStatsBucket,
+  type RewardedAdPort,
+  type StringStoragePort,
 } from '@babycare/product-core';
 
 import {formatDuration} from '../app/format';
@@ -90,9 +96,17 @@ export function StatsScreen(props: {
   readonly now: number;
   readonly strings: Strings;
   readonly theme: AppTheme;
+  readonly analytics?: AnalyticsPort;
+  readonly rewardedAd?: RewardedAdPort;
+  readonly storage?: StringStoragePort;
 }) {
   const strings = props.strings;
+  const storage = props.storage ?? AsyncStorage;
   const [period, setPeriod] = useState<Period>('7d');
+  const [unlockedUntil, setUnlockedUntil] = useState<number>();
+  const [accessLoaded, setAccessLoaded] = useState(!props.rewardedAd);
+  const [adBusy, setAdBusy] = useState(false);
+  const [adError, setAdError] = useState(false);
   const buckets = useMemo(
     () => buildStatsBuckets(props.events, props.now, period, strings),
     [period, props.events, props.now, strings],
@@ -106,6 +120,76 @@ export function StatsScreen(props: {
     }),
     [buckets],
   );
+  const detailUnlocked =
+    !props.rewardedAd ||
+    (accessLoaded && unlockedUntil !== undefined && unlockedUntil > props.now);
+
+  useEffect(() => {
+    if (!props.rewardedAd) {
+      return undefined;
+    }
+    let active = true;
+    statsDetailUnlockedUntil(storage, props.now)
+      .then(expiry => {
+        if (active) {
+          setUnlockedUntil(expiry);
+          setAccessLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setAccessLoaded(true);
+        }
+      });
+    props.rewardedAd.preload().catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [props.now, props.rewardedAd, storage]);
+
+  const unlockDetail = useCallback(async () => {
+    if (!props.rewardedAd || adBusy) {
+      return;
+    }
+    setAdBusy(true);
+    setAdError(false);
+    try {
+      await props.analytics?.track({
+        name: 'core_ad_request',
+        params: {placement: 'stats_detail', ad_format: 'rewarded'},
+      });
+      const result = await props.rewardedAd.show();
+      if (result.status !== 'unavailable') {
+        await props.analytics?.track({
+          name: 'core_ad_impression',
+          params: {
+            placement: 'stats_detail',
+            ad_format: 'rewarded',
+            network: result.network,
+          },
+        });
+      }
+      if (result.status === 'rewarded') {
+        const expiry = await unlockStatsDetail(storage, Date.now());
+        setUnlockedUntil(expiry);
+        await props.analytics?.track({
+          name: 'core_ad_reward',
+          params: {
+            placement: 'stats_detail',
+            ad_format: 'rewarded',
+            reward_code: 'stats_detail_24h',
+            reward_amount: 1,
+          },
+        });
+      } else if (result.status === 'unavailable') {
+        setAdError(true);
+      }
+    } catch {
+      setAdError(true);
+    } finally {
+      setAdBusy(false);
+    }
+  }, [adBusy, props.analytics, props.rewardedAd, storage]);
 
   return (
     <ScrollView
@@ -167,34 +251,69 @@ export function StatsScreen(props: {
         </View>
       </View>
 
-      <View style={[styles.card, {backgroundColor: props.theme.colors.surface}]}>
-        <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>
-          {strings.stats.feedingCount}
-        </Text>
-        <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>
-          {strings.stats.perBucketCount}
-        </Text>
-        <BarChart
-          color={props.theme.colors.feeding}
-          labels={buckets.map(bucket => bucket.label)}
-          theme={props.theme}
-          values={buckets.map(bucket => bucket.summary.feedingCount)}
-        />
-      </View>
-      <View style={[styles.card, {backgroundColor: props.theme.colors.surface}]}>
-        <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>
-          {strings.stats.sleepDuration}
-        </Text>
-        <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>
-          {strings.stats.perBucketDuration}
-        </Text>
-        <BarChart
-          color={props.theme.colors.sleep}
-          labels={buckets.map(bucket => bucket.label)}
-          theme={props.theme}
-          values={buckets.map(bucket => bucket.summary.sleepDurationSeconds / 3_600)}
-        />
-      </View>
+      {!accessLoaded ? (
+        <View style={[styles.detailGate, {backgroundColor: props.theme.colors.surface}]}>
+          <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>
+            {strings.stats.detailChecking}
+          </Text>
+        </View>
+      ) : !detailUnlocked ? (
+        <View style={[styles.detailGate, {backgroundColor: props.theme.colors.surface}]}>
+          <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>
+            {strings.stats.detailLockedTitle}
+          </Text>
+          <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>
+            {strings.stats.detailLockedDescription}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={adBusy}
+            onPress={() => {
+              unlockDetail().catch(() => undefined);
+            }}
+            style={[styles.unlockButton, {backgroundColor: props.theme.colors.primary}]}>
+            <Text style={styles.unlockButtonText}>
+              {adBusy ? strings.stats.adLoading : strings.stats.unlockAction}
+            </Text>
+          </Pressable>
+          {adError ? (
+            <Text style={[styles.adError, {color: props.theme.colors.danger}]}>
+              {strings.stats.adUnavailable}
+            </Text>
+          ) : null}
+        </View>
+      ) : (
+        <>
+          <View style={[styles.card, {backgroundColor: props.theme.colors.surface}]}>
+            <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>
+              {strings.stats.feedingCount}
+            </Text>
+            <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>
+              {strings.stats.perBucketCount}
+            </Text>
+            <BarChart
+              color={props.theme.colors.feeding}
+              labels={buckets.map(bucket => bucket.label)}
+              theme={props.theme}
+              values={buckets.map(bucket => bucket.summary.feedingCount)}
+            />
+          </View>
+          <View style={[styles.card, {backgroundColor: props.theme.colors.surface}]}>
+            <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>
+              {strings.stats.sleepDuration}
+            </Text>
+            <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>
+              {strings.stats.perBucketDuration}
+            </Text>
+            <BarChart
+              color={props.theme.colors.sleep}
+              labels={buckets.map(bucket => bucket.label)}
+              theme={props.theme}
+              values={buckets.map(bucket => bucket.summary.sleepDurationSeconds / 3_600)}
+            />
+          </View>
+        </>
+      )}
       <View style={[styles.disclaimer, {backgroundColor: props.theme.colors.primarySoft}]}>
         <Text style={styles.disclaimerIcon}>ⓘ</Text>
         <Text style={[styles.disclaimerText, {color: props.theme.colors.text}]}>
@@ -218,6 +337,10 @@ const styles = StyleSheet.create({
   metricLabel: {fontSize: 11, marginTop: 4},
   metricSub: {fontSize: 12, fontWeight: '700', marginTop: 11},
   card: {borderRadius: 19, marginTop: 12, padding: 17},
+  detailGate: {alignItems: 'center', borderRadius: 19, marginTop: 12, padding: 22},
+  unlockButton: {borderRadius: 14, marginTop: 16, paddingHorizontal: 20, paddingVertical: 12},
+  unlockButtonText: {color: '#FFFFFF', fontSize: 13, fontWeight: '900'},
+  adError: {fontSize: 11, marginTop: 10, textAlign: 'center'},
   cardTitle: {fontSize: 16, fontWeight: '800'},
   cardHint: {fontSize: 10, marginTop: 3},
   chart: {alignItems: 'flex-end', flexDirection: 'row', gap: 5, height: 155, marginTop: 16},

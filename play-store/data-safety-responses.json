@@ -39,5 +39,18 @@
       "collection": "required",
       "purposes": ["PSL_APP_FUNCTIONALITY", "PSL_FRAUD_PREVENTION_SECURITY"]
     }
-  ]
+  ],
+  "pendingSdkRevision": {
+    "reason": "Firebase Analytics and Google Mobile Ads were added after the last Console submission.",
+    "requiresFreshConsoleTemplate": true,
+    "dataTypes": [
+      "Approximate location from IP",
+      "App interactions",
+      "Crash logs",
+      "Diagnostics and performance",
+      "Device or other IDs including advertising ID"
+    ],
+    "sharing": "Google Mobile Ads advertising, analytics, and fraud prevention",
+    "consoleReadback": false
+  }
 }

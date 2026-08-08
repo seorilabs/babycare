@@ -33,7 +33,7 @@
   "accountDeletionUrl": "https://www.seorilabs.com/apps/babycare/account-deletion/",
   "copyright": "2026 Seorilabs",
   "review": {
-    "notes": "성인 양육자용 비의료 돌봄 기록·공유 앱. 로그인 화면이나 데모 계정은 없고, 앱이 기기 기반 Firebase 사용자 계정을 자동 생성합니다. 첫 기기에서 양육자 이름·아기 이름·생년월일을 입력해 그룹을 만든 뒤 더보기에서 6자리 초대 코드를 발급하고, 두 번째 기기에서 코드를 입력하면 합류·실시간 공동 기록을 확인할 수 있습니다. 더보기 → 계정 및 데이터 삭제에서 계정 삭제를 확인할 수 있습니다. 의료 진단/처방 기능, 광고, 인앱결제는 없습니다.",
+    "notes": "성인 양육자용 비의료 돌봄 기록·공유 앱. 로그인 화면이나 데모 계정은 없고, 앱이 기기 기반 Firebase 사용자 계정을 자동 생성합니다. 첫 기기에서 양육자 이름·아기 이름·생년월일을 입력해 그룹을 만든 뒤 더보기에서 6자리 초대 코드를 발급하고, 두 번째 기기에서 코드를 입력하면 합류·실시간 공동 기록을 확인할 수 있습니다. 더보기 → 계정 및 데이터 삭제에서 계정 삭제를 확인할 수 있습니다. 통계 요약은 무료이고 상세 통계의 선택형 비개인화 리워드 광고 1개만 있으며, 인앱결제와 의료 진단/처방 기능은 없습니다.",
     "demoAccount": "불필요 (기기 기반 계정 자동 생성)",
     "contact": "App Store Connect에 기존 제출 앱의 검증된 운영 연락처 반영 완료"
   },
@@ -113,8 +113,40 @@
           "app-functionality"
         ],
         "note": "FirebaseAuth·FirebaseFirestore privacy manifest의 SDK 품질 메타데이터와 FirebaseFunctions 호출 진단·보안 메타데이터"
+      },
+      {
+        "type": "대략적 위치 (Location)",
+        "linked": false,
+        "purposes": ["third-party-advertising", "analytics"],
+        "note": "Google Mobile Ads가 IP 주소로 추정할 수 있는 대략적 위치"
+      },
+      {
+        "type": "기기 ID (Identifiers)",
+        "linked": false,
+        "purposes": ["third-party-advertising", "analytics"]
+      },
+      {
+        "type": "제품 상호작용 (Usage Data)",
+        "linked": true,
+        "purposes": ["analytics", "third-party-advertising"]
+      },
+      {
+        "type": "광고 데이터 (Usage Data)",
+        "linked": false,
+        "purposes": ["third-party-advertising", "analytics"]
+      },
+      {
+        "type": "충돌 데이터 (Diagnostics)",
+        "linked": false,
+        "purposes": ["analytics"]
+      },
+      {
+        "type": "성능 데이터 (Diagnostics)",
+        "linked": true,
+        "purposes": ["analytics", "third-party-advertising"]
       }
     ],
+    "verification": "운영 AdMob/UMP 설정과 archive privacy report 확인 전 잠정값",
     "detailDoc": "docs/05-markets/store-data-disclosure.md"
   },
   "dsaTrader": "확정 필요 (EU 배포 여부·trader 상태 결정 후 확정)",

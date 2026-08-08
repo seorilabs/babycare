@@ -43,13 +43,13 @@
 | 대기 | 실제 project App Check/IAM/Rules/indexes 통합 QA | Emulator 통과만으로 완료 처리하지 않음 |
 | 외부 입력 대기 | store 제출·production promotion | 진행 승인 완료. 국가 availability·법적 사업자 선택, Console privacy/policy 답변과 실기기 QA 필요 |
 
-## P2 — 수익화(BM · 출시 후)
+## P2 — 수익화(BM)
 
-> 방향은 `docs/02-decisions/0004-monetization-strategy.md`(ADR 0004)에서 확정. **v1은 무료·무광고·무구독**으로 출시하고 아래는 후행한다.
+> 방향은 `docs/02-decisions/0004-monetization-strategy.md`(ADR 0004)에서 확정했고, 2026-08-08 지시로 최소 리워드 광고를 첫 공개 후보 범위에 포함했다.
 
 | 상태 | 작업 | 완료 증거 / Blocker |
 | --- | --- | --- |
-| 결정 완료·구현 대기 | v1.x 보상형 광고 1개(통계 상세) | 옵트인 리워드·비개인화·24h unlock, 기록 루프 무광고 유지. AdMob 연동 + 개인정보/App Privacy/Data safety 라벨을 "광고 SDK 존재·비개인화"로 갱신. 실계정 인증 이후 |
+| 구현·로컬 검증 완료·운영 설정 대기 | 보상형 광고 1개(통계 상세) | 모바일 AdMob+UMP, AIT 통합 리워드, 보상 완료 후 24h unlock, 기록 루프 무광고. 운영 광고 ID·UMP·마켓 설문·실기기 QA 남음 |
 | 아이디어·데이터 대기 | v2 또래 비교 인사이트(월령 밴드 익명 집계) | unlock 보상을 또래 비교로 격상. cohort당 최소 N명(k-익명), 비의료 프레이밍, 백엔드 집계 job + 개인정보방침 "익명 집계 벤치마크" 고지. 데이터 볼륨 확보 후 |
 | 완료 | 비용 가드레일: GCP 예산 알림 | `seorilabs-babycare` 월 ₩20,000, 50/90/100% 이메일 알림 설정됨(2026-07-19) |
 | 권장·대기 | 확장 전 App Check 활성화 | 남용성 비용·백엔드 보호. 현재 `ENFORCE_APP_CHECK=false` |
