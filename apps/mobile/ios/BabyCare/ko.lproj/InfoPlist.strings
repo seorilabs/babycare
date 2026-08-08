@@ -1,0 +1,2 @@
+/* 홈 화면 앱 이름. Info.plist의 CFBundleDisplayName을 로케일별로 덮어쓴다. */
+"CFBundleDisplayName" = "함께봄";

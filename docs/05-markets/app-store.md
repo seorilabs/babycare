@@ -42,7 +42,7 @@
 
 - 앱 지원 언어: `ko`, `en` (ADR `0005-app-localization-policy.md`). 기기 로케일 자동 판별이고 앱 내 언어 선택은 없다.
 - iOS `CFBundleLocalizations`에 `ko`, `en`을 선언했고 `CFBundleDevelopmentRegion`은 ASC primaryLocale과 같은 `ko`다.
-- `CFBundleDisplayName`은 `함께봄` 단일값이다. 로컬라이즈하려면 `InfoPlist.strings` variant group을 Xcode 프로젝트에 추가해야 한다 — `확정 필요`.
+- `CFBundleDisplayName`은 로케일별로 갈린다. `ko.lproj/InfoPlist.strings`가 `함께봄`, `en.lproj/InfoPlist.strings`가 `BabyNest`이고 `Info.plist`의 `함께봄`은 development region fallback이다. Xcode 프로젝트에 `PBXVariantGroup`으로 등록해 Resources build phase로 복사되며 `knownRegions`에 `ko`·`en`이 있다.
 - **현재 ASC 후보 `1.0.8`/`56`은 i18n 이전 빌드라 한국어 전용이다.** `en-US` 등록정보를 유지한 채 심사 제출하려면 i18n 포함 새 후보가 필요하다.
 
 ## Release
