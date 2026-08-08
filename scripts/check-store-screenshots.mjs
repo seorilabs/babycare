@@ -1,25 +1,23 @@
 #!/usr/bin/env node
-// App Store 스크린샷 세트의 로케일·컷 구성·정확한 픽셀 크기를 검사한다.
+// 마켓 스크린샷 세트의 컷 구성과 정확한 픽셀 크기를 검사한다.
 //
-// App Store Connect는 display type마다 정확한 해상도만 받는다. 잘못된 크기는
-// 업로드 시점에야 거부되므로, 자산이 교체·재촬영될 때 저장소에서 먼저 막는다.
+// App Store Connect는 display type마다, AppsInToss Console은 세로 규격마다 정확한
+// 해상도만 받는다. 잘못된 크기는 업로드 시점에야 거부되므로, 자산이 교체·재촬영될 때
+// 저장소에서 먼저 막는다.
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 
-const SHOTS = [
-  {key: '01-home'},
-  {key: '02-timeline'},
-  {key: '03-stats'},
-  {key: '04-record'},
-  {key: '05-more'},
-];
+const APP_STORE_SHOTS = ['01-home', '02-timeline', '03-stats', '04-record', '05-more'];
+// AppsInToss는 미니앱 실제 화면 구성이 달라 컷 이름도 다르다.
+const AIT_SHOTS = ['01-start', '02-home', '03-timeline', '04-stats', '05-more'];
 
-// ASC display type별 요구 해상도(세로). 로케일별로 같은 구성을 유지한다.
+// 마켓별 요구 해상도(세로). 같은 마켓 안에서는 로케일별 구성을 동일하게 유지한다.
 const SETS = [
-  {locale: 'ko', dir: 'app-store/screenshots/6.9', width: 1320, height: 2868},
-  {locale: 'ko', dir: 'app-store/screenshots/13', width: 2064, height: 2752},
-  {locale: 'en-US', dir: 'app-store/screenshots/en-US/6.9', width: 1320, height: 2868},
-  {locale: 'en-US', dir: 'app-store/screenshots/en-US/13', width: 2064, height: 2752},
+  {locale: 'ko', dir: 'app-store/screenshots/6.9', width: 1320, height: 2868, shots: APP_STORE_SHOTS},
+  {locale: 'ko', dir: 'app-store/screenshots/13', width: 2064, height: 2752, shots: APP_STORE_SHOTS},
+  {locale: 'en-US', dir: 'app-store/screenshots/en-US/6.9', width: 1320, height: 2868, shots: APP_STORE_SHOTS},
+  {locale: 'en-US', dir: 'app-store/screenshots/en-US/13', width: 2064, height: 2752, shots: APP_STORE_SHOTS},
+  {locale: 'ko', dir: 'apps-in-toss/screenshots', width: 636, height: 1048, shots: AIT_SHOTS},
 ];
 
 /** PNG IHDR에서 크기를 읽는다. 의존성 없이 헤더만 확인한다. */
@@ -38,8 +36,8 @@ async function pngSize(file) {
 const problems = [];
 
 for (const set of SETS) {
-  for (const shot of SHOTS) {
-    const file = path.join(set.dir, `${shot.key}.png`);
+  for (const shot of set.shots) {
+    const file = path.join(set.dir, `${shot}.png`);
     try {
       const {width, height} = await pngSize(file);
       if (width !== set.width || height !== set.height) {
@@ -54,11 +52,10 @@ for (const set of SETS) {
 }
 
 if (problems.length > 0) {
-  console.error('App Store 스크린샷 세트 검사 실패:');
+  console.error('마켓 스크린샷 세트 검사 실패:');
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
 
-console.log(
-  `App Store screenshot set check passed (${SETS.length} sets x ${SHOTS.length} shots).`,
-);
+const total = SETS.reduce((count, set) => count + set.shots.length, 0);
+console.log(`Store screenshot set check passed (${SETS.length} sets, ${total} shots).`);

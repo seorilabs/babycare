@@ -1,5 +1,29 @@
 # Work Log
 
+## 2026-08-08 — AppsInToss 등록 스크린샷을 sandbox 실제 화면으로 교체
+
+- 등록본 5장이 같은 제품의 `apps/mobile` native 화면을 규격에 맞춘 것이라 미니앱 UI와 달랐다. AppsInToss sandbox에서 미니앱을 실행해 온보딩·홈·기록·통계·더보기를 직접 캡처하고 636×1048로 교체했다. 컷 이름도 실제 화면 구성에 맞춰 `01-start`·`02-home`·`03-timeline`·`04-stats`·`05-more`로 바꿨다.
+- 캡처는 운영 Firebase 대상 실제 동작이다. 온보딩으로 그룹을 만들고 수유 4회·기저귀 3회·수면 1건을 기록한 뒤 탭을 이동했다. 촬영용 계정은 앱의 `계정 삭제`로 정리했다.
+- `scripts/check-store-screenshots.mjs`에 AppsInToss 세트를 추가해 마켓 5세트 25컷의 크기·구성을 저장소에서 검사한다. 세트별로 컷 이름이 달라 `shots`를 세트 속성으로 옮겼다.
+
+### 로컬 dev 실행 배선을 고쳤다
+
+- `granite dev`는 `granite.config.ts`의 `build.esbuild.define`을 적용하지 않는다. dev는 Metro/babel 경로라 define이 무시되고, 그래서 dev 번들의 `process.env.FIREBASE_WEB_API_KEY`가 빈 문자열이 되어 미니앱 첫 화면이 `Firebase 연결 설정을 불러오지 못했어요`에서 멈췄다. 키가 주입되는 것은 CI의 `ait build`뿐이라 로컬 dev/QA가 구조적으로 불가능했다.
+- `apps/ait/babel.config.js`에서 인라인하도록 바꿨다. 환경변수가 우선이라 CI 동작은 그대로고, 로컬은 gitignore된 `apps/ait/.env`를 읽는다. jest는 node에서 `process.env`를 그대로 읽으므로 test env에서는 인라인하지 않는다.
+- `process.env.X ??= '...'`처럼 대입 대상인 표현식을 리터럴로 바꾸면 babel이 죽는다. `jest.setup.ts`가 실제로 그 형태여서 처음 실행이 실패했다. 치환·비치환 규칙은 `apps/ait/babel.config.test.ts`로 고정했다.
+
+### sandbox는 Console 로그인이 필요 없다
+
+- 원장에는 `Console 계정 로그인·Toss 인증 대기`로 적혀 있었지만 그건 배포된 번들을 열 때다. 로컬 dev server 경로는 로그인을 우회한다. 샌드박스 앱이 실행 중일 때 `xcrun simctl openurl <UDID> "intoss-sandbox://babynest"`를 열고 iOS 확인 다이얼로그에서 `열기`를 누르면 Toss 호스트 chrome 안에서 미니앱이 로드된다.
+- `granite dev`는 포트 8081이어야 한다. 다른 포트면 샌드박스가 `로컬서버를 찾을 수 없습니다`를 띄운다. 앱이 떠 있지 않은 상태에서 scheme을 열면 Console 로그인 화면으로 떨어진다.
+- 합성 Cmd+V는 RN `TextInput`에 닿지 않고, AppleScript `keystroke`로 보낸 한글은 글리프가 깨진다. `xcrun simctl pbcopy`로 기기 pasteboard에 넣고 길게 눌러 `붙여넣기` 메뉴를 탭해야 한다. 숫자·하이픈은 `keystroke`로 들어간다.
+- Simulator 창 보정은 `Window > Show Device Bezels`를 끄고 `Point Accurate`로 두면 창 너비 = 기기 화면 너비가 되어 계산이 정확해진다. iPhone 16 Pro는 창 402×926, 화면 402×874, 타이틀바 52pt다.
+
+### 남은 것
+
+- Console 업로드·readback은 수동 절차로 남아 있다.
+- `apps/ait/src/pages/index.tsx`가 TDS 컴포넌트를 쓰지 않는다. `_app.tsx`의 `TDSProvider`만 있고 화면은 RN primitive다. 비게임 미니앱은 TDS 사용이 요구되므로 검수 리스크로 남긴다.
+
 ## 2026-08-08 — en-US 스크린샷 ASC 업로드
 
 - `en-US` localization(`fb6c5f74-0547-47f9-ab4d-1614a7121c86`)에 `APP_IPHONE_67`·`APP_IPAD_PRO_3GEN_129` set을 새로 만들고 각 5컷을 업로드했다. asset delivery state 10건 모두 `COMPLETE`를 readback했다.
