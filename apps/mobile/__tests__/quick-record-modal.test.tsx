@@ -4,6 +4,7 @@ import ReactTestRenderer from 'react-test-renderer';
 
 import type {LocalSession} from '../src/app/session';
 import {createTheme} from '../src/app/theme';
+import { createStrings } from '../src/app/i18n';
 import {QuickRecordModal} from '../src/components/QuickRecordModal';
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -64,6 +65,7 @@ describe('QuickRecordModal', () => {
           onClose={onClose}
           onSave={onSave}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -109,6 +111,7 @@ describe('QuickRecordModal', () => {
             throw new Error(technicalMessage);
           })}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -139,6 +142,7 @@ describe('QuickRecordModal', () => {
           onClose={jest.fn()}
           onSave={onSave}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -185,6 +189,7 @@ describe('QuickRecordModal', () => {
           onClose={jest.fn()}
           onSave={onSave}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -236,6 +241,7 @@ describe('QuickRecordModal', () => {
           onClose={jest.fn()}
           onSave={onSave}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -294,6 +300,7 @@ describe('QuickRecordModal', () => {
           onClose={jest.fn()}
           onSave={jest.fn(async () => undefined)}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -348,6 +355,7 @@ describe('QuickRecordModal', () => {
           onClose={jest.fn()}
           onSave={onSave}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -387,6 +395,7 @@ describe('QuickRecordModal', () => {
           onClose={jest.fn()}
           onSave={jest.fn(async () => undefined)}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );

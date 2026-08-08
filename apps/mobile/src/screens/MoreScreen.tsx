@@ -2,6 +2,7 @@ import {useRef, useState} from 'react';
 import {Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View} from 'react-native';
 import type {Membership} from '@babycare/product-core';
 
+import type {Strings} from '../app/i18n';
 import type {LocalSession} from '../app/session';
 import type {AppTheme} from '../app/theme';
 
@@ -37,6 +38,7 @@ function SettingRow(props: {
 
 export function MoreScreen(props: {
   readonly session: LocalSession;
+  readonly strings: Strings;
   readonly theme: AppTheme;
   readonly onReset: () => Promise<void>;
   readonly memberships?: readonly Membership[];
@@ -45,6 +47,7 @@ export function MoreScreen(props: {
   readonly onRefreshMembers?: () => Promise<void>;
   readonly onDeleteAccount?: () => Promise<void>;
 }) {
+  const strings = props.strings;
   const firebase = props.session.runtimeMode === 'firebase';
   const owner = props.session.membershipRole !== 'member';
   const memberships = props.memberships ?? [];
@@ -75,8 +78,8 @@ export function MoreScreen(props: {
     request
       .catch(() =>
         Alert.alert(
-          '초대 코드를 만들지 못했어요',
-          '연결을 확인하고 잠시 후 다시 시도해 주세요.',
+          strings.more.inviteFailedTitle,
+          strings.more.inviteFailedMessage,
         ),
       )
       .finally(() => {
@@ -87,11 +90,11 @@ export function MoreScreen(props: {
 
   const shareInvite = () => {
     Share.share({
-      message: `함께봄 돌봄 그룹 초대 코드: ${props.session.inviteCode}`,
+      message: strings.more.shareMessage(props.session.inviteCode),
     }).catch(() =>
       Alert.alert(
-        '초대 코드를 공유하지 못했어요',
-        '기기의 공유 기능을 열지 못했어요. 다시 시도해 주세요.',
+        strings.more.shareFailedTitle,
+        strings.more.shareFailedMessage,
       ),
     );
   };
@@ -99,8 +102,8 @@ export function MoreScreen(props: {
   const refreshMembers = () => {
     props.onRefreshMembers?.().catch(() =>
       Alert.alert(
-        '구성원 목록을 새로고침하지 못했어요',
-        '연결을 확인하고 다시 시도해 주세요.',
+        strings.more.refreshMembersFailedTitle,
+        strings.more.refreshMembersFailedMessage,
       ),
     );
   };
@@ -108,8 +111,8 @@ export function MoreScreen(props: {
   const openPrivacyPolicy = () => {
     Linking.openURL(privacyPolicyUrl).catch(() =>
       Alert.alert(
-        '개인정보 처리방침을 열지 못했어요',
-        '인터넷 연결을 확인하고 다시 시도해 주세요.',
+        strings.more.privacyOpenFailedTitle,
+        strings.more.privacyOpenFailedMessage,
       ),
     );
   };
@@ -119,15 +122,15 @@ export function MoreScreen(props: {
       return;
     }
     const consequence = owner
-      ? '계정과 이 돌봄 그룹의 아기 정보·모든 돌봄 기록이 영구 삭제됩니다. 다른 구성원도 이 그룹에 더 이상 접근할 수 없습니다.'
-      : '계정과 그룹 멤버십, 내가 남긴 돌봄 기록이 영구 삭제됩니다. 다른 구성원의 그룹과 기록은 유지됩니다.';
+      ? strings.more.deleteAccountOwnerConsequence
+      : strings.more.deleteAccountMemberConsequence;
     Alert.alert(
-      '계정을 영구 삭제할까요?',
-      `${consequence}\n\n삭제한 데이터는 복구할 수 없습니다.`,
+      strings.more.deleteAccountConfirmTitle,
+      `${consequence}\n\n${strings.more.deleteAccountIrreversible}`,
       [
-        {text: '취소', style: 'cancel'},
+        {text: strings.common.cancel, style: 'cancel'},
         {
-          text: '계정 삭제',
+          text: strings.more.deleteAccountConfirmAction,
           style: 'destructive',
           onPress: () => {
             if (accountDeletionInFlight.current) {
@@ -144,8 +147,8 @@ export function MoreScreen(props: {
             request
               .catch(() =>
                 Alert.alert(
-                  '계정을 삭제하지 못했어요',
-                  '연결을 확인하고 잠시 후 다시 시도해 주세요.',
+                  strings.more.deleteAccountFailedTitle,
+                  strings.more.deleteAccountFailedMessage,
                 ),
               )
               .finally(() => {
@@ -163,22 +166,30 @@ export function MoreScreen(props: {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       style={{backgroundColor: props.theme.colors.background}}>
-      <Text style={[styles.title, {color: props.theme.colors.text}]}>더보기</Text>
-      <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>그룹과 앱 설정을 관리해요</Text>
+      <Text style={[styles.title, {color: props.theme.colors.text}]}>
+        {strings.more.title}
+      </Text>
+      <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>
+        {strings.more.subtitle}
+      </Text>
 
       <View style={[styles.groupCard, {backgroundColor: props.theme.colors.surface}]}>
         <View style={styles.groupHeader}>
           <View style={styles.groupCopy}>
-            <Text style={[styles.groupEyebrow, {color: props.theme.colors.primary}]}>돌봄 그룹</Text>
+            <Text style={[styles.groupEyebrow, {color: props.theme.colors.primary}]}>
+              {strings.more.groupEyebrow}
+            </Text>
             <Text
               numberOfLines={2}
               style={[styles.groupName, {color: props.theme.colors.text}]}>
-              {props.session.babyName}이네
+              {strings.more.groupName(props.session.babyName)}
             </Text>
           </View>
           <View style={[styles.localBadge, {backgroundColor: props.theme.colors.surfaceMuted}]}>
             <Text style={[styles.localText, {color: props.theme.colors.textMuted}]}>
-              {firebase ? '공동 기록 모드' : '로컬 개발 모드'}
+              {firebase
+                ? strings.more.sharedModeBadge
+                : strings.more.localModeBadge}
             </Text>
           </View>
         </View>
@@ -205,8 +216,12 @@ export function MoreScreen(props: {
                 {membership.displayName}
               </Text>
               <Text style={[styles.memberRole, {color: props.theme.colors.textMuted}]}>
-                {membership.userId === props.session.caregiverId ? '나 · ' : ''}
-                {membership.membershipRole === 'owner' ? '소유자' : '구성원'}
+                {membership.userId === props.session.caregiverId
+                  ? strings.more.mePrefix
+                  : ''}
+                {membership.membershipRole === 'owner'
+                  ? strings.more.roleOwner
+                  : strings.more.roleMember}
               </Text>
             </View>
           </View>
@@ -214,7 +229,9 @@ export function MoreScreen(props: {
         <View style={[styles.invite, {backgroundColor: props.theme.colors.primarySoft}]}>
           <View>
             <Text style={[styles.inviteLabel, {color: props.theme.colors.textMuted}]}>
-              {firebase ? '양육자 초대 코드' : '초대 코드 미리보기'}
+              {firebase
+                ? strings.more.inviteLabel
+                : strings.more.invitePreviewLabel}
             </Text>
             <Text style={[styles.inviteCode, {color: props.theme.colors.primary}]}>
               {firebase
@@ -227,16 +244,18 @@ export function MoreScreen(props: {
               <Text
                 accessibilityLiveRegion="polite"
                 style={[styles.inviteExpiry, {color: props.theme.colors.danger}]}>
-                초대 코드가 만료됐어요
+                {strings.more.inviteExpired}
               </Text>
             ) : props.inviteExpiresAt !== undefined ? (
               <Text style={[styles.inviteExpiry, {color: props.theme.colors.textMuted}]}>
-                {new Intl.DateTimeFormat('ko-KR', {
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                }).format(props.inviteExpiresAt)}까지 유효
+                {strings.more.inviteValidUntil(
+                  new Intl.DateTimeFormat(strings.intlLocale, {
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  }).format(props.inviteExpiresAt),
+                )}
               </Text>
             ) : null}
           </View>
@@ -244,12 +263,12 @@ export function MoreScreen(props: {
             <Pressable
               accessibilityLabel={
                 inviteCreationPending
-                  ? '초대 코드 만드는 중'
+                  ? strings.more.inviteCreatingLabel
                   : inviteReady
-                    ? '초대 코드 공유'
+                    ? strings.more.inviteShareLabel
                     : inviteExpired
-                      ? '새 초대 코드 만들기'
-                      : '초대 코드 만들기'
+                      ? strings.more.inviteRecreateLabel
+                      : strings.more.inviteCreateLabel
               }
               accessibilityRole="button"
               accessibilityState={{
@@ -265,88 +284,123 @@ export function MoreScreen(props: {
               ]}>
               <Text style={[styles.inviteActionText, {color: props.theme.colors.primary}]}>
                 {inviteCreationPending
-                  ? '만드는 중…'
+                  ? strings.more.inviteCreating
                   : inviteReady
-                    ? '공유'
+                    ? strings.common.share
                     : inviteExpired
-                      ? '새 코드 만들기'
-                      : '코드 만들기'}
+                      ? strings.more.inviteRecreate
+                      : strings.more.inviteCreate}
               </Text>
             </Pressable>
           ) : (
             <Text style={[styles.inviteStatus, {color: props.theme.colors.textMuted}]}>
-              {firebase ? '소유자만 초대할 수 있어요' : 'Firebase 연결 후 활성화'}
+              {firebase
+                ? strings.more.inviteOwnerOnly
+                : strings.more.inviteLocalDisabled}
             </Text>
           )}
         </View>
       </View>
 
-      <Text style={[styles.sectionLabel, {color: props.theme.colors.textMuted}]}>설정</Text>
+      <Text style={[styles.sectionLabel, {color: props.theme.colors.textMuted}]}>
+        {strings.more.settingsSection}
+      </Text>
       <View style={[styles.settings, {backgroundColor: props.theme.colors.surface}]}>
-        <SettingRow detail="ml" icon="⚖️" theme={props.theme} title="단위" />
-        <SettingRow detail="시스템 설정 사용" icon="◐" theme={props.theme} title="화면 모드" />
+        <SettingRow
+          detail={strings.more.unitDetail}
+          icon="⚖️"
+          theme={props.theme}
+          title={strings.more.unitTitle}
+        />
+        <SettingRow
+          detail={strings.more.appearanceDetail}
+          icon="◐"
+          theme={props.theme}
+          title={strings.more.appearanceTitle}
+        />
         <SettingRow
           detail={
             props.onRefreshMembers
-              ? '최신 구성원 목록을 다시 확인해요'
+              ? strings.more.syncRefreshDetail
               : firebase
-                ? '공동 기록 자동 동기화'
-                : '기기 로컬 저장 · 개발 모드'
+                ? strings.more.syncStatusShared
+                : strings.more.syncStatusLocal
           }
           icon="☁️"
           onPress={props.onRefreshMembers ? refreshMembers : undefined}
           theme={props.theme}
-          title={props.onRefreshMembers ? '구성원 목록 새로고침' : '동기화 상태'}
+          title={
+            props.onRefreshMembers
+              ? strings.more.syncRefreshTitle
+              : strings.more.syncStatusTitle
+          }
         />
-        <SettingRow detail="한국어" icon="文" theme={props.theme} title="언어" />
+        <SettingRow
+          detail={strings.languageName}
+          icon="文"
+          theme={props.theme}
+          title={strings.more.languageTitle}
+        />
       </View>
 
-      <Text style={[styles.sectionLabel, {color: props.theme.colors.textMuted}]}>데이터와 개인정보</Text>
+      <Text style={[styles.sectionLabel, {color: props.theme.colors.textMuted}]}>
+        {strings.more.privacySection}
+      </Text>
       <View style={[styles.settings, {backgroundColor: props.theme.colors.surface}]}>
         <SettingRow
-          detail="성인 양육자용 · 비의료 목적"
+          detail={strings.more.privacyPolicyDetail}
           icon="🔒"
           onPress={openPrivacyPolicy}
           theme={props.theme}
-          title="개인정보 처리방침"
+          title={strings.more.privacyPolicyTitle}
         />
         {firebase ? (
           <SettingRow
             detail={
               owner
-                ? '계정과 돌봄 그룹의 모든 데이터를 영구 삭제해요'
-                : '계정과 내 멤버십·작성 기록을 영구 삭제해요'
+                ? strings.more.deleteAccountOwnerDetail
+                : strings.more.deleteAccountMemberDetail
             }
             disabled={accountDeletionPending}
             icon="⌫"
             onPress={deleteAccount}
             theme={props.theme}
-            title={accountDeletionPending ? '계정 삭제 중…' : '계정 삭제'}
+            title={
+              accountDeletionPending
+                ? strings.more.deleteAccountPending
+                : strings.more.deleteAccountTitle
+            }
           />
         ) : null}
       </View>
 
       {!firebase ? <Pressable
         onPress={() =>
-          Alert.alert('로컬 데이터를 초기화할까요?', '이 기기에 저장한 모든 돌봄 기록과 프로필이 삭제됩니다.', [
-            {text: '취소', style: 'cancel'},
-            {
-              text: '초기화',
-              style: 'destructive',
-              onPress: () =>
-                props.onReset().catch(error =>
-                  Alert.alert(
-                    '초기화하지 못했어요',
-                    error instanceof Error
-                      ? error.message
-                      : '기기 데이터를 지우지 못했습니다. 다시 시도해 주세요.',
+          Alert.alert(
+            strings.more.resetConfirmTitle,
+            strings.more.resetConfirmMessage,
+            [
+              {text: strings.common.cancel, style: 'cancel'},
+              {
+                text: strings.common.reset,
+                style: 'destructive',
+                onPress: () =>
+                  props.onReset().catch(error =>
+                    Alert.alert(
+                      strings.more.resetFailedTitle,
+                      error instanceof Error
+                        ? error.message
+                        : strings.more.resetFailedMessage,
+                    ),
                   ),
-                ),
-            },
-          ])
+              },
+            ],
+          )
         }
         style={[styles.reset, {borderColor: props.theme.colors.danger}]}>
-        <Text style={[styles.resetText, {color: props.theme.colors.danger}]}>로컬 데이터 초기화</Text>
+        <Text style={[styles.resetText, {color: props.theme.colors.danger}]}>
+          {strings.more.resetTitle}
+        </Text>
       </Pressable> : null}
     </ScrollView>
   );

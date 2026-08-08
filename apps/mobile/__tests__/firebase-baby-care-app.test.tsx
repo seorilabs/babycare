@@ -21,6 +21,7 @@ import {
 } from '../src/app/firebase-runtime';
 import type {ReadyFirebaseSession} from '../src/app/firebase-session';
 import {CloudCareContextHydrationError} from '../src/adapters/local/cloud-care-context-cache';
+import { createStrings } from '../src/app/i18n';
 import {
   FirebaseBabyCareApp,
   FirebaseCareDashboard,
@@ -165,7 +166,7 @@ describe('FirebaseBabyCareApp product copy', () => {
     bootstrap.mockReturnValue(new Promise(() => undefined));
 
     ReactTestRenderer.act(() => {
-      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp strings={createStrings('ko')} />);
     });
     if (!renderer) {
       throw new Error('Firebase 제품 화면을 렌더링하지 못했어요');
@@ -183,7 +184,7 @@ describe('FirebaseBabyCareApp product copy', () => {
     );
 
     await ReactTestRenderer.act(async () => {
-      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp strings={createStrings('ko')} />);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -213,7 +214,7 @@ describe('FirebaseBabyCareApp product copy', () => {
     } as unknown as FirebaseRuntime);
 
     await ReactTestRenderer.act(async () => {
-      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp strings={createStrings('ko')} />);
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
@@ -266,7 +267,7 @@ describe('FirebaseBabyCareApp product copy', () => {
       bootstrap.mockResolvedValue(runtime);
 
       await ReactTestRenderer.act(async () => {
-        renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+        renderer = ReactTestRenderer.create(<FirebaseBabyCareApp strings={createStrings('ko')} />);
         for (let count = 0; count < 12; count += 1) {
           await Promise.resolve();
         }
@@ -322,7 +323,7 @@ describe('FirebaseBabyCareApp product copy', () => {
     bootstrap.mockResolvedValue(runtime);
 
     await ReactTestRenderer.act(async () => {
-      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp />);
+      renderer = ReactTestRenderer.create(<FirebaseBabyCareApp strings={createStrings('ko')} />);
       for (let count = 0; count < 12; count += 1) {
         await Promise.resolve();
       }
@@ -457,6 +458,7 @@ describe('FirebaseBabyCareApp product copy', () => {
           onRefreshMembers={async () => undefined}
           onRuntimeError={onRuntimeError}
           ready={ready}
+          strings={createStrings('ko')}
           runtime={{} as React.ComponentProps<typeof FirebaseCareDashboard>['runtime']}
         />,
       );
@@ -580,6 +582,7 @@ describe('FirebaseBabyCareApp product copy', () => {
           onRefreshMembers={async () => undefined}
           onRuntimeError={onRuntimeError}
           ready={ready}
+          strings={createStrings('ko')}
           runtime={{} as React.ComponentProps<typeof FirebaseCareDashboard>['runtime']}
           runtimeError={new Error('공동 기록을 새로 불러오지 못했어요')}
         />,

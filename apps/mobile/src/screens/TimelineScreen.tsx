@@ -15,6 +15,7 @@ import {
 } from '@babycare/product-core';
 
 import {eventIcon, eventTitle, formatTimeAgo} from '../app/format';
+import type {Strings} from '../app/i18n';
 import type {LocalSession} from '../app/session';
 import type {AppTheme} from '../app/theme';
 
@@ -30,17 +31,17 @@ function dayKey(timestamp: number): string {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
-function dayLabel(timestamp: number, now: number): string {
+function dayLabel(timestamp: number, now: number, strings: Strings): string {
   const target = new Date(timestamp);
   const today = new Date(now);
   const yesterday = new Date(now - 86_400_000);
   if (dayKey(target.getTime()) === dayKey(today.getTime())) {
-    return '오늘';
+    return strings.timeline.today;
   }
   if (dayKey(target.getTime()) === dayKey(yesterday.getTime())) {
-    return '어제';
+    return strings.timeline.yesterday;
   }
-  return new Intl.DateTimeFormat('ko-KR', {
+  return new Intl.DateTimeFormat(strings.intlLocale, {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -50,6 +51,7 @@ function dayLabel(timestamp: number, now: number): string {
 function buildSections(
   events: readonly CareEvent[],
   now: number,
+  strings: Strings,
 ): readonly TimelineSection[] {
   const groups = new Map<string, CareEvent[]>();
   for (const event of [...events].sort(compareCareEventNewestFirst)) {
@@ -63,7 +65,7 @@ function buildSections(
   }
   return [...groups.entries()].map(([key, data]) => ({
     key,
-    title: dayLabel(data[0]!.occurredAt, now),
+    title: dayLabel(data[0]!.occurredAt, now, strings),
     data,
   }));
 }
@@ -73,6 +75,7 @@ export function TimelineScreen(props: {
   readonly events: readonly CareEvent[];
   readonly now: number;
   readonly session: LocalSession;
+  readonly strings: Strings;
   readonly theme: AppTheme;
   readonly hasMore: boolean;
   readonly capped: boolean;
@@ -90,24 +93,29 @@ export function TimelineScreen(props: {
     onLoadMore,
     onRetryLoadMore,
   } = props;
+  const strings = props.strings;
   const sections = useMemo(
-    () => buildSections(props.events, props.now),
-    [props.events, props.now],
+    () => buildSections(props.events, props.now, strings),
+    [props.events, props.now, strings],
   );
   const loadMoreInFlight = useRef(false);
 
   const confirmDelete = useCallback(
     (event: CareEvent) => {
-      Alert.alert('기록을 삭제할까요?', eventTitle(event), [
-        {text: '취소', style: 'cancel'},
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: () => onDelete(event).catch(() => undefined),
-        },
-      ]);
+      Alert.alert(
+        strings.timeline.deleteConfirmTitle,
+        eventTitle(event, strings),
+        [
+          {text: strings.common.cancel, style: 'cancel'},
+          {
+            text: strings.common.delete,
+            style: 'destructive',
+            onPress: () => onDelete(event).catch(() => undefined),
+          },
+        ],
+      );
     },
-    [onDelete],
+    [onDelete, strings],
   );
 
   const runLoadMore = useCallback(
@@ -146,7 +154,7 @@ export function TimelineScreen(props: {
     <View accessibilityLiveRegion="polite" style={styles.pageStatus}>
       <ActivityIndicator color={props.theme.colors.primary} size="small" />
       <Text style={[styles.pageStatusText, {color: props.theme.colors.textMuted}]}>
-        이전 기록을 불러오는 중…
+        {strings.timeline.loadingMore}
       </Text>
     </View>
   ) : props.loadMoreError ? (
@@ -157,17 +165,23 @@ export function TimelineScreen(props: {
         {props.loadMoreError}
       </Text>
       <Pressable
-        accessibilityLabel="이전 기록 다시 불러오기"
+        accessibilityLabel={strings.timeline.retryLoadMoreLabel}
         accessibilityRole="button"
         onPress={() => runLoadMore(true)}
         style={[styles.retryButton, {borderColor: props.theme.colors.primary}]}>
-        <Text style={[styles.retryText, {color: props.theme.colors.primary}]}>다시 시도</Text>
+        <Text style={[styles.retryText, {color: props.theme.colors.primary}]}>
+          {strings.common.retry}
+        </Text>
       </Pressable>
     </View>
   ) : props.capped ? (
-    <Text style={[styles.endText, {color: props.theme.colors.textMuted}]}>기기에 보관할 이전 기록 범위까지 확인했어요</Text>
+    <Text style={[styles.endText, {color: props.theme.colors.textMuted}]}>
+      {strings.timeline.cappedEnd}
+    </Text>
   ) : !props.hasMore && props.events.length > 0 ? (
-    <Text style={[styles.endText, {color: props.theme.colors.textMuted}]}>모든 기록을 확인했어요</Text>
+    <Text style={[styles.endText, {color: props.theme.colors.textMuted}]}>
+      {strings.timeline.allLoaded}
+    </Text>
   ) : null;
 
   return (
@@ -177,27 +191,37 @@ export function TimelineScreen(props: {
       ListEmptyComponent={
         <View style={[styles.empty, {backgroundColor: props.theme.colors.surface}]}>
           <Text style={styles.emptyIcon}>📝</Text>
-          <Text style={[styles.emptyTitle, {color: props.theme.colors.text}]}>첫 돌봄 기록을 남겨보세요</Text>
-          <Text style={[styles.emptyText, {color: props.theme.colors.textMuted}]}>홈의 큰 버튼으로 수유·기저귀·수면을 빠르게 기록할 수 있어요.</Text>
+          <Text style={[styles.emptyTitle, {color: props.theme.colors.text}]}>
+            {strings.timeline.emptyTitle}
+          </Text>
+          <Text style={[styles.emptyText, {color: props.theme.colors.textMuted}]}>
+            {strings.timeline.emptyText}
+          </Text>
         </View>
       }
       ListFooterComponent={
         <View style={styles.footer}>
-          <Text style={[styles.deleteHint, {color: props.theme.colors.textMuted}]}>내 기록을 길게 누르면 삭제할 수 있어요.</Text>
+          <Text style={[styles.deleteHint, {color: props.theme.colors.textMuted}]}>
+            {strings.timeline.deleteHint}
+          </Text>
           {footerStatus}
         </View>
       }
       ListHeaderComponent={
         <View style={styles.header}>
           <View>
-            <Text style={[styles.title, {color: props.theme.colors.text}]}>타임라인</Text>
-            <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>누가 무엇을 기록했는지 시간순으로 확인해요</Text>
+            <Text style={[styles.title, {color: props.theme.colors.text}]}>
+              {strings.timeline.title}
+            </Text>
+            <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>
+              {strings.timeline.subtitle}
+            </Text>
           </View>
           <View style={[styles.liveBadge, {backgroundColor: props.theme.colors.primarySoft}]}>
             <Text style={[styles.liveText, {color: props.theme.colors.primary}]}>
               {props.session.runtimeMode === 'firebase'
-                ? '● 공동 기록'
-                : '● 로컬 저장'}
+                ? strings.timeline.liveShared
+                : strings.timeline.liveLocal}
             </Text>
           </View>
         </View>
@@ -210,12 +234,12 @@ export function TimelineScreen(props: {
         return (
           <Pressable
             accessibilityActions={
-              canDelete ? [{name: 'activate', label: '기록 삭제'}] : undefined
+              canDelete
+                ? [{name: 'activate', label: strings.timeline.deleteActionLabel}]
+                : undefined
             }
             accessibilityHint={
-              canDelete
-                ? '활성화하면 기록 삭제 확인창이 열립니다'
-                : undefined
+              canDelete ? strings.timeline.deleteAccessibilityHint : undefined
             }
             accessibilityRole={canDelete ? 'button' : undefined}
             onAccessibilityAction={
@@ -245,16 +269,25 @@ export function TimelineScreen(props: {
               <Text style={styles.emoji}>{eventIcon(event)}</Text>
             </View>
             <View style={styles.copy}>
-              <Text style={[styles.eventTitle, {color: props.theme.colors.text}]}>{eventTitle(event)}</Text>
+              <Text style={[styles.eventTitle, {color: props.theme.colors.text}]}>
+                {eventTitle(event, strings)}
+              </Text>
               <Text style={[styles.meta, {color: props.theme.colors.textMuted}]}>
-                {new Intl.DateTimeFormat('ko-KR', {hour: 'numeric', minute: '2-digit'}).format(event.occurredAt)} ·{' '}
-                {props.caregiverNames.get(event.caregiverId) ?? '다른 양육자'}
+                {new Intl.DateTimeFormat(strings.intlLocale, {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                }).format(event.occurredAt)}{' '}
+                ·{' '}
+                {props.caregiverNames.get(event.caregiverId) ??
+                  strings.common.otherCaregiver}
               </Text>
               {event.note ? (
                 <Text numberOfLines={2} style={[styles.note, {color: props.theme.colors.textMuted}]}>{event.note}</Text>
               ) : null}
             </View>
-            <Text style={[styles.timeAgo, {color: props.theme.colors.textMuted}]}>{formatTimeAgo(event.occurredAt, props.now)}</Text>
+            <Text style={[styles.timeAgo, {color: props.theme.colors.textMuted}]}>
+              {formatTimeAgo(event.occurredAt, props.now, strings)}
+            </Text>
           </Pressable>
         );
       }}

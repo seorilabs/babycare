@@ -1,58 +1,78 @@
 import {calculateTimeAgo, type CareEvent} from '@babycare/product-core';
 
-export function formatTimeAgo(occurredAt: number, now: number): string {
+import type {Strings} from './i18n';
+
+export function formatTimeAgo(
+  occurredAt: number,
+  now: number,
+  strings: Strings,
+): string {
   const timeAgo = calculateTimeAgo(occurredAt, now);
   if (timeAgo.unit === 'just_now') {
-    return timeAgo.isFuture ? '곧' : '방금';
+    return timeAgo.isFuture ? strings.timeAgo.soon : strings.timeAgo.justNow;
   }
-  const unit = timeAgo.unit === 'minute' ? '분' : timeAgo.unit === 'hour' ? '시간' : '일';
-  return timeAgo.isFuture ? `${timeAgo.value}${unit} 후` : `${timeAgo.value}${unit} 전`;
+  return timeAgo.isFuture
+    ? strings.timeAgo.future(timeAgo.value, timeAgo.unit)
+    : strings.timeAgo.past(timeAgo.value, timeAgo.unit);
 }
 
-export function formatDuration(seconds: number): string {
+export function formatDuration(seconds: number, strings: Strings): string {
   const rounded = Math.max(0, Math.round(seconds));
   const hours = Math.floor(rounded / 3_600);
   const minutes = Math.floor((rounded % 3_600) / 60);
   if (hours > 0) {
-    return `${hours}시간 ${minutes}분`;
+    return strings.duration.hoursMinutes(hours, minutes);
   }
   if (minutes > 0) {
-    return `${minutes}분`;
+    return strings.duration.minutes(minutes);
   }
-  return `${rounded}초`;
+  return strings.duration.seconds(rounded);
 }
 
 export function eventIcon(event: CareEvent): string {
   return event.kind === 'feeding' ? '🍼' : event.kind === 'diaper' ? '🧷' : '🌙';
 }
 
-export function eventTitle(event: CareEvent): string {
+export function eventTitle(event: CareEvent, strings: Strings): string {
   if (event.kind === 'feeding') {
     if (event.feedingType === 'breast') {
       const sides = [
         event.leftDurationSeconds
-          ? `왼쪽 ${formatDuration(event.leftDurationSeconds)}`
+          ? strings.event.leftSide(
+              formatDuration(event.leftDurationSeconds, strings),
+            )
           : undefined,
         event.rightDurationSeconds
-          ? `오른쪽 ${formatDuration(event.rightDurationSeconds)}`
+          ? strings.event.rightSide(
+              formatDuration(event.rightDurationSeconds, strings),
+            )
           : undefined,
       ].filter(Boolean);
-      return `모유 · ${sides.join(' / ')}`;
+      return strings.event.breastMilk(sides.join(' / '));
     }
     const label =
       event.feedingType === 'formula'
-        ? '분유'
+        ? strings.event.formula
         : event.feedingType === 'bottle_breastmilk'
-          ? '유축 모유'
-          : '이유식';
-    return `${label} ${Math.round(event.volumeMl ?? 0)}ml`;
+          ? strings.event.pumped
+          : strings.event.solid;
+    return strings.event.volume(label, Math.round(event.volumeMl ?? 0));
   }
   if (event.kind === 'diaper') {
-    const label = event.diaperType === 'wet' ? '소변' : event.diaperType === 'dirty' ? '대변' : '소변 + 대변';
-    return `기저귀 · ${label}`;
+    const label =
+      event.diaperType === 'wet'
+        ? strings.event.diaperWet
+        : event.diaperType === 'dirty'
+          ? strings.event.diaperDirty
+          : strings.event.diaperMixed;
+    return strings.event.diaper(label);
   }
-  const label = event.sleepType === 'nap' ? '낮잠' : '밤잠';
+  const label =
+    event.sleepType === 'nap' ? strings.event.nap : strings.event.nightSleep;
   return event.endedAt
-    ? `${label} · ${formatDuration((event.endedAt - event.startedAt) / 1_000)}`
-    : `${label} 자는 중`;
+    ? strings.event.sleepEnded(
+        label,
+        formatDuration((event.endedAt - event.startedAt) / 1_000, strings),
+      )
+    : strings.event.sleepActive(label);
 }

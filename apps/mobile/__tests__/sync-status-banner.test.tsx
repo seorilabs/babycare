@@ -3,6 +3,7 @@ import ReactTestRenderer from 'react-test-renderer';
 
 import {eventId} from '@babycare/product-core';
 import {createTheme} from '../src/app/theme';
+import { createStrings } from '../src/app/i18n';
 import {SyncStatusBanner} from '../src/components/SyncStatusBanner';
 
 describe('SyncStatusBanner', () => {
@@ -22,6 +23,7 @@ describe('SyncStatusBanner', () => {
               pendingRevisions: [],
             },
           ]}
+          strings={createStrings('ko')}
           theme={theme}
         />,
       );
@@ -45,6 +47,7 @@ describe('SyncStatusBanner', () => {
               failureKind: 'retryable',
             },
           ]}
+          strings={createStrings('ko')}
           theme={theme}
         />,
       );
@@ -71,6 +74,7 @@ describe('SyncStatusBanner', () => {
               failureKind: 'conflict',
             },
           ]}
+          strings={createStrings('ko')}
           theme={theme}
         />,
       );

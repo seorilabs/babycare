@@ -12,16 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { Strings } from '../app/i18n';
 import { isValidBirthDate } from '../app/session';
 import type { AppTheme } from '../app/theme';
 
 type SetupMode = 'create' | 'join';
 type Step = 'choose' | 'caregiver' | 'babyName' | 'birthDate' | 'inviteCode';
-
-const CREATE_FAILURE_MESSAGE =
-  '돌봄 그룹을 만들지 못했어요. 연결을 확인하고 다시 시도해 주세요.';
-const JOIN_FAILURE_MESSAGE =
-  '돌봄 그룹에 참여하지 못했어요. 코드를 확인하거나 새 코드를 요청해 주세요.';
 
 function isoCalendarDate(value: Date): string {
   const year = value.getFullYear();
@@ -39,6 +35,7 @@ function dateFromIso(value: string): Date {
 }
 
 export function CloudOnboardingScreen(props: {
+  readonly strings: Strings;
   readonly theme: AppTheme;
   readonly initialErrorMessage?: string;
   readonly onCreate: (input: {
@@ -51,6 +48,7 @@ export function CloudOnboardingScreen(props: {
     code: string;
   }) => Promise<void>;
 }) {
+  const strings = props.strings;
   const [mode, setMode] = useState<SetupMode>();
   const [step, setStep] = useState<Step>('choose');
   const [caregiverName, setCaregiverName] = useState('');
@@ -113,7 +111,7 @@ export function CloudOnboardingScreen(props: {
       try {
         await props.onCreate({ caregiverName, babyName, birthDate });
       } catch {
-        setErrorMessage(CREATE_FAILURE_MESSAGE);
+        setErrorMessage(strings.onboarding.createFailed);
       } finally {
         submissionInFlight.current = false;
         setSaving(false);
@@ -126,7 +124,7 @@ export function CloudOnboardingScreen(props: {
       try {
         await props.onJoin({ caregiverName, code });
       } catch {
-        setErrorMessage(JOIN_FAILURE_MESSAGE);
+        setErrorMessage(strings.onboarding.joinFailed);
       } finally {
         submissionInFlight.current = false;
         setSaving(false);
@@ -156,12 +154,12 @@ export function CloudOnboardingScreen(props: {
   }, [babyNameValid, birthDate, caregiverValid, codeValid, step]);
 
   const actionLabel = saving
-    ? '공동 기록을 준비하는 중…'
+    ? strings.onboarding.preparing
     : step === 'birthDate'
-    ? '돌봄 그룹 만들기'
+    ? strings.onboarding.createAction
     : step === 'inviteCode'
-    ? '돌봄 그룹 참여하기'
-    : '다음';
+    ? strings.onboarding.joinAction
+    : strings.common.next;
 
   return (
     <SafeAreaView
@@ -186,23 +184,22 @@ export function CloudOnboardingScreen(props: {
           <Text style={styles.markEmoji}>🌿</Text>
         </View>
         <Text style={[styles.eyebrow, { color: props.theme.colors.primary }]}>
-          함께봄 공동 기록
+          {strings.onboarding.eyebrow}
         </Text>
 
         {step === 'choose' ? (
           <>
             <Text style={[styles.title, { color: props.theme.colors.text }]}>
-              함께 돌보는 오늘
+              {strings.onboarding.chooseTitle}
             </Text>
             <Text
               style={[styles.subtitle, { color: props.theme.colors.textMuted }]}
             >
-              처음이라면 돌봄 그룹을 만들고,{`\n`}초대 코드를 받았다면 바로
-              참여할 수 있어요.
+              {strings.onboarding.chooseSubtitle}
             </Text>
             <View style={styles.choiceList}>
               <Pressable
-                accessibilityLabel="처음 시작하기"
+                accessibilityLabel={strings.onboarding.createChoiceTitle}
                 accessibilityRole="button"
                 onPress={() => chooseMode('create')}
                 style={[
@@ -219,7 +216,7 @@ export function CloudOnboardingScreen(props: {
                     { color: props.theme.colors.text },
                   ]}
                 >
-                  처음 시작하기
+                  {strings.onboarding.createChoiceTitle}
                 </Text>
                 <Text
                   style={[
@@ -227,11 +224,11 @@ export function CloudOnboardingScreen(props: {
                     { color: props.theme.colors.textMuted },
                   ]}
                 >
-                  내 아기의 첫 돌봄 그룹을 만들어요
+                  {strings.onboarding.createChoiceDescription}
                 </Text>
               </Pressable>
               <Pressable
-                accessibilityLabel="초대 코드로 참여"
+                accessibilityLabel={strings.onboarding.joinChoiceTitle}
                 accessibilityRole="button"
                 onPress={() => chooseMode('join')}
                 style={[
@@ -248,7 +245,7 @@ export function CloudOnboardingScreen(props: {
                     { color: props.theme.colors.text },
                   ]}
                 >
-                  초대 코드로 참여
+                  {strings.onboarding.joinChoiceTitle}
                 </Text>
                 <Text
                   style={[
@@ -256,7 +253,7 @@ export function CloudOnboardingScreen(props: {
                     { color: props.theme.colors.textMuted },
                   ]}
                 >
-                  가족이 만든 그룹에 함께 기록해요
+                  {strings.onboarding.joinChoiceDescription}
                 </Text>
               </Pressable>
             </View>
@@ -270,33 +267,33 @@ export function CloudOnboardingScreen(props: {
             </Text>
             <Text style={[styles.title, { color: props.theme.colors.text }]}>
               {step === 'caregiver'
-                ? '어떻게 불러드릴까요?'
+                ? strings.onboarding.caregiverTitle
                 : step === 'babyName'
-                ? '아기 이름을 알려주세요'
+                ? strings.onboarding.babyNameTitle
                 : step === 'birthDate'
-                ? '아기는 언제 태어났나요?'
-                : '초대 코드를 입력해 주세요'}
+                ? strings.onboarding.birthDateTitle
+                : strings.onboarding.inviteCodeTitle}
             </Text>
             <Text
               style={[styles.subtitle, { color: props.theme.colors.textMuted }]}
             >
               {step === 'caregiver'
-                ? '함께 기록할 때 표시되는 이름이에요.'
+                ? strings.onboarding.caregiverSubtitle
                 : step === 'babyName'
-                ? '돌봄 그룹에서 사용할 아기 이름이에요.'
+                ? strings.onboarding.babyNameSubtitle
                 : step === 'birthDate'
-                ? '홈에서 아기의 생후 일수를 표시하는 데 사용해요.'
-                : '그룹 소유자에게 받은 6자리 코드예요.'}
+                ? strings.onboarding.birthDateSubtitle
+                : strings.onboarding.inviteCodeSubtitle}
             </Text>
             <View style={styles.fieldArea}>
               {step === 'caregiver' ? (
                 <TextInput
-                  accessibilityLabel="양육자 이름"
+                  accessibilityLabel={strings.onboarding.caregiverLabel}
                   autoCapitalize="words"
                   autoFocus
                   maxLength={80}
                   onChangeText={setCaregiverName}
-                  placeholder="예: 엄마, 아빠, 할머니"
+                  placeholder={strings.onboarding.caregiverPlaceholder}
                   placeholderTextColor={props.theme.colors.textMuted}
                   style={fieldStyle}
                   value={caregiverName}
@@ -304,11 +301,11 @@ export function CloudOnboardingScreen(props: {
               ) : null}
               {step === 'babyName' ? (
                 <TextInput
-                  accessibilityLabel="아기 이름"
+                  accessibilityLabel={strings.onboarding.babyNameLabel}
                   autoFocus
                   maxLength={80}
                   onChangeText={setBabyName}
-                  placeholder="예: 지안"
+                  placeholder={strings.onboarding.babyNamePlaceholder}
                   placeholderTextColor={props.theme.colors.textMuted}
                   style={fieldStyle}
                   value={babyName}
@@ -317,7 +314,7 @@ export function CloudOnboardingScreen(props: {
               {step === 'birthDate' ? (
                 <>
                   <Pressable
-                    accessibilityLabel="아기 생년월일"
+                    accessibilityLabel={strings.onboarding.birthDateLabel}
                     accessibilityRole="button"
                     onPress={() => setShowDatePicker(true)}
                     style={[fieldStyle, styles.dateButton]}
@@ -332,7 +329,7 @@ export function CloudOnboardingScreen(props: {
                         },
                       ]}
                     >
-                      {birthDate || '날짜 선택'}
+                      {birthDate || strings.onboarding.birthDatePlaceholder}
                     </Text>
                     <Text
                       style={[
@@ -340,7 +337,7 @@ export function CloudOnboardingScreen(props: {
                         { color: props.theme.colors.primary },
                       ]}
                     >
-                      선택
+                      {strings.onboarding.birthDatePick}
                     </Text>
                   </Pressable>
                   {showDatePicker ? (
@@ -359,7 +356,7 @@ export function CloudOnboardingScreen(props: {
               ) : null}
               {step === 'inviteCode' ? (
                 <TextInput
-                  accessibilityLabel="초대 코드"
+                  accessibilityLabel={strings.onboarding.inviteCodeLabel}
                   autoCapitalize="characters"
                   autoCorrect={false}
                   autoFocus
@@ -376,7 +373,7 @@ export function CloudOnboardingScreen(props: {
             </View>
             <View style={styles.actions}>
               <Pressable
-                accessibilityLabel="이전"
+                accessibilityLabel={strings.common.back}
                 accessibilityRole="button"
                 onPress={back}
                 style={[
@@ -387,7 +384,7 @@ export function CloudOnboardingScreen(props: {
                 <Text
                   style={[styles.backText, { color: props.theme.colors.text }]}
                 >
-                  이전
+                  {strings.common.back}
                 </Text>
               </Pressable>
               <Pressable
@@ -423,8 +420,7 @@ export function CloudOnboardingScreen(props: {
           </Text>
         ) : null}
         <Text style={[styles.notice, { color: props.theme.colors.textMuted }]}>
-          앱을 삭제하거나 기기를 바꾸면 현재 계정과 기록에 다시 접근하지 못할 수
-          있어요.
+          {strings.onboarding.notice}
         </Text>
         </ScrollView>
       </KeyboardAvoidingView>

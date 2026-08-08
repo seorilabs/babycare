@@ -1,20 +1,26 @@
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
+import type {Strings} from '../app/i18n';
 import type {AppTheme} from '../app/theme';
 
 export type AppTab = 'home' | 'timeline' | 'stats' | 'more';
 
-const tabs: ReadonlyArray<{readonly id: AppTab; readonly icon: string; readonly label: string}> = [
-  {id: 'home', icon: '⌂', label: '홈'},
-  {id: 'timeline', icon: '≡', label: '타임라인'},
-  {id: 'stats', icon: '▦', label: '통계'},
-  {id: 'more', icon: '•••', label: '더보기'},
+const tabs: ReadonlyArray<{
+  readonly id: AppTab;
+  readonly icon: string;
+  readonly label: (strings: Strings) => string;
+}> = [
+  {id: 'home', icon: '⌂', label: strings => strings.tabs.home},
+  {id: 'timeline', icon: '≡', label: strings => strings.tabs.timeline},
+  {id: 'stats', icon: '▦', label: strings => strings.tabs.stats},
+  {id: 'more', icon: '•••', label: strings => strings.tabs.more},
 ];
 
 export function TabBar(props: {
   readonly active: AppTab;
   readonly onChange: (tab: AppTab) => void;
+  readonly strings: Strings;
   readonly theme: AppTheme;
 }) {
   const insets = useSafeAreaInsets();
@@ -54,7 +60,7 @@ export function TabBar(props: {
                 },
                 selected ? styles.selectedLabel : styles.unselectedLabel,
               ]}>
-              {tab.label}
+              {tab.label(props.strings)}
             </Text>
           </Pressable>
         );

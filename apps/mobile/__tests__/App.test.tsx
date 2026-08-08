@@ -16,6 +16,7 @@ import {
 } from '@babycare/product-core';
 
 import App, {RuntimeApp} from '../App';
+import {createStrings} from '../src/app/i18n';
 import {
   appContainer,
   selectVisibleCareEventOverview,
@@ -146,7 +147,7 @@ function mockLoadedSession(
 async function renderLoadedApp(): Promise<ReactTestRenderer.ReactTestRenderer> {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
-    renderer = ReactTestRenderer.create(<App />);
+    renderer = ReactTestRenderer.create(<App strings={createStrings('ko')} />);
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -168,6 +169,7 @@ test('hides runtime loader details and allows retrying the product screen', asyn
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(
       <RuntimeApp
+        strings={createStrings('ko')}
         loadFirebaseApp={loadFirebaseApp}
         localPreview={false}
       />,
@@ -268,7 +270,7 @@ test('maps an injected paging error and retry through App to TimelineScreen', as
   await ReactTestRenderer.act(async () => retry.props.onPress());
   expect(retryLoadMore).toHaveBeenCalledTimes(1);
 
-  await ReactTestRenderer.act(async () => renderer.update(<App />));
+  await ReactTestRenderer.act(async () => renderer.update(<App strings={createStrings('ko')} />));
   expect(timelineRowCount(renderer)).toBe(40);
   expect(textOf(renderer.root)).not.toContain(errorMessage);
   expect(

@@ -20,6 +20,7 @@ import type {
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {formatDuration} from '../app/format';
+import type {Strings} from '../app/i18n';
 import {domainContext, type LocalSession} from '../app/session';
 import type {AppTheme} from '../app/theme';
 
@@ -54,10 +55,12 @@ function Choice<T extends string>(props: {
 export function QuickRecordModal(props: {
   readonly kind: CareEventKind | undefined;
   readonly session: LocalSession;
+  readonly strings: Strings;
   readonly theme: AppTheme;
   readonly onClose: () => void;
   readonly onSave: (input: CreateCareEventInput) => Promise<void>;
 }) {
+  const strings = props.strings;
   const insets = useSafeAreaInsets();
   const [feedingType, setFeedingType] = useState<FeedingType>('formula');
   const [breastSide, setBreastSide] = useState<'left' | 'right'>('left');
@@ -117,16 +120,27 @@ export function QuickRecordModal(props: {
 
   const context = domainContext(props.session);
   const selectedOccurredAt = timeEdited ? occurredAt : Date.now();
-  const title = props.kind === 'feeding' ? '수유 기록' : props.kind === 'diaper' ? '기저귀 기록' : '수면 시작';
+  const title =
+    props.kind === 'feeding'
+      ? strings.quickRecord.feedingTitle
+      : props.kind === 'diaper'
+        ? strings.quickRecord.diaperTitle
+        : strings.quickRecord.sleepTitle;
   const saveDisabled =
     props.kind === 'feeding' && feedingType === 'breast' && elapsed.totalMs < 1_000;
   const saveGuidance = saveDisabled
-    ? '모유 타이머를 1초 이상 측정하면 저장할 수 있어요.'
+    ? strings.quickRecord.saveGuidance
     : undefined;
   const saveOpacity = saving ? 0.65 : 1;
-  const timerActionLabel = `${breastSide === 'left' ? '왼쪽' : '오른쪽'} 모유 타이머 ${
-    timerStartedAt ? '일시정지' : elapsed.totalMs ? '계속' : '시작'
-  }`;
+  const timerAction = timerStartedAt
+    ? strings.quickRecord.timerPause
+    : elapsed.totalMs
+      ? strings.quickRecord.timerResume
+      : strings.quickRecord.timerStart;
+  const timerActionLabel = strings.quickRecord.timerActionLabel(
+    breastSide,
+    timerAction,
+  );
 
   const save = async () => {
     if (saveRequestInFlight.current) {
@@ -175,9 +189,7 @@ export function QuickRecordModal(props: {
       setRightAccumulatedMs(0);
       props.onClose();
     } catch {
-      setErrorMessage(
-        '기록을 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
-      );
+      setErrorMessage(strings.quickRecord.saveFailed);
     } finally {
       saveRequestInFlight.current = false;
       setSaving(false);
@@ -191,7 +203,9 @@ export function QuickRecordModal(props: {
         style={[styles.fill, {backgroundColor: props.theme.colors.background}]}>
         <View style={[styles.header, {borderBottomColor: props.theme.colors.border}]}>
           <Pressable accessibilityRole="button" onPress={props.onClose} style={styles.headerButton}>
-            <Text style={[styles.headerAction, {color: props.theme.colors.textMuted}]}>닫기</Text>
+            <Text style={[styles.headerAction, {color: props.theme.colors.textMuted}]}>
+              {strings.common.close}
+            </Text>
           </Pressable>
           <Text style={[styles.title, {color: props.theme.colors.text}]}>{title}</Text>
           <View style={styles.headerButton} />
@@ -202,21 +216,25 @@ export function QuickRecordModal(props: {
           showsVerticalScrollIndicator={false}>
           {props.kind === 'feeding' ? (
             <>
-              <Text style={[styles.label, {color: props.theme.colors.text}]}>유형</Text>
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.typeLabel}
+              </Text>
               <View style={styles.choiceRow}>
-                <Choice label="모유" onSelect={setFeedingType} selected={feedingType} theme={props.theme} value="breast" />
-                <Choice label="유축" onSelect={setFeedingType} selected={feedingType} theme={props.theme} value="bottle_breastmilk" />
-                <Choice label="분유" onSelect={setFeedingType} selected={feedingType} theme={props.theme} value="formula" />
-                <Choice label="이유식" onSelect={setFeedingType} selected={feedingType} theme={props.theme} value="solid" />
+                <Choice label={strings.quickRecord.feedingBreast} onSelect={setFeedingType} selected={feedingType} theme={props.theme} value="breast" />
+                <Choice label={strings.quickRecord.feedingPumped} onSelect={setFeedingType} selected={feedingType} theme={props.theme} value="bottle_breastmilk" />
+                <Choice label={strings.quickRecord.feedingFormula} onSelect={setFeedingType} selected={feedingType} theme={props.theme} value="formula" />
+                <Choice label={strings.quickRecord.feedingSolid} onSelect={setFeedingType} selected={feedingType} theme={props.theme} value="solid" />
               </View>
               {feedingType === 'breast' ? (
                 <View style={[styles.timerCard, {backgroundColor: props.theme.colors.surface}]}>
                   <Text style={[styles.timer, {color: props.theme.colors.text}]}>
-                    {formatDuration(elapsed.totalMs / 1_000)}
+                    {formatDuration(elapsed.totalMs / 1_000, strings)}
                   </Text>
                   <View style={styles.sideRow}>
                     <Choice
-                      label={`왼쪽 ${formatDuration(elapsed.leftMs / 1_000)}`}
+                      label={strings.quickRecord.leftWithDuration(
+                        formatDuration(elapsed.leftMs / 1_000, strings),
+                      )}
                       onSelect={side => {
                         const changedAt = Date.now();
                         if (timerStartedAt && activeTimerSide && activeTimerSide !== side) {
@@ -236,7 +254,9 @@ export function QuickRecordModal(props: {
                       value="left"
                     />
                     <Choice
-                      label={`오른쪽 ${formatDuration(elapsed.rightMs / 1_000)}`}
+                      label={strings.quickRecord.rightWithDuration(
+                        formatDuration(elapsed.rightMs / 1_000, strings),
+                      )}
                       onSelect={side => {
                         const changedAt = Date.now();
                         if (timerStartedAt && activeTimerSide && activeTimerSide !== side) {
@@ -277,12 +297,10 @@ export function QuickRecordModal(props: {
                         }
                       }}
                       style={[styles.timerButton, {backgroundColor: props.theme.colors.primary}]}>
-                      <Text style={styles.timerButtonText}>
-                        {timerStartedAt ? '일시정지' : elapsed.totalMs ? '계속' : '시작'}
-                      </Text>
+                      <Text style={styles.timerButtonText}>{timerAction}</Text>
                     </Pressable>
                     <Pressable
-                      accessibilityLabel="모유 타이머 초기화"
+                      accessibilityLabel={strings.quickRecord.timerResetLabel}
                       accessibilityRole="button"
                       onPress={() => {
                         setTimerStartedAt(undefined);
@@ -291,23 +309,29 @@ export function QuickRecordModal(props: {
                         setRightAccumulatedMs(0);
                       }}
                       style={[styles.resetButton, {borderColor: props.theme.colors.border}]}>
-                      <Text style={[styles.resetText, {color: props.theme.colors.textMuted}]}>초기화</Text>
+                      <Text style={[styles.resetText, {color: props.theme.colors.textMuted}]}>
+                        {strings.common.reset}
+                      </Text>
                     </Pressable>
                   </View>
                 </View>
               ) : (
                 <>
-                  <Text style={[styles.label, {color: props.theme.colors.text}]}>양</Text>
+                  <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                    {strings.quickRecord.amountLabel}
+                  </Text>
                   <View style={[styles.stepper, {backgroundColor: props.theme.colors.surface}]}>
                     <Pressable
-                      accessibilityLabel="수유량 10밀리리터 줄이기"
+                      accessibilityLabel={strings.quickRecord.decreaseVolumeLabel}
                       accessibilityRole="button"
                       onPress={() => setVolumeMl(value => Math.max(10, value - 10))}
                       style={[styles.stepButton, {borderColor: props.theme.colors.border}]}>
                       <Text style={[styles.stepText, {color: props.theme.colors.text}]}>−</Text>
                     </Pressable>
                     <View
-                      accessibilityLabel={`수유량 ${volumeMl}밀리리터`}
+                      accessibilityLabel={strings.quickRecord.volumeValueLabel(
+                        volumeMl,
+                      )}
                       accessibilityLiveRegion="polite"
                       accessible
                       style={styles.amount}>
@@ -315,7 +339,7 @@ export function QuickRecordModal(props: {
                       <Text style={[styles.amountUnit, {color: props.theme.colors.textMuted}]}>ml</Text>
                     </View>
                     <Pressable
-                      accessibilityLabel="수유량 10밀리리터 늘리기"
+                      accessibilityLabel={strings.quickRecord.increaseVolumeLabel}
                       accessibilityRole="button"
                       onPress={() => setVolumeMl(value => Math.min(2_000, value + 10))}
                       style={[styles.stepButton, {borderColor: props.theme.colors.border}]}>
@@ -329,67 +353,86 @@ export function QuickRecordModal(props: {
 
           {props.kind === 'diaper' ? (
             <>
-              <Text style={[styles.label, {color: props.theme.colors.text}]}>상태</Text>
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.diaperLabel}
+              </Text>
               <View style={styles.choiceRow}>
-                <Choice label="소변" onSelect={setDiaperType} selected={diaperType} theme={props.theme} value="wet" />
-                <Choice label="대변" onSelect={setDiaperType} selected={diaperType} theme={props.theme} value="dirty" />
-                <Choice label="둘 다" onSelect={setDiaperType} selected={diaperType} theme={props.theme} value="mixed" />
+                <Choice label={strings.quickRecord.diaperWet} onSelect={setDiaperType} selected={diaperType} theme={props.theme} value="wet" />
+                <Choice label={strings.quickRecord.diaperDirty} onSelect={setDiaperType} selected={diaperType} theme={props.theme} value="dirty" />
+                <Choice label={strings.quickRecord.diaperMixed} onSelect={setDiaperType} selected={diaperType} theme={props.theme} value="mixed" />
               </View>
             </>
           ) : null}
 
           {props.kind === 'sleep' ? (
             <>
-              <Text style={[styles.label, {color: props.theme.colors.text}]}>수면 유형</Text>
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.sleepTypeLabel}
+              </Text>
               <View style={styles.choiceRow}>
-                <Choice label="낮잠" onSelect={setSleepType} selected={sleepType} theme={props.theme} value="nap" />
-                <Choice label="밤잠" onSelect={setSleepType} selected={sleepType} theme={props.theme} value="night" />
+                <Choice label={strings.quickRecord.sleepNap} onSelect={setSleepType} selected={sleepType} theme={props.theme} value="nap" />
+                <Choice label={strings.quickRecord.sleepNight} onSelect={setSleepType} selected={sleepType} theme={props.theme} value="night" />
               </View>
               <View style={[styles.sleepNotice, {backgroundColor: props.theme.colors.primarySoft}]}>
                 <Text style={styles.sleepIcon}>🌙</Text>
-                <Text style={[styles.sleepText, {color: props.theme.colors.text}]}>선택한 기록 시각부터 수면 시간을 측정해요. 홈의 ‘기상’ 버튼으로 종료합니다.</Text>
+                <Text style={[styles.sleepText, {color: props.theme.colors.text}]}>
+                  {strings.quickRecord.sleepNotice}
+                </Text>
               </View>
             </>
           ) : null}
 
-          <Text style={[styles.label, {color: props.theme.colors.text}]}>기록 시각</Text>
+          <Text style={[styles.label, {color: props.theme.colors.text}]}>
+            {strings.quickRecord.occurredAtLabel}
+          </Text>
           <View style={[styles.timeRow, {backgroundColor: props.theme.colors.surface}]}>
             <View style={styles.timeCopy}>
               <Text style={[styles.timeValue, {color: props.theme.colors.text}]}>
-                {new Intl.DateTimeFormat('ko-KR', {hour: 'numeric', minute: '2-digit'}).format(selectedOccurredAt)}
+                {new Intl.DateTimeFormat(strings.intlLocale, {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                }).format(selectedOccurredAt)}
               </Text>
-              <Text style={[styles.timeHint, {color: props.theme.colors.textMuted}]}>선택한 시각으로 저장</Text>
+              <Text style={[styles.timeHint, {color: props.theme.colors.textMuted}]}>
+                {strings.quickRecord.occurredAtHint}
+              </Text>
             </View>
             <View style={styles.timeButtons}>
               <Pressable
-                accessibilityLabel="기록 시각 10분 앞당기기"
+                accessibilityLabel={strings.quickRecord.shiftBackLabel}
                 accessibilityRole="button"
                 onPress={() => {
                   setOccurredAt(selectedOccurredAt - 10 * 60_000);
                   setTimeEdited(true);
                 }}
                 style={[styles.smallButton, {borderColor: props.theme.colors.border}]}>
-                <Text style={[styles.smallButtonText, {color: props.theme.colors.text}]}>−10분</Text>
+                <Text style={[styles.smallButtonText, {color: props.theme.colors.text}]}>
+                  {strings.quickRecord.shiftBack}
+                </Text>
               </Pressable>
               <Pressable
-                accessibilityLabel="기록 시각을 지금으로 설정"
+                accessibilityLabel={strings.quickRecord.setNowLabel}
                 accessibilityRole="button"
                 onPress={() => {
                   setOccurredAt(Date.now());
                   setTimeEdited(false);
                 }}
                 style={[styles.smallButton, {borderColor: props.theme.colors.border}]}>
-                <Text style={[styles.smallButtonText, {color: props.theme.colors.text}]}>지금</Text>
+                <Text style={[styles.smallButtonText, {color: props.theme.colors.text}]}>
+                  {strings.common.now}
+                </Text>
               </Pressable>
             </View>
           </View>
 
-          <Text style={[styles.label, {color: props.theme.colors.text}]}>메모 (선택)</Text>
+          <Text style={[styles.label, {color: props.theme.colors.text}]}>
+            {strings.quickRecord.noteLabel}
+          </Text>
           <TextInput
             maxLength={500}
             multiline
             onChangeText={setNote}
-            placeholder="특이사항을 남겨주세요"
+            placeholder={strings.quickRecord.notePlaceholder}
             placeholderTextColor={props.theme.colors.textMuted}
             style={[
               styles.note,
@@ -424,7 +467,11 @@ export function QuickRecordModal(props: {
           ) : null}
           <Pressable
             accessibilityHint={saveGuidance}
-            accessibilityLabel={saving ? '돌봄 기록 저장 중' : '돌봄 기록 저장'}
+            accessibilityLabel={
+              saving
+                ? strings.quickRecord.savingLabel
+                : strings.quickRecord.saveLabel
+            }
             accessibilityRole="button"
             accessibilityState={{busy: saving, disabled: saving || saveDisabled}}
             disabled={saving || saveDisabled}
@@ -436,7 +483,9 @@ export function QuickRecordModal(props: {
                 opacity: saveOpacity,
               },
             ]}>
-            <Text style={styles.saveText}>{saving ? '저장 중…' : '저장하기'}</Text>
+            <Text style={styles.saveText}>
+              {saving ? strings.quickRecord.saving : strings.quickRecord.save}
+            </Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>

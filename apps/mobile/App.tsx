@@ -9,6 +9,7 @@ import {
   selectVisibleCareEventOverview,
   type CareEventOverviewSnapshot,
 } from './src/app/container';
+import {createStrings, deviceAppLocale, type Strings} from './src/app/i18n';
 import {createLocalSession, domainContext, type LocalSession} from './src/app/session';
 import {createTheme} from './src/app/theme';
 import {useLocalTimelinePagination} from './src/app/use-local-timeline-pagination';
@@ -20,22 +21,37 @@ import {OnboardingScreen} from './src/screens/OnboardingScreen';
 import {StatsScreen} from './src/screens/StatsScreen';
 import {TimelineScreen} from './src/screens/TimelineScreen';
 
-function LoadingScreen({dark}: {readonly dark: boolean}) {
+function LoadingScreen({
+  dark,
+  strings,
+}: {
+  readonly dark: boolean;
+  readonly strings: Strings;
+}) {
   const theme = createTheme(dark);
   return (
     <View style={[styles.loading, {backgroundColor: theme.colors.background}]}>
       <View style={[styles.loadingMark, {backgroundColor: theme.colors.primarySoft}]}>
         <Text style={styles.loadingEmoji}>🌿</Text>
       </View>
-      <Text style={[styles.loadingTitle, {color: theme.colors.text}]}>함께 돌보는 오늘</Text>
-      <Text style={[styles.loadingText, {color: theme.colors.textMuted}]}>양육 기록을 준비하고 있어요</Text>
+      <Text style={[styles.loadingTitle, {color: theme.colors.text}]}>
+        {strings.app.splashTitle}
+      </Text>
+      <Text style={[styles.loadingText, {color: theme.colors.textMuted}]}>
+        {strings.app.splashText}
+      </Text>
     </View>
   );
 }
 
-function BabyCareApp() {
+function BabyCareApp(props: {readonly strings?: Strings} = {}) {
   const dark = useColorScheme() === 'dark';
   const theme = useMemo(() => createTheme(dark), [dark]);
+  const overrideStrings = props.strings;
+  const strings = useMemo(
+    () => overrideStrings ?? createStrings(deviceAppLocale()),
+    [overrideStrings],
+  );
   const [loaded, setLoaded] = useState(false);
   const [session, setSession] = useState<LocalSession>();
   const [overview, setOverview] = useState<CareEventOverviewSnapshot>({
@@ -114,7 +130,7 @@ function BabyCareApp() {
   }, [savedMessage]);
 
   if (!loaded) {
-    return <LoadingScreen dark={dark} />;
+    return <LoadingScreen dark={dark} strings={strings} />;
   }
 
   if (!session) {
@@ -155,20 +171,33 @@ function BabyCareApp() {
                 events: current.events.filter(item => item.id !== deleted.id),
                 activeSleep: current.activeSleep,
               }));
-              setSavedMessage('기록을 삭제했어요');
+              setSavedMessage(strings.app.eventDeleted);
             } catch (error) {
-              Alert.alert('삭제할 수 없어요', error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.');
+              Alert.alert(
+                strings.app.deleteEventFailedTitle,
+                error instanceof Error
+                  ? error.message
+                  : strings.app.deleteEventFailedMessage,
+              );
             }
           }}
           onLoadMore={localTimeline.loadMore}
           onRetryLoadMore={localTimeline.retryLoadMore}
           session={session}
+          strings={strings}
           theme={theme}
         />
       );
     }
     if (tab === 'stats') {
-      return <StatsScreen events={events} now={now} theme={theme} />;
+      return (
+        <StatsScreen
+          events={events}
+          now={now}
+          strings={strings}
+          theme={theme}
+        />
+      );
     }
     if (tab === 'more') {
       return (
@@ -182,6 +211,7 @@ function BabyCareApp() {
             setTab('home');
           }}
           session={session}
+          strings={strings}
           theme={theme}
         />
       );
@@ -198,12 +228,18 @@ function BabyCareApp() {
           try {
             await appContainer.endSleepSession({groupId: context.groupId, eventId: event.id});
             setNow(Date.now());
-            setSavedMessage('수면 시간을 기록했어요');
+            setSavedMessage(strings.app.sleepRecorded);
           } catch (error) {
-            Alert.alert('수면을 종료할 수 없어요', error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.');
+            Alert.alert(
+              strings.app.stopSleepFailedTitle,
+              error instanceof Error
+                ? error.message
+                : strings.app.stopSleepFailedMessage,
+            );
           }
         }}
         session={session}
+        strings={strings}
         theme={theme}
       />
     );
@@ -218,16 +254,17 @@ function BabyCareApp() {
           <Text style={[styles.toastText, {color: theme.colors.background}]}>✓ {savedMessage}</Text>
         </View>
       ) : null}
-      <TabBar active={tab} onChange={setTab} theme={theme} />
+      <TabBar active={tab} onChange={setTab} strings={strings} theme={theme} />
       <QuickRecordModal
         kind={recording}
         onClose={() => setRecording(undefined)}
         onSave={async input => {
           await appContainer.recordCareEvent(input);
           setNow(Date.now());
-          setSavedMessage('돌봄 기록을 저장했어요');
+          setSavedMessage(strings.app.eventSaved);
         }}
         session={session}
+        strings={strings}
         theme={theme}
       />
     </SafeAreaView>
@@ -242,8 +279,15 @@ async function loadFirebaseBabyCareApp(): Promise<ComponentType> {
 export function RuntimeApp(props: {
   readonly localPreview?: boolean;
   readonly loadFirebaseApp?: () => Promise<ComponentType>;
+  /** Test seam. Production resolves the locale from the device. */
+  readonly strings?: Strings;
 } = {}) {
   const dark = useColorScheme() === 'dark';
+  const overrideStrings = props.strings;
+  const strings = useMemo(
+    () => overrideStrings ?? createStrings(deviceAppLocale()),
+    [overrideStrings],
+  );
   const [localPreview] = useState(
     () => props.localPreview ?? typeof jest !== 'undefined',
   );
@@ -267,51 +311,62 @@ export function RuntimeApp(props: {
       })
       .catch(() => {
         if (active) {
-          setRuntimeLoadError(
-            '공동 기록 화면을 준비하지 못했어요. 다시 시도해 주세요.',
-          );
+          setRuntimeLoadError(strings.app.runtimeLoadErrorMessage);
         }
       });
     return () => {
       active = false;
     };
-  }, [FirebaseApp, loadFirebaseApp, localPreview, runtimeLoadRetryKey]);
+  }, [
+    FirebaseApp,
+    loadFirebaseApp,
+    localPreview,
+    runtimeLoadRetryKey,
+    strings,
+  ]);
 
   if (localPreview) {
-    return <BabyCareApp />;
+    return <BabyCareApp strings={strings} />;
   }
   if (runtimeLoadError) {
     const theme = createTheme(dark);
     return (
       <View
         style={[styles.loading, {backgroundColor: theme.colors.background}]}>
-        <Text style={[styles.loadingTitle, {color: theme.colors.text}]}>공동 기록 화면을 열 수 없어요</Text>
+        <Text style={[styles.loadingTitle, {color: theme.colors.text}]}>
+          {strings.app.runtimeLoadErrorTitle}
+        </Text>
         <Text style={[styles.runtimeLoadError, {color: theme.colors.textMuted}]}>
           {runtimeLoadError}
         </Text>
         <Pressable
-          accessibilityLabel="공동 기록 화면 다시 열기"
+          accessibilityLabel={strings.app.runtimeLoadRetryLabel}
           accessibilityRole="button"
           onPress={() => {
             setRuntimeLoadError(undefined);
             setRuntimeLoadRetryKey(value => value + 1);
           }}
           style={[styles.retryButton, {backgroundColor: theme.colors.primary}]}>
-          <Text style={styles.retryButtonText}>다시 시도</Text>
+          <Text style={styles.retryButtonText}>{strings.common.retry}</Text>
         </Pressable>
       </View>
     );
   }
   if (!FirebaseApp) {
-    return <LoadingScreen dark={dark} />;
+    return <LoadingScreen dark={dark} strings={strings} />;
   }
   return <FirebaseApp />;
 }
 
-export default function App() {
+export default function App(
+  props: {
+    /** Test seam. Production resolves the locale from the device. */
+    readonly strings?: Strings;
+  } = {},
+) {
   return (
     <SafeAreaProvider>
-      <RuntimeApp />
+      <RuntimeApp strings={props.strings} />
     </SafeAreaProvider>
   );
 }

@@ -35,10 +35,14 @@ fi
 mobile_id='com.seorilabs.babycare'
 mobile_id_regex="${mobile_id//./\\.}"
 brand_name='함께봄'
+en_brand_name='BabyNest'
 android_build='apps/mobile/android/app/build.gradle'
 android_sources='apps/mobile/android/app/src/main/java/com/seorilabs/babycare'
 ios_project='apps/mobile/ios/BabyCare.xcodeproj/project.pbxproj'
 android_strings='apps/mobile/android/app/src/main/res/values/strings.xml'
+android_strings_ko='apps/mobile/android/app/src/main/res/values-ko/strings.xml'
+app_strings='apps/mobile/src/app/i18n/strings.ts'
+info_plist_static='apps/mobile/ios/BabyCare/Info.plist'
 app_json='apps/mobile/app.json'
 
 android_namespace_count="$(rg -c "^[[:space:]]*namespace[[:space:]]+\"${mobile_id_regex}\"[[:space:]]*$" "${android_build}" || true)"
@@ -85,8 +89,15 @@ if ! BRAND_NAME="${brand_name}" node -e \
   exit 1
 fi
 
-if ! rg -Fq "<string name=\"app_name\">${brand_name}</string>" "${android_strings}"; then
-  echo "Android launcher name must be ${brand_name}." >&2
+# The launcher label is localized: Korean devices resolve values-ko, every other
+# locale falls back to the default resource with the approved English brand.
+if ! rg -Fq "<string name=\"app_name\">${brand_name}</string>" "${android_strings_ko}"; then
+  echo "Android Korean launcher name must be ${brand_name}." >&2
+  exit 1
+fi
+
+if ! rg -Fq "<string name=\"app_name\">${en_brand_name}</string>" "${android_strings}"; then
+  echo "Android default launcher name must be ${en_brand_name}." >&2
   exit 1
 fi
 
@@ -129,11 +140,25 @@ if rg -n '로컬 미리보기|setLocalPreview|onUseLocalPreview' \
   exit 1
 fi
 
-if ! rg -Fq "message: \`${brand_name} 돌봄 그룹 초대 코드:" \
-  "apps/mobile/src/screens/MoreScreen.tsx"; then
-  echo "Invite sharing must use the confirmed ${brand_name} brand." >&2
+if ! rg -Fq "${brand_name} 돌봄 그룹 초대 코드:" "${app_strings}"; then
+  echo "Korean invite sharing must use the confirmed ${brand_name} brand." >&2
   exit 1
 fi
+
+if ! rg -Fq "${en_brand_name} care group invite code:" "${app_strings}"; then
+  echo "English invite sharing must use the confirmed ${en_brand_name} brand." >&2
+  exit 1
+fi
+
+# Every localization declared on the bundle needs shipped copy behind it, or the
+# App Store lists a language the app does not actually speak.
+for locale in ko en; do
+  if ! rg -Uq "<key>CFBundleLocalizations</key>[\\s\\S]*<string>${locale}</string>" \
+    "${info_plist_static}"; then
+    echo "iOS CFBundleLocalizations must declare ${locale}." >&2
+    exit 1
+  fi
+done
 
 if ! rg -q 'android:theme="@style/AppTheme"' "apps/mobile/android/app/src/main/AndroidManifest.xml"; then
   echo "Android application must use AppTheme for its launch surface." >&2
