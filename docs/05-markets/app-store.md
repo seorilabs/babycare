@@ -48,7 +48,9 @@
 ## Release
 
 - Signing team (Team ID): `HCDUXX4Z3X`. Xcode Cloud Release는 Automatic managed signing을 사용하며, Firebase plist는 redacted Xcode Cloud secret으로 복원한다.
-- **`v1.0.9` i18n 후보 (2026-08-08)** — source `fe2b4b12be75d52e96bb3f0c267881efb8dd9072`, Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430` 성공(태그 `GIT_REF_CHANGE` 자동 시작). ASC build `95e65693-70a5-42cf-9590-d63e385a9951`는 실제 `1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. **남음: ASC 버전 레코드가 아직 `1.0.8`/build 56이라 `1.0.9`/build 57 관계와 내부 TestFlight 그룹 연결을 반영하지 못했다**(현재 `internalBuildState=READY_FOR_BETA_TESTING`). 로컬 ASC 쓰기 권한이 없어 콘솔 또는 별도 승인이 필요하다.
+- **`v1.0.9` i18n 후보 (2026-08-08)** — source `fe2b4b12be75d52e96bb3f0c267881efb8dd9072`, Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430` 성공(태그 `GIT_REF_CHANGE` 자동 시작). ASC build `95e65693-70a5-42cf-9590-d63e385a9951`는 실제 `1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. ASC 버전 레코드를 `1.0.9`로 갱신하고 build 57 관계와 내부 그룹 `서리랩스 내부테스터` 연결을 반영했다. readback은 `versionString=1.0.9`, `related build=95e65693`, `internalBuildState=IN_BETA_TESTING`, `appStoreState=PREPARE_FOR_SUBMISSION`, 테스터 2명이다.
+
+> `hasAccessToAllBuilds=true` 그룹에서는 `/v1/builds/{id}/betaGroups`가 항상 빈 값을 반환한다. 직전 후보 build 56도 동일하므로 이 엔드포인트를 연결 확인 오라클로 쓰지 않는다. 유효한 신호는 `internalBuildState`다.
 - 이전 후보: `main@c66f7e7`(`v1.0.8`)의 Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962`이 성공했다. App Store Connect build `454e15f2-4075-4828-b613-a67085b3e7d4`는 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. Xcode Cloud build를 내부 그룹 `서리랩스 내부테스터`에 명시적으로 연결한 뒤 `IN_BETA_TESTING`을 API로 readback했다(2026-08-06). 실제 테스터 설치·실기기 QA와 App Review 제출은 하지 않았다.
 - App Store version: version string `1.0.8`, Build 56 관계, `AFTER_APPROVAL`, copyright `2026 Seorilabs`, review detail을 ASC API로 반영·readback했다. 현재 `PREPARE_FOR_SUBMISSION`이며 App Privacy·availability·실기기 QA 전이라 제출하지 않았다.
 - App Check: Firebase iOS 앱에 Team ID `HCDUXX4Z3X`와 App Store ID `6792193162`를 등록했고 App Attest·DeviceCheck provider 설정을 readback했다. 실제 TestFlight 1.0.8 token 확인 전 enforcement는 false다.
