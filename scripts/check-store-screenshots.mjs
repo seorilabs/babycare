@@ -17,11 +17,22 @@ const SETS = [
   {locale: 'ko', dir: 'app-store/screenshots/13', width: 2064, height: 2752, shots: APP_STORE_SHOTS},
   {locale: 'en-US', dir: 'app-store/screenshots/en-US/6.9', width: 1320, height: 2868, shots: APP_STORE_SHOTS},
   {locale: 'en-US', dir: 'app-store/screenshots/en-US/13', width: 2064, height: 2752, shots: APP_STORE_SHOTS},
-  {locale: 'ko', dir: 'apps-in-toss/screenshots', width: 636, height: 1048, shots: AIT_SHOTS},
+  {
+    locale: 'ko',
+    dir: 'apps-in-toss/screenshots',
+    width: 636,
+    height: 1048,
+    shots: AIT_SHOTS,
+    requireOpaqueRgb: true,
+  },
 ];
 
-/** PNG IHDR에서 크기를 읽는다. 의존성 없이 헤더만 확인한다. */
-async function pngSize(file) {
+// IHDR color type 2 = 알파 없는 truecolor. AppsInToss 등록 자산은 RGB만 받는다.
+// App Store는 현재 등록·`COMPLETE`된 컷이 모두 color type 6(RGBA)이므로 강제하지 않는다.
+const COLOR_TYPE_RGB = 2;
+
+/** PNG IHDR에서 크기와 색상 형식을 읽는다. 의존성 없이 헤더만 확인한다. */
+async function pngHeader(file) {
   const buf = await readFile(file);
   const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   if (!buf.subarray(0, 8).equals(signature)) {
@@ -30,7 +41,12 @@ async function pngSize(file) {
   if (buf.toString('ascii', 12, 16) !== 'IHDR') {
     throw new Error(`IHDR 청크가 선두에 없음: ${file}`);
   }
-  return {width: buf.readUInt32BE(16), height: buf.readUInt32BE(20)};
+  return {
+    width: buf.readUInt32BE(16),
+    height: buf.readUInt32BE(20),
+    bitDepth: buf.readUInt8(24),
+    colorType: buf.readUInt8(25),
+  };
 }
 
 const problems = [];
@@ -39,10 +55,15 @@ for (const set of SETS) {
   for (const shot of set.shots) {
     const file = path.join(set.dir, `${shot}.png`);
     try {
-      const {width, height} = await pngSize(file);
+      const {width, height, bitDepth, colorType} = await pngHeader(file);
       if (width !== set.width || height !== set.height) {
         problems.push(
           `${file}: ${width}x${height} — ${set.width}x${set.height} 필요 (${set.locale})`,
+        );
+      }
+      if (set.requireOpaqueRgb && (colorType !== COLOR_TYPE_RGB || bitDepth !== 8)) {
+        problems.push(
+          `${file}: color type ${colorType}/bit depth ${bitDepth} — 알파 없는 8bit RGB 필요`,
         );
       }
     } catch (error) {
