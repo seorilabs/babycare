@@ -6,6 +6,7 @@
 ## App Identity
 
 - **Play Console 앱 생성 + 리스팅 draft 반영 (2026-07-18)** — publisher SA로 ko-KR·en-US 제목·설명, 아이콘 512·피처그래픽·phone 스크린샷 3컷 커밋(리스팅 콘텐츠 검토는 자동 트리거, 앱 게시/출시는 아님 — 릴리스 트랙 없음)
+- **Localization (2026-08-08)** — 앱이 `ko`/`en` 이중 언어가 됐다(ADR `0005-app-localization-policy.md`). 런처 이름은 `values/`가 `BabyNest`, `values-ko/`가 `함께봄`이다. en-US 리스팅 스크린샷은 한국어 UI 캡처이므로 영어 UI로 교체 검토가 필요하다 — `확정 필요`
 - Package name: `com.seorilabs.babycare` (2026-07-13 확정)
 - App name KO(타이틀): `함께봄: 수유, 기저귀, 아기돌봄 기록 어플` (24자, 사용자 확정)
 - App name EN(타이틀): `BabyNest: Shared Baby Care Log` (30자)

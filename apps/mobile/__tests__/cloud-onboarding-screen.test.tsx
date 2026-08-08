@@ -4,6 +4,7 @@ import { ScrollView, Text } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import { createTheme } from '../src/app/theme';
+import { createStrings } from '../src/app/i18n';
 import { CloudOnboardingScreen } from '../src/screens/CloudOnboardingScreen';
 
 jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
@@ -35,6 +36,7 @@ function setup(input: {
       <CloudOnboardingScreen
         onCreate={onCreate}
         onJoin={onJoin}
+        strings={createStrings('ko')}
         theme={theme}
       />,
     );
@@ -171,6 +173,7 @@ describe('CloudOnboardingScreen', () => {
         <CloudOnboardingScreen
           onCreate={onCreate}
           onJoin={onJoin}
+          strings={createStrings('ko')}
           theme={theme}
         />,
       );

@@ -9,6 +9,7 @@ import {
 } from '@babycare/product-core';
 
 import { createTheme } from '../src/app/theme';
+import { createStrings } from '../src/app/i18n';
 import { buildStatsBuckets, StatsScreen } from '../src/screens/StatsScreen';
 
 describe('buildStatsBuckets', () => {
@@ -26,7 +27,7 @@ describe('buildStatsBuckets', () => {
       { id: eventId('event-1'), now },
     );
 
-    const buckets = buildStatsBuckets([sleep], now, '12h');
+    const buckets = buildStatsBuckets([sleep], now, '12h', createStrings('ko'));
 
     expect(buckets[0]?.from).toBe(now - 12 * 60 * 60 * 1_000);
     expect(buckets.at(-1)?.to).toBe(now);
@@ -41,7 +42,7 @@ describe('buildStatsBuckets', () => {
   it('keeps the current calendar bucket empty at exact midnight', () => {
     const now = new Date(2026, 6, 12, 0, 0, 0, 0).getTime();
 
-    const buckets = buildStatsBuckets([], now, '7d');
+    const buckets = buildStatsBuckets([], now, '7d', createStrings('ko'));
 
     expect(buckets).toHaveLength(7);
     expect(buckets.at(-1)?.from).toBe(now);
@@ -58,6 +59,7 @@ describe('StatsScreen', () => {
         React.createElement(StatsScreen, {
           events: [],
           now: new Date('2026-07-12T12:37:00+09:00').getTime(),
+          strings: createStrings('ko'),
           theme: createTheme(false),
         }),
       );

@@ -3,6 +3,7 @@ import {Alert, Linking, Share, StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {createTheme} from '../src/app/theme';
+import { createStrings } from '../src/app/i18n';
 import {MoreScreen} from '../src/screens/MoreScreen';
 
 describe('MoreScreen', () => {
@@ -24,6 +25,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -59,6 +61,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -66,8 +69,8 @@ describe('MoreScreen', () => {
 
     const groupName = renderer.root.findAllByType(Text).find(
       node =>
-        Array.isArray(node.props.children) &&
-        node.props.children[0] === longBabyName,
+        node.props.children ===
+        createStrings('ko').more.groupName(longBabyName),
     );
     const modeBadge = renderer.root.findAllByType(Text).find(
       node => node.props.children === '공동 기록 모드',
@@ -107,6 +110,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -152,6 +156,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -202,6 +207,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -255,6 +261,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -314,6 +321,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -361,6 +369,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -419,6 +428,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -476,6 +486,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'owner',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -535,6 +546,7 @@ describe('MoreScreen', () => {
             runtimeMode: 'firebase',
             membershipRole: 'member',
           }}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );

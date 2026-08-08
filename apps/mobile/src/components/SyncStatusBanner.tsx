@@ -1,11 +1,13 @@
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 
 import type {CareEventSyncState} from '@babycare/product-data';
+import type {Strings} from '../app/i18n';
 import type {AppTheme} from '../app/theme';
 
 export function SyncStatusBanner(props: {
   readonly states: readonly CareEventSyncState[];
   readonly onRetry: () => void;
+  readonly strings: Strings;
   readonly theme: AppTheme;
 }) {
   const pending = props.states.filter(state => state.status === 'pending').length;
@@ -27,12 +29,12 @@ export function SyncStatusBanner(props: {
   }
 
   const message = revoked
-    ? '공동 기록 접근 권한을 확인해 주세요'
+    ? props.strings.sync.accessRevoked
     : conflicts > 0
-      ? `동기화 충돌 ${conflicts}건 · 서버 기록을 우선 표시해요`
+      ? props.strings.sync.conflicts(conflicts)
       : failed.length > 0
-        ? `동기화 실패 ${failed.length}건`
-        : `동기화 대기 ${pending}건`;
+        ? props.strings.sync.failed(failed.length)
+        : props.strings.sync.pending(pending);
   const danger = failed.length > 0;
 
   return (
@@ -62,12 +64,12 @@ export function SyncStatusBanner(props: {
       </Text>
       {retryable > 0 ? (
         <Pressable
-          accessibilityLabel="동기화 다시 시도"
+          accessibilityLabel={props.strings.sync.retryLabel}
           accessibilityRole="button"
           onPress={props.onRetry}
           style={styles.retry}>
           <Text style={[styles.retryText, {color: props.theme.colors.primary}]}>
-            다시 시도
+            {props.strings.common.retry}
           </Text>
         </Pressable>
       ) : null}

@@ -10,6 +10,7 @@ import {
 } from '@babycare/product-core';
 
 import {eventTitle, formatDuration, formatTimeAgo} from '../app/format';
+import type {Strings} from '../app/i18n';
 import type {LocalSession} from '../app/session';
 import type {AppTheme} from '../app/theme';
 
@@ -26,7 +27,7 @@ function startOfTomorrow(now: number): number {
   return date.getTime();
 }
 
-function ageLabel(birthDate: string, now: number): string {
+function ageLabel(birthDate: string, now: number, strings: Strings): string {
   const born = parseIsoCalendarDate(birthDate);
   if (born === undefined) {
     return '';
@@ -38,7 +39,7 @@ function ageLabel(birthDate: string, now: number): string {
     today.getDate(),
   );
   const days = Math.max(0, Math.floor((todayDay - born) / 86_400_000));
-  return `생후 ${days}일`;
+  return strings.home.ageLabel(days);
 }
 
 function LatestCard(props: {
@@ -46,12 +47,25 @@ function LatestCard(props: {
   readonly event: CareEvent | undefined;
   readonly now: number;
   readonly caregiverNames: ReadonlyMap<string, string>;
+  readonly strings: Strings;
   readonly theme: AppTheme;
 }) {
   const config = {
-    feeding: {icon: '🍼', label: '마지막 수유', color: props.theme.colors.feeding},
-    diaper: {icon: '🧷', label: '마지막 기저귀', color: props.theme.colors.diaper},
-    sleep: {icon: '🌙', label: '마지막 수면', color: props.theme.colors.sleep},
+    feeding: {
+      icon: '🍼',
+      label: props.strings.home.lastFeeding,
+      color: props.theme.colors.feeding,
+    },
+    diaper: {
+      icon: '🧷',
+      label: props.strings.home.lastDiaper,
+      color: props.theme.colors.diaper,
+    },
+    sleep: {
+      icon: '🌙',
+      label: props.strings.home.lastSleep,
+      color: props.theme.colors.sleep,
+    },
   }[props.kind];
 
   return (
@@ -66,18 +80,23 @@ function LatestCard(props: {
       <View style={styles.latestCopy}>
         <Text style={[styles.latestLabel, {color: props.theme.colors.textMuted}]}>{config.label}</Text>
         <Text style={[styles.latestTitle, {color: props.theme.colors.text}]} numberOfLines={1}>
-          {props.event ? eventTitle(props.event) : '아직 기록이 없어요'}
+          {props.event
+            ? eventTitle(props.event, props.strings)
+            : props.strings.home.noRecordYet}
         </Text>
         {props.event ? (
           <Text style={[styles.latestMeta, {color: props.theme.colors.textMuted}]}>
-            {props.caregiverNames.get(props.event.caregiverId) ?? '다른 양육자'} ·{' '}
-            {formatTimeAgo(props.event.occurredAt, props.now)}
+            {props.caregiverNames.get(props.event.caregiverId) ??
+              props.strings.common.otherCaregiver}{' '}
+            · {formatTimeAgo(props.event.occurredAt, props.now, props.strings)}
           </Text>
         ) : null}
       </View>
       {props.event ? (
         <Text style={[styles.elapsed, {color: config.color}]}>
-          {isActiveSleep(props.event) ? '자는 중' : formatTimeAgo(props.event.occurredAt, props.now)}
+          {isActiveSleep(props.event)
+            ? props.strings.home.sleeping
+            : formatTimeAgo(props.event.occurredAt, props.now, props.strings)}
         </Text>
       ) : null}
     </View>
@@ -91,6 +110,7 @@ export function HomeScreen(props: {
   readonly events: readonly CareEvent[];
   readonly session: LocalSession;
   readonly now: number;
+  readonly strings: Strings;
   readonly theme: AppTheme;
   readonly onRecord: (kind: CareEventKind) => void;
   readonly onMore: () => void;
@@ -108,7 +128,7 @@ export function HomeScreen(props: {
   const activeSleep = props.activeSleep;
   const sleepStopInFlight = useRef(false);
   const [stoppingSleep, setStoppingSleep] = useState(false);
-  const today = new Intl.DateTimeFormat('ko-KR', {
+  const today = new Intl.DateTimeFormat(props.strings.intlLocale, {
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -138,34 +158,38 @@ export function HomeScreen(props: {
     {
       kind: 'feeding',
       icon: '🍼',
-      label: '수유',
+      label: props.strings.home.feeding,
       color: props.theme.colors.feeding,
-      hint: '바로 남기기',
+      hint: props.strings.home.quickHint,
     },
     {
       kind: 'diaper',
       icon: '🧷',
-      label: '기저귀',
+      label: props.strings.home.diaper,
       color: props.theme.colors.diaper,
-      hint: '바로 남기기',
+      hint: props.strings.home.quickHint,
     },
     {
       kind: 'sleep',
       icon: activeSleep ? '☀️' : '🌙',
-      label: activeSleep ? (stoppingSleep ? '종료 중…' : '기상') : '수면',
+      label: activeSleep
+        ? stoppingSleep
+          ? props.strings.home.endingSleep
+          : props.strings.home.wakeUp
+        : props.strings.home.sleep,
       color: props.theme.colors.sleep,
       hint: activeSleep
         ? stoppingSleep
-          ? '잠시만 기다려주세요'
-          : '지금 종료'
-        : '바로 남기기',
+          ? props.strings.home.pleaseWait
+          : props.strings.home.endNow
+        : props.strings.home.quickHint,
     },
     {
       kind: 'more',
       icon: '＋',
-      label: '더보기',
+      label: props.strings.tabs.more,
       color: props.theme.colors.primary,
-      hint: '설정 열기',
+      hint: props.strings.home.openSettings,
     },
   ];
 
@@ -182,24 +206,30 @@ export function HomeScreen(props: {
             {props.session.babyName}
           </Text>
           <Text style={[styles.date, {color: props.theme.colors.textMuted}]}>
-            {today} · {ageLabel(props.session.birthDate, props.now)}
+            {today} ·{' '}
+            {ageLabel(props.session.birthDate, props.now, props.strings)}
           </Text>
         </View>
         <View style={[styles.syncBadge, {backgroundColor: props.theme.colors.primarySoft}]}>
           <View style={[styles.syncDot, {backgroundColor: props.theme.colors.primary}]} />
           <Text style={[styles.syncText, {color: props.theme.colors.primary}]}>
-            {props.session.runtimeMode === 'firebase' ? '공동 기록' : '로컬 저장'}
+            {props.session.runtimeMode === 'firebase'
+              ? props.strings.home.sharedMode
+              : props.strings.home.localMode}
           </Text>
         </View>
       </View>
 
-      <Text style={[styles.sectionEyebrow, {color: props.theme.colors.textMuted}]}>최근 돌봄</Text>
+      <Text style={[styles.sectionEyebrow, {color: props.theme.colors.textMuted}]}>
+        {props.strings.home.recentSection}
+      </Text>
       <View style={styles.latestList}>
         <LatestCard
           caregiverNames={props.caregiverNames}
           event={summary.latest.feeding}
           kind="feeding"
           now={props.now}
+          strings={props.strings}
           theme={props.theme}
         />
         <LatestCard
@@ -207,6 +237,7 @@ export function HomeScreen(props: {
           event={summary.latest.diaper}
           kind="diaper"
           now={props.now}
+          strings={props.strings}
           theme={props.theme}
         />
         <LatestCard
@@ -214,44 +245,57 @@ export function HomeScreen(props: {
           event={activeSleep ?? summary.latest.sleep}
           kind="sleep"
           now={props.now}
+          strings={props.strings}
           theme={props.theme}
         />
       </View>
 
       <View style={[styles.summary, {backgroundColor: props.theme.colors.surface}]}>
         <View style={styles.summaryHeader}>
-          <Text style={[styles.summaryTitle, {color: props.theme.colors.text}]}>오늘 요약</Text>
-          <Text style={[styles.summaryHint, {color: props.theme.colors.textMuted}]}>자정부터 지금까지</Text>
+          <Text style={[styles.summaryTitle, {color: props.theme.colors.text}]}>
+            {props.strings.home.todaySummary}
+          </Text>
+          <Text style={[styles.summaryHint, {color: props.theme.colors.textMuted}]}>
+            {props.strings.home.sinceMidnight}
+          </Text>
         </View>
         <View style={styles.summaryItems}>
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryValue, {color: props.theme.colors.feeding}]}>{summary.feedingCount}</Text>
-            <Text style={[styles.summaryLabel, {color: props.theme.colors.textMuted}]}>수유</Text>
+            <Text style={[styles.summaryLabel, {color: props.theme.colors.textMuted}]}>
+              {props.strings.home.feeding}
+            </Text>
           </View>
           <View style={[styles.summaryDivider, {backgroundColor: props.theme.colors.border}]} />
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryValue, {color: props.theme.colors.diaper}]}>{summary.diaperCount}</Text>
-            <Text style={[styles.summaryLabel, {color: props.theme.colors.textMuted}]}>기저귀</Text>
+            <Text style={[styles.summaryLabel, {color: props.theme.colors.textMuted}]}>
+              {props.strings.home.diaper}
+            </Text>
           </View>
           <View style={[styles.summaryDivider, {backgroundColor: props.theme.colors.border}]} />
           <View style={styles.summaryItem}>
             <Text style={[styles.summaryValue, {color: props.theme.colors.sleep}]}>
-              {formatDuration(summary.sleepDurationSeconds)}
+              {formatDuration(summary.sleepDurationSeconds, props.strings)}
             </Text>
-            <Text style={[styles.summaryLabel, {color: props.theme.colors.textMuted}]}>수면</Text>
+            <Text style={[styles.summaryLabel, {color: props.theme.colors.textMuted}]}>
+              {props.strings.home.sleep}
+            </Text>
           </View>
         </View>
       </View>
 
-      <Text style={[styles.sectionTitle, {color: props.theme.colors.text}]}>빠른 기록</Text>
+      <Text style={[styles.sectionTitle, {color: props.theme.colors.text}]}>
+        {props.strings.home.quickRecordSection}
+      </Text>
       <View style={styles.actions}>
         {quickActions.map(action => (
           <Pressable
             accessibilityLabel={
               action.kind === 'sleep' && activeSleep
                 ? stoppingSleep
-                  ? '수면 종료 중'
-                  : '수면 종료'
+                  ? props.strings.home.stoppingSleepLabel
+                  : props.strings.home.stopSleepLabel
                 : undefined
             }
             accessibilityRole="button"

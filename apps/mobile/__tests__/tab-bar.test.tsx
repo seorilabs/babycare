@@ -4,6 +4,7 @@ import ReactTestRenderer from 'react-test-renderer';
 
 import {TabBar} from '../src/components/TabBar';
 import {createTheme} from '../src/app/theme';
+import { createStrings } from '../src/app/i18n';
 
 let mockBottomInset = 34;
 
@@ -28,6 +29,7 @@ describe('TabBar', () => {
         <TabBar
           active="home"
           onChange={jest.fn()}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -47,6 +49,7 @@ describe('TabBar', () => {
         <TabBar
           active="timeline"
           onChange={jest.fn()}
+          strings={createStrings('ko')}
           theme={createTheme(true)}
         />,
       );

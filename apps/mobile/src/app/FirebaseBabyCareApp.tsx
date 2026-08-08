@@ -33,6 +33,7 @@ import {MoreScreen} from '../screens/MoreScreen';
 import {StatsScreen} from '../screens/StatsScreen';
 import {TimelineScreen} from '../screens/TimelineScreen';
 import {AccountDeletionIntentStore} from './account-deletion-intent-store';
+import {createStrings, deviceAppLocale, type Strings} from './i18n';
 import {createTheme} from './theme';
 import {
   createOwnerFirebaseSession,
@@ -97,8 +98,9 @@ export function FirebaseCareDashboard(props: {
   readonly onDeleteAccount: () => Promise<void>;
   readonly onRuntimeError: (error: Error | undefined) => void;
   readonly runtimeError?: Error;
+  readonly strings: Strings;
 }) {
-  const {onRuntimeError} = props;
+  const {onRuntimeError, strings} = props;
   const dark = useColorScheme() === 'dark';
   const theme = useMemo(() => createTheme(dark), [dark]);
   const [overview, setOverview] = useState<CareEventOverviewFeedState>(
@@ -153,12 +155,12 @@ export function FirebaseCareDashboard(props: {
     if (overview.status === 'error' && overview.error) {
       onRuntimeError(
         userFacingError(
-          '공동 기록을 새로 불러오지 못했어요',
+          strings.app.overviewRefreshFailed,
           overview.error.cause,
         ),
       );
     }
-  }, [onRuntimeError, overview.error, overview.status]);
+  }, [onRuntimeError, overview.error, overview.status, strings]);
 
   const showError = (title: string, message: string, error: unknown) => {
     const value = userFacingError(message, error);
@@ -184,11 +186,11 @@ export function FirebaseCareDashboard(props: {
                 eventId: event.id,
                 requestedBy: props.ready.context.identity.userId,
               });
-              setSavedMessage('기록을 삭제했어요');
+              setSavedMessage(strings.app.eventDeleted);
             } catch (error) {
               showError(
-                '삭제할 수 없어요',
-                '기록을 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+                strings.app.deleteEventFailedTitle,
+                strings.app.deleteEventFailedMessage,
                 error,
               );
             }
@@ -196,12 +198,20 @@ export function FirebaseCareDashboard(props: {
           onLoadMore={() => props.container.timelineFeed.loadMore()}
           onRetryLoadMore={() => props.container.timelineFeed.retryLoadMore()}
           session={session}
+          strings={strings}
           theme={theme}
         />
       );
     }
     if (tab === 'stats') {
-      return <StatsScreen events={overview.events} now={now} theme={theme} />;
+      return (
+        <StatsScreen
+          events={overview.events}
+          now={now}
+          strings={strings}
+          theme={theme}
+        />
+      );
     }
     if (tab === 'more') {
       return (
@@ -213,6 +223,7 @@ export function FirebaseCareDashboard(props: {
           onRefreshMembers={props.onRefreshMembers}
           onReset={async () => undefined}
           session={session}
+          strings={strings}
           theme={theme}
         />
       );
@@ -232,16 +243,17 @@ export function FirebaseCareDashboard(props: {
               eventId: event.id,
             });
             setNow(Date.now());
-            setSavedMessage('수면 시간을 기록했어요');
+            setSavedMessage(strings.app.sleepRecorded);
           } catch (error) {
             showError(
-              '수면을 종료할 수 없어요',
-              '수면을 종료하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+              strings.app.stopSleepFailedTitle,
+              strings.app.stopSleepFailedMessage,
               error,
             );
           }
         }}
         session={session}
+        strings={strings}
         theme={theme}
       />
     );
@@ -277,15 +289,12 @@ export function FirebaseCareDashboard(props: {
                 props.container.timelineFeed.refresh(),
               ]).catch(error =>
                 props.onRuntimeError(
-                  userFacingError(
-                    '공동 기록을 새로 불러오지 못했어요',
-                    error,
-                  ),
+                  userFacingError(strings.app.overviewRefreshFailed, error),
                 ),
               );
             }}>
             <Text style={[styles.runtimeRetry, {color: theme.colors.primary}]}>
-              새로고침
+              {strings.common.refresh}
             </Text>
           </Pressable>
         </View>
@@ -294,11 +303,12 @@ export function FirebaseCareDashboard(props: {
         onRetry={() => {
           props.container.syncNow({retryFailed: true}).catch(error =>
             props.onRuntimeError(
-              userFacingError('동기화를 다시 시도하지 못했어요', error),
+              userFacingError(strings.app.syncRetryFailed, error),
             ),
           );
         }}
         states={syncStates}
+        strings={strings}
         theme={theme}
       />
       <View style={styles.screen}>{renderTab()}</View>
@@ -309,25 +319,43 @@ export function FirebaseCareDashboard(props: {
           </Text>
         </View>
       ) : null}
-      <TabBar active={tab} onChange={setTab} theme={theme} />
+      <TabBar
+        active={tab}
+        onChange={setTab}
+        strings={strings}
+        theme={theme}
+      />
       <QuickRecordModal
         kind={recording}
         onClose={() => setRecording(undefined)}
         onSave={async input => {
           await props.container.recordCareEvent(input);
           setNow(Date.now());
-          setSavedMessage('돌봄 기록을 저장했어요');
+          setSavedMessage(strings.app.eventSaved);
         }}
         session={session}
+        strings={strings}
         theme={theme}
       />
     </SafeAreaView>
   );
 }
 
-export function FirebaseBabyCareApp() {
+export function FirebaseBabyCareApp(
+  props: {
+    /** Test seam. Production resolves the locale from the device. */
+    readonly strings?: Strings;
+  } = {},
+) {
   const dark = useColorScheme() === 'dark';
   const theme = useMemo(() => createTheme(dark), [dark]);
+  // The device language is read once at mount: RN restarts the app when the
+  // system language changes, so there is nothing to re-resolve at runtime.
+  const overrideStrings = props.strings;
+  const strings = useMemo(
+    () => overrideStrings ?? createStrings(deviceAppLocale()),
+    [overrideStrings],
+  );
   const cache = useMemo(() => new CloudCareContextCache(), []);
   const sessionStore = useMemo(
     () => new CloudCareContextSessionStore(cache),
@@ -365,8 +393,8 @@ export function FirebaseBabyCareApp() {
         onRevoked: reason => {
           const message =
             reason === 'membership_removed'
-              ? '돌봄 그룹 접근 권한이 해제됐어요'
-              : '공동 기록 계정 상태가 변경됐어요';
+              ? strings.app.membershipRemovedNotice
+              : strings.app.accountChangedNotice;
           sessionStore
             .clear(sessionToken)
             .then(cleared => {
@@ -381,7 +409,7 @@ export function FirebaseBabyCareApp() {
                 setState({
                   kind: 'error',
                   error: userFacingError(
-                    '해제된 공동 돌봄 정보를 기기에서 지우지 못했어요',
+                    strings.app.clearRevokedFailed,
                     error,
                   ),
                 });
@@ -391,10 +419,7 @@ export function FirebaseBabyCareApp() {
         onError: error => {
           if (mounted.current && sessionStore.isCurrent(sessionToken)) {
             setRuntimeError(
-              userFacingError(
-                '공동 기록 연결 상태를 확인하지 못했어요',
-                error,
-              ),
+              userFacingError(strings.app.connectionStatusFailed, error),
             );
           }
         },
@@ -438,7 +463,7 @@ export function FirebaseBabyCareApp() {
           // server observer remains authoritative for revocation.
         });
     },
-    [sessionStore],
+    [sessionStore, strings],
   );
 
   useEffect(() => {
@@ -472,7 +497,7 @@ export function FirebaseBabyCareApp() {
           setState({
             kind: 'setup',
             runtime,
-            notice: '계정과 연결된 데이터를 삭제했어요',
+            notice: strings.app.accountDeletedNotice,
           });
           return;
         }
@@ -489,10 +514,7 @@ export function FirebaseBabyCareApp() {
               throw error;
             }
             setRuntimeError(
-              userFacingError(
-                '저장된 공동 돌봄 정보를 새로 불러왔어요',
-                error,
-              ),
+              userFacingError(strings.app.cacheRehydrated, error),
             );
           }
         }
@@ -509,7 +531,7 @@ export function FirebaseBabyCareApp() {
         if (active) {
           setState({
             kind: 'error',
-            error: userFacingError('공동 기록을 시작하지 못했어요', error),
+            error: userFacingError(strings.app.bootstrapFailed, error),
           });
         }
       }
@@ -519,17 +541,23 @@ export function FirebaseBabyCareApp() {
     return () => {
       active = false;
     };
-  }, [accountDeletionIntents, activateReadySession, cache, retryKey]);
+  }, [
+    accountDeletionIntents,
+    activateReadySession,
+    cache,
+    retryKey,
+    strings,
+  ]);
 
   if (state.kind === 'loading') {
     return (
       <View style={[styles.loading, {backgroundColor: theme.colors.background}]}>
         <ActivityIndicator color={theme.colors.primary} size="large" />
         <Text style={[styles.loadingTitle, {color: theme.colors.text}]}>
-          공동 기록을 준비하고 있어요
+          {strings.app.loadingTitle}
         </Text>
         <Text style={[styles.loadingText, {color: theme.colors.textMuted}]}>
-          계정과 돌봄 그룹을 확인합니다
+          {strings.app.loadingText}
         </Text>
       </View>
     );
@@ -540,7 +568,7 @@ export function FirebaseBabyCareApp() {
       <View style={[styles.loading, {backgroundColor: theme.colors.background}]}>
         <Text style={styles.errorEmoji}>⚠️</Text>
         <Text style={[styles.loadingTitle, {color: theme.colors.text}]}>
-          공동 기록에 연결할 수 없어요
+          {strings.app.errorTitle}
         </Text>
         <Text style={[styles.errorDetail, {color: theme.colors.textMuted}]}>
           {state.error.message}
@@ -552,7 +580,7 @@ export function FirebaseBabyCareApp() {
             setRetryKey(value => value + 1);
           }}
           style={[styles.primaryButton, {backgroundColor: theme.colors.primary}]}>
-          <Text style={styles.primaryButtonText}>다시 시도</Text>
+          <Text style={styles.primaryButtonText}>{strings.common.retry}</Text>
         </Pressable>
       </View>
     );
@@ -576,6 +604,7 @@ export function FirebaseBabyCareApp() {
           );
           await activateReadySession(state.runtime, ready);
         }}
+        strings={strings}
         theme={theme}
       />
     );
@@ -616,7 +645,7 @@ export function FirebaseBabyCareApp() {
         setState({
           kind: 'setup',
           runtime: state.runtime,
-          notice: '계정과 연결된 데이터를 삭제했어요',
+          notice: strings.app.accountDeletedNotice,
         });
       }}
       onRefreshMembers={async () => {
@@ -638,6 +667,7 @@ export function FirebaseBabyCareApp() {
       ready={state.ready}
       runtime={state.runtime}
       runtimeError={runtimeError}
+      strings={strings}
     />
   );
 }

@@ -36,6 +36,14 @@
 - Native launch screen: 제품명·브랜드 아이콘 기반 정적 화면 구현·release build 반영
 - iPhone screenshots (6.9" 1320x2868): 홈/타임라인/통계/수유기록/더보기 5컷 ✅ `app-store/screenshots/6.9/` (실제 앱 시뮬레이터 캡처)
 - iPad screenshots (13" 2064x2752): iPad target 유지. Release 시뮬레이터에서 production 그룹·수유·기저귀·수면 기록을 만든 실제 화면 5컷을 `app-store/screenshots/13/`에 캡처하고 한국어 `APP_IPAD_PRO_3GEN_129` set으로 업로드했다. ASC asset delivery state 5건 모두 `COMPLETE` readback 완료
+- **en-US screenshots: 확정 필요.** 2026-08-08 ASC readback에서 `en-US` localization의 `appScreenshotSets`는 0건이고 `ko`만 `APP_IPHONE_67`·`APP_IPAD_PRO_3GEN_129` 각 5컷 `COMPLETE`다. 앱 i18n(ADR 0005) 반영 빌드에서 영어 UI로 다시 캡처해 `en-US`에 업로드해야 한다.
+
+## Localization
+
+- 앱 지원 언어: `ko`, `en` (ADR `0005-app-localization-policy.md`). 기기 로케일 자동 판별이고 앱 내 언어 선택은 없다.
+- iOS `CFBundleLocalizations`에 `ko`, `en`을 선언했고 `CFBundleDevelopmentRegion`은 ASC primaryLocale과 같은 `ko`다.
+- `CFBundleDisplayName`은 `함께봄` 단일값이다. 로컬라이즈하려면 `InfoPlist.strings` variant group을 Xcode 프로젝트에 추가해야 한다 — `확정 필요`.
+- **현재 ASC 후보 `1.0.8`/`56`은 i18n 이전 빌드라 한국어 전용이다.** `en-US` 등록정보를 유지한 채 심사 제출하려면 i18n 포함 새 후보가 필요하다.
 
 ## Release
 

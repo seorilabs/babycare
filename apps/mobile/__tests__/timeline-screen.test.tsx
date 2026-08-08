@@ -12,6 +12,7 @@ import {
 
 import type {LocalSession} from '../src/app/session';
 import {createTheme} from '../src/app/theme';
+import { createStrings } from '../src/app/i18n';
 import {TimelineScreen} from '../src/screens/TimelineScreen';
 
 const now = new Date(2026, 6, 13, 12).getTime();
@@ -60,6 +61,7 @@ function screen(overrides: Partial<React.ComponentProps<typeof TimelineScreen>> 
       onLoadMore={async () => undefined}
       onRetryLoadMore={() => undefined}
       session={session}
+      strings={createStrings('ko')}
       theme={theme}
       {...overrides}
     />

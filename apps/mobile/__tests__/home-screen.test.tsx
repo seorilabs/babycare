@@ -12,6 +12,7 @@ import {
 
 import type {LocalSession} from '../src/app/session';
 import {createTheme} from '../src/app/theme';
+import { createStrings } from '../src/app/i18n';
 import {HomeScreen} from '../src/screens/HomeScreen';
 
 const session: LocalSession = {
@@ -54,6 +55,7 @@ describe('HomeScreen', () => {
           onRecord={jest.fn()}
           onStopSleep={jest.fn()}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -81,6 +83,7 @@ describe('HomeScreen', () => {
           onRecord={jest.fn()}
           onStopSleep={jest.fn()}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -116,6 +119,7 @@ describe('HomeScreen', () => {
           onRecord={jest.fn()}
           onStopSleep={jest.fn()}
           session={{...session, babyName: longBabyName}}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -166,6 +170,7 @@ describe('HomeScreen', () => {
           onRecord={jest.fn()}
           onStopSleep={jest.fn()}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );
@@ -206,6 +211,7 @@ describe('HomeScreen', () => {
           onRecord={jest.fn()}
           onStopSleep={onStopSleep}
           session={session}
+          strings={createStrings('ko')}
           theme={createTheme(false)}
         />,
       );

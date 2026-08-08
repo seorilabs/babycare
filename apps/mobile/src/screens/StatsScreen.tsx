@@ -7,6 +7,7 @@ import {
 } from '@babycare/product-core';
 
 import {formatDuration} from '../app/format';
+import type {Strings} from '../app/i18n';
 import {buildStatsRanges, type StatsPeriod} from '../app/stats-ranges';
 import type {AppTheme} from '../app/theme';
 
@@ -30,6 +31,7 @@ export function buildStatsBuckets(
   events: readonly CareEvent[],
   now: number,
   period: Period,
+  strings: Strings,
 ): readonly StatsBucket[] {
   const ranges = buildStatsRanges(now, period);
   const positiveRanges = ranges.filter(range => range.to > range.from);
@@ -45,8 +47,13 @@ export function buildStatsBuckets(
       summary,
       label:
         period === '12h'
-          ? new Intl.DateTimeFormat('ko-KR', {hour: 'numeric'}).format(range.from)
-          : new Intl.DateTimeFormat('ko-KR', {month: 'numeric', day: 'numeric'}).format(range.to - 1),
+          ? new Intl.DateTimeFormat(strings.intlLocale, {
+              hour: 'numeric',
+            }).format(range.from)
+          : new Intl.DateTimeFormat(strings.intlLocale, {
+              month: 'numeric',
+              day: 'numeric',
+            }).format(range.to - 1),
     };
   });
 }
@@ -81,12 +88,14 @@ function BarChart(props: {
 export function StatsScreen(props: {
   readonly events: readonly CareEvent[];
   readonly now: number;
+  readonly strings: Strings;
   readonly theme: AppTheme;
 }) {
+  const strings = props.strings;
   const [period, setPeriod] = useState<Period>('7d');
   const buckets = useMemo(
-    () => buildStatsBuckets(props.events, props.now, period),
-    [period, props.events, props.now],
+    () => buildStatsBuckets(props.events, props.now, period, strings),
+    [period, props.events, props.now, strings],
   );
   const totals = useMemo(
     () => ({
@@ -103,8 +112,12 @@ export function StatsScreen(props: {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       style={{backgroundColor: props.theme.colors.background}}>
-      <Text style={[styles.title, {color: props.theme.colors.text}]}>통계</Text>
-      <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>돌봄 패턴을 참고용으로 확인해요</Text>
+      <Text style={[styles.title, {color: props.theme.colors.text}]}>
+        {strings.stats.title}
+      </Text>
+      <Text style={[styles.subtitle, {color: props.theme.colors.textMuted}]}>
+        {strings.stats.subtitle}
+      </Text>
       <View
         accessibilityRole="tablist"
         style={[styles.periods, {backgroundColor: props.theme.colors.surfaceMuted}]}>
@@ -123,7 +136,11 @@ export function StatsScreen(props: {
                 styles.periodText,
                 {color: period === value ? props.theme.colors.text : props.theme.colors.textMuted},
               ]}>
-              {value === '12h' ? '12시간' : value === '7d' ? '7일' : '30일'}
+              {value === '12h'
+                ? strings.stats.period12h
+                : value === '7d'
+                  ? strings.stats.period7d
+                  : strings.stats.period30d}
             </Text>
           </Pressable>
         ))}
@@ -132,19 +149,31 @@ export function StatsScreen(props: {
       <View style={styles.overview}>
         <View style={[styles.metric, {backgroundColor: props.theme.colors.surface}]}>
           <Text style={[styles.metricValue, {color: props.theme.colors.feeding}]}>{totals.feeding}</Text>
-          <Text style={[styles.metricLabel, {color: props.theme.colors.textMuted}]}>수유 횟수</Text>
+          <Text style={[styles.metricLabel, {color: props.theme.colors.textMuted}]}>
+            {strings.stats.feedingCount}
+          </Text>
           <Text style={[styles.metricSub, {color: props.theme.colors.text}]}>{Math.round(totals.volume)}ml</Text>
         </View>
         <View style={[styles.metric, {backgroundColor: props.theme.colors.surface}]}>
-          <Text style={[styles.metricValue, {color: props.theme.colors.sleep}]}>{formatDuration(totals.sleep)}</Text>
-          <Text style={[styles.metricLabel, {color: props.theme.colors.textMuted}]}>총 수면</Text>
-          <Text style={[styles.metricSub, {color: props.theme.colors.text}]}>{totals.diapers}회 기저귀</Text>
+          <Text style={[styles.metricValue, {color: props.theme.colors.sleep}]}>
+            {formatDuration(totals.sleep, strings)}
+          </Text>
+          <Text style={[styles.metricLabel, {color: props.theme.colors.textMuted}]}>
+            {strings.stats.totalSleep}
+          </Text>
+          <Text style={[styles.metricSub, {color: props.theme.colors.text}]}>
+            {strings.stats.diaperTotal(totals.diapers)}
+          </Text>
         </View>
       </View>
 
       <View style={[styles.card, {backgroundColor: props.theme.colors.surface}]}>
-        <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>수유 횟수</Text>
-        <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>구간별 기록</Text>
+        <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>
+          {strings.stats.feedingCount}
+        </Text>
+        <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>
+          {strings.stats.perBucketCount}
+        </Text>
         <BarChart
           color={props.theme.colors.feeding}
           labels={buckets.map(bucket => bucket.label)}
@@ -153,8 +182,12 @@ export function StatsScreen(props: {
         />
       </View>
       <View style={[styles.card, {backgroundColor: props.theme.colors.surface}]}>
-        <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>수면 시간</Text>
-        <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>구간별 시간</Text>
+        <Text style={[styles.cardTitle, {color: props.theme.colors.text}]}>
+          {strings.stats.sleepDuration}
+        </Text>
+        <Text style={[styles.cardHint, {color: props.theme.colors.textMuted}]}>
+          {strings.stats.perBucketDuration}
+        </Text>
         <BarChart
           color={props.theme.colors.sleep}
           labels={buckets.map(bucket => bucket.label)}
@@ -164,7 +197,9 @@ export function StatsScreen(props: {
       </View>
       <View style={[styles.disclaimer, {backgroundColor: props.theme.colors.primarySoft}]}>
         <Text style={styles.disclaimerIcon}>ⓘ</Text>
-        <Text style={[styles.disclaimerText, {color: props.theme.colors.text}]}>통계는 돌봄 기록을 요약한 참고 정보이며 의료 판단이나 진단을 제공하지 않습니다.</Text>
+        <Text style={[styles.disclaimerText, {color: props.theme.colors.text}]}>
+          {strings.stats.disclaimer}
+        </Text>
       </View>
     </ScrollView>
   );
