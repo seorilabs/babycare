@@ -1,7 +1,11 @@
+import {NativeModules, Platform} from 'react-native';
+
 import {
   APP_LOCALES,
   DEFAULT_APP_LOCALE,
   createStrings,
+  deviceAppLocale,
+  deviceLanguageTags,
   resolveAppLocale,
 } from '../src/app/i18n';
 import {eventTitle, formatDuration, formatTimeAgo} from '../src/app/format';
@@ -61,6 +65,65 @@ describe('resolveAppLocale', () => {
   it('honours the device preference order rather than the first supported tag', () => {
     expect(resolveAppLocale(['ja-JP', 'ko-KR', 'en-US'])).toBe('ko');
     expect(resolveAppLocale(['en-GB', 'ko-KR'])).toBe('en');
+  });
+});
+
+describe('device locale detection', () => {
+  const originalOS = Platform.OS;
+  const originalSettings = NativeModules.SettingsManager;
+  const originalI18n = NativeModules.I18nManager;
+
+  afterEach(() => {
+    Object.defineProperty(Platform, 'OS', {value: originalOS, configurable: true});
+    NativeModules.SettingsManager = originalSettings;
+    NativeModules.I18nManager = originalI18n;
+  });
+
+  function setPlatform(os: typeof Platform.OS) {
+    Object.defineProperty(Platform, 'OS', {value: os, configurable: true});
+  }
+
+  it('reads the iOS preferred language list in order', () => {
+    setPlatform('ios');
+    NativeModules.SettingsManager = {
+      settings: {AppleLanguages: ['ko-KR', 'en-US']},
+    };
+
+    expect(deviceLanguageTags()).toEqual(['ko-KR', 'en-US']);
+    expect(deviceAppLocale()).toBe('ko');
+  });
+
+  it('falls back to the iOS single-locale setting when no language list exists', () => {
+    setPlatform('ios');
+    NativeModules.SettingsManager = {settings: {AppleLocale: 'ko_KR'}};
+
+    expect(deviceAppLocale()).toBe('ko');
+  });
+
+  it('reads the Android locale identifier', () => {
+    setPlatform('android');
+    NativeModules.I18nManager = {localeIdentifier: 'ko_KR'};
+
+    expect(deviceAppLocale()).toBe('ko');
+  });
+
+  it('still resolves a usable locale when the native modules are missing', () => {
+    setPlatform('ios');
+    NativeModules.SettingsManager = undefined;
+    NativeModules.I18nManager = undefined;
+
+    // No native locale source: the app must keep starting on the default copy
+    // instead of throwing during the very first render.
+    expect(() => deviceAppLocale()).not.toThrow();
+    expect(APP_LOCALES).toContain(deviceAppLocale());
+  });
+
+  it('ignores malformed native locale values', () => {
+    setPlatform('ios');
+    NativeModules.SettingsManager = {settings: {AppleLanguages: [42, null]}};
+
+    expect(() => deviceAppLocale()).not.toThrow();
+    expect(APP_LOCALES).toContain(deviceAppLocale());
   });
 });
 
