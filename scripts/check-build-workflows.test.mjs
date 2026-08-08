@@ -86,6 +86,49 @@ test('AIT build workflow creates only a candidate artifact', async () => {
   assert.doesNotMatch(workflow, /APPS_IN_TOSS_API_KEY|ait deploy|run deploy/i);
 });
 
+// dev(Metro/babel)와 배포(esbuild define)는 키 주입 경로가 다르다. 한쪽만 바뀌면
+// 로컬에서만 되거나 배포 번들만 되는 상태가 조용히 생기므로 두 경로를 함께 고정한다.
+test('AppsInToss build and dev paths both inject the Firebase web API key', async () => {
+  const [graniteConfig, babelConfig, workflow] = await Promise.all([
+    read('apps/ait/granite.config.ts'),
+    read('apps/ait/babel.config.js'),
+    read('.github/workflows/deploy-apps-in-toss.yml'),
+  ]);
+
+  // 배포: esbuild define이 환경변수를 번들에 넣는다.
+  assert.match(graniteConfig, /'process\.env\.FIREBASE_WEB_API_KEY': JSON\.stringify\(/);
+  assert.match(graniteConfig, /process\.env\.FIREBASE_WEB_API_KEY \?\? ''/);
+
+  // dev: granite dev는 위 define을 적용하지 않으므로 babel이 같은 키를 인라인한다.
+  assert.match(babelConfig, /INLINED_ENV_KEYS = \['FIREBASE_WEB_API_KEY'\]/);
+  // 환경변수 우선이어야 CI 동작이 로컬 .env에 영향받지 않는다.
+  assert.match(babelConfig, /process\.env\[key\] \?\? dotenv\[key\]/);
+
+  // CI는 secret으로 주입하고 값이 없으면 build 전에 실패한다.
+  assert.match(workflow, /FIREBASE_WEB_API_KEY: \$\{\{ secrets\.FIREBASE_WEB_API_KEY \}\}/);
+  assert.match(workflow, /\[ -n "\$FIREBASE_WEB_API_KEY" \] \|\|/);
+});
+
+// 등록 자산 목록과 실제 파일이 어긋나면 Console에 빠진 컷을 올리게 된다.
+test('AppsInToss asset manifest matches the screenshot files on disk', async () => {
+  const [manifest, checker] = await Promise.all([
+    json('apps-in-toss/assets-manifest.json'),
+    read('scripts/check-store-screenshots.mjs'),
+  ]);
+  const shots = manifest.items.filter(item => item.kind === 'screenshot');
+
+  assert.equal(shots.length, 5);
+  for (const shot of shots) {
+    assert.equal(shot.width, 636);
+    assert.equal(shot.height, 1048);
+    // App Store 캡처 파생이 아니라 sandbox에서 실행한 미니앱 화면이다.
+    assert.equal(shot.source, 'appsintoss-sandbox-capture');
+    const name = shot.path.replace('apps-in-toss/screenshots/', '').replace('.png', '');
+    assert.match(checker, new RegExp(`'${name}'`));
+    await readFile(shot.path);
+  }
+});
+
 test('AppsInToss upload workflow uses the x64 Hermes path', async () => {
   const workflow = await read('.github/workflows/deploy-apps-in-toss.yml');
 

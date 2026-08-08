@@ -23,7 +23,8 @@
 - [x] i18n 포함 App Store 후보 재빌드 — `v1.0.9` / `fe2b4b1`, Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430`, ASC build `95e65693-70a5-42cf-9590-d63e385a9951`(`1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`), 2026-08-08
 - [x] `1.0.9`/build 57을 ASC 버전 레코드·내부 TestFlight 그룹에 연결 — `versionString=1.0.9`, `related build=95e65693`, `internalBuildState=IN_BETA_TESTING` readback, 2026-08-08
 - [x] `en-US` 영어 UI 스크린샷 촬영·업로드 — `v1.0.9` Release 시뮬레이터에서 6.9" 5컷·13" iPad 5컷 캡처 후 ASC `APP_IPHONE_67`·`APP_IPAD_PRO_3GEN_129`에 업로드, delivery state 10건 `COMPLETE` readback, 2026-08-08
-- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증, v1 광고·인앱 결제·Toss Pay 없음, Terms URL과 root in-app feature 1개 확정 / 남음: 실제 AIT sandbox 화면 screenshot 교체·Console readback
+- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증, v1 광고·인앱 결제·Toss Pay 없음, Terms URL과 root in-app feature 1개 확정, **sandbox 실행 미니앱 화면으로 screenshot 5장 교체**(온보딩·홈·기록·통계·더보기, 2026-08-08) / 남음: Console 업로드·readback
+- [x] AppsInToss 로컬 dev 실행 배선 — `granite dev`가 `granite.config.ts`의 esbuild define을 적용하지 않아 dev 번들의 `FIREBASE_WEB_API_KEY`가 비어 첫 화면이 Firebase 연결 오류로 멈추던 문제를 babel 인라인으로 해결했다. CI는 환경변수, 로컬은 gitignore된 `apps/ait/.env`. 치환 규칙은 `apps/ait/babel.config.test.ts`가 고정한다(2026-08-08)
 - [x] Firebase rules/indexes/functions와 local test 코드 구현 — `members.userId` collection-group index 운영 `READY` 포함
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
 - [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — 최초 활성화 workflow run `30750253253`, revision `platform-api-00015-xpx`
