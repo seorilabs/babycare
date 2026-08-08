@@ -36,7 +36,7 @@
 - Native launch screen: 제품명·브랜드 아이콘 기반 정적 화면 구현·release build 반영
 - iPhone screenshots (6.9" 1320x2868): 홈/타임라인/통계/수유기록/더보기 5컷 ✅ `app-store/screenshots/6.9/` (실제 앱 시뮬레이터 캡처)
 - iPad screenshots (13" 2064x2752): iPad target 유지. Release 시뮬레이터에서 production 그룹·수유·기저귀·수면 기록을 만든 실제 화면 5컷을 `app-store/screenshots/13/`에 캡처하고 한국어 `APP_IPAD_PRO_3GEN_129` set으로 업로드했다. ASC asset delivery state 5건 모두 `COMPLETE` readback 완료
-- **en-US screenshots: 확정 필요.** 2026-08-08 ASC readback에서 `en-US` localization의 `appScreenshotSets`는 0건이고 `ko`만 `APP_IPHONE_67`·`APP_IPAD_PRO_3GEN_129` 각 5컷 `COMPLETE`다. 앱 i18n(ADR 0005) 반영 빌드에서 영어 UI로 다시 캡처해 `en-US`에 업로드해야 한다.
+- **en-US screenshots (2026-08-08 촬영, 업로드 남음)** — i18n 반영 `v1.0.9` Release 시뮬레이터 빌드에서 영어 로케일로 캡처했다. `app-store/screenshots/en-US/6.9/` 5컷(1320x2868), `app-store/screenshots/en-US/13/` 5컷(2064x2752). iPhone은 `Emma's group` owner `Mom`, iPad는 같은 그룹에 초대 코드로 합류한 member `Dad`라 `05-more`에 구성원 2명이 함께 보인다. **ASC `en-US` localization의 `appScreenshotSets`는 여전히 0건이라 업로드가 남았다.**
 
 ## Localization
 
