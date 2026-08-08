@@ -19,7 +19,7 @@
 
 - [x] Google Play metadata와 config 확정 — 초기 설정 11개, ko-KR·en-US 등록정보, 개인정보처리방침·계정 삭제 URL, Data Safety, IARC 한국 12세 이상, 타깃 만 18세 이상, 출산/육아 카테고리, 광고·광고 ID·정부·금융·건강 선언 Console readback 완료. signed AAB 1.0.8/1000008 internal `completed`
 - [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정, `en-US` 영어 UI 스크린샷 촬영·업로드
-- [x] 앱 i18n `ko`/`en` 구현 — 자체 타입 사전, 기기 로케일 자동 판별, Android `values-ko` 런처 이름, iOS `CFBundleLocalizations`. ADR `0005-app-localization-policy.md`. 296건 mobile 테스트·typecheck·lint 통과(2026-08-08)
+- [x] 앱 i18n `ko`/`en` 구현 — 자체 타입 사전, 기기 로케일 자동 판별, Android `values-ko` 런처 이름, iOS `CFBundleLocalizations`. ADR `0005-app-localization-policy.md`. 310건 mobile 테스트·typecheck·lint 통과(2026-08-08)
 - [ ] i18n 포함 App Store 후보 재빌드 — 현재 ASC 후보 `1.0.8`/`56`은 i18n 이전 한국어 전용 빌드다. `en-US` 등록정보를 유지한 채 심사 제출하려면 새 후보가 필요하다
 - [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증, v1 광고·인앱 결제·Toss Pay 없음, Terms URL과 root in-app feature 1개 확정 / 남음: 실제 AIT sandbox 화면 screenshot 교체·Console readback
 - [x] Firebase rules/indexes/functions와 local test 코드 구현 — `members.userId` collection-group index 운영 `READY` 포함

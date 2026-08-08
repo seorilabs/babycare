@@ -26,7 +26,7 @@ App Store Connect와 Google Play 등록정보를 `ko`와 `en-US` 두 로케일�
 ## Consequences
 
 - 새 사용자 노출 문자열은 `ko`와 `en` 양쪽에 추가해야 하고, 누락 시 typecheck가 실패한다.
-- `__tests__/i18n.test.ts`가 영어 사전에 한글이 남았는지 런타임으로 검사한다. 함수형 문구도 placeholder 인자로 실행해 템플릿 본문까지 확인한다.
+- `__tests__/i18n.test.ts` 14건이 로케일 판별·실패 경로·번역 커버리지를 검사한다. 영어 사전에 한글이 남았는지도 런타임으로 확인한다. 함수형 문구도 placeholder 인자로 실행해 템플릿 본문까지 확인한다.
 - 화면 컴포넌트는 `strings` prop이 필수다. 테스트는 `createStrings('ko')`를 명시적으로 주입한다.
 - `check_mobile_target.sh`가 한국어/영어 브랜드 문구와 `CFBundleLocalizations`를 함께 검증한다.
 - **`en-US` 스토어 스크린샷은 영어 UI로 다시 촬영해야 한다.** 기존 5컷은 한국어 UI 캡처다.
