@@ -56,11 +56,12 @@
     "artifactSha256": null,
     "betaGroup": "서리랩스 내부테스터",
     "betaGroupHasAccessToAllBuilds": true,
-    "betaGroupBuildAssigned": false,
-    "internalBuildState": "READY_FOR_BETA_TESTING",
+    "betaGroupBuildAssigned": true,
+    "internalBuildState": "IN_BETA_TESTING",
     "betaTesterCount": 2,
-    "appStoreVersionRecord": "1.0.8/build 56 그대로 — 1.0.9/build 57 관계 반영 남음",
-    "submittedForReview": false
+    "appStoreVersionRecord": "1.0.9 / build 57 관계 반영 완료",
+    "submittedForReview": false,
+    "appStoreState": "PREPARE_FOR_SUBMISSION"
   },
   "appPrivacy": {
     "tracking": false,

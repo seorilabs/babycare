@@ -100,6 +100,6 @@ flowchart TD
 ## 완료된 후보 readback
 
 - **Google Play** — `v1.0.8` / `c66f7e7` AAB를 x64/JDK 21 build run `31116493641`에서 생성·서명·브랜드 icon 검증하고 internal `1.0.8`/`1000008`, `completed` 업로드를 완료했다. WIF 복구 뒤 run `31132461743`에서 동일 versionCode를 `internal → internal`로 재배포해 GitHub OIDC·Android Publisher 권한과 `v1.0.8`/`1000008`, `completed` API readback을 확인했다. production 승격은 하지 않음.
-- **App Store (`v1.0.9`, 최신)** — Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430` 성공. ASC build `95e65693-70a5-42cf-9590-d63e385a9951`에서 `1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인. 버전 레코드 관계와 내부 그룹 연결은 남음.
+- **App Store (`v1.0.9`, 최신)** — Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430` 성공. ASC build `95e65693-70a5-42cf-9590-d63e385a9951`에서 `1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인. 버전 레코드 `1.0.9`·build 57 관계·내부 그룹 연결까지 반영해 `IN_BETA_TESTING` readback 완료.
 - **Google Play (`v1.0.9`, 최신)** — workflow run `31243326802`에서 AAB `1.0.9`/`1000009` 생성·서명·업로드. Android Publisher API 독립 readback에서 `internal` 트랙 `name=1.0.9`, `status=completed`, `versionCodes=['1000009']` 확인.
 - **App Store (이전)** — `v1.0.8` Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962` 성공. ASC build `454e15f2-4075-4828-b613-a67085b3e7d4`에서 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인. 내부 그룹 `서리랩스 내부테스터`에 build를 명시적으로 연결해 `IN_BETA_TESTING`, 테스터 2명 readback 완료.

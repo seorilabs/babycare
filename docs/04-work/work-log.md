@@ -5,7 +5,8 @@
 - 앱을 `ko`/`en` 이중 언어로 만든 세 PR(#37 사전·화면 치환, #38 영어 렌더 회귀 가드, #39 iOS 홈 화면 이름)을 main에 넣고 `fe2b4b12be75d52e96bb3f0c267881efb8dd9072`에 `v1.0.9` 태그를 붙였다. 태그 생성은 `release-tag.yml`을 dry-run으로 먼저 확인한 뒤 실행했다.
 - **App Store** — Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430`이 태그 `GIT_REF_CHANGE`로 자동 시작해 성공했다. ASC build `95e65693-70a5-42cf-9590-d63e385a9951`는 실제 `1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. 사전에 `ci_pre_xcodebuild.sh`를 dry-run해 `marketing=1.0.9 build=57` 산출과 `CI_TAG` 부재 시 비-제로 종료를 확인했다.
 - **Google Play** — workflow run `31243326802`에서 AAB `1.0.9`/`1000009`를 생성·서명하고 internal 트랙에 업로드했다. 워크플로우 로그와 별개로 Android Publisher API를 직접 호출해 `internal` 트랙 `name=1.0.9`, `status=completed`, `versionCodes=['1000009']`를 readback했다.
-- **남은 App Store 작업** — ASC 버전 레코드는 아직 `1.0.8`/build 56이다. `1.0.9`/build 57의 버전 관계와 내부 TestFlight 그룹 연결은 로컬 ASC 쓰기 권한이 없어 반영하지 못했고, build 57은 `READY_FOR_BETA_TESTING` 상태로 그룹 미연결이다. 값을 앞질러 원장에 쓰지 않고 미완료로 남긴다.
+- **ASC 후보 배선** — 버전 레코드를 `1.0.9`로 갱신하고 build 57 관계와 내부 그룹 `서리랩스 내부테스터` 연결을 반영했다. readback은 `versionString=1.0.9`, `related build=95e65693`, `internalBuildState=IN_BETA_TESTING`, `appStoreState=PREPARE_FOR_SUBMISSION`이다.
+- 이 과정에서 `/v1/betaGroups/{id}/relationships/builds`가 **204 No Content**를 반환한다는 것과, `hasAccessToAllBuilds=true` 그룹에서는 `/v1/builds/{id}/betaGroups`가 **항상 빈 값**이라는 것을 확인했다. 직전 후보 build 56도 동일하게 빈 값이므로 이 엔드포인트는 연결 확인 오라클이 아니다. 유효한 신호는 `internalBuildState`다.
 - `en-US` 스토어 스크린샷은 여전히 0건이라 영어 UI로 재촬영이 필요하다. App Privacy 답변·판매 지역·DSA는 ASC API로 불가해 콘솔 입력이 남는다.
 
 ## 2026-08-07 — Google Play 초기 설정·앱 콘텐츠 완료

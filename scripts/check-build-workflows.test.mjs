@@ -203,8 +203,8 @@ test('latest App Store candidate evidence stays consistent', async () => {
       usesNonExemptEncryption: false,
       uploadedDate: '2026-08-07T23:24:20-07:00',
       artifactSha256: null,
-      betaGroupBuildAssigned: false,
-      internalBuildState: 'READY_FOR_BETA_TESTING',
+      betaGroupBuildAssigned: true,
+      internalBuildState: 'IN_BETA_TESTING',
       betaTesterCount: 2,
     },
   );
