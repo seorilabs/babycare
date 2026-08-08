@@ -1,5 +1,18 @@
 # Work Log
 
+## 2026-08-08 — en-US 영어 UI 스크린샷 촬영
+
+- i18n 반영 `v1.0.9` Release 시뮬레이터 빌드를 영어 로케일에 설치해 6.9"(1320x2868) 5컷과 13" iPad(2064x2752) 5컷을 `app-store/screenshots/en-US/`에 캡처했다. 홈·타임라인·통계·수유기록·더보기로 기존 한국어 세트와 구성이 같다.
+- iPhone에서 `Emma's group`을 만들고 초대 코드 `2D5YJN`을 발급한 뒤 iPad를 같은 그룹에 member `Dad`로 합류시켰다. iPad `05-more`에 owner `Mom`과 member `Dad`가 함께 보이고, iPhone에서 남긴 기록이 iPad에 동기화되어 공동 기록 기능이 화면으로 드러난다. iPad에 남아 있던 이전 한국어 QA 그룹 `지안's group`은 사용자 승인 후 계정 삭제로 정리했다.
+- **ASC 업로드는 남았다.** `en-US` localization의 `appScreenshotSets`는 여전히 0건이다.
+
+### 촬영 중 확인한 환경 함정
+
+- 시뮬레이터가 중간에 네트워크 경로를 잃어 `Couldn't refresh your shared log` 배너가 떴다. 앱 로그의 `No network route`로 원인을 확인했고 시뮬레이터 재부팅으로 복구했다. **제품 버그가 아니다.** App Check의 `AppAttestProvider is not supported on current platform`도 시뮬레이터에서는 정상이며 enforcement가 false라 무해하다.
+- 시뮬레이터 하드웨어 키보드가 한글 IME 상태면 영문 키 입력이 한글로 조합된다(`baby` → `많`). `AppleKeyboards`를 `en_US`로 두고 재부팅해야 한다.
+- UI 자동화 시 Simulator 창 rect는 기기 화면 rect가 아니다. 타이틀바와 베젤 때문에 iPhone 16 Pro Max 기준 상단 79px·좌우 27px 여백이 있다. 이를 28px로 가정하면 큰 버튼만 눌리고 작은 버튼은 빗나가 원인을 찾기 어렵다. `screencapture`로 앱 배경 영역을 측정해 창 대비 비율로 보정해야 하며, 창 배경색이 앱 배경과 비슷해 가로는 과다 검출되므로 세로만 측정하고 폭은 기기 종횡비로 유도한다.
+- 네이티브 `UIDatePicker`(온보딩 생년월일)는 합성 마우스 이벤트에 반응하지 않는다. 초대 코드 참여 경로에는 날짜 입력이 없어 자동화가 가능하다.
+
 ## 2026-08-08 — i18n 후보 `v1.0.9` 두 마켓 빌드
 
 - 앱을 `ko`/`en` 이중 언어로 만든 세 PR(#37 사전·화면 치환, #38 영어 렌더 회귀 가드, #39 iOS 홈 화면 이름)을 main에 넣고 `fe2b4b12be75d52e96bb3f0c267881efb8dd9072`에 `v1.0.9` 태그를 붙였다. 태그 생성은 `release-tag.yml`을 dry-run으로 먼저 확인한 뒤 실행했다.
