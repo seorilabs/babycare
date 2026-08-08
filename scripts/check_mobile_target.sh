@@ -115,8 +115,38 @@ if [ -z "${info_plist}" ] || \
   exit 1
 fi
 
+# Info.plist carries the development-region fallback; InfoPlist.strings overrides
+# it per locale. Both must stay on approved brand names.
 if ! rg -Uq "<key>CFBundleDisplayName</key>[[:space:]]*<string>${brand_name}</string>" "${info_plist}"; then
-  echo "iOS launcher name must be ${brand_name}." >&2
+  echo "iOS fallback launcher name must be ${brand_name}." >&2
+  exit 1
+fi
+
+ios_ko_strings='apps/mobile/ios/BabyCare/ko.lproj/InfoPlist.strings'
+ios_en_strings='apps/mobile/ios/BabyCare/en.lproj/InfoPlist.strings'
+
+if ! rg -Fq "\"CFBundleDisplayName\" = \"${brand_name}\";" "${ios_ko_strings}"; then
+  echo "iOS Korean launcher name must be ${brand_name}." >&2
+  exit 1
+fi
+
+if ! rg -Fq "\"CFBundleDisplayName\" = \"${en_brand_name}\";" "${ios_en_strings}"; then
+  echo "iOS English launcher name must be ${en_brand_name}." >&2
+  exit 1
+fi
+
+# A .lproj file Xcode never copies is dead weight that silently reverts the
+# launcher name, so require the variant group and both known regions.
+if ! rg -q 'isa = PBXVariantGroup' "${ios_project}" || \
+  ! rg -Fq 'path = BabyCare/ko.lproj/InfoPlist.strings' "${ios_project}" || \
+  ! rg -Fq 'path = BabyCare/en.lproj/InfoPlist.strings' "${ios_project}"; then
+  echo "iOS InfoPlist.strings must be wired as a PBXVariantGroup in the Xcode project." >&2
+  exit 1
+fi
+
+if ! rg -Uq 'knownRegions = \([^)]*\bko\b[^)]*\);' "${ios_project}" || \
+  ! rg -Uq 'knownRegions = \([^)]*\ben\b[^)]*\);' "${ios_project}"; then
+  echo "iOS knownRegions must list ko and en." >&2
   exit 1
 fi
 

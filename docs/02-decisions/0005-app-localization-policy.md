@@ -20,7 +20,7 @@ App Store Connect와 Google Play 등록정보를 `ko`와 `en-US` 두 로케일�
 - 날짜·시간은 `strings.intlLocale`(`ko-KR`/`en-US`)을 `Intl.DateTimeFormat`에 전달한다. `'ko-KR'` 하드코딩을 남기지 않는다.
 - 조사·복수형처럼 문법이 갈리는 문구는 사전에 함수로 둔다. 예: `more.groupName(babyName)`은 한국어 `${name}이네`, 영어 `${name}'s group`.
 - adapter 내부 디코딩·검증 에러 메시지는 번역 대상이 아니다. 화면에 제품 문구로 치환되어 노출되므로 한국어를 유지한다.
-- 런처 이름도 로컬라이즈한다. Android는 기본 `values/`가 `BabyNest`, `values-ko/`가 `함께봄`이다. iOS는 `CFBundleLocalizations`에 `ko`, `en`을 선언한다.
+- 런처 이름도 로컬라이즈한다. Android는 기본 `values/`가 `BabyNest`, `values-ko/`가 `함께봄`이다. iOS는 `CFBundleLocalizations`에 `ko`, `en`을 선언하고 `ko.lproj`/`en.lproj`의 `InfoPlist.strings`가 `CFBundleDisplayName`을 로케일별로 덮어쓴다. `Info.plist`의 `함께봄`은 development region fallback으로 남긴다.
 - `apps/ait`(AppsInToss)은 한국 전용 채널이므로 범위 밖이다.
 
 ## Consequences
@@ -31,4 +31,4 @@ App Store Connect와 Google Play 등록정보를 `ko`와 `en-US` 두 로케일�
 - `check_mobile_target.sh`가 한국어/영어 브랜드 문구와 `CFBundleLocalizations`를 함께 검증한다.
 - **`en-US` 스토어 스크린샷은 영어 UI로 다시 촬영해야 한다.** 기존 5컷은 한국어 UI 캡처다.
 - **이 변경이 포함된 새 릴리스 후보가 필요하다.** 현재 App Store 후보 `1.0.8`/`56`은 한국어 전용 빌드다.
-- iOS `CFBundleDisplayName`은 아직 `함께봄` 단일값이다. 로컬라이즈하려면 `ko.lproj`/`en.lproj`의 `InfoPlist.strings`를 Xcode 프로젝트에 variant group으로 추가해야 한다.
+- iOS `InfoPlist.strings`는 Xcode 프로젝트에 `PBXVariantGroup`으로 묶여 Resources build phase로 복사된다. `.lproj` 파일만 추가하고 프로젝트에 등록하지 않으면 조용히 fallback 이름으로 되돌아가므로, `check_mobile_target.sh`가 variant group 존재와 `knownRegions`의 `ko`/`en`을 함께 검증한다.
