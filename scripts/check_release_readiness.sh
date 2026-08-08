@@ -73,6 +73,11 @@ if ! node scripts/check-app-privacy.mjs; then
   blockers=1
 fi
 
+if ! node scripts/check-store-screenshots.mjs; then
+  echo "App Store screenshot set gate failed." >&2
+  blockers=1
+fi
+
 if [ "${blockers}" -ne 0 ]; then
   exit 1
 fi

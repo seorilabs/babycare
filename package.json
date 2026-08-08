@@ -29,6 +29,7 @@
     "check:docs": "bash scripts/check_docs.sh",
     "check:release": "bash scripts/check_release_readiness.sh",
     "check:app-privacy": "node scripts/check-app-privacy.mjs",
+    "check:screenshots": "node scripts/check-store-screenshots.mjs",
     "check:mobile": "bash scripts/check_mobile_target.sh",
     "check:ait": "bash scripts/check_ait_target.sh",
     "bootstrap:mobile": "bash scripts/bootstrap_mobile.sh",
