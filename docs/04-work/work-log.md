@@ -1,5 +1,11 @@
 # Work Log
 
+## 2026-08-08 — en-US 스크린샷 ASC 업로드
+
+- `en-US` localization(`fb6c5f74-0547-47f9-ab4d-1614a7121c86`)에 `APP_IPHONE_67`·`APP_IPAD_PRO_3GEN_129` set을 새로 만들고 각 5컷을 업로드했다. asset delivery state 10건 모두 `COMPLETE`를 readback했다.
+- 이제 `ko`·`en-US` 두 로케일이 각각 두 display type을 모두 갖춘다. 세션 시작 시점에는 `en-US`가 0건이라 영어 리스팅이 한국어 UI 스크린샷을 fallback으로 노출하던 상태였다.
+- ASC 스크린샷 업로드는 이미지 1건당 3단계 handshake다. `POST /v1/appScreenshots`로 예약해 `uploadOperations`를 받고, 각 operation의 URL·헤더대로 바이트를 PUT한 뒤, `PATCH`로 `uploaded=true`와 MD5 `sourceFileChecksum`을 커밋한다. 예약만 하고 커밋하지 않으면 깨진 자산으로 남으므로 파일별 실패를 개별 보고하도록 했다.
+
 ## 2026-08-08 — en-US 영어 UI 스크린샷 촬영
 
 - i18n 반영 `v1.0.9` Release 시뮬레이터 빌드를 영어 로케일에 설치해 6.9"(1320x2868) 5컷과 13" iPad(2064x2752) 5컷을 `app-store/screenshots/en-US/`에 캡처했다. 홈·타임라인·통계·수유기록·더보기로 기존 한국어 세트와 구성이 같다.

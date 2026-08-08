@@ -53,3 +53,6 @@ AGENT.local.md
 .idea/
 .vscode/
 !.vscode/extensions.json
+
+# Claude Code 로컬 설정(개인 환경 전용)
+.claude/settings.local.json
