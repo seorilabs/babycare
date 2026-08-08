@@ -134,6 +134,7 @@ describe('StatsScreen', () => {
         .findAllByType(Text)
         .map(node => String(node.props.children ?? ''))
         .join(' ');
+    expect(text()).toContain('수유 횟수');
     expect(text()).toContain('광고 보고 상세 통계 열기');
     expect(text()).not.toContain('구간별 기록');
 
@@ -156,6 +157,72 @@ describe('StatsScreen', () => {
       'core_ad_impression',
       'core_ad_reward',
     ]);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it.each([
+    [
+      'dismissed',
+      {status: 'dismissed' as const, network: 'test'},
+      ['core_ad_request', 'core_ad_impression'],
+    ],
+    [
+      'unavailable',
+      {status: 'unavailable' as const, reason: 'not_loaded'},
+      ['core_ad_request'],
+    ],
+  ])('keeps details locked when the ad is %s', async (_label, result, expectedEvents) => {
+    const storage = {
+      getItem: jest.fn(async () => null),
+      setItem: jest.fn(async () => undefined),
+      removeItem: jest.fn(async () => undefined),
+    };
+    const analyticsEvents: string[] = [];
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        React.createElement(StatsScreen, {
+          events: [],
+          now: new Date('2026-07-12T12:37:00+09:00').getTime(),
+          strings: createStrings('ko'),
+          theme: createTheme(false),
+          analytics: {
+            track: jest.fn(async (event: {readonly name: string}) => {
+              analyticsEvents.push(event.name);
+            }),
+          },
+          rewardedAd: {
+            preload: jest.fn(async () => undefined),
+            show: jest.fn(async () => result),
+          },
+          storage,
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    const unlockButton = renderer.root
+      .findAllByProps({accessibilityRole: 'button'})
+      .find(node =>
+        node.findAllByType(Text).some(child =>
+          String(child.props.children).includes('광고 보고'),
+        ),
+      );
+    await ReactTestRenderer.act(async () => {
+      unlockButton?.props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const visibleText = renderer.root
+      .findAllByType(Text)
+      .map(node => String(node.props.children ?? ''))
+      .join(' ');
+    expect(visibleText).toContain('상세 통계 24시간 열기');
+    expect(visibleText).not.toContain('구간별 기록');
+    expect(storage.setItem).not.toHaveBeenCalled();
+    expect(analyticsEvents).toEqual(expectedEvents);
     ReactTestRenderer.act(() => renderer.unmount());
   });
 });

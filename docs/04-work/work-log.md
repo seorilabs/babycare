@@ -6,7 +6,7 @@
 - 무료 오늘/기간 요약은 유지하고 `stats_detail` 상세 통계만 사용자가 선택한 리워드 광고 완료 뒤 24시간 해제한다. 광고 요청·노출·보상은 분리 측정하며 `userEarnedReward`/`EARNED_REWARD` 전에는 보상을 지급하지 않는다.
 - Android/iOS에 Google Mobile Ads 16.4.0·UMP와 Firebase Analytics 25.1.0, AppsInToss에 공식 `loadFullScreenAd`/`showFullScreenAd` 경로를 연결했다. iOS Firebase Analytics는 광고 식별자 지원을 제외했다. debug는 공식 test ID를 사용하고 release는 운영 ID가 비어 있거나 sample이면 readiness gate에서 중단한다.
 - Google Play Data Safety·광고 있음·광고 ID, Apple App Privacy, AppsInToss 광고 원장을 새 SDK 기준으로 갱신했다. 운영 AdMob app/unit ID·AIT adGroupId·UMP 메시지, GA4 secret/measurement ID, Functions 배포·Platform registry sync, Console 재입력·실기기 광고/이벤트 readback은 별도 운영 gate로 남았다.
-- 검증: core 43건, mobile 320건, Functions 17건, Firebase config 3건, AppsInToss 6건과 typecheck·lint·architecture/docs/privacy gate가 통과했다. Android Debug 앱 빌드와 iOS arm64 Simulator Debug 빌드도 통과했다. Xcode 26의 빈 preview dylib 링크 실패를 피하도록 Debug target의 `ENABLE_DEBUG_DYLIB=NO`를 고정했다.
+- 검증: core 43건, mobile 322건, Functions 17건, Firebase config 3건, AppsInToss 7건과 typecheck·lint·architecture/docs/privacy gate가 통과했다. Android Debug 앱 빌드와 iOS arm64 Simulator Debug 빌드도 통과했다. Xcode 26의 빈 preview dylib 링크 실패를 피하도록 Debug target의 `ENABLE_DEBUG_DYLIB=NO`를 고정했다.
 
 ## 2026-08-08 — AppsInToss 등록 스크린샷을 sandbox 실제 화면으로 교체
 

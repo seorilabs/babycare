@@ -91,11 +91,16 @@ class AitGa4Analytics implements AnalyticsPort {
   }
 }
 
-export const babycareAnalytics = new FanOutAnalytics([
-  new AitGa4Analytics(),
-  new PlatformAnalytics({
-    baseUrl: PLATFORM_URL,
-    firebaseIdToken: currentFirebaseIdToken,
-    context: {platform: 'ait'},
-  }),
-]);
+export function createBabycareAnalytics(fetchImpl?: typeof fetch): FanOutAnalytics {
+  return new FanOutAnalytics([
+    new AitGa4Analytics(),
+    new PlatformAnalytics({
+      baseUrl: PLATFORM_URL,
+      firebaseIdToken: currentFirebaseIdToken,
+      context: {platform: 'ait'},
+      ...(fetchImpl ? {fetchImpl} : {}),
+    }),
+  ]);
+}
+
+export const babycareAnalytics = createBabycareAnalytics();
