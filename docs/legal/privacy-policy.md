@@ -14,15 +14,18 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 | 계정 정보 | 사용자 식별자(UID), 표시 이름 | 앱 최초 실행 시 기기 기반 계정 자동 생성, 이용자 직접 입력 |
 | 돌봄 기록 | 아기의 이름·생년월일, 수유·기저귀·수면 기록 값과 시각, 메모, 기록자 정보 | 이용자가 앱에서 직접 입력 |
 | 그룹 정보 | 돌봄 그룹 구성, 초대·합류 이력, 멤버십 | 그룹 생성·초대·합류 시 |
+| 이용·광고 정보 | 화면 조회, 온보딩·기록·초대 이벤트, 광고 요청·노출·보상, 광고/앱 인스턴스·기기 식별자, IP 기반 대략적 위치, SDK 진단·성능 정보 | Firebase Analytics, Seorilabs Platform Events, Google Mobile Ads 또는 AppsInToss 통합 광고 |
 
-- 현재 1.0.8 앱은 Firebase Analytics, Crashlytics, Performance를 포함하거나 사용하지 않습니다.
-- 위치정보, 광고 식별자, 결제 정보는 수집하지 않습니다.
+- 정밀 위치와 결제 정보는 수집하지 않습니다. Google Mobile Ads SDK는 IP 주소로 대략적 위치를 추정하고 광고·앱 인스턴스 식별자, 앱 상호작용과 SDK 진단 정보를 처리할 수 있습니다.
+- 돌봄 메모·아기 이름·생년월일·양육자 표시 이름은 Analytics 또는 광고 이벤트 파라미터로 보내지 않습니다.
 
 ## 2. 개인정보의 처리 목적
 
 - 계정 인증 및 이용자 식별
 - 돌봄 기록의 저장, 실시간 동기화, 초대된 돌봄 그룹 내 공유
 - 오프라인 기록의 저장 및 재연결 시 동기화
+- 서비스 이용 현황·핵심 흐름·광고 보상 완료 분석, 오류·성능 진단
+- 통계 상세의 선택형 비개인화 리워드 광고 제공과 부정 이용 방지
 
 ## 3. 개인정보의 보관 및 파기
 
@@ -37,6 +40,8 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 | 수탁자 | 위탁 업무 | 관련 정보 |
 | --- | --- | --- |
 | Google (Firebase) | 기기 기반 계정 인증, 데이터 저장·동기화, 서버 기능 | Firebase Authentication, Cloud Firestore, Cloud Functions |
+| Google | 제품 이용 분석과 비개인화 리워드 광고 제공 | Google Analytics for Firebase, Google Mobile Ads, User Messaging Platform |
+| Viva Republica (AppsInToss) | AppsInToss 미니앱 내 통합 리워드 광고 제공 | AppsInToss 통합 광고 |
 
 - 돌봄 데이터는 **초대된 돌봄 그룹 구성원에게만** 표시되며, 공개 다운로드 토큰 URL을 저장하지 않습니다.
 
@@ -50,6 +55,7 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 - 전송 구간 암호화(HTTPS/TLS)를 적용합니다.
 - 그룹 멤버십 기반 접근 통제(서버 보안 규칙)로 비멤버·제거된 멤버의 접근을 차단합니다.
 - service account·비공개 키·관리자 SDK는 앱에 포함하지 않습니다.
+- AppsInToss용 GA4 API secret은 Cloud Functions Secret Manager에만 두며 미니앱 번들에 포함하지 않습니다.
 
 ## 7. 아동 관련 정보
 
@@ -73,10 +79,10 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 **BabyNest** is a tool for adult caregivers to log and share a baby's feeding, diaper, and sleep records. It is not a medical service and is not directed to children as users.
 
 - **Data we collect:** account info (automatically generated user ID and display name), care records you enter (baby name/birth date, feeding/diaper/sleep entries, notes), and care-group membership.
-- **The current 1.0.8 app does not include or use** Firebase Analytics, Crashlytics, or Performance.
-- **We do not collect** location or advertising identifiers, and we do not show ads or sell data.
-- **Purpose:** authentication, storing and real-time syncing of records within your invited care group, offline support, and reliability/diagnostics.
-- **Processors:** Google Firebase (Auth, Firestore, Cloud Functions).
+- **Usage and ads:** screen, onboarding, care-log, invitation, and rewarded-ad events are sent to Google Analytics and Seorilabs Platform Events. An optional rewarded ad unlocks detailed stats for 24 hours; the Android/iOS app requests non-personalized ads.
+- Google Mobile Ads may process app interactions, SDK diagnostics, advertising/app-instance identifiers, and approximate location inferred from IP. We do not collect precise location, payment data, or sell data.
+- **Purpose:** authentication, storing and real-time syncing of records within your invited care group, offline support, usage analytics, rewarded advertising, fraud prevention, and reliability/diagnostics.
+- **Processors:** Google (Firebase, Google Analytics, Google Mobile Ads and UMP) and Viva Republica (AppsInToss integrated ads).
 - **Your rights:** access, correct, delete your data and account; removed members lose access to group data.
 - **Security:** TLS in transit, membership-based access control; no admin keys shipped in the app.
 - **Contact:** cs@seorilabs.com

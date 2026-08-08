@@ -1,3 +1,4 @@
+export * from './analytics.ts';
 export * from './care-event-codec.ts';
 export * from './care-event-overview-feed.ts';
 export * from './care-event-revision.ts';

@@ -10,6 +10,9 @@ export default defineConfig({
         'process.env.FIREBASE_WEB_API_KEY': JSON.stringify(
           process.env.FIREBASE_WEB_API_KEY ?? '',
         ),
+        'process.env.AIT_REWARDED_AD_GROUP_ID': JSON.stringify(
+          process.env.AIT_REWARDED_AD_GROUP_ID ?? '',
+        ),
       },
     },
   },

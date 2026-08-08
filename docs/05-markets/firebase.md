@@ -10,7 +10,7 @@
 - Region: `asia-northeast3`
 - Cloud Billing: `활성` — 2026-08-07 `gcloud beta billing projects describe seorilabs-babycare`에서 `billingEnabled=true` readback. 연결된 billing account 식별자는 보안상 원장에 기록하지 않는다.
 - Production project provisioning/deploy: Auth·Firestore Rules/indexes·Storage·초대/계정 삭제 callable 운영 중
-- Functions slice: unit 14건·Firestore transaction Emulator 7건 통과, `createInvite`·`acceptInvite`·`deleteAccount` production ACTIVE
+- Functions slice: `createInvite`·`acceptInvite`·`deleteAccount` production ACTIVE. AppsInToss GA4 중계 `logAnalyticsEvents`는 구현·단위 검증 완료이며 운영 배포와 `GA4_MEASUREMENT_ID`/`GA4_API_SECRET` 설정 전이다.
 
 로컬 규칙 검증은 실제 project나 자격증명 없이 `babycare-rules-test`라는 Emulator 전용 project ID로만 실행한다.
 
@@ -21,9 +21,9 @@
 | Auth | 예 | 성인 양육자 신원과 그룹 멤버십 연결. production mobile은 platform custom token bridge, 개발 Emulator는 direct anonymous |
 | Firestore | 예 | 그룹, 멤버십, 아기, 돌봄 이벤트 실시간 동기화. native app composition과 production project 연결 완료 |
 | Storage | 예 | 기본 bucket과 Rules 운영. 그룹 경로의 지원 이미지, 파일당 10 MiB 이하만 허용. 현재 MVP UI에 upload 흐름 없음 |
-| Cloud Functions / Run | 예 | `createInvite`, `acceptInvite`, `deleteAccount` production ACTIVE. App Check는 미강제 |
+| Cloud Functions / Run | 예 | 초대·삭제 callable 운영. `logAnalyticsEvents`는 인증·allowlist·PII key 차단 후 GA4 Measurement Protocol로 최대 20개를 중계하며 운영 설정/배포 대기 |
+| Analytics | 예 | mobile Firebase Analytics와 AIT Measurement Protocol relay. 동일 제품 이벤트를 Platform Events에도 fan-out |
 | Remote Config | MVP 미사용 | 후속 기능 flag/tuning 후보. 보안 결정에는 사용하지 않음 |
-| Analytics | 연결 전 | event type 등 PII-free allowlist만 허용. 현재 app composition은 no-op |
 | Crashlytics | 연결 전 | PII/돌봄 기록 값을 log·custom key에 넣지 않음 |
 | Performance | 미사용 | 현재 의존성·native 구성에 포함하지 않음. 도입 시 privacy disclosure 재검토 |
 | FCM | MVP 밖 | 후속 opt-in 리마인더·공동 기록 알림 후보. 민감 내용을 잠금화면에 기본 노출하지 않음 |

@@ -22,6 +22,19 @@ jest.mock('../services/babycare-backend', () => ({
   })),
 }));
 
+jest.mock('../services/analytics', () => ({
+  babycareAnalytics: {track: jest.fn(async () => undefined)},
+}));
+
+jest.mock('../services/rewarded-ad', () => ({
+  appsInTossRewardedAd: {
+    preload: jest.fn(async () => undefined),
+    show: jest.fn(async () => ({status: 'unavailable'})),
+  },
+  statsDetailUnlockedUntilOnAit: jest.fn(async () => undefined),
+  unlockStatsDetailOnAit: jest.fn(async () => Date.now() + 86_400_000),
+}));
+
 function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
   const read = (value: unknown): string =>
     Array.isArray(value)

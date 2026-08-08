@@ -43,6 +43,7 @@ jobs:
     env:
       APPS_IN_TOSS_API_KEY: ${{ secrets.APPS_IN_TOSS_API_KEY }}
       FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+      AIT_REWARDED_AD_GROUP_ID: ${{ vars.AIT_REWARDED_AD_GROUP_ID }}
       RELEASE_REF: ${{ inputs.release_tag }}
       INPUT_MEMO: ${{ inputs.memo }}
 
@@ -65,6 +66,10 @@ jobs:
           }
           [ -n "$FIREBASE_WEB_API_KEY" ] || {
             echo "FIREBASE_WEB_API_KEY secret is required." >&2
+            exit 1
+          }
+          [ -n "$AIT_REWARDED_AD_GROUP_ID" ] || {
+            echo "AIT_REWARDED_AD_GROUP_ID variable is required." >&2
             exit 1
           }
 

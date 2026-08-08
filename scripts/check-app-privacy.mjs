@@ -25,6 +25,27 @@ const expected = new Map([
     '기타 진단 데이터 (Diagnostics)',
     {linked: false, purposes: ['analytics', 'app-functionality']},
   ],
+  [
+    '대략적 위치 (Location)',
+    {linked: false, purposes: ['third-party-advertising', 'analytics']},
+  ],
+  [
+    '기기 ID (Identifiers)',
+    {linked: false, purposes: ['third-party-advertising', 'analytics']},
+  ],
+  [
+    '제품 상호작용 (Usage Data)',
+    {linked: true, purposes: ['analytics', 'third-party-advertising']},
+  ],
+  [
+    '광고 데이터 (Usage Data)',
+    {linked: false, purposes: ['third-party-advertising', 'analytics']},
+  ],
+  ['충돌 데이터 (Diagnostics)', {linked: false, purposes: ['analytics']}],
+  [
+    '성능 데이터 (Diagnostics)',
+    {linked: true, purposes: ['analytics', 'third-party-advertising']},
+  ],
 ]);
 
 if (privacy.collected.length !== expected.size) {
@@ -53,6 +74,11 @@ for (const requiredPod of [
   'Firebase/Firestore (12.15.0)',
   'Firebase/Functions (12.15.0)',
   'Firebase/AppCheck (12.15.0)',
+  'FirebaseAnalytics/Core (12.15.0)',
+  'RNFBAnalytics (25.1.0)',
+  'Google-Mobile-Ads-SDK (13.5.0)',
+  'GoogleUserMessagingPlatform (3.1.0)',
+  'RNGoogleMobileAds (16.4.0)',
 ]) {
   if (!lockfile.includes(requiredPod)) {
     fail(`Expected iOS dependency missing: ${requiredPod}`);
@@ -60,13 +86,18 @@ for (const requiredPod of [
 }
 
 for (const forbiddenPod of [
-  /^\s+- Firebase\/Analytics /m,
+  /FirebaseAnalytics\/IdentitySupport/,
   /^\s+- FirebaseCrashlytics /m,
   /^\s+- FirebasePerformance /m,
 ]) {
   if (forbiddenPod.test(lockfile)) {
     fail(`App Privacy must be updated for iOS dependency: ${forbiddenPod}`);
   }
+}
+
+const podfile = readFileSync('apps/mobile/ios/Podfile', 'utf8');
+if (!podfile.includes('$RNFirebaseAnalyticsWithoutAdIdSupport = true')) {
+  fail('iOS Firebase Analytics must exclude advertising identifier support.');
 }
 
 console.log('App Store privacy source-of-truth check passed.');

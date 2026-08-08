@@ -24,6 +24,11 @@
       "functionName": "deleteAccount",
       "serviceName": "deleteaccount",
       "invokerIamCheck": "disabled"
+    },
+    {
+      "functionName": "logAnalyticsEvents",
+      "serviceName": "loganalyticsevents",
+      "invokerIamCheck": "disabled"
     }
   ]
 }

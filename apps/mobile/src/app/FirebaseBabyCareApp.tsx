@@ -144,6 +144,15 @@ export function FirebaseCareDashboard(props: {
   }, []);
 
   useEffect(() => {
+    props.runtime.analytics
+      ?.track({
+        name: 'core_screen_view',
+        params: {screen_name: tab, screen_class: 'FirebaseCareDashboard'},
+      })
+      .catch(() => undefined);
+  }, [props.runtime.analytics, tab]);
+
+  useEffect(() => {
     if (!savedMessage) {
       return undefined;
     }
@@ -208,6 +217,8 @@ export function FirebaseCareDashboard(props: {
         <StatsScreen
           events={overview.events}
           now={now}
+          analytics={props.runtime.analytics}
+          rewardedAd={props.runtime.rewardedAd}
           strings={strings}
           theme={theme}
         />
@@ -595,6 +606,14 @@ export function FirebaseBabyCareApp(
             state.runtime.sessionServices,
             input,
           );
+          await state.runtime.analytics?.track({
+            name: 'bc_group_created',
+            params: {},
+          });
+          await state.runtime.analytics?.track({
+            name: 'bc_onboarding_complete',
+            params: {mode: 'create'},
+          });
           await activateReadySession(state.runtime, ready);
         }}
         onJoin={async input => {
@@ -602,6 +621,14 @@ export function FirebaseBabyCareApp(
             state.runtime.sessionServices,
             input,
           );
+          await state.runtime.analytics?.track({
+            name: 'bc_invite_joined',
+            params: {},
+          });
+          await state.runtime.analytics?.track({
+            name: 'bc_onboarding_complete',
+            params: {mode: 'join'},
+          });
           await activateReadySession(state.runtime, ready);
         }}
         strings={strings}
@@ -616,6 +643,10 @@ export function FirebaseBabyCareApp(
       invite={state.invite}
       onInvite={async () => {
         const invite = await state.runtime.createInvite(state.ready);
+        await state.runtime.analytics?.track({
+          name: 'bc_invite_created',
+          params: {},
+        });
         setState(current =>
           current.kind === 'active' && current.container === state.container
             ? {

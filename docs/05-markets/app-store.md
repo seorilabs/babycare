@@ -27,7 +27,7 @@
 - Export compliance: `Info.plist`에 `ITSAppUsesNonExemptEncryption=false`를 반영했고, App Store Connect의 1.0.8/56 build readback에서도 `usesNonExemptEncryption=false`를 확인했다.
 - Review notes: 로그인 없이 기기 기반 계정을 자동 생성하는 실제 온보딩·2기기 초대·계정 삭제 절차를 ASC에 반영 완료
 - Demo account: 불필요. `demoAccountRequired=false`와 검증된 운영 연락처를 ASC에 반영 완료
-- App Privacy 답변: `docs/05-markets/store-data-disclosure.md` (Tracking 없음, Name·Health·Other User Content·Other Data Types·User ID는 linked App Functionality, Firebase Other Diagnostic Data는 unlinked Analytics·App Functionality인 현재 1.0.8 기준) / 콘솔 입력 남음
+- App Privacy 답변: `docs/05-markets/store-data-disclosure.md`. Firebase Analytics와 Google Mobile Ads의 Product Interaction·Advertising Data·Device ID·Coarse Location·Diagnostics/Performance를 추가한 새 후보 기준으로 콘솔 입력·privacy report readback이 필요하다. 비개인화·ATT 미사용 전제의 Tracking `No`는 운영 AdMob/UMP 설정 검증 전 잠정값이다.
 - DSA/trader: `확정 필요` (EU 배포 여부 결정 후)
 
 ## Assets

@@ -12,7 +12,7 @@ Firebase Rules, indexes, Emulator 테스트와 privileged Functions를 둔다. p
 - `firebase.functions-test.json`: 연속 실행 port race를 피하는 Functions transaction 전용 Firestore 8086 설정
 - `tests/security-rules.test.mjs`: client Rules allow/deny와 active-sleep 동시 시작 경쟁 회귀 테스트
 - `tests/mobile-shared-flow.test.mjs`: 익명 사용자 2명의 그룹 생성·초대·실시간 기록·멤버 제거 통합 테스트
-- `functions/src/`: `createInvite`, `acceptInvite`, `deleteAccount`, HMAC/rate-limit/transaction·계정 삭제 구현
+- `functions/src/`: `createInvite`, `acceptInvite`, `deleteAccount`, `logAnalyticsEvents`, HMAC/rate-limit/transaction·계정 삭제·GA4 relay 구현
 - `functions/tests/`: 순수 unit 및 Firestore Emulator transaction 테스트
 - `callable-access.json`: production callable의 project·region·Cloud Run service 진입 계약
 - `.firebaserc.example`: 실제 project 확정 전 placeholder
@@ -60,10 +60,12 @@ BabyCare Firestore Emulator는 다른 로컬 앱/Metro와 충돌하지 않도록
 - `INVITE_CREATE_LIMIT_PER_HOUR`: 기본 10
 - `INVITE_ACCEPT_LIMIT_PER_HOUR`: 기본 20
 - `ENFORCE_APP_CHECK`: 기본 false, 새 native 후보와 AppsInToss 검증 후 출시 전 강제 전환
+- `GA4_MEASUREMENT_ID`: AppsInToss GA4 Measurement Protocol 대상 ID, 운영 Parameter 설정 필요
+- `GA4_API_SECRET`: AppsInToss GA4 Measurement Protocol secret, Secret Manager 연결·값 repo/client 금지
 
 ## Production callable 진입 계약
 
-Firebase callable SDK가 Auth token을 포함한 요청을 함수까지 전달할 수 있도록 `createinvite`, `acceptinvite`, `deleteaccount` Cloud Run service는 Invoker IAM check를 비활성화한다. 조직의 Domain Restricted Sharing 정책에서 `allUsers` binding을 대신하는 계약이며 Firebase callable의 Auth 검증과 함수의 owner/membership 검사는 그대로 유지한다.
+Firebase callable SDK가 Auth token을 포함한 요청을 함수까지 전달할 수 있도록 `createinvite`, `acceptinvite`, `deleteaccount`, `loganalyticsevents` Cloud Run service는 Invoker IAM check를 비활성화한다. 조직의 Domain Restricted Sharing 정책에서 `allUsers` binding을 대신하는 계약이며 Firebase callable의 Auth 검증과 함수의 owner/membership 검사는 그대로 유지한다.
 
 ```bash
 # 읽기 전용 운영 상태 확인

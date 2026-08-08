@@ -561,7 +561,11 @@ export async function createCareGroup(input: {
 
 async function callFunction(
   session: AccessSession,
-  name: 'createInvite' | 'acceptInvite' | 'deleteAccount',
+  name:
+    | 'createInvite'
+    | 'acceptInvite'
+    | 'deleteAccount'
+    | 'logAnalyticsEvents',
   data: Readonly<Record<string, unknown>>,
 ): Promise<Record<string, unknown>> {
   const response = await fetch(`${FUNCTIONS_URL}/${name}`, {
@@ -574,6 +578,22 @@ async function callFunction(
   });
   const body = record(await jsonResponse(response), name);
   return record(body.result, name);
+}
+
+export async function sendAnalyticsEventsToGa4(input: {
+  readonly clientId: string;
+  readonly events: readonly {
+    readonly name: string;
+    readonly params: Readonly<Record<string, string | number | boolean>>;
+    readonly timestamp_micros: number;
+  }[];
+}): Promise<void> {
+  const session = await accessSession();
+  await callFunction(session, 'logAnalyticsEvents', input);
+}
+
+export async function currentFirebaseIdToken(): Promise<string> {
+  return (await accessSession()).idToken;
 }
 
 export async function joinCareGroup(input: {

@@ -20,3 +20,14 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// Google Mobile Ads 25.4.0 declares Kotlin 2.1 as its minimum but publishes
+// Kotlin 2.3 metadata. React Native 0.85 pins the 2.1 compiler, so allow only
+// the ads bridge module to consume that forward-compatible metadata.
+subprojects { subproject ->
+    if (subproject.name == "react-native-google-mobile-ads") {
+        subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions.freeCompilerArgs += ["-Xskip-metadata-version-check"]
+        }
+    }
+}

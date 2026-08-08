@@ -168,6 +168,13 @@ const ko = {
     perBucketCount: '구간별 기록',
     sleepDuration: '수면 시간',
     perBucketDuration: '구간별 시간',
+    detailChecking: '상세 통계 이용 상태를 확인하고 있어요',
+    detailLockedTitle: '상세 통계 24시간 열기',
+    detailLockedDescription:
+      '선택형 광고 한 편을 보면 구간별 수유·수면 차트를 24시간 확인할 수 있어요.',
+    unlockAction: '광고 보고 상세 통계 열기',
+    adLoading: '광고 준비 중…',
+    adUnavailable: '광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
     disclaimer:
       '통계는 돌봄 기록을 요약한 참고 정보이며 의료 판단이나 진단을 제공하지 않습니다.',
   },
@@ -479,6 +486,13 @@ const en: Strings = {
     perBucketCount: 'Per interval',
     sleepDuration: 'Sleep duration',
     perBucketDuration: 'Per interval',
+    detailChecking: 'Checking detailed stats access…',
+    detailLockedTitle: 'Unlock detailed stats for 24 hours',
+    detailLockedDescription:
+      'Watch one optional ad to view interval feeding and sleep charts for 24 hours.',
+    unlockAction: 'Watch ad and unlock',
+    adLoading: 'Preparing ad…',
+    adUnavailable: 'The ad is unavailable. Please try again later.',
     disclaimer:
       'Stats summarize your care log for reference only and do not provide medical judgment or diagnosis.',
   },

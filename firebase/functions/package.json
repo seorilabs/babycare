@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "pnpm run build && node --test --test-concurrency=1 lib/tests/invite-service.test.js lib/tests/account-deletion-service.test.js lib/tests/callable-boundary.test.js",
+    "test": "pnpm run build && node --test --test-concurrency=1 lib/tests/invite-service.test.js lib/tests/account-deletion-service.test.js lib/tests/callable-boundary.test.js lib/tests/analytics-service.test.js",
     "test:emulator": "node --test --test-concurrency=1 lib/tests/firestore-invite-repository.emulator.test.js lib/tests/firestore-account-deletion-repository.emulator.test.js"
   },
   "dependencies": {

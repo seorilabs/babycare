@@ -17,13 +17,13 @@
 
 ## Market Gate
 
-- [x] Google Play metadata와 config 확정 — 초기 설정 11개, ko-KR·en-US 등록정보, 개인정보처리방침·계정 삭제 URL, Data Safety, IARC 한국 12세 이상, 타깃 만 18세 이상, 출산/육아 카테고리, 광고·광고 ID·정부·금융·건강 선언 Console readback 완료. signed AAB 1.0.8/1000008 internal `completed`
+- [ ] Google Play metadata와 config 재확정 — 기존 무광고 1.0.9까지의 Data Safety·광고/광고 ID 답변은 readback 완료. Analytics·AdMob 추가분의 Data Safety, 광고 있음, 광고 ID 사용을 새 Console template로 재제출·readback해야 함
 - [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정
 - [x] 앱 i18n `ko`/`en` 구현 — 자체 타입 사전, 기기 로케일 자동 판별, Android `values-ko` 런처 이름, iOS `CFBundleLocalizations`. ADR `0005-app-localization-policy.md`. 310건 mobile 테스트·typecheck·lint 통과(2026-08-08)
 - [x] i18n 포함 App Store 후보 재빌드 — `v1.0.9` / `fe2b4b1`, Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430`, ASC build `95e65693-70a5-42cf-9590-d63e385a9951`(`1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`), 2026-08-08
 - [x] `1.0.9`/build 57을 ASC 버전 레코드·내부 TestFlight 그룹에 연결 — `versionString=1.0.9`, `related build=95e65693`, `internalBuildState=IN_BETA_TESTING` readback, 2026-08-08
 - [x] `en-US` 영어 UI 스크린샷 촬영·업로드 — `v1.0.9` Release 시뮬레이터에서 6.9" 5컷·13" iPad 5컷 캡처 후 ASC `APP_IPHONE_67`·`APP_IPAD_PRO_3GEN_129`에 업로드, delivery state 10건 `COMPLETE` readback, 2026-08-08
-- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증, v1 광고·인앱 결제·Toss Pay 없음, Terms URL과 root in-app feature 1개 확정, **sandbox 실행 미니앱 화면으로 screenshot 5장 교체**(온보딩·홈·기록·통계·더보기, 2026-08-08) / 남음: Console 업로드·readback
+- [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 등록 자산 검증, 통계 상세 리워드 1개·인앱결제/Toss Pay 없음, Terms URL과 root in-app feature 1개 확정 / 남음: 운영 adGroupId·Console 광고 답변·업로드·readback
 - [x] AppsInToss 로컬 dev 실행 배선 — `granite dev`가 `granite.config.ts`의 esbuild define을 적용하지 않아 dev 번들의 `FIREBASE_WEB_API_KEY`가 비어 첫 화면이 Firebase 연결 오류로 멈추던 문제를 babel 인라인으로 해결했다. CI는 환경변수, 로컬은 gitignore된 `apps/ait/.env`. 치환 규칙은 `apps/ait/babel.config.test.ts`가 고정한다(2026-08-08)
 - [x] Firebase rules/indexes/functions와 local test 코드 구현 — `members.userId` collection-group index 운영 `READY` 포함
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현
@@ -32,6 +32,8 @@
 - [x] production 초대 callable Secret Manager·Cloud Run 진입 계약 확인 — Domain Restricted Sharing 환경에서 `createInvite`·`acceptInvite` Invoker IAM check 비활성화, Firebase Auth/owner 검사는 유지
 - [ ] 실제 project의 App Check 또는 edge rate limit 확정 — mobile Play Integrity·App Attest·DeviceCheck와 Platform 검증 경계 구현·provider 운영 구성 readback 완료. 새 후보 실기기 token 확인 전 `require_app_check=false`, `ENFORCE_APP_CHECK=false`
 - [x] production 계정 삭제 callable과 외부 삭제 경로 — `deleteAccount` ACTIVE·IAM 적용, Platform 삭제 mapping API production 배포, 외부 안내 페이지 live 200, 일회성 owner/member 계정 삭제·정리 live QA 완료
+- [ ] GA4·Platform Analytics 운영 연결 — source 구현·단위 검증 완료 / 남음: `GA4_MEASUREMENT_ID`·`GA4_API_SECRET`, `logAnalyticsEvents` 배포·Cloud Run 진입 계약 적용, Platform registry sync·deploy, GA4/Platform 양측 live readback
+- [ ] 최소 광고 운영 연결 — AdMob Android/iOS app ID·rewarded unit ID, AppsInToss adGroupId, UMP 메시지, 새 artifact 실기기 보상 완료·24시간 해제 QA
 - [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
 - [ ] Privacy/data safety/review notes 확정 — 진행: Google Play Data Safety·개인정보 URL·IARC·타깃·건강 선언 Console readback 완료, **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`) / 남음: Apple App Privacy 답변·readback
 
@@ -47,7 +49,7 @@
 - [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — 사용자가 iPhone에서 owner 초대 코드 발급 동작을 확인했고 production API의 독립 2계정 발급·수락 E2E도 통과 / 남음: TestFlight 1.0.8 실제 2기기 수락·실시간 동기화
 - [x] cross-device active sleep 단일성 — owner 기기에서 시작한 낮잠을 member 기기에서 종료해 단일 `낮잠 · 36초` event와 active lock 해제를 양쪽에서 확인(2026-08-07)
 - [x] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge — member 삭제는 본인 membership·작성 기록만 제거하고 owner 기록 유지, owner 삭제는 그룹 전체 제거, 양쪽 기기 온보딩 복귀 확인. QA Auth·그룹·기록 정리 완료(2026-08-07)
-- [ ] Analytics/crash/ad/purchase smoke, 해당 시
+- [ ] GA4·Platform Analytics 및 Android/iOS/AIT 리워드 광고 smoke — 양측 이벤트 수신, 광고 미완료 보상 금지, 완료 후 24시간 해제 확인
 
 ## Deployment Gate
 
