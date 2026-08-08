@@ -18,11 +18,11 @@
 ## Market Gate
 
 - [x] Google Play metadata와 config 확정 — 초기 설정 11개, ko-KR·en-US 등록정보, 개인정보처리방침·계정 삭제 URL, Data Safety, IARC 한국 12세 이상, 타깃 만 18세 이상, 출산/육아 카테고리, 광고·광고 ID·정부·금융·건강 선언 Console readback 완료. signed AAB 1.0.8/1000008 internal `completed`
-- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정, `en-US` 스크린샷 **업로드**(촬영은 완료)
+- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정
 - [x] 앱 i18n `ko`/`en` 구현 — 자체 타입 사전, 기기 로케일 자동 판별, Android `values-ko` 런처 이름, iOS `CFBundleLocalizations`. ADR `0005-app-localization-policy.md`. 310건 mobile 테스트·typecheck·lint 통과(2026-08-08)
 - [x] i18n 포함 App Store 후보 재빌드 — `v1.0.9` / `fe2b4b1`, Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430`, ASC build `95e65693-70a5-42cf-9590-d63e385a9951`(`1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`), 2026-08-08
 - [x] `1.0.9`/build 57을 ASC 버전 레코드·내부 TestFlight 그룹에 연결 — `versionString=1.0.9`, `related build=95e65693`, `internalBuildState=IN_BETA_TESTING` readback, 2026-08-08
-- [x] `en-US` 영어 UI 스크린샷 촬영 — `v1.0.9` Release 시뮬레이터에서 6.9" 5컷·13" iPad 5컷, `app-store/screenshots/en-US/`, 2026-08-08
+- [x] `en-US` 영어 UI 스크린샷 촬영·업로드 — `v1.0.9` Release 시뮬레이터에서 6.9" 5컷·13" iPad 5컷 캡처 후 ASC `APP_IPHONE_67`·`APP_IPAD_PRO_3GEN_129`에 업로드, delivery state 10건 `COMPLETE` readback, 2026-08-08
 - [ ] AppsInToss metadata와 config 확정 — 진행: 승인된 이름·카테고리·아이콘·지원 이메일·브랜드 색상, 600×600 logo·1932×828 thumbnail·636×1048 screenshot 5장 exact-size/RGB 검증, v1 광고·인앱 결제·Toss Pay 없음, Terms URL과 root in-app feature 1개 확정 / 남음: 실제 AIT sandbox 화면 screenshot 교체·Console readback
 - [x] Firebase rules/indexes/functions와 local test 코드 구현 — `members.userId` collection-group index 운영 `READY` 포함
 - [x] platform custom token bridge client와 기존 anonymous UID 보존 회귀 구현

@@ -128,5 +128,17 @@
     "signingDone": "Xcode Cloud Default workflow를 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret으로 구성했다. v1.0.8(source c66f7e7) Build 56이 성공했고 ASC에서 1.0.8/56, VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false를 확인했다. 내부 그룹에 build를 명시적으로 연결해 IN_BETA_TESTING을 readback했다. 실제 테스터 설치·실기기 QA와 App Review 제출은 별도 게이트다.",
     "urls": "privacyPolicyUrl·supportUrl·marketingUrl 확정 반영(2026-07-18). ASC 콘솔에도 privacy(appInfo)·support(version loc) PATCH 완료.",
     "appStoreMetadata": "2026-08-06 ASC readback 기준 앱 버전 1.0.8, Build 56 연결, 4+ 등급, primary Lifestyle·secondary Utilities, third-party content 미사용, AFTER_APPROVAL, 심사 연락처·노트 반영 완료. App Privacy·availability·스크린샷·실기기 QA 전이라 PREPARE_FOR_SUBMISSION이며 심사 제출하지 않았다."
+  },
+  "screenshots": {
+    "ko": {
+      "APP_IPHONE_67": 5,
+      "APP_IPAD_PRO_3GEN_129": 5
+    },
+    "en-US": {
+      "APP_IPHONE_67": 5,
+      "APP_IPAD_PRO_3GEN_129": 5
+    },
+    "assetDeliveryState": "COMPLETE",
+    "readbackDate": "2026-08-08"
   }
 }
