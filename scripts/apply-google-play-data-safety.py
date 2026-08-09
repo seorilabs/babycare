@@ -56,6 +56,17 @@ def boolean(value: object) -> str:
     return "TRUE" if value else "FALSE"
 
 
+def normalize_sharing_purposes(item: dict[str, Any], response_id: object) -> list[str]:
+    value = item.get("sharingPurposes", [])
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(
+        isinstance(purpose, str) for purpose in value
+    ):
+        raise ValueError(f"Invalid sharing purpose for {response_id}")
+    return value
+
+
 def load_template(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     if not path.exists():
         sys.exit(f"{path} not found")
@@ -182,7 +193,7 @@ def build_csv(template: Path, answers: dict[str, Any]) -> str:
         collection = item.get("collection")
         purposes = item.get("purposes")
         shared = item.get("shared", False)
-        sharing_purposes = item.get("sharingPurposes", [])
+        sharing_purposes = normalize_sharing_purposes(item, response_id)
         if not isinstance(response_id, str) or response_id in seen:
             raise ValueError(f"Invalid or duplicate responseId: {response_id!r}")
         if collection not in {"required", "optional"}:
@@ -193,11 +204,7 @@ def build_csv(template: Path, answers: dict[str, Any]) -> str:
             raise ValueError(f"Invalid purpose for {response_id}")
         if not isinstance(shared, bool):
             raise ValueError(f"Invalid shared setting for {response_id}")
-        if shared and (
-            not isinstance(sharing_purposes, list)
-            or not sharing_purposes
-            or not all(isinstance(purpose, str) for purpose in sharing_purposes)
-        ):
+        if shared and not sharing_purposes:
             raise ValueError(f"At least one sharing purpose is required for {response_id}")
         if not shared and sharing_purposes:
             raise ValueError(f"Sharing purposes require shared=true for {response_id}")

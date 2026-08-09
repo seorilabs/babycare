@@ -119,7 +119,11 @@ export function MoreScreen(props: {
   };
 
   const openAdPrivacyOptions = () => {
-    props.onOpenAdPrivacyOptions?.()
+    const handler = props.onOpenAdPrivacyOptions;
+    if (!handler) {
+      return;
+    }
+    handler()
       .then(shown => {
         if (!shown) {
           Alert.alert(
