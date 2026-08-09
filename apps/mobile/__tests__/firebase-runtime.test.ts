@@ -25,6 +25,10 @@ jest.mock('@react-native-firebase/functions', () => ({
   httpsCallable: jest.fn(() => jest.fn()),
 }));
 
+jest.mock('react-native-device-info', () => ({
+  getVersion: jest.fn(() => '1.1.2'),
+}));
+
 jest.mock('../src/app/care-event-container', () => ({
   createCareEventContainer: jest.fn(async dependencies => dependencies),
 }));
@@ -44,6 +48,7 @@ import {createCareEventContainer} from '../src/app/care-event-container';
 import {
   createFirebaseRuntime,
   resolveFirebaseEmulatorHost,
+  resolvePlatformAnalyticsContext,
 } from '../src/app/firebase-runtime';
 import {
   babyId,
@@ -125,6 +130,27 @@ it('resolves a physical-device emulator host from the Metro script URL', () => {
       platform: 'android',
     }),
   ).toBe('127.0.0.1');
+});
+
+it('normalizes native Platform analytics version and locale context', () => {
+  expect(
+    resolvePlatformAnalyticsContext({
+      platform: 'ios',
+      appVersion: ' 1.1.2 ',
+      locale: ' ko-KR ',
+    }),
+  ).toEqual({
+    platform: 'ios',
+    appVersion: '1.1.2',
+    locale: 'ko-KR',
+  });
+  expect(
+    resolvePlatformAnalyticsContext({
+      platform: 'android',
+      appVersion: ' ',
+      locale: '',
+    }),
+  ).toEqual({platform: 'android'});
 });
 
 it('creates a dummy dev app and connects every emulator before adapters are used', async () => {
