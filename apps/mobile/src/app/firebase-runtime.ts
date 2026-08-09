@@ -20,6 +20,7 @@ import {
   getFunctions,
   type Functions,
 } from '@react-native-firebase/functions';
+import {getVersion} from 'react-native-device-info';
 import type {
   AccountDeletionPort,
   AnalyticsPort,
@@ -34,6 +35,7 @@ import {
   FanOutAnalytics,
   PlatformAnalytics,
   type CareEventTimelineFeedConfig,
+  type PlatformAnalyticsContext,
 } from '@babycare/product-data';
 
 import {FirebaseAnalyticsAdapter} from '../adapters/analytics/firebase-analytics-adapter';
@@ -173,6 +175,20 @@ function positivePort(value: number | undefined, fallback: number, label: string
 function nonEmpty(value: string | undefined): string | undefined {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+export function resolvePlatformAnalyticsContext(input: {
+  readonly platform: string;
+  readonly appVersion?: string;
+  readonly locale?: string;
+}): PlatformAnalyticsContext {
+  const appVersion = nonEmpty(input.appVersion);
+  const locale = nonEmpty(input.locale);
+  return {
+    platform: input.platform === 'ios' ? 'ios' : 'android',
+    ...(appVersion ? {appVersion} : {}),
+    ...(locale ? {locale} : {}),
+  };
 }
 
 function sourceCodeScriptURL(): string | undefined {
@@ -382,7 +398,11 @@ export async function createFirebaseRuntime(
               const user = auth.currentUser;
               return user ? getIdToken(user) : undefined;
             },
-            context: {platform: platform === 'ios' ? 'ios' : 'android'},
+            context: resolvePlatformAnalyticsContext({
+              platform,
+              appVersion: getVersion(),
+              locale: Intl.DateTimeFormat().resolvedOptions().locale,
+            }),
           }),
         ])
       : {track: async () => undefined});

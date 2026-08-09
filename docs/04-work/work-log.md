@@ -3,6 +3,7 @@
 ## 2026-08-09 — Google Play·App Store 글로벌 출시 운영 연결
 
 - 사용자가 Google Play·App Store 잔여 blocker 처리와 EU 포함 전국가 출시를 승인하고 Apple DSA status를 trader로 확정했다. Analytics·광고 변경을 포함하는 자연스러운 다음 patch 후보는 `v1.1.1`로 고정했다.
+- `v1.1.1`을 Google Play internal과 TestFlight에 올린 뒤 Play Store app-signing 설치본을 물리 Android에서 `1.1.0 → 1.1.1`로 업데이트해 기존 그룹·기록 보존을 확인했다. 그러나 이 설치본의 실제 Platform BigQuery 이벤트는 `platform=android`만 있고 `app_version`·`locale`이 비어 있어 공개 제출을 중단했다. native runtime이 `react-native-device-info`의 마켓 버전과 기기 locale을 Platform context에 넣도록 수정했으며, 기존 태그를 이동하지 않고 `v1.1.2`를 다음 후보로 사용한다.
 - Firebase에 GA4 property `549232169`와 Android/iOS/Web stream, BigQuery daily+streaming link를 만들고 `logAnalyticsEvents`를 production 배포했다. 인증 callable `accepted=1`과 GA4 Realtime `core_screen_view=1`을 readback했다.
 - Platform registry의 babycare Events와 14개 allowlist를 실제 regsync하고 production runtime을 main SHA `80507ad`로 재배포했다. ingest smoke `accepted=1`과 BigQuery event `babycare-launch-smoke-20260809-0803`을 확인했다. 앱의 이벤트 URL이 auth 서비스로 잘못 향하던 문제를 `platform-ingest` 별도 base URL로 수정했다.
 - AdMob Android/iOS 앱과 rewarded unit을 만들고 production ID를 반영했다. EU UMP와 미국 주 privacy message를 두 앱에 게시했으며, 앱에서 consent withdrawal을 열 수 있는 privacy options UI를 추가했다.

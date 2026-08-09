@@ -23,6 +23,7 @@
     "@react-native-firebase/functions": "25.1.0",
     "react": "19.2.3",
     "react-native": "0.85.3",
+    "react-native-device-info": "15.0.2",
     "react-native-google-mobile-ads": "16.4.0",
     "react-native-safe-area-context": "5.8.0"
   },
