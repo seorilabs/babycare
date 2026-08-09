@@ -28,7 +28,8 @@
 - Review notes: 로그인 없이 기기 기반 계정을 자동 생성하는 실제 온보딩·2기기 초대·계정 삭제 절차를 ASC에 반영 완료
 - Demo account: 불필요. `demoAccountRequired=false`와 검증된 운영 연락처를 ASC에 반영 완료
 - App Privacy 답변: `docs/05-markets/store-data-disclosure.md`. Firebase Analytics와 Google Mobile Ads의 Product Interaction·Advertising Data·Device ID·Coarse Location·Diagnostics/Performance를 추가한 `v1.1.1` 기준으로 콘솔 입력·privacy report readback이 필요하다. native는 비개인화 광고만 요청하고 ATT를 사용하지 않으므로 Tracking은 `No`다. EU UMP와 미국 주 privacy message는 2026-08-09 두 native 앱에 게시했다.
-- DSA/trader: **trader**. EU를 포함한 App Store의 모든 제공 가능 국가·지역에 출시한다. App Store Connect 계정의 기존 검증된 trader 연락처를 선택하고 DSA·availability readback을 남긴다.
+- DSA/trader: **trader**. EU를 포함한 App Store의 모든 제공 가능 국가·지역에 출시한다. App Store Connect 계정의 기존 검증된 trader 연락처를 선택하는 Console 확인은 남아 있다.
+- Availability: ASC API v2로 활성 App Store 지역 175개를 모두 `available=true`로 생성하고 `availableInNewTerritories=true`를 readback했다(2026-08-09). 현재 전 지역 `AVAILABLE_FOR_SALE_UNRELEASED_APP`와 미출시 앱 공통 `CANNOT_SELL` 상태이며, EU trader 누락 상태 코드는 반환되지 않았다.
 
 ## Assets
 
@@ -52,7 +53,7 @@
 
 > `hasAccessToAllBuilds=true` 그룹에서는 `/v1/builds/{id}/betaGroups`가 항상 빈 값을 반환한다. 직전 후보 build 56도 동일하므로 이 엔드포인트를 연결 확인 오라클로 쓰지 않는다. 유효한 신호는 `internalBuildState`다.
 - 이전 후보: `main@c66f7e7`(`v1.0.8`)의 Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962`이 성공했다. App Store Connect build `454e15f2-4075-4828-b613-a67085b3e7d4`는 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. Xcode Cloud build를 내부 그룹 `서리랩스 내부테스터`에 명시적으로 연결한 뒤 `IN_BETA_TESTING`을 API로 readback했다(2026-08-06). 실제 테스터 설치·실기기 QA와 App Review 제출은 하지 않았다.
-- App Store version: version string `1.0.9`, Build 57 관계, `AFTER_APPROVAL`, copyright `2026 Seorilabs`, review detail을 ASC API로 반영·readback했다. 현재 `PREPARE_FOR_SUBMISSION`이며 `v1.1.1` build·App Privacy·DSA·availability·실기기 QA 뒤 제출한다.
+- App Store version: version string `1.0.9`, Build 57 관계, `AFTER_APPROVAL`, copyright `2026 Seorilabs`, review detail을 ASC API로 반영·readback했다. 현재 `PREPARE_FOR_SUBMISSION`이며 `v1.1.1` build·App Privacy·DSA Console 확인·실기기 QA 뒤 제출한다. 전국가 availability는 완료했다.
 - App Check: Firebase iOS 앱에 Team ID `HCDUXX4Z3X`와 App Store ID `6792193162`를 등록했고 App Attest·DeviceCheck provider 설정을 readback했다. 실제 TestFlight 1.0.8 token 확인 전 enforcement는 false다.
 - 1.0.2 후보(과거 실패): `main@d11bbfa`(`v1.0.2`)의 device archive는 암호화 선언 키 누락과 strict codesign `CSSMERR_TP_NOT_TRUSTED`로 업로드하지 않았다. 이 실패는 1.0.5 Xcode Cloud 성공으로 빌드 경로 기준 해결됐다.
 - App Store provisioning profile: ✅ App Store profile로 export 완료

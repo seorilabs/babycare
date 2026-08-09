@@ -8,6 +8,7 @@
 - AdMob Android/iOS 앱과 rewarded unit을 만들고 production ID를 반영했다. EU UMP와 미국 주 privacy message를 두 앱에 게시했으며, 앱에서 consent withdrawal을 열 수 있는 privacy options UI를 추가했다.
 - 제품별 개인정보처리방침 한국어·영어 페이지를 `seorilabs-official` PR #6으로 병합·배포해 live 200을 확인했다. Google Play와 AdMob의 Android/iOS URL을 저장했고, ASC API에서도 ko/en-US URL을 제품별 경로로 교체·readback했다.
 - Google Play Data Safety는 Google Mobile Ads·Firebase Analytics 기준 최신 CSV를 import해 Preview와 저장을 확인했다. 광고 있음, 광고 ID 사용과 분석·광고/마케팅·사기 방지/보안 목적도 저장했다. 이 변경들은 production 후보와 함께 검토 전송할 때까지 공개 반영 상태가 아니다.
+- ASC API v2에서 활성 App Store 지역 175개를 모두 `available=true`로 만들고 새 지역 자동 포함을 켰다. readback은 175/175이며 전 지역이 미출시 앱 공통 `AVAILABLE_FOR_SALE_UNRELEASED_APP` 상태다. DSA trader와 App Privacy는 Console 입력값을 별도로 확인한다.
 - 검증: `pnpm run test:static`에서 core 43건, mobile 323건, Functions 17건, Firebase config 3건, build workflow 11건과 typecheck·lint·architecture·docs·store screenshots가 모두 통과했다. `check:release`는 새 store artifact 실기기 QA·Apple Console 입력·심사·공개 gate가 남아 있어 예상대로 실패했다.
 
 ## 2026-08-08 — GA4·Platform 이중 Analytics와 통계 상세 리워드 광고 구현
