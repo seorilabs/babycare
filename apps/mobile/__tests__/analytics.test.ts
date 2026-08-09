@@ -30,6 +30,7 @@ describe('PlatformAnalytics', () => {
     }) as jest.MockedFunction<typeof fetch>;
     const analytics = new PlatformAnalytics({
       baseUrl: 'https://platform.example.com/',
+      eventsBaseUrl: 'https://platform-ingest.example.com/',
       context: {platform: 'android', appVersion: '1.0.0'},
       firebaseIdToken: async () => 'firebase-token',
       fetchImpl,
@@ -60,7 +61,9 @@ describe('PlatformAnalytics', () => {
     });
 
     const eventRequest = fetchImpl.mock.calls[1];
-    expect(eventRequest?.[0]).toBe('https://platform.example.com/v1/events');
+    expect(eventRequest?.[0]).toBe(
+      'https://platform-ingest.example.com/v1/events',
+    );
     expect(eventRequest?.[1]?.headers).toMatchObject({
       Authorization: 'Bearer platform-token',
       'X-Seori-App': 'babycare',

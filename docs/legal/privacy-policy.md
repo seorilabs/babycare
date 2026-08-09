@@ -1,6 +1,6 @@
-# 개인정보처리방침 (내부 참고 — 회사 공용 정책으로 대체됨)
+# 함께봄 개인정보처리방침 원장
 
-> **상태: 참고용.** 스토어 `privacyPolicyUrl`은 **회사 공용 정책** `https://www.seorilabs.com/privacy/`(en: `/en/privacy/`, 총 8개 언어)를 사용한다. 회사 공용 정책 본문의 "아동" 섹션에 babycare 케이스(성인이 비공개 그룹 내 아동 돌봄 기록 입력·공유)를 포괄하는 조항을 보강했다(seorilabs-official). 이 문서는 그 보강의 근거가 된 앱별 상세 초안으로 내부 참고용으로 남긴다.
+> **상태: 제품별 공개 방침의 근거 원장.** 스토어 `privacyPolicyUrl`은 `https://www.seorilabs.com/apps/babycare/privacy/`(en: `/en/apps/babycare/privacy/`)를 사용한다. 공개 페이지 source는 `seorilabs-official` PR #6에서 2026-08-09 병합했다.
 
 Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이용자의 개인정보를 중요하게 생각하며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 본 방침은 서비스가 어떤 정보를 어떤 목적으로 처리하고 어떻게 보호하는지 설명합니다.
 

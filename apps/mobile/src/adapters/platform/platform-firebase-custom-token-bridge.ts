@@ -3,6 +3,9 @@ export const PLATFORM_FIREBASE_AUTH_CONFIG = {
   baseUrl: 'https://platform-api-306278488979.asia-northeast3.run.app',
 } as const;
 
+export const PLATFORM_EVENTS_URL =
+  'https://platform-ingest-306278488979.asia-northeast3.run.app';
+
 export interface FirebaseCustomTokenBridgeResult {
   readonly firebaseCustomToken: string;
   readonly appUserId: string;

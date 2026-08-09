@@ -1,6 +1,6 @@
 # Backlog
 
-기획은 2026-07-12 승인됐고 2026-08-06 재배포와 남은 출시 순서 진행 승인을 받았다. 범위 밖 제품 기능은 다음 planning approval을 거치며 국가 availability·법적 사업자 선택은 별도 확정한다.
+기획은 2026-07-12 승인됐고 2026-08-09 Google Play·App Store 잔여 blocker 처리와 EU 포함 전국가 출시, Apple DSA trader 승인을 받았다. 범위 밖 제품 기능과 AppsInToss 공개 출시는 별도 gate를 거친다.
 
 ## P0 — 공동 기록 MVP
 

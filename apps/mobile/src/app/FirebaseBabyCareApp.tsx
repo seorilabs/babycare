@@ -231,6 +231,7 @@ export function FirebaseCareDashboard(props: {
           memberships={props.ready.memberships}
           onCreateInvite={props.onInvite}
           onDeleteAccount={props.onDeleteAccount}
+          onOpenAdPrivacyOptions={props.runtime.openAdPrivacyOptions}
           onRefreshMembers={props.onRefreshMembers}
           onReset={async () => undefined}
           session={session}

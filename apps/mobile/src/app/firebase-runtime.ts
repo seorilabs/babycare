@@ -37,7 +37,10 @@ import {
 } from '@babycare/product-data';
 
 import {FirebaseAnalyticsAdapter} from '../adapters/analytics/firebase-analytics-adapter';
-import {MobileRewardedAd} from '../adapters/ads/mobile-rewarded-ad';
+import {
+  MobileRewardedAd,
+  showMobileAdPrivacyOptions,
+} from '../adapters/ads/mobile-rewarded-ad';
 import {FirebaseAuthAdapter} from '../adapters/firebase/firebase-auth-adapter';
 import {
   initializeFirebaseAppCheck,
@@ -51,6 +54,7 @@ import {FirebaseInviteService} from '../adapters/firebase/firebase-invite-servic
 import {NativeIdGenerator} from '../adapters/system/native-id-generator';
 import {
   PLATFORM_FIREBASE_AUTH_CONFIG,
+  PLATFORM_EVENTS_URL,
   PlatformFirebaseCustomTokenBridge,
   type FirebaseCustomTokenBridge,
 } from '../adapters/platform/platform-firebase-custom-token-bridge';
@@ -113,6 +117,7 @@ export interface FirebaseRuntimeOptions {
   readonly eventIds?: IdGeneratorPort;
   readonly analytics?: AnalyticsPort;
   readonly rewardedAd?: RewardedAdPort;
+  readonly adPrivacyOptions?: () => Promise<boolean>;
   readonly timeline?: CareEventTimelineFeedConfig;
   readonly authBridge?: FirebaseCustomTokenBridge;
   readonly accountDeletion?: AccountDeletionPort;
@@ -136,6 +141,7 @@ export interface FirebaseRuntime {
   readonly functionsRegion: string;
   readonly analytics: AnalyticsPort;
   readonly rewardedAd: RewardedAdPort;
+  readonly openAdPrivacyOptions: () => Promise<boolean>;
   readonly emulatorHost?: string;
   readonly sessionServices: FirebaseSessionServices;
   createCareContainer(
@@ -371,6 +377,7 @@ export async function createFirebaseRuntime(
           new FirebaseAnalyticsAdapter(resolved.app),
           new PlatformAnalytics({
             baseUrl: PLATFORM_FIREBASE_AUTH_CONFIG.baseUrl,
+            eventsBaseUrl: PLATFORM_EVENTS_URL,
             firebaseIdToken: async () => {
               const user = auth.currentUser;
               return user ? getIdToken(user) : undefined;
@@ -387,6 +394,11 @@ export async function createFirebaseRuntime(
           preload: async () => undefined,
           show: async () => ({status: 'unavailable' as const}),
         });
+  const openAdPrivacyOptions =
+    options.adPrivacyOptions ??
+    (resolved.source === 'native'
+      ? showMobileAdPrivacyOptions
+      : async () => false);
   rewardedAd.preload().catch(() => undefined);
   const timeline = options.timeline ?? FIREBASE_CARE_EVENT_TIMELINE_CONFIG;
   const sessionServices: FirebaseSessionServices = {
@@ -436,6 +448,7 @@ export async function createFirebaseRuntime(
     functionsRegion,
     analytics,
     rewardedAd,
+    openAdPrivacyOptions,
     ...(emulatorHost ? {emulatorHost} : {}),
     sessionServices,
     createCareContainer,

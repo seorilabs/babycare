@@ -37,20 +37,67 @@
     {
       "responseId": "PSL_DEVICE_ID",
       "collection": "required",
-      "purposes": ["PSL_APP_FUNCTIONALITY", "PSL_FRAUD_PREVENTION_SECURITY"]
+      "purposes": [
+        "PSL_APP_FUNCTIONALITY",
+        "PSL_ANALYTICS",
+        "PSL_FRAUD_PREVENTION_SECURITY",
+        "PSL_ADVERTISING"
+      ],
+      "shared": true,
+      "sharingPurposes": [
+        "PSL_ANALYTICS",
+        "PSL_FRAUD_PREVENTION_SECURITY",
+        "PSL_ADVERTISING"
+      ]
+    },
+    {
+      "responseId": "PSL_APPROX_LOCATION",
+      "collection": "required",
+      "purposes": [
+        "PSL_ANALYTICS",
+        "PSL_FRAUD_PREVENTION_SECURITY",
+        "PSL_ADVERTISING"
+      ],
+      "shared": true,
+      "sharingPurposes": [
+        "PSL_ANALYTICS",
+        "PSL_FRAUD_PREVENTION_SECURITY",
+        "PSL_ADVERTISING"
+      ]
+    },
+    {
+      "responseId": "PSL_USER_INTERACTION",
+      "collection": "required",
+      "purposes": [
+        "PSL_ANALYTICS",
+        "PSL_FRAUD_PREVENTION_SECURITY",
+        "PSL_ADVERTISING"
+      ],
+      "shared": true,
+      "sharingPurposes": [
+        "PSL_ANALYTICS",
+        "PSL_FRAUD_PREVENTION_SECURITY",
+        "PSL_ADVERTISING"
+      ]
+    },
+    {
+      "responseId": "PSL_PERFORMANCE_DIAGNOSTICS",
+      "collection": "required",
+      "purposes": [
+        "PSL_ANALYTICS",
+        "PSL_FRAUD_PREVENTION_SECURITY",
+        "PSL_ADVERTISING"
+      ],
+      "shared": true,
+      "sharingPurposes": [
+        "PSL_ANALYTICS",
+        "PSL_FRAUD_PREVENTION_SECURITY",
+        "PSL_ADVERTISING"
+      ]
     }
   ],
-  "pendingSdkRevision": {
-    "reason": "Firebase Analytics and Google Mobile Ads were added after the last Console submission.",
-    "requiresFreshConsoleTemplate": true,
-    "dataTypes": [
-      "Approximate location from IP",
-      "App interactions",
-      "Crash logs",
-      "Diagnostics and performance",
-      "Device or other IDs including advertising ID"
-    ],
-    "sharing": "Google Mobile Ads advertising, analytics, and fraud prevention",
-    "consoleReadback": false
+  "sdkDisclosureEvidence": {
+    "googleMobileAds": "Google Mobile Ads automatically collects and shares IP-derived approximate location, user product interactions, diagnostics, and device/account identifiers for advertising, analytics, and fraud prevention.",
+    "consoleReadback": true
   }
 }

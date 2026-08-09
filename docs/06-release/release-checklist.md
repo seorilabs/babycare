@@ -17,8 +17,8 @@
 
 ## Market Gate
 
-- [ ] Google Play metadata와 config 재확정 — 기존 무광고 1.0.9까지의 Data Safety·광고/광고 ID 답변은 readback 완료. Analytics·AdMob 추가분의 Data Safety, 광고 있음, 광고 ID 사용을 새 Console template로 재제출·readback해야 함
-- [ ] App Store metadata와 config 확정 — 진행: `app-store/app-store.config.json`(이름·subtitle·설명·키워드), 개인정보처리방침, 아이콘 1024·6.9"·13" iPad 실제 스크린샷 각 5컷, signing·ASC 앱 생성, Xcode Cloud 1.0.8/56 `VALID`·`APP_STORE_ELIGIBLE`, build 관계·4+ 등급·카테고리·content rights·review detail·내부 TestFlight 연결 확인 완료 / 남음: App Privacy·availability 콘솔 확정
+- [ ] Google Play metadata와 config 재확정 — Analytics·AdMob 기준 Data Safety CSV import·Preview, 광고 있음, 광고 ID 사용과 목적을 2026-08-09 Console에 저장했다. 제품별 개인정보처리방침 live URL 교체와 `v1.1.1` production 후보를 묶어 검토 전송·readback하는 단계가 남음
+- [ ] App Store metadata와 config 확정 — 앱 정보·자산·영문 UI 스크린샷 완료. EU 포함 전국가 출시와 trader를 확정했고 제품별 개인정보처리방침을 병합했다. 남음: App Privacy·DSA trader 연락처·availability를 ASC에 입력하고 `v1.1.1` build와 함께 readback
 - [x] 앱 i18n `ko`/`en` 구현 — 자체 타입 사전, 기기 로케일 자동 판별, Android `values-ko` 런처 이름, iOS `CFBundleLocalizations`. ADR `0005-app-localization-policy.md`. 310건 mobile 테스트·typecheck·lint 통과(2026-08-08)
 - [x] i18n 포함 App Store 후보 재빌드 — `v1.0.9` / `fe2b4b1`, Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430`, ASC build `95e65693-70a5-42cf-9590-d63e385a9951`(`1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`), 2026-08-08
 - [x] `1.0.9`/build 57을 ASC 버전 레코드·내부 TestFlight 그룹에 연결 — `versionString=1.0.9`, `related build=95e65693`, `internalBuildState=IN_BETA_TESTING` readback, 2026-08-08
@@ -32,10 +32,10 @@
 - [x] production 초대 callable Secret Manager·Cloud Run 진입 계약 확인 — Domain Restricted Sharing 환경에서 `createInvite`·`acceptInvite` Invoker IAM check 비활성화, Firebase Auth/owner 검사는 유지
 - [ ] 실제 project의 App Check 또는 edge rate limit 확정 — mobile Play Integrity·App Attest·DeviceCheck와 Platform 검증 경계 구현·provider 운영 구성 readback 완료. 새 후보 실기기 token 확인 전 `require_app_check=false`, `ENFORCE_APP_CHECK=false`
 - [x] production 계정 삭제 callable과 외부 삭제 경로 — `deleteAccount` ACTIVE·IAM 적용, Platform 삭제 mapping API production 배포, 외부 안내 페이지 live 200, 일회성 owner/member 계정 삭제·정리 live QA 완료
-- [ ] GA4·Platform Analytics 운영 연결 — source 구현·단위 검증 완료 / 남음: `GA4_MEASUREMENT_ID`·`GA4_API_SECRET`, `logAnalyticsEvents` 배포·Cloud Run 진입 계약 적용, Platform registry sync·deploy, GA4/Platform 양측 live readback
-- [ ] 최소 광고 운영 연결 — AdMob Android/iOS app ID·rewarded unit ID, AppsInToss adGroupId, UMP 메시지, 새 artifact 실기기 보상 완료·24시간 해제 QA
+- [x] GA4·Platform Analytics 운영 연결 — GA4 property `549232169`·3개 stream·BigQuery link, Secret Manager API secret, `logAnalyticsEvents` ACTIVE를 구성했다. 인증 callable `accepted=1`, GA4 Realtime `core_screen_view=1`, Platform registry의 14개 allowlist, ingest `accepted=1`, BigQuery `babycare-launch-smoke-20260809-0803`를 readback했다(2026-08-09)
+- [ ] 최소 광고 운영 연결 — AdMob Android/iOS app·rewarded unit을 생성해 production ID를 native에 반영했고 EU UMP·미국 주 privacy message를 게시했다. 남음: `v1.1.1` Play/TestFlight 설치본에서 미완료 보상 금지·완료 후 24시간 해제·privacy options QA. AppsInToss 광고는 이번 Play/App Store 출시 범위 밖
 - [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
-- [ ] Privacy/data safety/review notes 확정 — 진행: Google Play Data Safety·개인정보 URL·IARC·타깃·건강 선언 Console readback 완료, **개인정보처리방침 게시·반영 완료**(`https://www.seorilabs.com/privacy/`) / 남음: Apple App Privacy 답변·readback
+- [ ] Privacy/data safety/review notes 확정 — Google Play Data Safety·광고·광고 ID·제품별 방침 URL을 Console에 저장했고 ASC도 ko/en-US 제품별 URL을 API readback했다. 남음: Apple App Privacy·DSA·전국가 availability와 양쪽 제출 readback
 
 ## QA Gate
 

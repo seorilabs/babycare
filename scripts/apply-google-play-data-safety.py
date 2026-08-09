@@ -181,6 +181,8 @@ def build_csv(template: Path, answers: dict[str, Any]) -> str:
         response_id = item.get("responseId")
         collection = item.get("collection")
         purposes = item.get("purposes")
+        shared = item.get("shared", False)
+        sharing_purposes = item.get("sharingPurposes", [])
         if not isinstance(response_id, str) or response_id in seen:
             raise ValueError(f"Invalid or duplicate responseId: {response_id!r}")
         if collection not in {"required", "optional"}:
@@ -189,6 +191,16 @@ def build_csv(template: Path, answers: dict[str, Any]) -> str:
             raise ValueError(f"At least one purpose is required for {response_id}")
         if not all(isinstance(purpose, str) for purpose in purposes):
             raise ValueError(f"Invalid purpose for {response_id}")
+        if not isinstance(shared, bool):
+            raise ValueError(f"Invalid shared setting for {response_id}")
+        if shared and (
+            not isinstance(sharing_purposes, list)
+            or not sharing_purposes
+            or not all(isinstance(purpose, str) for purpose in sharing_purposes)
+        ):
+            raise ValueError(f"At least one sharing purpose is required for {response_id}")
+        if not shared and sharing_purposes:
+            raise ValueError(f"Sharing purposes require shared=true for {response_id}")
         seen.add(response_id)
 
         type_rows = [
@@ -208,6 +220,13 @@ def build_csv(template: Path, answers: dict[str, Any]) -> str:
             response_id="PSL_DATA_USAGE_ONLY_COLLECTED",
             value="TRUE",
         )
+        if shared:
+            set_unique(
+                rows,
+                question_id=prefix + "PSL_DATA_USAGE_COLLECTION_AND_SHARING",
+                response_id="PSL_DATA_USAGE_ONLY_SHARED",
+                value="TRUE",
+            )
         set_unique(
             rows,
             question_id=prefix + "PSL_DATA_USAGE_EPHEMERAL",
@@ -228,6 +247,13 @@ def build_csv(template: Path, answers: dict[str, Any]) -> str:
             set_unique(
                 rows,
                 question_id=prefix + "DATA_USAGE_COLLECTION_PURPOSE",
+                response_id=purpose,
+                value="TRUE",
+            )
+        for purpose in sharing_purposes:
+            set_unique(
+                rows,
+                question_id=prefix + "DATA_USAGE_SHARING_PURPOSE",
                 response_id=purpose,
                 value="TRUE",
             )

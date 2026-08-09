@@ -15,6 +15,8 @@ import {
 
 const PLATFORM_URL =
   'https://platform-api-306278488979.asia-northeast3.run.app';
+const PLATFORM_EVENTS_URL =
+  'https://platform-ingest-306278488979.asia-northeast3.run.app';
 const CLIENT_ID_KEY = 'babynest.analytics-client-id.v1';
 const MAX_BATCH = 20;
 
@@ -96,6 +98,7 @@ export function createBabycareAnalytics(fetchImpl?: typeof fetch): FanOutAnalyti
     new AitGa4Analytics(),
     new PlatformAnalytics({
       baseUrl: PLATFORM_URL,
+      eventsBaseUrl: PLATFORM_EVENTS_URL,
       firebaseIdToken: currentFirebaseIdToken,
       context: {platform: 'ait'},
       ...(fetchImpl ? {fetchImpl} : {}),

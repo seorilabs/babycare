@@ -4,7 +4,7 @@
 > 근거: `docs/05-markets/store-data-disclosure.md`, `docs/01-planning/product-spec.md`.
 
 ## 1. 개인정보처리방침 (Privacy policy)
-- URL: `https://www.seorilabs.com/privacy/`
+- URL: `https://www.seorilabs.com/apps/babycare/privacy/` — 한국어·영어 live 200 및 Play Console 저장 readback 완료(2026-08-09)
 - 계정 삭제 URL: `https://www.seorilabs.com/apps/babycare/account-deletion/`
 
 ## 2. 앱 액세스 (App access)
@@ -70,9 +70,9 @@
 - 금융 기능: **없음**
 - 건강 기능: **영양 및 체중 관리**, **수면 관리**. 지역별 추가 요구사항 없음. 의료 진단·처방·치료 기능은 없음
 - 정부 앱/뉴스 앱/AI 생성 콘텐츠: **아니요**
-- 광고 ID: **사용함**. Google Mobile Ads SDK가 포함되므로 광고 ID 선언을 `예`로 갱신한다. **Console 재입력·readback 대기.**
+- 광고 ID: **사용함**. Google Mobile Ads SDK 기준 `예`, 목적은 분석·광고/마케팅·사기 방지/보안으로 2026-08-09 Console 저장 readback 완료.
 
 ## Data safety API 자동 반영에 대해
 - Android Publisher API에 `applications.dataSafety`(safetyLabels CSV) 쓰기 엔드포인트가 존재한다.
 - 답변 원장은 `play-store/data-safety-responses.json`이다. Play Console에서 내보내거나 공식 도움말에서 받은 최신 CSV를 `scripts/apply-google-play-data-safety.py --template-csv <csv> --output <filled.csv>`로 생성한다.
-- 생성본을 검토한 뒤 `--apply`를 추가하면 Android Publisher API로 반영한다. 2026-08-07 기존 무광고 runtime 답변은 제출·readback했지만, 2026-08-08 SDK 추가분은 최신 Console template 확보 전이라 아직 제출하지 않았다.
+- 생성본을 검토한 뒤 Console CSV import 또는 `--apply`로 반영한다. 2026-08-09 SDK 추가분을 최신 Console template에 적용해 import·Preview·저장 readback을 완료했고 production 후보와 함께 검토 전송하는 단계가 남았다.
