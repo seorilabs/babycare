@@ -1,13 +1,29 @@
 import type {RewardedAdPort, RewardedAdResult} from '@babycare/product-core';
+import {Platform} from 'react-native';
 import type {RewardedAd} from 'react-native-google-mobile-ads';
 
-/**
- * 운영 광고 단위는 AdMob 생성 후 확정해야 한다. 빈 값이면 release에서
- * 광고를 요청하지 않는다. Debug는 Google 공식 test unit만 사용한다.
- */
-export const MOBILE_REWARDED_AD_UNIT_ID = '';
+export const MOBILE_REWARDED_AD_UNIT_IDS = {
+  android: 'ca-app-pub-2444587584524186/2456871394',
+  ios: 'ca-app-pub-2444587584524186/4934146913',
+} as const;
 
 const AD_NETWORK = 'admob';
+
+export async function showMobileAdPrivacyOptions(): Promise<boolean> {
+  const {
+    AdsConsent,
+    AdsConsentPrivacyOptionsRequirementStatus,
+  } = await import('react-native-google-mobile-ads');
+  const consent = await AdsConsent.getConsentInfo();
+  if (
+    consent.privacyOptionsRequirementStatus !==
+    AdsConsentPrivacyOptionsRequirementStatus.REQUIRED
+  ) {
+    return false;
+  }
+  await AdsConsent.showPrivacyOptionsForm();
+  return true;
+}
 
 export class MobileRewardedAd implements RewardedAdPort {
   #ad: RewardedAd | undefined;
@@ -24,7 +40,11 @@ export class MobileRewardedAd implements RewardedAdPort {
       RewardedAdEventType,
       TestIds,
     } = await import('react-native-google-mobile-ads');
-    const unitId = __DEV__ ? TestIds.REWARDED : MOBILE_REWARDED_AD_UNIT_ID;
+    const unitId = __DEV__
+      ? TestIds.REWARDED
+      : Platform.OS === 'ios'
+        ? MOBILE_REWARDED_AD_UNIT_IDS.ios
+        : MOBILE_REWARDED_AD_UNIT_IDS.android;
     if (!unitId) {
       return;
     }

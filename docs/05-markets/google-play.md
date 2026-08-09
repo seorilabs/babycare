@@ -6,7 +6,7 @@
 ## App Identity
 
 - **Play Console 앱 생성 + 리스팅 draft 반영 (2026-07-18)** — publisher SA로 ko-KR·en-US 제목·설명, 아이콘 512·피처그래픽·phone 스크린샷 3컷 커밋(리스팅 콘텐츠 검토는 자동 트리거, 앱 게시/출시는 아님 — 릴리스 트랙 없음)
-- **Localization (2026-08-08)** — 앱이 `ko`/`en` 이중 언어가 됐다(ADR `0005-app-localization-policy.md`). 런처 이름은 `values/`가 `BabyNest`, `values-ko/`가 `함께봄`이다. en-US 리스팅 스크린샷은 한국어 UI 캡처이므로 영어 UI로 교체 검토가 필요하다 — `확정 필요`
+- **Localization (2026-08-08)** — 앱이 `ko`/`en` 이중 언어가 됐다(ADR `0005-app-localization-policy.md`). 런처 이름은 `values/`가 `BabyNest`, `values-ko/`가 `함께봄`이다. en-US 리스팅에는 영어 UI의 phone 스크린샷 3컷을 업로드하고 Console readback을 완료했다.
 - Package name: `com.seorilabs.babycare` (2026-07-13 확정)
 - App name KO(타이틀): `함께봄: 수유, 기저귀, 아기돌봄 기록 어플` (24자, 사용자 확정)
 - App name EN(타이틀): `BabyNest: Shared Baby Care Log` (30자)
@@ -38,13 +38,13 @@
 
 ## Policy
 
-- Data safety: 기존 제출본은 광고/Analytics SDK 도입 전 기준이다. Google Mobile Ads/Firebase Analytics의 앱 상호작용·진단·기기 ID·IP 기반 대략적 위치 수집 및 광고 목적 제3자 공유를 반영해 재제출·Console readback해야 한다.
-- Ads declaration: **광고 있음(`yes`)으로 변경 필요** — 통계 상세의 선택형 리워드 광고
+- Data safety: Google Mobile Ads/Firebase Analytics의 이름·사용자 ID·기타 정보·건강·사용자 생성 콘텐츠 수집과 앱 상호작용·진단·기기 ID·IP 기반 대략적 위치의 수집·공유를 반영한 CSV를 2026-08-09 Console에 import했다. Preview와 저장 완료를 readback했으며 production 후보와 함께 검토 전송하는 단계가 남았다.
+- Ads declaration: **광고 있음(`yes`)** — 통계 상세의 선택형 리워드 광고. 2026-08-09 Console 저장 완료, 검토 전송 대기.
 - App access instructions: 제한된 로그인 없음. 앱이 기기 기반 계정을 자동 생성하며, 첫 기기에서 그룹 생성 후 초대 코드로 두 번째 기기가 합류함. 데모 계정 불필요
 - Target audience/content rating: ✅ 만 18세 이상, 아동 대상 아님 / IARC 한국 `12세 이상`(초대된 친구 사이의 비공개 사용자 상호작용)
 - Health declaration: ✅ `영양 및 체중 관리`, `수면 관리`; 지역별 추가 요구사항 없음. 의료 진단·처방 기능은 없음
 - Financial/payment features: 없음
-- Advertising ID / government app: Google Mobile Ads SDK 사용으로 **광고 ID 사용 `yes` 변경 필요** / 정부 앱 아님
-- Privacy policy URL: `https://www.seorilabs.com/privacy/` ✅ 게시·Play Console readback
+- Advertising ID / government app: Google Mobile Ads SDK 사용으로 **광고 ID 사용 `yes`**, 목적은 분석·광고/마케팅·사기 방지/보안. 2026-08-09 Console 저장 완료 / 정부 앱 아님
+- Privacy policy URL: `https://www.seorilabs.com/apps/babycare/privacy/` ✅ 제품별 한국어·영어 방침 live 200 및 2026-08-09 Play Console 저장 readback 완료. production 후보와 함께 검토 전송 대기.
 - Account deletion URL: `https://www.seorilabs.com/apps/babycare/account-deletion/` ✅ live 200·Play Console readback
 - Review submission: 앱 콘텐츠 변경은 게시 개요에 대기 중. 최초 production release 후보가 없어 `검토를 위해 앱 전송` 비활성. Play Store 설치본 QA 뒤 production 후보를 구성하고 함께 제출

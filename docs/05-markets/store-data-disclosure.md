@@ -1,6 +1,6 @@
 # 스토어 데이터 공개 (Data Safety / App Privacy)
 
-> **상태: 광고·Analytics 도입에 따른 Google Play 재제출과 Apple 입력 대기.** `apps/mobile/package.json`과 production composition을 기준으로 확인한 스토어 공개 원장이다.
+> **상태: Google Play 변경 저장 완료, 검토 전송과 Apple 입력 대기.** `apps/mobile/package.json`과 production composition을 기준으로 확인한 스토어 공개 원장이다.
 
 ## 공통 원칙 (product-spec 근거)
 
@@ -51,14 +51,14 @@
 
 - `Name`에는 양육자 표시 이름과 아기 이름, `Health`에는 구조화된 수유·기저귀·수면 기록, `Other User Content`에는 자유 입력 메모, `Other Data Types`에는 아기 생년월일을 답한다. 비의료 도구 포지셔닝은 Apple의 광범위한 Health data type 신고를 면제하지 않는다.
 - Google Mobile Ads 공식 공개는 IP 주소, crash/performance, Device ID, Advertising Data, Product Interaction 처리를 명시한다. Firebase Analytics의 실제 이벤트와 Platform 연계 여부까지 합쳐 위 표를 보수적으로 작성했다.
-- **Data Used to Track You: 잠정 없음.** 앱은 ATT를 요청하지 않고 비개인화 요청만 사용한다. 다만 운영 AdMob/UMP 설정과 archive privacy report에서 교차 앱 추적이 없음을 확인하기 전에는 App Privacy 입력을 완료하지 않는다.
+- **Data Used to Track You: 없음.** 앱은 ATT를 요청하지 않고 native 광고 요청을 비개인화로 고정했다. EU UMP와 미국 주 privacy message를 Android/iOS 두 앱에 게시했고 앱 내 privacy options 경로를 구현했다. `v1.1.1` archive privacy report readback은 별도 QA 게이트다.
 - Export Compliance: `ITSAppUsesNonExemptEncryption = false` (표준 TLS/Firebase만 사용)
 - `PrivacyInfo.xcprivacy`는 App Privacy 콘솔 답변을 대체하지 않음 — 별도 유지.
 
 ## 미확정 (blocker)
 
-- Google Play Data Safety·광고 있음·광고 ID 답변 재제출 및 readback.
+- Google Play Data Safety·광고 있음·광고 ID 변경은 Console 저장 완료. production 후보와 함께 검토 전송 및 최종 readback.
 - Apple App Privacy 콘솔 입력·archive privacy report readback.
-- AdMob UMP 메시지·비개인화/limited ads 설정 검증.
-- 실제 Play Store/TestFlight 1.0.8 설치본의 계정 삭제 화면·cache purge 사람 QA.
+- `v1.1.1` archive privacy report의 SDK·privacy manifest 검증.
+- 실제 Play Store/TestFlight `v1.1.1` 설치본의 계정 삭제 화면·cache purge 사람 QA.
 - 처리위탁/제3자 공유 판단 legal 확정.

@@ -6,7 +6,7 @@ import type {Strings} from '../app/i18n';
 import type {LocalSession} from '../app/session';
 import type {AppTheme} from '../app/theme';
 
-const privacyPolicyUrl = 'https://www.seorilabs.com/privacy/';
+const privacyPolicyUrl = 'https://www.seorilabs.com/apps/babycare/privacy/';
 
 function SettingRow(props: {
   readonly icon: string;
@@ -46,6 +46,7 @@ export function MoreScreen(props: {
   readonly onCreateInvite?: () => Promise<void>;
   readonly onRefreshMembers?: () => Promise<void>;
   readonly onDeleteAccount?: () => Promise<void>;
+  readonly onOpenAdPrivacyOptions?: () => Promise<boolean>;
 }) {
   const strings = props.strings;
   const firebase = props.session.runtimeMode === 'firebase';
@@ -115,6 +116,28 @@ export function MoreScreen(props: {
         strings.more.privacyOpenFailedMessage,
       ),
     );
+  };
+
+  const openAdPrivacyOptions = () => {
+    const handler = props.onOpenAdPrivacyOptions;
+    if (!handler) {
+      return;
+    }
+    handler()
+      .then(shown => {
+        if (!shown) {
+          Alert.alert(
+            strings.more.adPrivacyNotRequiredTitle,
+            strings.more.adPrivacyNotRequiredMessage,
+          );
+        }
+      })
+      .catch(() =>
+        Alert.alert(
+          strings.more.adPrivacyFailedTitle,
+          strings.more.adPrivacyFailedMessage,
+        ),
+      );
   };
 
   const deleteAccount = () => {
@@ -354,6 +377,15 @@ export function MoreScreen(props: {
           theme={props.theme}
           title={strings.more.privacyPolicyTitle}
         />
+        {props.onOpenAdPrivacyOptions ? (
+          <SettingRow
+            detail={strings.more.adPrivacyDetail}
+            icon="◉"
+            onPress={openAdPrivacyOptions}
+            theme={props.theme}
+            title={strings.more.adPrivacyTitle}
+          />
+        ) : null}
         {firebase ? (
           <SettingRow
             detail={

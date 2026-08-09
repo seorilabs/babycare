@@ -1,5 +1,16 @@
 # Work Log
 
+## 2026-08-09 — Google Play·App Store 글로벌 출시 운영 연결
+
+- 사용자가 Google Play·App Store 잔여 blocker 처리와 EU 포함 전국가 출시를 승인하고 Apple DSA status를 trader로 확정했다. Analytics·광고 변경을 포함하는 자연스러운 다음 patch 후보는 `v1.1.1`로 고정했다.
+- Firebase에 GA4 property `549232169`와 Android/iOS/Web stream, BigQuery daily+streaming link를 만들고 `logAnalyticsEvents`를 production 배포했다. 인증 callable `accepted=1`과 GA4 Realtime `core_screen_view=1`을 readback했다.
+- Platform registry의 babycare Events와 14개 allowlist를 실제 regsync하고 production runtime을 main SHA `80507ad`로 재배포했다. ingest smoke `accepted=1`과 BigQuery event `babycare-launch-smoke-20260809-0803`을 확인했다. 앱의 이벤트 URL이 auth 서비스로 잘못 향하던 문제를 `platform-ingest` 별도 base URL로 수정했다.
+- AdMob Android/iOS 앱과 rewarded unit을 만들고 production ID를 반영했다. EU UMP와 미국 주 privacy message를 두 앱에 게시했으며, 앱에서 consent withdrawal을 열 수 있는 privacy options UI를 추가했다.
+- 제품별 개인정보처리방침 한국어·영어 페이지를 `seorilabs-official` PR #6으로 병합·배포해 live 200을 확인했다. Google Play와 AdMob의 Android/iOS URL을 저장했고, ASC API에서도 ko/en-US URL을 제품별 경로로 교체·readback했다.
+- Google Play Data Safety는 Google Mobile Ads·Firebase Analytics 기준 최신 CSV를 import해 Preview와 저장을 확인했다. 광고 있음, 광고 ID 사용과 분석·광고/마케팅·사기 방지/보안 목적도 저장했다. 이 변경들은 production 후보와 함께 검토 전송할 때까지 공개 반영 상태가 아니다.
+- ASC API v2에서 활성 App Store 지역 175개를 모두 `available=true`로 만들고 새 지역 자동 포함을 켰다. readback은 175/175이며 전 지역이 미출시 앱 공통 `AVAILABLE_FOR_SALE_UNRELEASED_APP` 상태다. DSA trader와 App Privacy는 Console 입력값을 별도로 확인한다.
+- 검증: `pnpm run test:static`에서 core 43건, mobile 323건, Functions 17건, Firebase config 3건, build workflow 11건과 typecheck·lint·architecture·docs·store screenshots가 모두 통과했다. `check:release`는 새 store artifact 실기기 QA·Apple Console 입력·심사·공개 gate가 남아 있어 예상대로 실패했다.
+
 ## 2026-08-08 — GA4·Platform 이중 Analytics와 통계 상세 리워드 광고 구현
 
 - Android/iOS는 Firebase Analytics와 Platform Events, AppsInToss는 인증된 Firebase Function 기반 GA4 Measurement Protocol relay와 Platform Events로 동일 핵심 퍼널·화면·광고 이벤트를 fan-out한다. 이름·생년월일·메모·연락처 계열 파라미터는 보내지 않으며 Platform adapter와 GA4 relay가 allowlist·PII key·batch 크기를 검증한다.

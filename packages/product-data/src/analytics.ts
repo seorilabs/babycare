@@ -51,6 +51,7 @@ export interface PlatformAnalyticsContext {
 
 interface PlatformAnalyticsOptions {
   readonly baseUrl: string;
+  readonly eventsBaseUrl?: string;
   readonly firebaseIdToken?: () => Promise<string | undefined>;
   readonly context: PlatformAnalyticsContext | (() => PlatformAnalyticsContext);
   readonly fetchImpl?: typeof fetch;
@@ -134,6 +135,7 @@ function envelopeResult(value: unknown): Record<string, unknown> {
  */
 export class PlatformAnalytics implements AnalyticsPort {
   readonly #baseUrl: string;
+  readonly #eventsBaseUrl: string;
   readonly #firebaseIdToken: (() => Promise<string | undefined>) | undefined;
   readonly #context:
     | PlatformAnalyticsContext
@@ -149,6 +151,10 @@ export class PlatformAnalytics implements AnalyticsPort {
 
   constructor(options: PlatformAnalyticsOptions) {
     this.#baseUrl = options.baseUrl.replace(/\/+$/, '');
+    this.#eventsBaseUrl = (options.eventsBaseUrl ?? options.baseUrl).replace(
+      /\/+$/,
+      '',
+    );
     this.#firebaseIdToken = options.firebaseIdToken;
     this.#context = options.context;
     this.#fetch = options.fetchImpl ?? globalThis.fetch;
@@ -184,7 +190,7 @@ export class PlatformAnalytics implements AnalyticsPort {
       const token = await this.#platformToken();
       const context =
         typeof this.#context === 'function' ? this.#context() : this.#context;
-      const response = await this.#fetch(`${this.#baseUrl}/v1/events`, {
+      const response = await this.#fetch(`${this.#eventsBaseUrl}/v1/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

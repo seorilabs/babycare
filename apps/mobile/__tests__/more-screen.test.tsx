@@ -384,7 +384,9 @@ describe('MoreScreen', () => {
     await ReactTestRenderer.act(async () => {
       await Promise.resolve();
     });
-    expect(openURL).toHaveBeenCalledWith('https://www.seorilabs.com/privacy/');
+    expect(openURL).toHaveBeenCalledWith(
+      'https://www.seorilabs.com/apps/babycare/privacy/',
+    );
 
     openURL.mockRejectedValueOnce(new Error(technicalMessage));
     ReactTestRenderer.act(() => privacyPolicy.props.onPress());
@@ -399,6 +401,62 @@ describe('MoreScreen', () => {
     expect(JSON.stringify(alert.mock.calls)).not.toContain('linking');
 
     openURL.mockRestore();
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('opens the published ad privacy choices and explains unaffected regions', async () => {
+    const openChoices = jest
+      .fn<Promise<boolean>, []>()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockRejectedValueOnce(new Error('native consent failure'));
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onOpenAdPrivacyOptions={openChoices}
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: 'ABC234',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    const choices = renderer.root.findByProps({
+      accessibilityLabel: '광고 개인정보 선택',
+    });
+    ReactTestRenderer.act(() => choices.props.onPress());
+    await ReactTestRenderer.act(async () => Promise.resolve());
+    expect(alert).not.toHaveBeenCalled();
+
+    ReactTestRenderer.act(() => choices.props.onPress());
+    await ReactTestRenderer.act(async () => Promise.resolve());
+    expect(alert).toHaveBeenCalledWith(
+      '현재 지역에는 별도 선택이 필요하지 않아요',
+      '적용되는 개인정보 선택 항목이 생기면 이 메뉴에서 변경할 수 있어요.',
+    );
+
+    ReactTestRenderer.act(() => choices.props.onPress());
+    await ReactTestRenderer.act(async () => Promise.resolve());
+    expect(alert).toHaveBeenCalledWith(
+      '광고 개인정보 선택을 열지 못했어요',
+      '인터넷 연결을 확인하고 다시 시도해 주세요.',
+    );
+
     alert.mockRestore();
     ReactTestRenderer.act(() => renderer.unmount());
   });

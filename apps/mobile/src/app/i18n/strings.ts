@@ -217,6 +217,13 @@ const ko = {
     privacySection: '데이터와 개인정보',
     privacyPolicyTitle: '개인정보 처리방침',
     privacyPolicyDetail: '성인 양육자용 · 비의료 목적',
+    adPrivacyTitle: '광고 개인정보 선택',
+    adPrivacyDetail: '동의·거부 선택을 다시 확인하거나 변경해요',
+    adPrivacyNotRequiredTitle: '현재 지역에는 별도 선택이 필요하지 않아요',
+    adPrivacyNotRequiredMessage:
+      '적용되는 개인정보 선택 항목이 생기면 이 메뉴에서 변경할 수 있어요.',
+    adPrivacyFailedTitle: '광고 개인정보 선택을 열지 못했어요',
+    adPrivacyFailedMessage: '인터넷 연결을 확인하고 다시 시도해 주세요.',
     deleteAccountTitle: '계정 삭제',
     deleteAccountPending: '계정 삭제 중…',
     deleteAccountOwnerDetail: '계정과 돌봄 그룹의 모든 데이터를 영구 삭제해요',
@@ -535,6 +542,13 @@ const en: Strings = {
     privacySection: 'Data and privacy',
     privacyPolicyTitle: 'Privacy policy',
     privacyPolicyDetail: 'For adult caregivers · non-medical',
+    adPrivacyTitle: 'Ad privacy choices',
+    adPrivacyDetail: 'Review or change your consent and opt-out choices',
+    adPrivacyNotRequiredTitle: 'No separate choice is required in your region',
+    adPrivacyNotRequiredMessage:
+      'If privacy choices become applicable, you can change them here.',
+    adPrivacyFailedTitle: "Couldn't open ad privacy choices",
+    adPrivacyFailedMessage: 'Check your internet connection and try again.',
     deleteAccountTitle: 'Delete account',
     deleteAccountPending: 'Deleting account…',
     deleteAccountOwnerDetail:

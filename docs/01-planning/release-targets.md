@@ -28,7 +28,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 | Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ **`v1.0.9` AAB(1.0.9/1000009)를 internal `completed` 업로드·API readback 완료**. Analytics·AdMob/UMP 추가 source는 아직 새 artifact가 아님 | 운영 광고 설정·Data Safety 재제출·새 internal 설치 QA → production 심사·승격 |
 | App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ **`v1.0.9` 1.0.9(57), ASC `VALID`·`APP_STORE_ELIGIBLE`·`IN_BETA_TESTING`**. Analytics·GMA/UMP 추가 source는 아직 새 build가 아님 | 운영 광고 설정·App Privacy 재입력·새 TestFlight QA → 심사 제출 |
 | AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. 두 계정 production API E2E 통과 후 `main@707df10`을 workflow run `31123595821`에서 비공개 deployment `019fd827-571d-791d-bd50-08f2da35afec`로 업로드 | sandbox 실기기 QA → 정책 답변·프로덕션 승인 |
-| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | 기존 Firestore·Storage·Functions·Platform 인증 bridge는 LIVE. GA4 relay callable과 Platform Events registry 변경은 source 구현 상태이며 아직 배포·registry sync 전 | GA4 secret/measurement ID 설정 → Functions 배포·registry sync → 양측 live event readback |
+| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firestore·Storage·Functions·Platform 인증 bridge·GA4 relay·Platform Events가 LIVE. GA4 Realtime과 Platform BigQuery 실수집 readback 완료 | `v1.1.1` 기기 이벤트와 App Check token 검증 |
 
 ## 공통 Blocker
 
@@ -38,8 +38,8 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - App Check 또는 edge rate limit, 실시간/offline sync, 멤버 제거와 cache purge 통합 검증.
 - 개인정보 처리방침과 계정 삭제 절차는 게시·운영 검증 완료. 아동 관련 정보·사진·돌봄 기록 disclosure의 콘솔 제출은 남음.
 - 연령등급, 성인 양육자용·비의료 목적 review note, 지역별 규제 검토.
-- AdMob Android/iOS app ID·rewarded unit ID, AppsInToss adGroupId와 UMP 메시지를 운영 Console에서 발급·설정한다. 저장소의 공식 test ID는 debug 전용이며 release gate가 차단한다.
-- Firebase Analytics와 Platform Events 양측에서 동일 핵심 이벤트를 readback하고 PII 미포함을 확인한다.
+- ~~AdMob Android/iOS app ID·rewarded unit ID와 EU/미국 privacy message 발급·게시~~ 완료. AppsInToss adGroupId는 별도 타깃 gate다.
+- ~~Firebase Analytics와 Platform Events 양측 live 수집~~ 완료. GA4 Realtime·Platform BigQuery에서 PII 없는 `core_screen_view` smoke를 readback했다.
 - Google Play/App Store 앱 아이콘·feature graphic·phone screenshot은 완료. AppsInToss logo·thumbnail·vertical screenshot 후보는 exact size·RGB 검증 완료했으나 실제 AIT sandbox 화면으로 교체하고 Console 등록해야 한다. native launch 화면 사람 QA는 남음.
 - 서로 다른 계정·기기 2대의 초대·실시간·오프라인·접근 회수 사람 QA.
 - ~~Google Play internal과 TestFlight 내부 빌드 활성화~~ 완료. 심사 제출·프로덕션 승격·공개 검증은 남음.
@@ -80,6 +80,6 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 2. Android/iOS mobile에서 2인 공동 기록과 offline sync를 검증한다.
 3. AppsInToss 정책·runtime 제약을 확인하고 같은 핵심 흐름을 별도 adapter로 검증한다.
 4. 세 타깃 release candidate와 blocker inventory를 사용자에게 제시한다.
-5. 2026-08-06 deployment 진행 승인을 기준으로 제출하되 국가 availability·법적 사업자·정책 선택은 사용자가 확정한 값만 사용한다.
+5. 2026-08-09 확정한 EU 포함 전국가 availability와 Apple DSA trader를 사용해 Google Play·App Store 제출을 진행한다.
 
-세 마켓 모두 출시 대상으로 승인됐다. 국가 availability는 법적·사업자 판단이 필요한 별도 Console gate이며 사용자의 확정값만 반영한다.
+Google Play·App Store는 EU 포함 전국가 출시와 Apple DSA trader가 확정됐다. AppsInToss 공개 출시는 별도 gate로 유지한다.
