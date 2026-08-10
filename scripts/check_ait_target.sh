@@ -32,7 +32,7 @@ if (policy?.ads !== true || policy?.rewardedPlacement !== "stats_detail" ||
   console.error("AIT monetization must allow only the 24-hour stats-detail rewarded placement.");
   process.exit(1);
 }
-if (config.legal?.privacyUrl !== "https://www.seorilabs.com/privacy/" ||
+if (config.legal?.privacyUrl !== "https://www.seorilabs.com/apps/babycare/privacy/" ||
     config.legal?.termsUrl !== "https://www.seorilabs.com/terms/") {
   console.error("AIT legal URLs must use the verified Seorilabs pages.");
   process.exit(1);

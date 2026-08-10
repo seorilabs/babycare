@@ -157,6 +157,44 @@ function sleepEventFixture() {
   };
 }
 
+function temperatureEventFixture() {
+  return {
+    id: 'event-temperature-1',
+    groupId: GROUP_ID,
+    babyId: BABY_ID,
+    caregiverId: MEMBER_ID,
+    kind: 'temperature',
+    occurredAt: NOW - 90_000,
+    createdAt: NOW,
+    updatedAt: NOW,
+    revision: 1,
+    isDeleted: false,
+    temperatureCelsius: 38.2,
+    measurementSite: 'ear',
+  };
+}
+
+function medicationEventFixture() {
+  return {
+    id: 'event-medication-1',
+    groupId: GROUP_ID,
+    babyId: BABY_ID,
+    caregiverId: MEMBER_ID,
+    kind: 'medication',
+    occurredAt: NOW - 30_000,
+    createdAt: NOW,
+    updatedAt: NOW,
+    revision: 1,
+    isDeleted: false,
+    medicationName: '아세트아미노펜',
+    medicationCategory: 'antipyretic',
+    activeIngredient: 'acetaminophen',
+    doseAmount: 3.5,
+    doseUnit: 'ml',
+    minimumIntervalMinutes: 240,
+  };
+}
+
 const TEST_PAYLOAD_HASH = 'a'.repeat(64);
 
 function eventWithMutationMetadata(event, payloadHash = TEST_PAYLOAD_HASH) {
@@ -287,6 +325,8 @@ test('그룹 멤버는 민감 그룹 데이터를 읽고 자기 명의의 돌봄
   const event = diaperEventFixture();
   const feedingEvent = feedingEventFixture();
   const sleepEvent = sleepEventFixture();
+  const temperatureEvent = temperatureEventFixture();
+  const medicationEvent = medicationEventFixture();
 
   const groupSnapshot = await assertSucceeds(
     getDoc(doc(memberDb, 'groups', GROUP_ID)),
@@ -294,7 +334,13 @@ test('그룹 멤버는 민감 그룹 데이터를 읽고 자기 명의의 돌봄
   const babySnapshot = await assertSucceeds(
     getDoc(doc(memberDb, 'groups', GROUP_ID, 'babies', BABY_ID)),
   );
-  for (const careEvent of [event, feedingEvent, sleepEvent]) {
+  for (const careEvent of [
+    event,
+    feedingEvent,
+    sleepEvent,
+    temperatureEvent,
+    medicationEvent,
+  ]) {
     const batch = writeBatch(memberDb);
     addEventMutation(batch, memberDb, careEvent, 'create');
     await assertSucceeds(batch.commit());
@@ -1490,6 +1536,58 @@ test('feeding·sleep subtype의 필수 field와 범위를 Rules에서 재검증�
     'create',
   );
   await assertFails(missingSleepTypeBatch.commit());
+});
+
+test('체온·복약 subtype의 필수 field와 안전 범위를 Rules에서 재검증한다', async () => {
+  await seedBase();
+
+  const memberDb = firestoreFor(MEMBER_ID);
+  const invalidTemperatureBatch = writeBatch(memberDb);
+  addEventMutation(
+    invalidTemperatureBatch,
+    memberDb,
+    {...temperatureEventFixture(), id: 'event-temperature-invalid', temperatureCelsius: 52},
+    'create',
+  );
+  await assertFails(invalidTemperatureBatch.commit());
+
+  const invalidMedicationBatch = writeBatch(memberDb);
+  addEventMutation(
+    invalidMedicationBatch,
+    memberDb,
+    {
+      ...medicationEventFixture(),
+      id: 'event-medication-invalid',
+      medicationCategory: 'antibiotic',
+      activeIngredient: 'acetaminophen',
+    },
+    'create',
+  );
+  await assertFails(invalidMedicationBatch.commit());
+
+  const missingInterval = medicationEventFixture();
+  delete missingInterval.minimumIntervalMinutes;
+  const missingIntervalBatch = writeBatch(memberDb);
+  addEventMutation(
+    missingIntervalBatch,
+    memberDb,
+    {...missingInterval, id: 'event-medication-missing-interval'},
+    'create',
+  );
+  await assertFails(missingIntervalBatch.commit());
+
+  const unsafeNameBatch = writeBatch(memberDb);
+  addEventMutation(
+    unsafeNameBatch,
+    memberDb,
+    {
+      ...medicationEventFixture(),
+      id: 'event-medication-unsafe-name',
+      medicationName: '아세트\u202E아미노펜',
+    },
+    'create',
+  );
+  await assertFails(unsafeNameBatch.commit());
 });
 
 test('invites 문서는 모든 client 직접 read/write를 거부한다', async () => {

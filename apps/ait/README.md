@@ -20,7 +20,8 @@ pnpm --dir apps/ait build
 
 - Platform custom-token bridge와 Firebase Auth REST 로그인
 - AppsInToss `Storage` 기반 refresh token·그룹 session 보존
-- Firestore REST 기반 그룹·아기 생성/복구, 수유·기저귀·수면 기록
+- Firestore REST 기반 그룹·아기 생성/복구, 수유·기저귀·수면·체온·복약 기록
+- 아세트아미노펜·이부프로펜·항생제·직접 입력 약의 실제 투여량과 사용자 확인 간격 기록. 앱은 용량을 계산하거나 추천하지 않음
 - Firebase callable 기반 6자리 초대 코드 발급·수락과 계정 삭제
 - product-core 규칙을 재사용한 event·mutation receipt·active-sleep lock 원자 commit
 - 홈·타임라인·통계·더보기와 네트워크 재조회

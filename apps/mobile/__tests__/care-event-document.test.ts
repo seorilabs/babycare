@@ -35,6 +35,61 @@ describe('Firebase care event document mapper', () => {
     expect(encodeCareEventDocument(event)).toMatchObject(valid);
   });
 
+  it('round-trips temperature and medication event fields', () => {
+    const base = {
+      groupId: valid.groupId,
+      babyId: valid.babyId,
+      caregiverId: valid.caregiverId,
+      occurredAt: valid.occurredAt,
+      createdAt: valid.createdAt,
+      updatedAt: valid.updatedAt,
+      revision: valid.revision,
+      isDeleted: valid.isDeleted,
+    };
+    const temperature = decodeCareEventDocument({
+      documentId: 'event-temperature',
+      groupId: 'group-1',
+      data: {
+        ...base,
+        id: 'event-temperature',
+        kind: 'temperature',
+        temperatureCelsius: 38.2,
+        measurementSite: 'ear',
+      },
+    });
+    const medication = decodeCareEventDocument({
+      documentId: 'event-medication',
+      groupId: 'group-1',
+      data: {
+        ...base,
+        id: 'event-medication',
+        kind: 'medication',
+        medicationName: '아세트아미노펜',
+        medicationCategory: 'antipyretic',
+        activeIngredient: 'acetaminophen',
+        doseAmount: 3.5,
+        doseUnit: 'ml',
+        minimumIntervalMinutes: 240,
+      },
+    });
+
+    expect(temperature).toMatchObject({
+      kind: 'temperature',
+      temperatureCelsius: 38.2,
+      measurementSite: 'ear',
+    });
+    expect(medication).toMatchObject({
+      kind: 'medication',
+      medicationName: '아세트아미노펜',
+      doseAmount: 3.5,
+      minimumIntervalMinutes: 240,
+    });
+    expect(encodeCareEventDocument(temperature)).toMatchObject({
+      temperatureCelsius: 38.2,
+      measurementSite: 'ear',
+    });
+  });
+
   it('keeps path-bound mutation metadata without trusting client hash content', () => {
     const event = decodeCareEventDocument({
       documentId: 'event-1',

@@ -68,6 +68,7 @@
 - [x] Google Play WIF 자동 업로드 복구 — `iam.googleapis.com` 활성화, 공용 publisher SA에 repo-scoped `seorilabs/babycare` principal의 `roles/iam.workloadIdentityUser` 추가·readback. run `31132461743`에서 GitHub OIDC 인증과 `internal → internal` 재배포가 성공했고 API에서 `v1.0.8`/`1000008`, `completed` 확인, 2026-08-07
 - [x] Google Play internal 릴리스 활성화·테스터 배포 — `1.0.8`/`1000008`, `status=completed` API readback
 - [x] Google Play 초기 설정·앱 콘텐츠 — 대시보드 11개 완료, Data Safety 완료, IARC 한국 12세 이상, 타깃 18세 이상, 출산/육아, 건강 기능 `영양 및 체중 관리`·`수면 관리`, 2026-08-07
+- [ ] 체온·복약 후보의 Google Play Data Safety·건강 기능 `복약 및 치료 관리`·스토어 면책 문구와 Apple Health privacy 답변 재입력·readback
 - [x] Google Play `v1.0.9` i18n 후보 internal 업로드 — workflow run `31243326802`, AAB `1.0.9`/`1000009`, Android Publisher API 독립 readback `completed`, 2026-08-08
 - [ ] Google Play app-signing 내부 설치본의 로그인·초대·기록·App Check token QA
 - [ ] Google Play production 승격 승인·심사·공개 배포

@@ -8,7 +8,7 @@
 
 | Layer | 목적 | 명령/위치 | 현재 범위 |
 | --- | --- | --- | --- |
-| Core unit | domain/use case 순수 로직 | `pnpm run test:core` | 모유 좌·우 독립 시간, 수유·기저귀·수면 validation, 자정 경계 집계, 시간/단위, 기록·수면종료·로컬 active sleep 단일화, UTF-8 document cursor pagination, projection request와 explicit range 통계 |
+| Core unit | domain/use case 순수 로직 | `pnpm run test:core` | 모유 좌·우 독립 시간, 수유·기저귀·수면·체온·복약 validation, 동일 약 간격·서로 다른 해열제 동시 기록 확인, 자정 경계 집계, 시간/단위, 기록·수면종료·로컬 active sleep 단일화, UTF-8 document cursor pagination, projection request와 explicit range 통계 |
 | Firebase Rules | 그룹 접근·이벤트 불변·soft delete·active-sleep singleton·receipt·Storage 권한 | `pnpm run test:firebase` | Firestore/Storage Emulator allow/deny와 동시 시작 경쟁 |
 | Firebase mobile flow | 개발 client·Auth·Rules·Functions 공동 기록 계약 | `pnpm run test:firebase:mobile-flow` | Auth Emulator 익명 사용자 2명, owner 그룹/아기 생성, callable 초대 발급·수락, member 실시간 event 수신, 멤버 제거 후 접근 거부 |
 | Functions unit | HMAC·입력·Auth·rate/error mapping 순수 검증 | `pnpm run test:functions` | callable boundary와 invite service |
@@ -33,7 +33,7 @@ pnpm run test
 ## Core Test 기준
 
 - 디바이스, emulator, network, wall-clock 실환경 없이 실행한다. 시간·ID·repository·analytics는 port/fake로 주입한다.
-- 수유 subtype 필수값과 상한, 미래 시각, 수면 시작/종료와 48시간 상한을 경계값으로 검증한다.
+- 수유 subtype 필수값과 상한, 미래 시각, 수면 시작/종료와 48시간 상한, 체온 범위·측정부위, 복약 분류·성분·양·단위·사용자 확인 간격을 경계값으로 검증한다.
 - 홈/통계 집계는 soft delete 제외, 오늘 범위, 진행 중 수면 clipping을 검증한다.
 - core 통계는 caller가 전달한 `[from, to)`만 집계하고, 12시간/7일/30일 local calendar·DST 범위 생성은 mobile delivery test에서 검증한다.
 - use case는 저장 결과와 PII-free analytics event를 함께 검증한다.
@@ -43,7 +43,7 @@ pnpm run test
 
 - 비로그인·비멤버 read/write deny와 멤버 read/record allow를 모두 둔다.
 - owner/member 권한, owner 불변, 초대 client 직접 접근 금지를 검증한다.
-- event identity/revision, 작성자 soft delete, 다른 멤버의 active sleep close-only 전이를 검증한다.
+- event identity/revision, 체온·복약 exact schema와 범위, 작성자 soft delete, 다른 멤버의 active sleep close-only 전이를 검증한다.
 - active sleep event/lock 단독 write를 거부하고 원자 start/close와 동시 시작 2건 중 1건만 성공함을 검증한다.
 - mutation receipt는 event ID·revision·payload hash·actor에 결합하고 event write와 양방향 원자 결합하며 client update/delete를 거부한다.
 - group/baby hard delete와 tombstoned ID 재사용, 미래 timestamp를 거부한다.

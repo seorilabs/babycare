@@ -12,6 +12,8 @@ export interface AppTheme {
     readonly feeding: string;
     readonly diaper: string;
     readonly sleep: string;
+    readonly temperature: string;
+    readonly medication: string;
     readonly danger: string;
   };
 }
@@ -32,6 +34,8 @@ export function createTheme(dark: boolean): AppTheme {
           feeding: '#E8A87C',
           diaper: '#E3C36C',
           sleep: '#9186D9',
+          temperature: '#E67676',
+          medication: '#71A9D8',
           danger: '#FF8A8A',
         }
       : {
@@ -46,6 +50,8 @@ export function createTheme(dark: boolean): AppTheme {
           feeding: '#D9824E',
           diaper: '#B58E22',
           sleep: '#7567C4',
+          temperature: '#C94B4B',
+          medication: '#397CB3',
           danger: '#C94B4B',
         },
   };

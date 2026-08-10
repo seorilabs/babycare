@@ -504,6 +504,8 @@ describe('CareEventOverviewFeed', () => {
       'feeding',
       'diaper',
       'sleep',
+      'temperature',
+      'medication',
     ]);
     expect(remote.fetchActiveRequests).toEqual(remote.fetchWindowRequests);
     expect(
@@ -513,7 +515,13 @@ describe('CareEventOverviewFeed', () => {
             observer.type === 'latest',
         )
         .map(observer => observer.request.kind),
-    ).toEqual(['feeding', 'diaper', 'sleep']);
+    ).toEqual([
+      'feeding',
+      'diaper',
+      'sleep',
+      'temperature',
+      'medication',
+    ]);
   });
 
   it('restores an active singleton on a new device even outside the history window', async () => {
@@ -704,7 +712,7 @@ describe('CareEventOverviewFeed', () => {
     const onRemoteError = jest.fn();
     const harness = await startFreshHarness(remote, onRemoteError);
     const oldEpoch = [...remote.activeObservers];
-    expect(oldEpoch).toHaveLength(5);
+    expect(oldEpoch).toHaveLength(7);
     const initialFetchCounts = {
       window: remote.fetchWindowRequests.length,
       latest: remote.fetchLatestRequests.length,
@@ -731,13 +739,13 @@ describe('CareEventOverviewFeed', () => {
       initialFetchCounts.window + 1,
     );
     expect(remote.fetchLatestRequests).toHaveLength(
-      initialFetchCounts.latest + 3,
+      initialFetchCounts.latest + 5,
     );
     expect(remote.fetchActiveRequests).toHaveLength(
       initialFetchCounts.active + 1,
     );
     expect(oldEpoch.every(observer => !observer.active)).toBe(true);
-    expect(remote.activeObservers).toHaveLength(5);
+    expect(remote.activeObservers).toHaveLength(7);
 
     const stableFetchCount = remote.fetchWindowRequests.length;
     oldWindow.listener({
@@ -803,7 +811,7 @@ describe('CareEventOverviewFeed', () => {
     const refreshing = harness.feed.refresh();
     await commitStarted;
     const superseded = remote.observerHistory.slice(historyBeforeRefresh);
-    expect(superseded).toHaveLength(5);
+    expect(superseded).toHaveLength(7);
     oldWindow.listener({
       kind: 'error',
       error: {code: 'retryable', cause: new Error('old epoch failed')},
@@ -813,12 +821,12 @@ describe('CareEventOverviewFeed', () => {
     await waitUntil(
       () =>
         remote.fetchWindowRequests.length >= 3 &&
-        remote.activeObservers.length === 5,
+        remote.activeObservers.length === 7,
       'replacement observer epoch',
     );
 
     expect(superseded.every(observer => !observer.active)).toBe(true);
-    expect(remote.activeObservers).toHaveLength(5);
+    expect(remote.activeObservers).toHaveLength(7);
     expect(onServerConfirmed).toHaveBeenCalledTimes(2);
   });
 
@@ -851,7 +859,7 @@ describe('CareEventOverviewFeed', () => {
 
     const refreshing = harness.feed.refresh();
     await commitStarted;
-    expect(remote.activeObservers).toHaveLength(10);
+    expect(remote.activeObservers).toHaveLength(14);
 
     harness.feed.close();
     expect(remote.activeObservers).toHaveLength(0);
@@ -906,7 +914,7 @@ describe('CareEventOverviewFeed', () => {
     );
 
     expect(recoveryObserver.active).toBe(false);
-    expect(remote.activeObservers).toHaveLength(5);
+    expect(remote.activeObservers).toHaveLength(7);
     expect(onRemoteError).toHaveBeenCalledTimes(2);
     expect(onRemoteError).toHaveBeenNthCalledWith(
       1,
@@ -987,7 +995,7 @@ describe('CareEventOverviewFeed', () => {
       () => harness.latest().status === 'server_confirmed',
       'rebound recovery completion',
     );
-    expect(remote.activeObservers).toHaveLength(5);
+    expect(remote.activeObservers).toHaveLength(7);
   });
 
   it('waits for lifecycle recovery after a permission-denied startup', async () => {
@@ -1018,7 +1026,7 @@ describe('CareEventOverviewFeed', () => {
 
     await harness.feed.refresh();
     expect(harness.latest().status).toBe('server_confirmed');
-    expect(remote.activeObservers).toHaveLength(5);
+    expect(remote.activeObservers).toHaveLength(7);
   });
 
   it('forgets an acknowledged overlay evicted before projection refresh completes', async () => {

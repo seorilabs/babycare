@@ -12,7 +12,11 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
+  assessMedicationTiming,
   buildCareStatsBuckets,
+  medicationIdentity,
+  nextMedicationTime,
+  type MedicationEvent,
 } from '../../../../packages/product-core/src/index.ts';
 
 import {
@@ -24,6 +28,7 @@ import {
   recordQuickCareEvent,
   reloadCareSession,
   todaySummary,
+  type AitCareRecordInput,
   type ReadyCareSession,
 } from '../services/babycare-backend';
 import {babycareAnalytics} from '../services/analytics';
@@ -71,6 +76,18 @@ function eventLabel(event: ReadyCareSession['events'][number]): string {
           ? '소변·대변'
           : '소변'
     }`;
+  }
+  if (event.kind === 'temperature') {
+    return `체온 · ${event.temperatureCelsius.toFixed(1)}°C`;
+  }
+  if (event.kind === 'medication') {
+    const unit =
+      event.doseUnit === 'tablet'
+        ? '정'
+        : event.doseUnit === 'drop'
+          ? '방울'
+          : event.doseUnit;
+    return `복약 · ${event.medicationName} ${event.doseAmount}${unit}`;
   }
   if (event.endedAt === undefined) {
     return '수면 · 자는 중';
@@ -165,7 +182,7 @@ function Onboarding({onReady}: {readonly onReady: (value: ReadyCareSession) => v
         <Text style={styles.eyebrow}>함께봄</Text>
         <Text style={styles.title}>함께 남기는{`\n`}아기 돌봄 기록</Text>
         <Text style={styles.description}>
-          수유, 기저귀, 수면을 기록하고 초대한 양육자와 함께 확인하세요.
+          수유, 기저귀, 수면, 체온, 복약을 기록하고 초대한 양육자와 함께 확인하세요.
         </Text>
       </View>
 
@@ -257,12 +274,156 @@ function HomeTab({
 }: {
   readonly ready: ReadyCareSession;
   readonly busy: boolean;
-  readonly onRecord: (kind: 'feeding' | 'diaper' | 'sleep') => void;
+  readonly onRecord: (input: AitCareRecordInput) => Promise<boolean>;
 }) {
+  const [healthForm, setHealthForm] = useState<'temperature' | 'medication'>();
+  const [temperature, setTemperature] = useState('36.5');
+  const [measurementSite, setMeasurementSite] = useState('armpit');
+  const [medicationPreset, setMedicationPreset] = useState('acetaminophen');
+  const [medicationName, setMedicationName] = useState('아세트아미노펜');
+  const [medicationCategory, setMedicationCategory] = useState<
+    'antipyretic' | 'antibiotic' | 'other'
+  >('antipyretic');
+  const [activeIngredient, setActiveIngredient] = useState<
+    'acetaminophen' | 'ibuprofen' | 'other'
+  >('acetaminophen');
+  const [doseAmount, setDoseAmount] = useState('');
+  const [doseUnit, setDoseUnit] = useState<'ml' | 'mg' | 'tablet' | 'drop'>('ml');
+  const [intervalHours, setIntervalHours] = useState('4');
+  const [warningConfirmed, setWarningConfirmed] = useState(false);
   const summary = todaySummary(ready);
   const activeSleep = ready.events.some(
     event => event.kind === 'sleep' && event.endedAt === undefined,
   );
+  const recentMedications = useMemo(() => {
+    const unique = new Map<string, MedicationEvent>();
+    for (const event of ready.events) {
+      if (event.kind !== 'medication' || event.activeIngredient !== 'other') {
+        continue;
+      }
+      unique.set(medicationIdentity(event), event);
+      if (unique.size === 3) {
+        break;
+      }
+    }
+    return [...unique.values()];
+  }, [ready.events]);
+  const parsedDose = Number(doseAmount);
+  const parsedInterval = Math.round(Number(intervalHours) * 60);
+  const medicationValid =
+    medicationName.trim().length > 0 &&
+    Number.isFinite(parsedDose) &&
+    parsedDose > 0 &&
+    Number.isInteger(parsedInterval) &&
+    parsedInterval >= 15 &&
+    parsedInterval <= 10_080;
+  const medicationAssessment = medicationValid
+    ? assessMedicationTiming(ready.events, {
+        occurredAt: Date.now(),
+        medicationName,
+        medicationCategory,
+        activeIngredient,
+        minimumIntervalMinutes: parsedInterval,
+      })
+    : undefined;
+  const warning = medicationAssessment?.sameMedication
+    ? `${medicationAssessment.sameMedication.medicationName}의 확인한 최소 간격 안입니다. 실제 복약 시각을 다시 확인해 주세요.`
+    : medicationAssessment?.otherAntipyretic
+      ? '다른 해열제와 같은 시각입니다. 의료진 안내와 실제 복약 시각을 다시 확인해 주세요.'
+      : '';
+
+  const selectMedication = (
+    preset: string,
+    recent?: MedicationEvent,
+  ) => {
+    setMedicationPreset(preset);
+    setWarningConfirmed(false);
+    if (recent) {
+      setMedicationName(recent.medicationName);
+      setMedicationCategory(recent.medicationCategory);
+      setActiveIngredient(recent.activeIngredient);
+      setDoseAmount(String(recent.doseAmount));
+      setDoseUnit(recent.doseUnit);
+      setIntervalHours(String(recent.minimumIntervalMinutes / 60));
+      return;
+    }
+    setDoseAmount('');
+    setDoseUnit('ml');
+    if (preset === 'acetaminophen') {
+      setMedicationName('아세트아미노펜');
+      setMedicationCategory('antipyretic');
+      setActiveIngredient('acetaminophen');
+      setIntervalHours('4');
+    } else if (preset === 'ibuprofen') {
+      setMedicationName('이부프로펜');
+      setMedicationCategory('antipyretic');
+      setActiveIngredient('ibuprofen');
+      setIntervalHours('6');
+    } else {
+      setMedicationName('');
+      setMedicationCategory(preset === 'antibiotic' ? 'antibiotic' : 'other');
+      setActiveIngredient('other');
+      setIntervalHours('');
+    }
+  };
+
+  const saveHealthRecord = async () => {
+    if (healthForm === 'temperature') {
+      const value = Number(temperature);
+      if (!Number.isFinite(value) || value < 30 || value > 45) {
+        return;
+      }
+      if (
+        await onRecord({
+          kind: 'temperature',
+          temperatureCelsius: value,
+          measurementSite: measurementSite as
+            | 'armpit'
+            | 'ear'
+            | 'forehead'
+            | 'oral'
+            | 'rectal'
+            | 'other',
+        })
+      ) {
+        setHealthForm(undefined);
+      }
+      return;
+    }
+    if (!medicationValid) {
+      return;
+    }
+    if (medicationAssessment?.requiresAcknowledgement && !warningConfirmed) {
+      setWarningConfirmed(true);
+      return;
+    }
+    if (
+      await onRecord({
+        kind: 'medication',
+        medicationName,
+        medicationCategory,
+        activeIngredient,
+        doseAmount: parsedDose,
+        doseUnit,
+        minimumIntervalMinutes: parsedInterval,
+      })
+    ) {
+      setHealthForm(undefined);
+    }
+  };
+
+  const nextTimeLabel = (value: number | undefined) =>
+    value === undefined
+      ? '이전 기록 없음'
+      : value <= Date.now()
+        ? '확인한 간격 지남'
+        : new Intl.DateTimeFormat('ko-KR', {
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          }).format(value);
+
   return (
     <>
       <View style={styles.heroCompact}>
@@ -288,14 +449,127 @@ function HomeTab({
       </View>
       <Text style={styles.sectionTitle}>빠른 기록</Text>
       <View style={styles.quickGrid}>
-        <ActionButton disabled={busy} label="수유 120ml" onPress={() => onRecord('feeding')} />
-        <ActionButton disabled={busy} label="기저귀 소변" onPress={() => onRecord('diaper')} />
+        <ActionButton disabled={busy} label="수유 120ml" onPress={() => void onRecord('feeding')} />
+        <ActionButton disabled={busy} label="기저귀 소변" onPress={() => void onRecord('diaper')} />
         <ActionButton
           disabled={busy}
           label={activeSleep ? '수면 종료' : '수면 시작'}
-          onPress={() => onRecord('sleep')}
+          onPress={() => void onRecord('sleep')}
         />
+        <ActionButton disabled={busy} label="체온 기록" onPress={() => setHealthForm('temperature')} tone="secondary" />
+        <ActionButton disabled={busy} label="복약 기록" onPress={() => setHealthForm('medication')} tone="secondary" />
       </View>
+      {healthForm === 'temperature' ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>체온 기록</Text>
+          <Text style={styles.fieldLabel}>체온 °C</Text>
+          <TextInput
+            keyboardType="decimal-pad"
+            onChangeText={setTemperature}
+            style={styles.input}
+            value={temperature}
+          />
+          <Text style={styles.fieldLabel}>측정 부위</Text>
+          <View style={styles.compactChoices}>
+            {[
+              ['armpit', '겨드랑이'],
+              ['ear', '귀'],
+              ['forehead', '이마'],
+              ['oral', '입'],
+              ['rectal', '직장'],
+              ['other', '기타'],
+            ].map(([value, label]) => (
+              <Pressable
+                key={value}
+                onPress={() => setMeasurementSite(value!)}
+                style={[
+                  styles.choiceChip,
+                  measurementSite === value && styles.choiceChipSelected,
+                ]}>
+                <Text style={measurementSite === value ? styles.choiceTextSelected : styles.choiceText}>
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <ActionButton disabled={busy} label="체온 저장" onPress={() => void saveHealthRecord()} />
+        </View>
+      ) : null}
+      {healthForm === 'medication' ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>복약 기록</Text>
+          <Text style={styles.fieldLabel}>약 선택</Text>
+          <View style={styles.compactChoices}>
+            {[
+              ['acetaminophen', '아세트아미노펜'],
+              ['ibuprofen', '이부프로펜'],
+              ['antibiotic', '항생제'],
+              ['custom', '직접 입력'],
+            ].map(([value, label]) => (
+              <Pressable
+                key={value}
+                onPress={() => selectMedication(value!)}
+                style={[
+                  styles.choiceChip,
+                  medicationPreset === value && styles.choiceChipSelected,
+                ]}>
+                <Text style={medicationPreset === value ? styles.choiceTextSelected : styles.choiceText}>
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+            {recentMedications.map(event => {
+              const value = `recent:${event.id}`;
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() => selectMedication(value, event)}
+                  style={[
+                    styles.choiceChip,
+                    medicationPreset === value && styles.choiceChipSelected,
+                  ]}>
+                  <Text style={medicationPreset === value ? styles.choiceTextSelected : styles.choiceText}>
+                    {event.medicationName}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.fieldLabel}>약 이름</Text>
+          <TextInput onChangeText={setMedicationName} placeholder="제품명 또는 처방 약 이름" style={styles.input} value={medicationName} />
+          <Text style={styles.fieldLabel}>실제로 먹인 양</Text>
+          <TextInput keyboardType="decimal-pad" onChangeText={setDoseAmount} placeholder="예: 3.5" style={styles.input} value={doseAmount} />
+          <View style={styles.compactChoices}>
+            {(['ml', 'mg', 'tablet', 'drop'] as const).map(value => (
+              <Pressable
+                key={value}
+                onPress={() => setDoseUnit(value)}
+                style={[styles.choiceChip, doseUnit === value && styles.choiceChipSelected]}>
+                <Text style={doseUnit === value ? styles.choiceTextSelected : styles.choiceText}>
+                  {value === 'tablet' ? '정' : value === 'drop' ? '방울' : value}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.fieldLabel}>최소 복용 간격 시간</Text>
+          <TextInput keyboardType="decimal-pad" onChangeText={setIntervalHours} placeholder="제품 라벨 또는 의료진 안내" style={styles.input} value={intervalHours} />
+          <Text style={styles.cardMeta}>제품 라벨이나 의료진 안내에서 확인한 간격을 입력하세요.</Text>
+          <View style={styles.scheduleBox}>
+            <Text style={styles.fieldLabel}>해열제 간격 확인</Text>
+            <Text style={styles.cardMeta}>아세트아미노펜 · {nextTimeLabel(nextMedicationTime(ready.events, 'acetaminophen'))}</Text>
+            <Text style={styles.cardMeta}>이부프로펜 · {nextTimeLabel(nextMedicationTime(ready.events, 'ibuprofen'))}</Text>
+          </View>
+          <Text style={styles.disclaimer}>
+            함께봄은 의료기기가 아니며 용량을 추천하지 않습니다. 특히 2세 미만 아세트아미노펜과 6개월 미만 이부프로펜은 의료진 안내를 먼저 확인하고, 두 해열제를 동시에 먹이거나 임의로 교차 복용하지 마세요.
+          </Text>
+          {warning ? <Text style={styles.errorText}>{warning}</Text> : null}
+          <ActionButton
+            disabled={busy || !medicationValid}
+            label={warning && !warningConfirmed ? '경고 확인 후 기록' : '복약 저장'}
+            onPress={() => void saveHealthRecord()}
+          />
+        </View>
+      ) : null}
       <Text style={styles.sectionTitle}>최근 기록</Text>
       {ready.events.slice(0, 3).map(event => (
         <View key={event.id} style={styles.eventRow}>
@@ -618,10 +892,11 @@ export function BabyNestHome() {
   }, [ready]);
 
   const record = useCallback(
-    async (kind: 'feeding' | 'diaper' | 'sleep') => {
+    async (input: AitCareRecordInput): Promise<boolean> => {
       if (!ready) {
-        return;
+        return false;
       }
+      const kind = typeof input === 'string' ? input : input.kind;
       setBusy(true);
       setError('');
       try {
@@ -629,7 +904,7 @@ export function BabyNestHome() {
           event => event.kind === 'sleep' && event.endedAt === undefined,
         );
         const first = ready.events.length === 0;
-        setReady(await recordQuickCareEvent(ready, kind));
+        setReady(await recordQuickCareEvent(ready, input));
         const updated = kind === 'sleep' && activeSleep;
         await babycareAnalytics.track({
           name: updated ? 'bc_log_update' : 'bc_log_create',
@@ -641,8 +916,10 @@ export function BabyNestHome() {
             params: {type: kind},
           });
         }
+        return true;
       } catch (caught) {
         setError(errorMessage(caught));
+        return false;
       } finally {
         setBusy(false);
       }
@@ -655,7 +932,7 @@ export function BabyNestHome() {
       return null;
     }
     if (tab === 'home') {
-      return <HomeTab ready={ready} busy={busy} onRecord={kind => void record(kind)} />;
+      return <HomeTab ready={ready} busy={busy} onRecord={record} />;
     }
     if (tab === 'timeline') {
       return <TimelineTab ready={ready} />;
@@ -764,6 +1041,12 @@ const styles = StyleSheet.create({
   summaryLabel: {color: '#667872', fontSize: 13, fontWeight: '700'},
   sectionTitle: {marginTop: 3, color: '#1C2925', fontSize: 18, fontWeight: '900'},
   quickGrid: {gap: 10},
+  compactChoices: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
+  choiceChip: {borderWidth: 1, borderColor: '#C9D8D2', borderRadius: 11, backgroundColor: '#F6FAF8', paddingHorizontal: 12, paddingVertical: 9},
+  choiceChipSelected: {borderColor: '#397663', backgroundColor: '#397663'},
+  choiceText: {color: '#536962', fontSize: 12, fontWeight: '700'},
+  choiceTextSelected: {color: '#FFFFFF', fontSize: 12, fontWeight: '800'},
+  scheduleBox: {gap: 6, borderRadius: 14, backgroundColor: '#F1F6F4', padding: 14},
   eventRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 16, backgroundColor: '#FFFFFF', padding: 16},
   eventTitle: {color: '#25342F', fontSize: 15, fontWeight: '800'},
   eventTime: {color: '#7A8984', fontSize: 12},

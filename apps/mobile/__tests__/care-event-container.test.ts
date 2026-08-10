@@ -384,7 +384,7 @@ describe('createCareEventContainer', () => {
 
     expect(remote.pageListeners.size).toBe(1);
     expect(remote.windowListeners.size).toBe(1);
-    expect(remote.latestListeners.size).toBe(3);
+    expect(remote.latestListeners.size).toBe(5);
     expect(remote.activeSleepListeners.size).toBe(1);
     const stopTimeline = trackStop(
       container.timelineFeed.start(() => undefined),
@@ -394,7 +394,7 @@ describe('createCareEventContainer', () => {
     );
     expect(remote.pageListeners.size).toBe(1);
     expect(remote.windowListeners.size).toBe(1);
-    expect(remote.latestListeners.size).toBe(3);
+    expect(remote.latestListeners.size).toBe(5);
     expect(remote.activeSleepListeners.size).toBe(1);
 
     await container.dispose();
@@ -487,7 +487,7 @@ describe('createCareEventContainer', () => {
     expect(remote.projectionFetchCount).toBeGreaterThan(projectionFetchCount);
     expect(remote.pageListeners.size).toBe(1);
     expect(remote.windowListeners.size).toBe(1);
-    expect(remote.latestListeners.size).toBe(3);
+    expect(remote.latestListeners.size).toBe(5);
     expect(remote.activeSleepListeners.size).toBe(1);
     expect(onError).not.toHaveBeenCalled();
     await container.dispose();
@@ -528,7 +528,7 @@ describe('createCareEventContainer', () => {
     expect(remote.projectionFetchCount).toBeGreaterThan(projectionFetchCount);
     expect(remote.pageListeners.size).toBe(1);
     expect(remote.windowListeners.size).toBe(1);
-    expect(remote.latestListeners.size).toBe(3);
+    expect(remote.latestListeners.size).toBe(5);
     expect(remote.activeSleepListeners.size).toBe(1);
     expect(onRevoked).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);

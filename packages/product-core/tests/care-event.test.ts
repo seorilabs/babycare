@@ -138,4 +138,99 @@ describe('createCareEvent', () => {
       /diaperType/,
     );
   });
+
+  it('records a one-decimal Celsius temperature with its measurement site', () => {
+    const event = createCareEvent(
+      {
+        ...ids,
+        kind: 'temperature',
+        temperatureCelsius: 38.26,
+        measurementSite: 'ear',
+        occurredAt: 1_000,
+      },
+      {id: eventId('event-temperature'), now: 2_000},
+    );
+
+    assert.equal(event.kind, 'temperature');
+    if (event.kind !== 'temperature') {
+      assert.fail('Expected a temperature event');
+    }
+    assert.equal(event.temperatureCelsius, 38.3);
+    assert.equal(event.measurementSite, 'ear');
+    assert.throws(
+      () =>
+        createCareEvent(
+          {
+            ...ids,
+            kind: 'temperature',
+            temperatureCelsius: 52,
+            measurementSite: 'ear',
+            occurredAt: 1_000,
+          },
+          {id: eventId('event-temperature-invalid'), now: 2_000},
+        ),
+      /Temperature must be/,
+    );
+  });
+
+  it('records medication without inventing a dose or interval', () => {
+    const event = createCareEvent(
+      {
+        ...ids,
+        kind: 'medication',
+        medicationName: '  아세트아미노펜  ',
+        medicationCategory: 'antipyretic',
+        activeIngredient: 'acetaminophen',
+        doseAmount: 3.5,
+        doseUnit: 'ml',
+        minimumIntervalMinutes: 240,
+        occurredAt: 1_000,
+      },
+      {id: eventId('event-medication'), now: 2_000},
+    );
+
+    assert.equal(event.kind, 'medication');
+    if (event.kind !== 'medication') {
+      assert.fail('Expected a medication event');
+    }
+    assert.equal(event.medicationName, '아세트아미노펜');
+    assert.equal(event.doseAmount, 3.5);
+    assert.equal(event.minimumIntervalMinutes, 240);
+    assert.throws(
+      () =>
+        createCareEvent(
+          {
+            ...ids,
+            kind: 'medication',
+            medicationName: '항생제',
+            medicationCategory: 'antibiotic',
+            activeIngredient: 'acetaminophen',
+            doseAmount: 1,
+            doseUnit: 'ml',
+            minimumIntervalMinutes: 480,
+            occurredAt: 1_000,
+          },
+          {id: eventId('event-medication-invalid'), now: 2_000},
+        ),
+      /Known antipyretic ingredients/,
+    );
+    assert.throws(
+      () =>
+        createCareEvent(
+          {
+            ...ids,
+            kind: 'medication',
+            medicationName: '아세트\u202E아미노펜',
+            medicationCategory: 'antipyretic',
+            activeIngredient: 'acetaminophen',
+            doseAmount: 3.5,
+            doseUnit: 'ml',
+            minimumIntervalMinutes: 240,
+            occurredAt: 1_000,
+          },
+          {id: eventId('event-medication-bidi'), now: 2_000},
+        ),
+      /control characters/,
+    );
+  });
 });

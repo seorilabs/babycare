@@ -2,6 +2,7 @@ import {
   babyId,
   eventId,
   groupId,
+  hasUnsafeDisplayControl,
   userId,
   type CareEvent,
 } from '@babycare/product-core';
@@ -136,6 +137,58 @@ export function isPersistedCareEvent(value: unknown): value is CareEvent {
           event.endedAt > event.startedAt &&
           event.endedAt <= event.updatedAt &&
           event.endedAt - event.startedAt <= 48 * 60 * 60 * 1_000))
+    );
+  }
+
+  if (event.kind === 'temperature') {
+    return (
+      hasOnlyKeys(event, [
+        ...BASE_KEYS,
+        'temperatureCelsius',
+        'measurementSite',
+      ]) &&
+      typeof event.temperatureCelsius === 'number' &&
+      Number.isFinite(event.temperatureCelsius) &&
+      event.temperatureCelsius >= 30 &&
+      event.temperatureCelsius <= 45 &&
+      Math.round(event.temperatureCelsius * 10) / 10 === event.temperatureCelsius &&
+      ['armpit', 'ear', 'forehead', 'oral', 'rectal', 'other'].includes(
+        event.measurementSite as string,
+      )
+    );
+  }
+
+  if (event.kind === 'medication') {
+    const knownAntipyretic = ['acetaminophen', 'ibuprofen'].includes(
+      event.activeIngredient as string,
+    );
+    return (
+      hasOnlyKeys(event, [
+        ...BASE_KEYS,
+        'medicationName',
+        'medicationCategory',
+        'activeIngredient',
+        'doseAmount',
+        'doseUnit',
+        'minimumIntervalMinutes',
+      ]) &&
+      typeof event.medicationName === 'string' &&
+      !hasUnsafeDisplayControl(event.medicationName) &&
+      event.medicationName.trim() === event.medicationName &&
+      event.medicationName.length >= 1 &&
+      event.medicationName.length <= 80 &&
+      ['antipyretic', 'antibiotic', 'other'].includes(
+        event.medicationCategory as string,
+      ) &&
+      ['acetaminophen', 'ibuprofen', 'other'].includes(
+        event.activeIngredient as string,
+      ) &&
+      knownAntipyretic === (event.medicationCategory === 'antipyretic') &&
+      isPositiveNumber(event.doseAmount, 10_000) &&
+      ['ml', 'mg', 'tablet', 'drop'].includes(event.doseUnit as string) &&
+      Number.isInteger(event.minimumIntervalMinutes) &&
+      (event.minimumIntervalMinutes as number) >= 15 &&
+      (event.minimumIntervalMinutes as number) <= 10_080
     );
   }
 

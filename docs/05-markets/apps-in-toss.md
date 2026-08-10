@@ -27,8 +27,8 @@
 - Vertical screenshots: `apps-in-toss/screenshots/*.png` — 636×1048 RGB 5장 검증. **2026-08-08에 AppsInToss sandbox에서 실행한 실제 미니앱 화면으로 교체했다** — 온보딩·홈·기록·통계·더보기. 이전 등록본은 같은 제품의 `apps/mobile` native 화면을 규격에 맞춘 것이라 미니앱 UI와 달랐다. 크기·구성은 `node scripts/check-store-screenshots.mjs`가 검사한다
 - Brand color: `#5FB49C`
 - Initial route branding: `함께봄` 제품 화면 반영
-- Privacy URL: `https://www.seorilabs.com/privacy/`
-- In-app feature candidate: 한국어 `돌봄 기록하기`, 영어 `Log baby care`, route `/`. 비게임은 최소 1개 등록·검토가 필요하며 현재 root route로 정상 진입 가능
+- Privacy URL: `https://www.seorilabs.com/apps/babycare/privacy/` — 제품별 방침에 체온·복약을 반영한 공개 페이지 배포·readback 필요
+- In-app feature candidate: 한국어 `수유·수면·체온·복약 기록하기`, 영어 `Log feeding, sleep, temperature and medication`, route `/`. 비게임은 최소 1개 등록·검토가 필요하며 현재 root route로 정상 진입 가능. Console 문구 재입력은 새 후보 QA 뒤 진행한다
 - Terms URL: `https://www.seorilabs.com/terms/` — Seorilabs 앱·서비스 공용 이용약관, 2026-08-07 live 200 확인
 - 추가 in-app feature: 없음 — v1은 root `/`의 `돌봄 기록하기` 1개만 Console 등록 후보로 유지
 
@@ -46,6 +46,7 @@ screenshot은 sandbox에서 실행한 미니앱 실제 화면이다. 저장소 �
 - Sandbox QA device: iOS 18.1 `iPhone 16 Pro` simulator (`07D9A5CC-AB1D-43AA-915F-7A8128044B5B`). 공식 `apps-in-toss-sandbox-202606022149.zip`의 `AppsInTossSandbox.app` (`com.vivarepublica.ent.cash.test`) 설치 완료
 - **로컬 dev server 경로는 Console 로그인이 필요 없다 (2026-08-08 실측).** 샌드박스 앱이 실행 중일 때 `xcrun simctl openurl <UDID> "intoss-sandbox://babynest"`를 열고 iOS 확인 다이얼로그에서 `열기`를 누르면 Toss 호스트 chrome 안에서 미니앱이 로드된다. `granite dev`는 포트 8081이어야 하고, cold start로 열면 Console 로그인 화면으로 떨어진다. 절차는 `apps-in-toss/README.md` 참고
 - 이 경로로 2026-08-08에 온보딩→그룹 생성→수유·기저귀·수면 기록→탭 전환까지 운영 Firebase 대상으로 실행하고 화면을 캡처했다. Console 로그인이 필요한 것은 배포된 번들을 여는 경우다
+- 체온·복약은 소스와 로컬 테스트까지 구현됐으며 2026-08-08 기존 sandbox 캡처·비공개 번들에는 포함되지 않는다. 새 `.ait` 후보의 입력·간격 경고·두 계정 동기화 실기기 QA가 필요하다
 - Console review: 승인 완료(2026-08-04 readback)
 - Ads/payment policy answers: **광고 있음 · 인앱 결제 없음 · Toss Pay 없음**으로 변경 필요. 운영 `AIT_REWARDED_AD_GROUP_ID` 등록과 Console QR/private bundle 실기기에서 load→show→`userEarnedReward`→24시간 해제를 확인해야 한다. Sandbox는 광고 검증 근거가 아니다.
 - Release review prerequisite: Console test push·`isTested=true`는 완료. 실제 Toss 앱에서 private scheme을 열어 기능을 확인한 뒤 in-app feature와 함께 검수 요청

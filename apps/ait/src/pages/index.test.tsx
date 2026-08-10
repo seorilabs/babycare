@@ -63,7 +63,7 @@ describe('BabyNestHome', () => {
     expect(visibleText).toContain('함께 남기는 아기 돌봄 기록');
     expect(visibleText).toContain('새 돌봄 시작');
     expect(visibleText).toContain('초대 코드 참여');
-    expect(visibleText).toContain('수유, 기저귀, 수면');
+    expect(visibleText).toContain('수유, 기저귀, 수면, 체온, 복약');
     expect(visibleText).toContain('의료 판단이나 진단을 제공하지 않습니다.');
     expect(visibleText).not.toContain('build-only');
     expect(visibleText).not.toContain('sandbox');

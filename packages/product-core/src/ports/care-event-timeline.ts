@@ -1,4 +1,8 @@
-import type { CareEvent, CareEventKind } from '../domain/care-event.ts';
+import {
+  CARE_EVENT_KINDS,
+  type CareEvent,
+  type CareEventKind,
+} from '../domain/care-event.ts';
 import {
   babyId as parseBabyId,
   eventId as parseEventId,
@@ -190,7 +194,7 @@ export function validateCareEventPageRequest(
     request.kinds !== undefined &&
     (!Array.isArray(request.kinds) ||
       request.kinds.some(
-        (kind) => !['feeding', 'diaper', 'sleep'].includes(kind),
+        (kind) => !CARE_EVENT_KINDS.includes(kind),
       ))
   ) {
     throw new Error('Care event page kinds are invalid');

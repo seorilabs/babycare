@@ -64,8 +64,22 @@ describe('AppsInToss BabyCare backend', () => {
       birthDate: '2026-08-01',
     });
     await recordQuickCareEvent(ready, 'feeding');
+    await recordQuickCareEvent(ready, {
+      kind: 'temperature',
+      temperatureCelsius: 38.2,
+      measurementSite: 'ear',
+    });
+    await recordQuickCareEvent(ready, {
+      kind: 'medication',
+      medicationName: '아세트아미노펜',
+      medicationCategory: 'antipyretic',
+      activeIngredient: 'acetaminophen',
+      doseAmount: 3.5,
+      doseUnit: 'ml',
+      minimumIntervalMinutes: 240,
+    });
 
-    expect(commits).toHaveLength(2);
+    expect(commits).toHaveLength(4);
     const writes = commits.flatMap(commit => commit.writes as Record<string, unknown>[]);
     const names = writes
       .map(write => {
@@ -78,5 +92,7 @@ describe('AppsInToss BabyCare backend', () => {
     expect(names.every(name => !name.startsWith('https://'))).toBe(true);
     expect(names.some(name => name.includes('/events/'))).toBe(true);
     expect(names.some(name => name.includes('/eventMutationReceipts/'))).toBe(true);
+    expect(JSON.stringify(commits)).toContain('temperatureCelsius');
+    expect(JSON.stringify(commits)).toContain('minimumIntervalMinutes');
   });
 });

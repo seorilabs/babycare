@@ -3,6 +3,10 @@ import {type Baby} from '../../../../packages/product-core/src/domain/baby.ts';
 import {
   createCareEvent,
   type CareEvent,
+  type MedicationActiveIngredient,
+  type MedicationCategory,
+  type MedicationDoseUnit,
+  type TemperatureMeasurementSite,
 } from '../../../../packages/product-core/src/domain/care-event.ts';
 import {
   type CareGroup,
@@ -84,6 +88,24 @@ function text(value: unknown, label: string): string {
     throw new Error(`${label} 응답을 확인하지 못했어요.`);
   }
   return value;
+}
+
+function finiteNumber(value: unknown, label: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${label} 응답을 확인하지 못했어요.`);
+  }
+  return value;
+}
+
+function enumValue<T extends string>(
+  value: unknown,
+  values: readonly T[],
+  label: string,
+): T {
+  if (typeof value !== 'string' || !values.includes(value as T)) {
+    throw new Error(`${label} 응답을 확인하지 못했어요.`);
+  }
+  return value as T;
 }
 
 function errorMessage(error: unknown): string {
@@ -437,6 +459,86 @@ function decodeEvent(data: Record<string, unknown>): CareEvent {
           : 'wet',
     };
   }
+  if (data.kind === 'temperature') {
+    const temperatureCelsius = finiteNumber(data.temperatureCelsius, '체온');
+    const measurementSite = enumValue<TemperatureMeasurementSite>(
+      data.measurementSite,
+      ['armpit', 'ear', 'forehead', 'oral', 'rectal', 'other'],
+      '체온 측정부위',
+    );
+    const validated = createCareEvent(
+      {
+        groupId: common.groupId,
+        babyId: common.babyId,
+        caregiverId: common.caregiverId,
+        kind: 'temperature',
+        temperatureCelsius,
+        measurementSite,
+        occurredAt: common.occurredAt,
+        ...(common.note !== undefined ? {note: common.note} : {}),
+      },
+      {id: common.id, now: common.createdAt},
+    );
+    if (validated.kind !== 'temperature') {
+      throw new Error('체온 기록 응답을 확인하지 못했어요.');
+    }
+    return {
+      ...common,
+      kind: 'temperature',
+      temperatureCelsius: validated.temperatureCelsius,
+      measurementSite: validated.measurementSite,
+    };
+  }
+  if (data.kind === 'medication') {
+    const medicationCategory = enumValue<MedicationCategory>(
+      data.medicationCategory,
+      ['antipyretic', 'antibiotic', 'other'],
+      '약 분류',
+    );
+    const activeIngredient = enumValue<MedicationActiveIngredient>(
+      data.activeIngredient,
+      ['acetaminophen', 'ibuprofen', 'other'],
+      '약 주성분',
+    );
+    const doseUnit = enumValue<MedicationDoseUnit>(
+      data.doseUnit,
+      ['ml', 'mg', 'tablet', 'drop'],
+      '복약 단위',
+    );
+    const validated = createCareEvent(
+      {
+        groupId: common.groupId,
+        babyId: common.babyId,
+        caregiverId: common.caregiverId,
+        kind: 'medication',
+        medicationName: text(data.medicationName, '약 이름'),
+        medicationCategory,
+        activeIngredient,
+        doseAmount: finiteNumber(data.doseAmount, '복약 양'),
+        doseUnit,
+        minimumIntervalMinutes: finiteNumber(
+          data.minimumIntervalMinutes,
+          '복약 간격',
+        ),
+        occurredAt: common.occurredAt,
+        ...(common.note !== undefined ? {note: common.note} : {}),
+      },
+      {id: common.id, now: common.createdAt},
+    );
+    if (validated.kind !== 'medication') {
+      throw new Error('복약 기록 응답을 확인하지 못했어요.');
+    }
+    return {
+      ...common,
+      kind: 'medication',
+      medicationName: validated.medicationName,
+      medicationCategory: validated.medicationCategory,
+      activeIngredient: validated.activeIngredient,
+      doseAmount: validated.doseAmount,
+      doseUnit: validated.doseUnit,
+      minimumIntervalMinutes: validated.minimumIntervalMinutes,
+    };
+  }
   return {
     ...common,
     kind: 'sleep',
@@ -768,11 +870,31 @@ async function endActiveSleep(
   return updated;
 }
 
+export type AitCareRecordInput =
+  | 'feeding'
+  | 'diaper'
+  | 'sleep'
+  | {
+      readonly kind: 'temperature';
+      readonly temperatureCelsius: number;
+      readonly measurementSite: TemperatureMeasurementSite;
+    }
+  | {
+      readonly kind: 'medication';
+      readonly medicationName: string;
+      readonly medicationCategory: MedicationCategory;
+      readonly activeIngredient: MedicationActiveIngredient;
+      readonly doseAmount: number;
+      readonly doseUnit: MedicationDoseUnit;
+      readonly minimumIntervalMinutes: number;
+    };
+
 export async function recordQuickCareEvent(
   ready: ReadyCareSession,
-  kind: 'feeding' | 'diaper' | 'sleep',
+  input: AitCareRecordInput,
 ): Promise<ReadyCareSession> {
   const session = await accessSession();
+  const kind = typeof input === 'string' ? input : input.kind;
   const activeSleep = ready.events.find(
     (event): event is CareEvent & {readonly kind: 'sleep'} =>
       event.kind === 'sleep' && event.endedAt === undefined,
@@ -794,27 +916,47 @@ export async function recordQuickCareEvent(
     babyId: ready.baby.id,
     caregiverId: userId(ready.uid),
   };
-  const event =
-    kind === 'feeding'
-      ? createCareEvent(
-          {
-            ...common,
-            kind,
-            feedingType: 'formula',
-            volumeMl: 120,
-            occurredAt: now,
-          },
-          {id, now},
-        )
-      : kind === 'diaper'
-        ? createCareEvent(
-            {...common, kind, diaperType: 'wet', occurredAt: now},
-            {id, now},
-          )
-        : createCareEvent(
-            {...common, kind, sleepType: 'nap', startedAt: now},
-            {id, now},
-          );
+  let event: CareEvent;
+  if (input === 'feeding') {
+    event = createCareEvent(
+      {
+        ...common,
+        kind: 'feeding',
+        feedingType: 'formula',
+        volumeMl: 120,
+        occurredAt: now,
+      },
+      {id, now},
+    );
+  } else if (input === 'diaper') {
+    event = createCareEvent(
+      {...common, kind: 'diaper', diaperType: 'wet', occurredAt: now},
+      {id, now},
+    );
+  } else if (input === 'sleep') {
+    event = createCareEvent(
+      {...common, kind: 'sleep', sleepType: 'nap', startedAt: now},
+      {id, now},
+    );
+  } else if (input.kind === 'temperature') {
+    event = createCareEvent(
+      {
+        ...common,
+        ...input,
+        occurredAt: now,
+      },
+      {id, now},
+    );
+  } else {
+    event = createCareEvent(
+      {
+        ...common,
+        ...input,
+        occurredAt: now,
+      },
+      {id, now},
+    );
+  }
   await commitNewEvent(session, event);
   return {...ready, events: [event, ...ready.events]};
 }

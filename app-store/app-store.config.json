@@ -12,12 +12,12 @@
     "en": "Shared baby care tracker"
   },
   "promotionalText": {
-    "ko": "여러 양육자가 아기의 수유·기저귀·수면을 실시간으로 함께 기록하고 확인해요. 인터넷이 없어도 기록하고, 다시 연결되면 자동으로 동기화됩니다.",
-    "en": "Log your baby's feeding, diapers, and sleep together with every caregiver in real time. Works offline and syncs automatically when you reconnect."
+    "ko": "여러 양육자가 아기의 수유·기저귀·수면·체온·복약을 실시간으로 함께 기록해요. 확인한 복약 간격도 한눈에 관리할 수 있습니다.",
+    "en": "Log feeding, diapers, sleep, temperature, and medication together. Keep label- or clinician-confirmed medication intervals in view."
   },
   "description": {
-    "ko": "함께봄은 여러 양육자가 한 아기의 돌봄 기록을 실시간으로 함께 남기고 확인하는 공동 기록 앱입니다.\n\n부모, 조부모, 베이비시터가 교대로 아이를 돌볼 때 수유·기저귀·수면 기록이 한 사람의 휴대폰에만 남거나 메신저로 흩어지지 않도록, 초대한 양육자끼리 같은 기록을 함께 봅니다.\n\n■ 이렇게 기록해요\n· 수유: 모유 좌·우 타이머, 유축·분유·이유식 양\n· 기저귀: 소변·대변·혼합\n· 수면: 낮잠·밤잠 시작과 종료\n\n■ 함께봄의 특징\n· 공동 기록: 초대 코드로 다른 양육자를 초대하면 서로의 기록이 실시간으로 반영돼요.\n· 빠른 입력: 자주 쓰는 기록은 몇 초 안에, 밤중 한 손으로도 남길 수 있어요.\n· 오프라인 지원: 인터넷이 없어도 기록을 시작하고, 다시 연결되면 자동으로 동기화돼요.\n· 한눈에 확인: 마지막 수유·기저귀·수면과 오늘의 요약, 기록자와 시각이 보이는 타임라인, 기본 통계를 제공해요.\n· 안전한 공유: 아이 기록은 초대된 돌봄 그룹 안에서만 보입니다.\n\n■ 이런 분께\n· 배우자와 번갈아 밤중 수유를 하는 부모\n· 아이를 함께 돌보는 조부모\n· 가정 내 베이비시터·보육 도우미와 기록을 공유하고 싶은 분\n\n함께봄은 성인 양육자를 위한 기록·공유 도구입니다. 의료 진단·처방·치료 판단을 제공하지 않습니다.\n\n문의: cs@seorilabs.com",
-    "en": "BabyNest helps multiple caregivers log and see one baby's care in real time, together.\n\nWhen parents, grandparents, and sitters take turns, feeding, diaper, and sleep logs no longer get stuck on one phone or scattered across chat apps — everyone you invite shares the same record.\n\n■ What you can log\n· Feeding: left/right breastfeeding timers, pumped milk, formula, and solids amounts\n· Diaper: pee, poop, mixed\n· Sleep: nap and night sleep start and end\n\n■ Why BabyNest\n· Shared logging: invite another caregiver with a code and your logs sync in real time.\n· Fast entry: log common events in seconds, one-handed, even at night.\n· Works offline: start logging without a connection; it syncs automatically when you're back online.\n· See at a glance: last feeding, diaper, and sleep, today's summary, a timeline showing who logged what and when, and basic stats.\n· Private by design: your baby's records are visible only inside your invited care group.\n\n■ Made for\n· Parents taking turns with night feeds\n· Grandparents who share the care\n· Families sharing records with an in-home sitter\n\nBabyNest is a logging and sharing tool for adult caregivers. It does not provide medical diagnosis, prescription, or treatment decisions.\n\nContact: cs@seorilabs.com"
+    "ko": "함께봄은 여러 양육자가 한 아기의 돌봄 기록을 실시간으로 함께 남기고 확인하는 공동 기록 앱입니다.\n\n부모, 조부모, 베이비시터가 교대로 아이를 돌볼 때 수유·기저귀·수면·체온·복약 기록이 한 사람의 휴대폰에만 남거나 메신저로 흩어지지 않도록, 초대한 양육자끼리 같은 기록을 함께 봅니다.\n\n■ 이렇게 기록해요\n· 수유: 모유 좌·우 타이머, 유축·분유·이유식 양\n· 기저귀: 소변·대변·혼합\n· 수면: 낮잠·밤잠 시작과 종료\n· 체온: 측정값과 측정 부위\n· 복약: 아세트아미노펜·이부프로펜·항생제·직접 입력 약의 실제 투여량과 시각\n\n■ 함께봄의 특징\n· 공동 기록: 초대 코드로 다른 양육자를 초대하면 서로의 기록이 실시간으로 반영돼요.\n· 복약 간격 확인: 사용자가 제품 라벨이나 의료진에게 확인해 입력한 간격을 기준으로 같은 약의 이른 중복 기록을 경고해요. 용량을 계산하거나 추천하지 않아요.\n· 빠른 입력: 자주 쓰는 기록은 몇 초 안에, 밤중 한 손으로도 남길 수 있어요.\n· 오프라인 지원: 인터넷이 없어도 기록을 시작하고, 다시 연결되면 자동으로 동기화돼요.\n· 한눈에 확인: 최근 기록과 오늘의 요약, 기록자와 시각이 보이는 타임라인, 기본 통계를 제공해요.\n· 안전한 공유: 아이 기록은 초대된 돌봄 그룹 안에서만 보입니다.\n\n■ 이런 분께\n· 배우자와 번갈아 밤중 수유를 하는 부모\n· 아이를 함께 돌보는 조부모\n· 가정 내 베이비시터·보육 도우미와 기록을 공유하고 싶은 분\n\n함께봄은 성인 양육자를 위한 기록·공유 도구이며 의료기기가 아닙니다. 의료 상태를 진단·치료·예방하거나 약의 용량을 처방하지 않습니다. 의학적 조언, 진단 또는 치료는 의료 전문가와 상담하세요.\n\n문의: cs@seorilabs.com",
+    "en": "BabyNest helps multiple caregivers log and see one baby's care in real time, together.\n\nWhen parents, grandparents, and sitters take turns, feeding, diaper, sleep, temperature, and medication logs no longer get stuck on one phone or scattered across chat apps — everyone you invite shares the same record.\n\n■ What you can log\n· Feeding: left/right breastfeeding timers, pumped milk, formula, and solids amounts\n· Diaper: pee, poop, mixed\n· Sleep: nap and night sleep start and end\n· Temperature: measured value and measurement site\n· Medication: actual amount and time for acetaminophen, ibuprofen, antibiotics, and medicines you name yourself\n\n■ Why BabyNest\n· Shared logging: invite another caregiver with a code and your logs sync in real time.\n· Interval checks: based on the label- or clinician-confirmed interval you enter, BabyNest warns about an early duplicate log for the same medicine. It does not calculate or recommend doses.\n· Fast entry: log common events in seconds, one-handed, even at night.\n· Works offline: start logging without a connection; it syncs automatically when you're back online.\n· See at a glance: recent records, today's summary, a timeline showing who logged what and when, and basic stats.\n· Private by design: your baby's records are visible only inside your invited care group.\n\n■ Made for\n· Parents taking turns with night feeds\n· Grandparents who share the care\n· Families sharing records with an in-home sitter\n\nBabyNest is a logging and sharing tool for adult caregivers, not a medical device. It does not diagnose, treat, cure, or prevent any medical condition or prescribe medication doses. Consult a qualified healthcare professional for medical advice, diagnosis, or treatment.\n\nContact: cs@seorilabs.com"
   },
   "keywords": {
     "ko": "육아,수유,기저귀,수면,아기,신생아,돌봄,육아일기,모유수유,분유,이유식,공동육아,베이비",
@@ -33,7 +33,7 @@
   "accountDeletionUrl": "https://www.seorilabs.com/apps/babycare/account-deletion/",
   "copyright": "2026 Seorilabs",
   "review": {
-    "notes": "성인 양육자용 비의료 돌봄 기록·공유 앱. 로그인 화면이나 데모 계정은 없고, 앱이 기기 기반 Firebase 사용자 계정을 자동 생성합니다. 첫 기기에서 양육자 이름·아기 이름·생년월일을 입력해 그룹을 만든 뒤 더보기에서 6자리 초대 코드를 발급하고, 두 번째 기기에서 코드를 입력하면 합류·실시간 공동 기록을 확인할 수 있습니다. 더보기 → 계정 및 데이터 삭제에서 계정 삭제를 확인할 수 있습니다. 통계 요약은 무료이고 상세 통계의 선택형 비개인화 리워드 광고 1개만 있으며, 인앱결제와 의료 진단/처방 기능은 없습니다.",
+    "notes": "성인 양육자용 비의료 돌봄 기록·공유 앱. 로그인 화면이나 데모 계정은 없고, 앱이 기기 기반 Firebase 사용자 계정을 자동 생성합니다. 첫 기기에서 양육자 이름·아기 이름·생년월일을 입력해 그룹을 만든 뒤 더보기에서 6자리 초대 코드를 발급하고, 두 번째 기기에서 코드를 입력하면 합류·실시간 공동 기록을 확인할 수 있습니다. 체온은 값·측정부위를, 복약은 실제 투여량·시각과 사용자가 제품 라벨 또는 의료진 안내에서 확인한 간격을 기록합니다. 앱은 투약 용량을 계산·추천하지 않습니다. 더보기 → 계정 및 데이터 삭제에서 계정 삭제를 확인할 수 있습니다. 통계 요약은 무료이고 상세 통계의 선택형 비개인화 리워드 광고 1개만 있으며, 인앱결제와 의료 진단/처방 기능은 없습니다.",
     "demoAccount": "불필요 (기기 기반 계정 자동 생성)",
     "contact": "App Store Connect에 기존 제출 앱의 검증된 운영 연락처 반영 완료"
   },
@@ -80,7 +80,7 @@
         "purposes": [
           "app-functionality"
         ],
-        "note": "아기의 수유·기저귀·수면 돌봄 기록. 비의료 도구 포지셔닝과 무관하게 Apple의 광범위한 Health 정의로 신고"
+        "note": "아기의 수유·기저귀·수면·체온·복약 돌봄 기록. 비의료 도구 포지셔닝과 무관하게 Apple의 광범위한 Health 정의로 신고"
       },
       {
         "type": "기타 사용자 콘텐츠 (User Content)",
