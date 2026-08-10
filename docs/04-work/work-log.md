@@ -1,5 +1,10 @@
 # Work Log
 
+## 2026-08-11 — Google Play production track 심사 중 readback
+
+- Android Publisher API에서 production과 internal 모두 `1.1.3`/`1001003`, `status=completed`를 readback했다. Play Console 제출 활동의 제출 ID `1`은 같은 시각 `검토 중`이고 한국 공개 listing은 HTTP 404라 approval·release·live smoke gate는 pending으로 유지했다.
+- App Store Connect API에서 version `1.1.3`, build `61` `VALID`, review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d`, `WAITING_FOR_REVIEW`, `AFTER_APPROVAL`을 재확인했다. 한국 iTunes lookup은 결과 0건으로 아직 공개되지 않았다.
+
 ## 2026-08-10 — Google Play·App Store 빠른 공개 심사 제출
 
 - 사용자가 `v1.1.3` Android/iOS 실기기 QA 통과를 보고하고 빠른 공개를 승인했다. 기기 모델·OS와 세부 체크 로그는 제공되지 않아 사용자 보고 범위를 원장에 그대로 명시했다.

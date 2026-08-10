@@ -73,7 +73,7 @@
 - [x] Google Play `v1.1.3` 체온·복약 후보 internal 업로드 — source `8ea2ceb`, AAB `1.1.3`/`1001003`, SHA-256 `6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb`, Publisher API `name=1.1.3`, `status=completed`, `versionCodes=['1001003']` 독립 readback. Workflow run `31390061940`의 60초 upload read timeout 뒤 동일 소스 재현 빌드·600초 timeout/3회 재시도로 복구, 2026-08-10
 - [x] App Store `v1.1.3` 체온·복약 내부 TestFlight 후보 — source `8ea2ceb`, Xcode Cloud run `0abb7047-2126-44f7-979b-d5388314fabb`, ASC build `f9a718d7-829d-4838-8b61-e5d9a968fe6f`, `1.1.3`/`61`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 버전 레코드·내부 그룹 연결, `IN_BETA_TESTING`, 테스터 2명 readback, 2026-08-10
 - [x] Google Play app-signing 내부 설치본의 로그인·초대·기록·App Check token QA — 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함
-- [x] Google Play production 승격·심사 제출 — internal `1001003`을 production draft로 재빌드 없이 승격하고 전체 출시·176개 국가/지역·변경사항 12개를 제출. 제출 ID `1`, 현재 `검토 중`, 2026-08-10
+- [x] Google Play production 승격·심사 제출 — internal `1001003`을 production draft로 재빌드 없이 승격하고 전체 출시·176개 국가/지역·변경사항 12개를 제출. 2026-08-11 00:14 KST Publisher production track은 `completed`지만 제출 ID `1`은 `검토 중`, 한국 공개 listing은 HTTP 404
 - [ ] Google Play 심사 승인·production 공개·공개 listing `1.1.3` readback
 - [x] App Store 실제 테스터 설치·실기기 QA와 App Review 제출 — 사용자의 실기기 QA 통과 보고 뒤 review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d` 제출. 현재 `WAITING_FOR_REVIEW`, `AFTER_APPROVAL`, 2026-08-10
 - [ ] App Store 심사 승인·자동 공개·175개 국가/지역 listing `1.1.3` readback
