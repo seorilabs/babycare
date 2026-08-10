@@ -38,6 +38,7 @@
     "contact": "App Store Connect에 기존 제출 앱의 검증된 운영 연락처 반영 완료"
   },
   "ageRating": "4+",
+  "contentRights": "USES_THIRD_PARTY_CONTENT — 선택형 AdMob 리워드 광고의 제3자 광고 소재 표시 권한을 SDK 계약에 따라 보유",
   "exportCompliance": {
     "usesNonExemptEncryption": false,
     "rationale": "표준 HTTPS/TLS와 Firebase SDK 전송 암호화만 사용, 비면제 커스텀 암호화 없음. Info.plist에 ITSAppUsesNonExemptEncryption=false 설정."
@@ -60,8 +61,11 @@
     "internalBuildState": "IN_BETA_TESTING",
     "betaTesterCount": 2,
     "appStoreVersionRecord": "1.1.3 / build 61 관계 반영 완료",
-    "submittedForReview": false,
-    "appStoreState": "PREPARE_FOR_SUBMISSION"
+    "submittedForReview": true,
+    "reviewSubmissionId": "ee65dd96-0297-4a11-b71d-c4bc73e6a39d",
+    "submittedDate": "2026-08-10T13:54:52.77Z",
+    "releaseType": "AFTER_APPROVAL",
+    "appStoreState": "WAITING_FOR_REVIEW"
   },
   "appPrivacy": {
     "tracking": false,
@@ -146,20 +150,20 @@
         "purposes": ["analytics", "third-party-advertising"]
       }
     ],
-    "verification": "운영 AdMob Android/iOS 앱·rewarded unit과 EU/미국 UMP 메시지 게시 완료. 2026-08-10 ASC App Privacy에 12개 유형·tracking=false를 게시하고 published 상태를 readback했다. v1.1.3 archive privacy report는 실기기 QA에서 확인한다.",
+    "verification": "운영 AdMob Android/iOS 앱·rewarded unit과 EU/미국 UMP 메시지 게시 완료. 2026-08-10 ASC App Privacy에 12개 유형·tracking=false를 게시하고 published 상태를 readback했다. 사용자가 v1.1.3 실기기 QA 통과를 보고했다.",
     "detailDoc": "docs/05-markets/store-data-disclosure.md"
   },
   "dsaTrader": "trader — EU 포함 전국가 배포. App Store Connect의 기존 검증된 trader 연락처를 사용",
   "notes": {
-    "_comment": "확정값과 App Store Connect readback 원장. 2026-08-10 승인 범위는 TestFlight 빌드 업로드와 비실기기 정책·메타데이터 반영까지이며, 실제 테스터 QA·App Review 제출·공개 출시는 수행하지 않았다.",
+    "_comment": "확정값과 App Store Connect readback 원장. 2026-08-10 사용자 실기기 QA 통과와 빠른 공개 승인을 근거로 v1.1.3/build 61을 App Review에 제출했다. 승인 후 자동 공개되며 현재 공개 상태는 아니다.",
     "createdApp": "App Store Connect 앱 생성 완료(2026-07-18). appleId(adamId)=6792193162, sku=babynet-app, primaryLocale=ko. appName은 생성된 실제 이름(키워드형 타이틀)에 정렬.",
     "pushed": "2026-07-18 ASC API로 ko/en-US description·keywords·promotionalText, ko subtitle, 6.9\"(APP_IPHONE_67) 스크린샷 5컷 draft 반영. 버전 1.0 PREPARE_FOR_SUBMISSION.",
     "appStoreNameEn": "App Store en-US 표시 이름은 'BabyNest: Shared Baby Care Log'(2026-07-18 확정 반영). 단독 'BabyNest'는 타 계정 선점이라 Play 타이틀과 동일한 고유 문자열을 사용. 브랜드명은 여전히 BabyNest.",
-    "remaining": "v1.1.3 내부 테스터 실제 설치·2기기 QA와 App Review 제출. App Privacy 게시, DSA trader 확인, 비규제 의료기기 선언, ASC API v2 전국가 availability 175개와 신규 지역 자동 포함은 readback 완료.",
+    "remaining": "App Review 승인, AFTER_APPROVAL 자동 공개, 175개 국가·지역 public listing과 실제 버전 readback.",
     "assetsDone": "아이콘 1024·iPhone 6.9\" 스크린샷 5컷 반영 완료. iPad target을 유지하고 13인치 Release 시뮬레이터 실화면 5컷(2064x2752)을 한국어 APP_IPAD_PRO_3GEN_129 set에 업로드했으며 2026-08-07 ASC에서 모두 COMPLETE를 readback했다. Xcode AppIcon.appiconset에는 iPhone/iPad/marketing 아이콘 반영 완료.",
-    "signingDone": "Xcode Cloud Default workflow를 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret으로 구성했다. 최신 후보 v1.1.3(source 8ea2ceb) Build 61이 성공했고 ASC에서 VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false, IN_BETA_TESTING을 readback했다. 실제 테스터 설치·실기기 QA와 App Review 제출은 별도 게이트다.",
+    "signingDone": "Xcode Cloud Default workflow를 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret으로 구성했다. 최신 후보 v1.1.3(source 8ea2ceb) Build 61이 성공했고 ASC에서 VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false, IN_BETA_TESTING을 readback했다. 사용자 실기기 QA 통과 뒤 같은 build 61을 App Review에 제출했다.",
     "urls": "체온·복약을 반영한 제품별 privacyPolicyUrl은 한국어·영어 live 200이며 ASC appInfo localization에서 ko=/apps/babycare/privacy/, en-US=/en/apps/babycare/privacy/ readback 완료(2026-08-10). supportUrl·marketingUrl도 확정 반영.",
-    "appStoreMetadata": "2026-08-10 ASC API readback 기준 앱 버전 1.1.3, Build 61 연결, 4+ 등급, primary Lifestyle·secondary Utilities, third-party content 미사용, AFTER_APPROVAL, 체온·복약 설명과 심사 연락처·노트 반영 완료. 활성 App Store 지역 175개 available=true와 availableInNewTerritories=true, App Privacy published, DSA trader와 비규제 의료기기 선언을 확인했다. 실기기 QA 전이라 PREPARE_FOR_SUBMISSION이며 App Review에는 제출하지 않았다."
+    "appStoreMetadata": "2026-08-10 ASC API readback 기준 앱 버전 1.1.3, Build 61 연결, 4+ 등급, primary Lifestyle·secondary Utilities, 제3자 광고 콘텐츠 사용, advertising=true, usesIdfa=false, AFTER_APPROVAL, 체온·복약 설명과 심사 연락처·노트 반영 완료. 활성 App Store 지역 175개 available=true와 availableInNewTerritories=true, App Privacy published, DSA trader와 비규제 의료기기 선언을 확인했다. reviewSubmission ee65dd96-0297-4a11-b71d-c4bc73e6a39d는 WAITING_FOR_REVIEW다."
   },
   "screenshots": {
     "ko": {

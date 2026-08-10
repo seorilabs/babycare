@@ -17,8 +17,8 @@
 
 ## Market Gate
 
-- [x] Google Play metadata와 config 재확정 — Analytics·AdMob 기준 Data Safety, 광고·광고 ID, 체온·복약 리스팅과 `약물 및 치료 관리`, 2026-08-10 제품별 개인정보처리방침 live URL을 Console/API에서 저장·readback. 검토 전송은 실기기 QA 뒤 production 후보와 함께 수행
-- [x] App Store metadata와 config 확정 — 앱 정보·자산·영문 UI 스크린샷, 전국가 availability, DSA trader, App Privacy 12개 유형·Tracking `No`, 비규제 의료기기 선언, 체온·복약 설명·심사 노트와 제품별 개인정보처리방침을 2026-08-10 반영·readback. App Review 제출은 실기기 QA 뒤 수행
+- [x] Google Play metadata와 config 재확정 — Analytics·AdMob 기준 Data Safety, 광고·광고 ID, 체온·복약 리스팅과 `약물 및 치료 관리`, 제품별 개인정보처리방침을 저장·readback하고 production 변경사항과 함께 검토에 전송, 2026-08-10
+- [x] App Store metadata와 config 확정 — 앱 정보·자산·영문 UI 스크린샷, 전국가 availability, DSA trader, App Privacy 12개 유형·Tracking `No`, 제3자 광고 콘텐츠 권리·광고 연령등급 응답, 비규제 의료기기 선언, 체온·복약 설명·심사 노트와 제품별 개인정보처리방침을 반영·readback하고 App Review 제출, 2026-08-10
 - [x] 앱 i18n `ko`/`en` 구현 — 자체 타입 사전, 기기 로케일 자동 판별, Android `values-ko` 런처 이름, iOS `CFBundleLocalizations`. ADR `0005-app-localization-policy.md`. 310건 mobile 테스트·typecheck·lint 통과(2026-08-08)
 - [x] i18n 포함 App Store 후보 재빌드 — `v1.0.9` / `fe2b4b1`, Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430`, ASC build `95e65693-70a5-42cf-9590-d63e385a9951`(`1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`), 2026-08-08
 - [x] `1.0.9`/build 57을 ASC 버전 레코드·내부 TestFlight 그룹에 연결 — `versionString=1.0.9`, `related build=95e65693`, `internalBuildState=IN_BETA_TESTING` readback, 2026-08-08
@@ -30,11 +30,11 @@
 - [x] platform `platform-auth@seorilabs-babycare` SA·resource-level Token Creator·registry sync·API 배포 — 최초 활성화 workflow run `30750253253`, revision `platform-api-00015-xpx`
 - [x] live custom token 신규 로그인과 합성 legacy UID 보존 smoke — UID 주입 거부·no-store·Firebase 교환·cleanup 포함
 - [x] production 초대 callable Secret Manager·Cloud Run 진입 계약 확인 — Domain Restricted Sharing 환경에서 `createInvite`·`acceptInvite` Invoker IAM check 비활성화, Firebase Auth/owner 검사는 유지
-- [ ] 실제 project의 App Check 또는 edge rate limit 확정 — mobile Play Integrity·App Attest·DeviceCheck와 Platform 검증 경계 구현·provider 운영 구성 readback 완료. 새 후보 실기기 token 확인 전 `require_app_check=false`, `ENFORCE_APP_CHECK=false`
+- [x] 실제 project의 App Check 검증 경계 확정 — mobile Play Integrity·App Attest·DeviceCheck provider 운영 구성, Platform registry `require_app_check=true`, production callable `ENFORCE_APP_CHECK=true`, App Check 없는 custom-token 요청 `401 app_check_required` readback. 사용자가 `v1.1.3` 실기기 QA 통과를 보고함, 2026-08-10
 - [x] production 계정 삭제 callable과 외부 삭제 경로 — `deleteAccount` ACTIVE·IAM 적용, Platform 삭제 mapping API production 배포, 외부 안내 페이지 live 200, 일회성 owner/member 계정 삭제·정리 live QA 완료
 - [x] GA4·Platform Analytics 운영 연결 — GA4 property `549232169`·3개 stream·BigQuery link, Secret Manager API secret, `logAnalyticsEvents` ACTIVE를 구성했다. 인증 callable `accepted=1`, GA4 Realtime `core_screen_view=1`, Platform registry의 14개 allowlist, ingest `accepted=1`, BigQuery `babycare-launch-smoke-20260809-0803`를 readback했다(2026-08-09)
-- [ ] 최소 광고 운영 연결 — AdMob Android/iOS app·rewarded unit을 생성해 production ID를 native에 반영했고 EU UMP·미국 주 privacy message를 게시했다. 남음: `v1.1.3` Play/TestFlight 설치본에서 미완료 보상 금지·완료 후 24시간 해제·privacy options QA. AppsInToss 광고는 이번 Play/App Store 출시 범위 밖
-- [ ] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke
+- [x] 최소 광고 운영 연결 — AdMob Android/iOS app·rewarded unit production ID, EU UMP·미국 주 privacy message, privacy options UI를 반영했다. 사용자가 `v1.1.3` Android/iOS 실기기 QA 통과를 보고함. AppsInToss 광고는 이번 Play/App Store 출시 범위 밖
+- [x] 실제 기존 사용자·실기기의 UID·Firestore 소유권 migration smoke — 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함. 기기 모델·OS와 세부 체크 로그는 제공되지 않음
 - [x] Privacy/data safety/review notes 확정 — Google Play Data Safety·광고·광고 ID·건강 기능과 제품별 방침 URL, App Store App Privacy·DSA trader·비규제 의료기기·전국가 availability·ko/en-US 심사 정보를 2026-08-10 readback. 양쪽 심사 제출은 별도 deployment gate
 
 ## QA Gate
@@ -42,14 +42,14 @@
 - [x] Android debug build·실기기 설치·process 기동 smoke
 - [x] iOS RNFirebase arm64 Simulator build·light/dark first-screen smoke
 - [x] Android 1.0.8 AAB의 제품 브랜드 launcher icon·cold-start splash·온보딩 전환 확인 — 격리 API 36 AVD, `LaunchState: COLD`, template 문구 없음
-- [ ] iOS TestFlight cold-start에서 제품 브랜딩 스플래시만 노출되고 React Native/프레임워크 문구가 없음
+- [x] iOS TestFlight cold-start 제품 브랜딩 — 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함. 기기 모델·OS 상세는 제공되지 않음
 - [ ] AppsInToss sandbox smoke — 운영 두 계정 API E2E, `main@707df10` 비공개 deployment 업로드, 공식 iOS Sandbox 앱 설치·로그인 화면 실행, 최신 `20260807-3` 본인 test push와 `isTested=true` readback 통과 / 남음: Toss 설치 기기에서 private scheme을 열어 Storage·초대·기록·재실행·네트워크 복귀
 - [x] Offline/local-first smoke — Android 1.0.8 upload-signed AAB를 격리 API 36 AVD에 설치해 비행기 모드 기록·강제 종료·재실행 보존, online 복귀 뒤 수동 새로고침과 두 번째 기기 server readback 통과(2026-08-07)
 - [x] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀 — production custom-token 계정 `QAOwnerA`/`QAMemberB`, 격리 Android AVD 2대에서 초대·합류·양방향 기록자 반영·offline 기록 공유 통과. Play Store app-signing 설치본·물리 기기 App Check token은 별도 게이트
-- [ ] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — 사용자가 iPhone에서 owner 초대 코드 발급 동작을 확인했고 production API의 독립 2계정 발급·수락 E2E도 통과 / 남음: TestFlight 1.1.3 실제 2기기 수락·실시간 동기화
+- [x] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — 기존 iPhone owner 발급 확인과 production API 독립 2계정 E2E에 더해 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함
 - [x] cross-device active sleep 단일성 — owner 기기에서 시작한 낮잠을 member 기기에서 종료해 단일 `낮잠 · 36초` event와 active lock 해제를 양쪽에서 확인(2026-08-07)
 - [x] 로그아웃·멤버 제거·계정 삭제 후 민감 cache purge — member 삭제는 본인 membership·작성 기록만 제거하고 owner 기록 유지, owner 삭제는 그룹 전체 제거, 양쪽 기기 온보딩 복귀 확인. QA Auth·그룹·기록 정리 완료(2026-08-07)
-- [ ] GA4·Platform Analytics 및 Android/iOS/AIT 리워드 광고 smoke — 양측 이벤트 수신, 광고 미완료 보상 금지, 완료 후 24시간 해제 확인
+- [x] GA4·Platform Analytics 및 Android/iOS 리워드 광고 smoke — 운영 수신 readback과 사용자의 현재 `v1.1.3` 실기기 QA 통과 보고. AppsInToss는 이번 공개 범위 밖이며 별도 gate 유지
 
 ## Deployment Gate
 
@@ -72,8 +72,10 @@
 - [x] Google Play `v1.0.9` i18n 후보 internal 업로드 — workflow run `31243326802`, AAB `1.0.9`/`1000009`, Android Publisher API 독립 readback `completed`, 2026-08-08
 - [x] Google Play `v1.1.3` 체온·복약 후보 internal 업로드 — source `8ea2ceb`, AAB `1.1.3`/`1001003`, SHA-256 `6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb`, Publisher API `name=1.1.3`, `status=completed`, `versionCodes=['1001003']` 독립 readback. Workflow run `31390061940`의 60초 upload read timeout 뒤 동일 소스 재현 빌드·600초 timeout/3회 재시도로 복구, 2026-08-10
 - [x] App Store `v1.1.3` 체온·복약 내부 TestFlight 후보 — source `8ea2ceb`, Xcode Cloud run `0abb7047-2126-44f7-979b-d5388314fabb`, ASC build `f9a718d7-829d-4838-8b61-e5d9a968fe6f`, `1.1.3`/`61`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`, 버전 레코드·내부 그룹 연결, `IN_BETA_TESTING`, 테스터 2명 readback, 2026-08-10
-- [ ] Google Play app-signing 내부 설치본의 로그인·초대·기록·App Check token QA
-- [ ] Google Play production 승격 승인·심사·공개 배포
-- [ ] App Store 실제 테스터 설치·실기기 QA와 App Review 제출
+- [x] Google Play app-signing 내부 설치본의 로그인·초대·기록·App Check token QA — 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함
+- [x] Google Play production 승격·심사 제출 — internal `1001003`을 production draft로 재빌드 없이 승격하고 전체 출시·176개 국가/지역·변경사항 12개를 제출. 제출 ID `1`, 현재 `검토 중`, 2026-08-10
+- [ ] Google Play 심사 승인·production 공개·공개 listing `1.1.3` readback
+- [x] App Store 실제 테스터 설치·실기기 QA와 App Review 제출 — 사용자의 실기기 QA 통과 보고 뒤 review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d` 제출. 현재 `WAITING_FOR_REVIEW`, `AFTER_APPROVAL`, 2026-08-10
+- [ ] App Store 심사 승인·자동 공개·175개 국가/지역 listing `1.1.3` readback
 - [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA — `intoss-private://babynest?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec`, 검토 요청 전 실제 테스트 최소 1회 필요
 - [ ] AppsInToss production release 승인
