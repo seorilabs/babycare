@@ -8,9 +8,12 @@
   "release": {
     "version": "1.1.3",
     "tag": "v1.1.3",
-    "objective": "internal_available",
-    "countries": [],
-    "rolloutMode": "Google Play internal 및 App Store TestFlight 내부 테스트"
+    "objective": "public_live",
+    "countries": [
+      "Google Play 176개 국가/지역",
+      "App Store 175개 국가/지역"
+    ],
+    "rolloutMode": "Google Play 최초 프로덕션 전체 출시 및 App Store AFTER_APPROVAL 자동 출시"
   },
   "deploymentApproval": {
     "status": "approved",
@@ -18,10 +21,10 @@
       "google_play",
       "app_store"
     ],
-    "objective": "internal_available",
-    "approvedAt": "2026-08-10T12:12:00Z",
+    "objective": "public_live",
+    "approvedAt": "2026-08-10T13:54:00Z",
     "evidence": [
-      "사용자 요청: 실기기 QA를 제외한 나머지 진행 및 Android/iOS 빌드 각각 업로드"
+      "사용자 요청: 실기기 테스트 했다. 빠른 공개로 진행."
     ]
   },
   "commonGates": {
@@ -52,16 +55,20 @@
       "blocker": null
     },
     "observability": {
-      "status": "pending",
-      "evidence": [],
-      "checkedAt": null,
+      "status": "pass",
+      "evidence": [
+        "Platform registry origin/main require_app_check=true readback",
+        "createInvite·acceptInvite·deleteAccount Cloud Run ENFORCE_APP_CHECK=true readback",
+        "App Check 없는 Platform custom-token 요청 401 app_check_required 확인"
+      ],
+      "checkedAt": "2026-08-10T13:52:00Z",
       "blocker": null
     }
   },
   "markets": {
     "google_play": {
-      "objective": "internal_available",
-      "state": "processing",
+      "objective": "public_live",
+      "state": "submission",
       "identity": {
         "applicationId": "com.seorilabs.babycare",
         "version": "1.1.3",
@@ -88,7 +95,8 @@
         "upload": {
           "status": "pass",
           "evidence": [
-            "Android Publisher edit 07033586652771501010 committed to internal track"
+            "Android Publisher edit 07033586652771501010 committed to internal track",
+            "internal 1001003을 production draft로 재빌드 없이 승격"
           ],
           "checkedAt": "2026-08-10T13:19:00Z",
           "blocker": null
@@ -103,10 +111,12 @@
           "blocker": null
         },
         "qa": {
-          "status": "blocked",
-          "evidence": [],
-          "checkedAt": "2026-08-10T13:20:00Z",
-          "blocker": "사용자 수행 범위: Play Store app-signing 설치본의 Android 실기기 QA"
+          "status": "pass",
+          "evidence": [
+            "사용자가 현재 대화에서 v1.1.3 Android 실기기 테스트 통과를 보고함; 기기 모델과 OS 상세는 제공되지 않음"
+          ],
+          "checkedAt": "2026-08-10T13:54:00Z",
+          "blocker": null
         },
         "metadata": {
           "status": "pass",
@@ -121,15 +131,17 @@
           "status": "pass",
           "evidence": [
             "Play Console 건강 기능: 영양 및 체중 관리·수면 관리·약물 및 치료 관리 저장 readback",
-            "Data Safety와 광고·광고 ID 기존 신고 재검토; 심사 전송 안 함"
+            "Data Safety와 광고·광고 ID 기존 신고 재검토 후 production 변경사항과 함께 심사 제출"
           ],
           "checkedAt": "2026-08-10T12:48:00Z",
           "blocker": null
         },
         "submission": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "Play Console 제출 ID 1: 1.1.3 전체 출시와 176개 국가/지역을 포함한 변경사항 12개, 상태 검토 중"
+          ],
+          "checkedAt": "2026-08-10T13:57:00Z",
           "blocker": null
         },
         "approval": {
@@ -153,8 +165,8 @@
       }
     },
     "app_store": {
-      "objective": "internal_available",
-      "state": "processing",
+      "objective": "public_live",
+      "state": "submission",
       "identity": {
         "applicationId": "com.seorilabs.babycare",
         "version": "1.1.3",
@@ -197,10 +209,12 @@
           "blocker": null
         },
         "qa": {
-          "status": "blocked",
-          "evidence": [],
-          "checkedAt": "2026-08-10T13:11:00Z",
-          "blocker": "사용자 수행 범위: TestFlight 설치본의 iOS 실기기 QA"
+          "status": "pass",
+          "evidence": [
+            "사용자가 현재 대화에서 v1.1.3 build 61 iOS 실기기 테스트 통과를 보고함; 기기 모델과 OS 상세는 제공되지 않음"
+          ],
+          "checkedAt": "2026-08-10T13:54:00Z",
+          "blocker": null
         },
         "metadata": {
           "status": "pass",
@@ -215,15 +229,18 @@
           "status": "pass",
           "evidence": [
             "ASC App Privacy 12개 수집 유형, tracking=false 게시 readback",
-            "DSA trader 상태 확인 및 모든 국가에서 규제 의료기기 아님 선언 저장 readback"
+            "DSA trader 상태 확인 및 모든 국가에서 규제 의료기기 아님 선언 저장 readback",
+            "AdMob 동작에 맞게 contentRightsDeclaration=USES_THIRD_PARTY_CONTENT, advertising=true, usesIdfa=false 수정·readback"
           ],
           "checkedAt": "2026-08-10T12:58:00Z",
           "blocker": null
         },
         "submission": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "ASC reviewSubmission ee65dd96-0297-4a11-b71d-c4bc73e6a39d: version 1.1.3/build 61, WAITING_FOR_REVIEW, AFTER_APPROVAL"
+          ],
+          "checkedAt": "2026-08-10T13:54:52Z",
           "blocker": null
         },
         "approval": {

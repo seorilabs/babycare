@@ -1,5 +1,12 @@
 # Work Log
 
+## 2026-08-10 — Google Play·App Store 빠른 공개 심사 제출
+
+- 사용자가 `v1.1.3` Android/iOS 실기기 QA 통과를 보고하고 빠른 공개를 승인했다. 기기 모델·OS와 세부 체크 로그는 제공되지 않아 사용자 보고 범위를 원장에 그대로 명시했다.
+- production live readback에서 Platform registry `require_app_check=true`, `createInvite`·`acceptInvite`·`deleteAccount`의 `ENFORCE_APP_CHECK=true`, App Check 없는 custom-token 요청 `401 app_check_required`를 확인했다. 이전 문서의 enforcement false 상태를 현재 운영값으로 정정했다.
+- Google Play internal `1001003`을 production draft로 재빌드 없이 승격했다. 최초 공개 앱 정책상 staged rollout과 managed publishing을 사용할 수 없어 전체 출시·176개 국가/지역·변경사항 12개를 Console에서 검토에 전송했다. 제출 ID `1`은 `검토 중`이며 아직 공개 상태는 아니다.
+- App Store Connect의 실제 AdMob 구성에 맞춰 content rights를 `USES_THIRD_PARTY_CONTENT`, age rating 광고 응답을 `advertising=true`, build IDFA 응답을 `usesIdfa=false`로 수정·readback했다. `1.1.3`/61을 review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d`로 제출했고 `WAITING_FOR_REVIEW`, `AFTER_APPROVAL`을 확인했다. 승인 후 자동 공개되며 아직 공개 상태는 아니다.
+
 ## 2026-08-10 — 체온·복약 운영 반영과 Android·iOS 내부 배포
 
 - production Firestore Rules에 체온·복약 exact schema를 배포했다. live release는 ruleset `8c1ee475-b15f-44ea-9695-009dfe3621a4`이며 local/remote SHA-256 `a0ce55efd48b91f41bbbea6f4d23280796fc506a880765749552ff4c1fc30743` 일치를 readback했다. App Check enforcement는 새 설치본 실기기 token 확인 전까지 변경하지 않았다.
