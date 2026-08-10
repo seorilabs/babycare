@@ -1,6 +1,6 @@
 # 스토어 데이터 공개 (Data Safety / App Privacy)
 
-> **상태: 체온·복약을 저장소 원장에 반영, Google Play·Apple Console 재검토 대기.** `apps/mobile/package.json`과 production composition을 기준으로 확인한 스토어 공개 원장이다.
+> **상태: 체온·복약 기준 Google Play·Apple Console 재검토와 공개 방침 배포 완료.** Google Play의 검토 전송과 App Review 제출은 실기기 QA 뒤 별도 수행한다. `apps/mobile/package.json`과 production composition을 기준으로 확인한 스토어 공개 원장이다.
 
 ## 공통 원칙 (product-spec 근거)
 
@@ -30,7 +30,7 @@
 - Firebase 처리위탁과 초대 그룹의 사용자 주도 전송은 제3자 공유에서 제외한다. Google Mobile Ads가 자동 수집하는 위 광고 데이터는 Google 공식 안내에 따라 공유로 신고한다.
 - Firebase Authentication UID는 공식 분류상 "사용자 ID"다. Android release runtime에 `firebase-installations`가 포함되고 App Check가 Play Integrity를 사용하므로 "기기 또는 기타 ID"도 별도로 신고한다.
 - 대상 연령: 아동 대상 아님(성인 양육자용). Families 정책 비대상.
-- 건강 선언은 Google Play 분류 기준으로 기존 `영양 및 체중 관리`, `수면 관리`에 `복약 및 치료 관리`를 추가해야 한다. 저장소 원장은 갱신했지만 Console 입력·readback은 하지 않았다. 앱은 의료기기가 아니며 진단·처방·용량 추천을 제공하지 않는다.
+- 건강 선언은 Google Play 분류 기준 `영양 및 체중 관리`, `수면 관리`, `약물 및 치료 관리`를 2026-08-10 Console에 저장하고 재진입해 readback했다. Data Safety의 건강 정보 수집 범주는 이미 돌봄 기록을 포함해 CSV 항목 변경이 필요 없음을 재검토했다. 앱은 의료기기가 아니며 진단·처방·용량 추천을 제공하지 않는다.
 
 ## Apple — App Privacy
 
@@ -51,15 +51,13 @@
 
 - `Name`에는 양육자 표시 이름과 아기 이름, `Health`에는 구조화된 수유·기저귀·수면·체온·복약 기록, `Other User Content`에는 자유 입력 메모, `Other Data Types`에는 아기 생년월일을 답한다. 비의료 도구 포지셔닝은 Apple의 광범위한 Health data type 신고를 면제하지 않는다.
 - Google Mobile Ads 공식 공개는 IP 주소, crash/performance, Device ID, Advertising Data, Product Interaction 처리를 명시한다. Firebase Analytics의 실제 이벤트와 Platform 연계 여부까지 합쳐 위 표를 보수적으로 작성했다.
-- **Data Used to Track You: 없음.** 앱은 ATT를 요청하지 않고 native 광고 요청을 비개인화로 고정했다. EU UMP와 미국 주 privacy message를 Android/iOS 두 앱에 게시했고 앱 내 privacy options 경로를 구현했다. `v1.1.1` archive privacy report readback은 별도 QA 게이트다.
+- **Data Used to Track You: 없음.** 앱은 ATT를 요청하지 않고 native 광고 요청을 비개인화로 고정했다. EU UMP와 미국 주 privacy message를 Android/iOS 두 앱에 게시했고 앱 내 privacy options 경로를 구현했다. 표의 12개 data type과 Tracking `No`를 2026-08-10 App Store Connect에 게시해 published 상태를 readback했다. `v1.1.3` archive privacy report 확인은 별도 QA 게이트다.
 - Export Compliance: `ITSAppUsesNonExemptEncryption = false` (표준 TLS/Firebase만 사용)
 - `PrivacyInfo.xcprivacy`는 App Privacy 콘솔 답변을 대체하지 않음 — 별도 유지.
 
-## 미확정 (blocker)
+## 남은 제출·QA gate
 
-- Google Play Data Safety·건강 기능 선언·스토어 면책 문구를 체온·복약 기준으로 Console 재입력하고 production 후보와 함께 검토 전송·최종 readback.
-- Apple App Privacy 콘솔 입력·archive privacy report readback.
-- `v1.1.1` archive privacy report의 SDK·privacy manifest 검증.
-- 실제 Play Store/TestFlight `v1.1.1` 설치본의 계정 삭제 화면·cache purge 사람 QA.
+- Google Play 정책 변경의 검토 전송과 App Review 제출은 수행하지 않았다.
+- `v1.1.3` archive privacy report의 SDK·privacy manifest 검증.
+- 실제 Play Store/TestFlight `v1.1.3` 설치본의 계정 삭제 화면·cache purge 사람 QA.
 - 처리위탁/제3자 공유 판단 legal 확정.
-- 공개 개인정보 처리방침의 체온·복약 항목 반영과 Google Play Data safety·Apple App Privacy 콘솔 재검토.

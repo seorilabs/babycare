@@ -21,12 +21,16 @@ import os
 import sys
 from pathlib import Path
 
+import httplib2
 from google.auth import default
+from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 SCOPES = ["https://www.googleapis.com/auth/androidpublisher"]
 CONFIG_PATH = Path("play-store/google-play.config.json")
+HTTP_TIMEOUT_SECONDS = 600
+API_RETRIES = 3
 
 
 def load_package_name() -> str:
@@ -168,7 +172,10 @@ def main() -> None:
 
     credentials, _ = default(scopes=SCOPES)
     service = build(
-        "androidpublisher", "v3", credentials=credentials, cache_discovery=False
+        "androidpublisher",
+        "v3",
+        http=AuthorizedHttp(credentials, http=httplib2.Http(timeout=HTTP_TIMEOUT_SECONDS)),
+        cache_discovery=False,
     )
     edits = service.edits()
 
@@ -189,7 +196,7 @@ def main() -> None:
     )
     bundle = edits.bundles().upload(
         packageName=package_name, editId=edit_id, media_body=media
-    ).execute()
+    ).execute(num_retries=API_RETRIES)
     version_code = bundle["versionCode"]
     print(f"Uploaded AAB versionCode={version_code}")
 

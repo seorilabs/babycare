@@ -21,14 +21,14 @@
     }
   },
   "release": {
-    "versionName": "1.0.8",
-    "versionCode": 1000008,
-    "sourceTag": "v1.0.8",
-    "sourceCommit": "c66f7e763470f041ea8eec79f1a24a9a13352589",
+    "versionName": "1.1.3",
+    "versionCode": 1001003,
+    "sourceTag": "v1.1.3",
+    "sourceCommit": "8ea2ceb656c46ecdf3975027f55c5b033e15e3a8",
     "track": "internal",
     "status": "completed",
-    "uploadedDate": "2026-08-06",
-    "artifactSha256": "2a0e627480e3f30d1d7feeb886bd30af4492ab6b9b4d60ff755cae2208297c84",
+    "uploadedDate": "2026-08-10",
+    "artifactSha256": "6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb",
     "productionRelease": false
   },
   "assets": {
@@ -59,20 +59,20 @@
     "koreaGameRating": "not-applicable-non-game"
   },
   "notes": {
-    "_comment": "2026-08-10 체온·복약 기능을 저장소 원장에 반영했다. 공개 방침·Data Safety·건강 기능 선언의 Console 재검토와 새 Play Store app-signing 설치본 QA 뒤 production 후보와 함께 심사 전송한다.",
+    "_comment": "2026-08-10 체온·복약 리스팅, 공개 방침, Data Safety 재검토와 건강 기능 선언 Console readback을 완료했다. 새 Play Store app-signing 설치본 QA 뒤 production 후보와 함께 심사 전송한다.",
     "appNameKoRationale": "사용자 확정 Play 타이틀(24자, 30자 제한 내). App Store는 이름 정책상 브랜드명 '함께봄'+subtitle로 분리(app-store.config.json 참고).",
     "brandColor": "#5FB49C (2026-07-18 사용자 확정, release-targets.md 대표 색상)",
     "category": "출산/육아 — Play Console 확정",
     "iarc": "대한민국 12세 이상 — 초대된 친구 사이의 비공개 사용자 상호작용",
     "assetsDone": "아이콘 512·피처그래픽 1024x500·phone 스크린샷(홈/타임라인/통계, 1620x2880 9:16) 생성 완료. release-assets/manifest.*.json 참고.",
     "tabletScreenshots": "phone-first 앱으로 태블릿 스크린샷 미제공(선택 항목). validator의 tablet 최소 2장 경고는 Play 필수 아님.",
-    "dataSafety": "2026-08-09 현재 Console CSV template에 Analytics·AdMob SDK 공개를 반영하고 저장했다. 광고 SDK의 대략적 위치·앱 상호작용·진단·기기 ID는 수집과 공유, 광고·Analytics·부정사용 방지 목적으로 신고했다. 게시 개요의 검토 전송은 v1.1.1 production 후보와 함께 진행한다.",
+    "dataSafety": "2026-08-09 Console CSV template에 Analytics·AdMob SDK 공개를 반영하고 저장했다. 2026-08-10 체온·복약은 기존 건강 정보·기타 사용자 제작 콘텐츠 범주에 포함됨을 재검토했다. 광고 SDK의 대략적 위치·앱 상호작용·진단·기기 ID는 수집과 공유, 광고·Analytics·부정사용 방지 목적으로 신고했다. 게시 개요의 검토 전송은 production 후보와 함께 진행한다.",
     "dataSafetyDetail": "이름·사용자 ID·생년월일·기타 사용자 제작 콘텐츠·건강 정보는 앱 기능 중심 수집, Google Mobile Ads 자동 데이터는 수집·공유로 구분했다. play-store/data-safety-responses.json과 Google Mobile Ads 공식 Play data disclosure를 원장으로 사용한다.",
-    "privacyPolicyDone": "accountDeletionUrl과 제품별 privacyPolicyUrl https://www.seorilabs.com/apps/babycare/privacy/ 모두 live·Play Console 저장 readback 완료(2026-08-09).",
-    "appContentSheet": "Play '앱 콘텐츠' 답변 원장: docs/05-markets/google-play-app-content.md. 타깃 18+, IARC 한국 12세 이상, 선택형 리워드 광고·광고 ID 사용, 정부·금융 없음. 체온·복약 추가로 건강 기능은 영양 및 체중 관리·수면 관리·복약 및 치료 관리로 저장소 원장을 갱신했으며 Console 재검토가 필요하다.",
-    "monetizationPending": "AdMob Android/iOS 앱·rewarded unit과 EU/미국 UMP 메시지 게시, Data Safety·광고 있음·광고 ID 게시 개요 저장 완료. 남음: v1.1.1 실제 광고·보상·24시간 해제 QA와 공개 후 store listing 연결·AdMob 검토.",
+    "privacyPolicyDone": "accountDeletionUrl과 체온·복약을 반영한 제품별 privacyPolicyUrl https://www.seorilabs.com/apps/babycare/privacy/ 모두 live·Play Console 저장 readback 완료(2026-08-10).",
+    "appContentSheet": "Play '앱 콘텐츠' 답변 원장: docs/05-markets/google-play-app-content.md. 타깃 18+, IARC 한국 12세 이상, 선택형 리워드 광고·광고 ID 사용, 정부·금융 없음. 건강 기능은 영양 및 체중 관리·수면 관리·약물 및 치료 관리를 2026-08-10 Console에서 저장·readback했다.",
+    "monetizationPending": "AdMob Android/iOS 앱·rewarded unit과 EU/미국 UMP 메시지 게시, Data Safety·광고 있음·광고 ID 게시 개요 저장 완료. 남음: v1.1.3 실제 광고·보상·24시간 해제 QA와 공개 후 store listing 연결·AdMob 검토.",
     "reviewSubmission": "앱 콘텐츠 변경은 게시 개요에 대기 중이나 최초 production release 후보가 없어 검토 전송 버튼이 비활성이다. Play Store app-signing 설치본 QA 뒤 production 후보와 함께 전송한다.",
-    "latestUpload": "2026-08-08 main@fe2b4b1(v1.0.9)의 signed AAB 1.0.9/1000009을 workflow run 31243326802에서 internal completed로 업로드하고 Android Publisher API에서 readback했다. Analytics·AdMob/UMP 운영 연결은 v1.1.1 새 후보부터 포함한다. production 승격은 하지 않았다.",
+    "latestUpload": "2026-08-10 main@8ea2ceb(v1.1.3)의 signed AAB 1.1.3/1001003을 internal completed로 업로드했다. workflow run 31390061940에서 AAB 생성·서명은 성공했으나 Publisher resumable upload가 60초 read timeout으로 중단돼 동일 태그 소스를 로컬 재현 빌드하고 timeout 600초·3회 재시도 업로더로 commit했다. Android Publisher API readback은 name=1.1.3, versionCodes=['1001003'], status=completed, SHA-256=6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb다. production 승격은 하지 않았다.",
     "internalCandidateQa": "2026-08-07 같은 AAB를 격리 API 36 AVD 2대에 sideload해 production owner/member 초대·양방향 기록, offline 기록·재실행·복귀·server readback, 교차 기기 active sleep 종료, member/owner 삭제와 cache purge를 통과하고 QA 데이터를 정리했다. Play Store app-signing 설치본과 물리 기기 Play Integrity App Check token은 미검증."
   }
 }

@@ -43,23 +43,23 @@
     "rationale": "표준 HTTPS/TLS와 Firebase SDK 전송 암호화만 사용, 비면제 커스텀 암호화 없음. Info.plist에 ITSAppUsesNonExemptEncryption=false 설정."
   },
   "release": {
-    "marketingVersion": "1.0.9",
-    "buildNumber": "57",
-    "sourceTag": "v1.0.9",
-    "sourceCommit": "fe2b4b12be75d52e96bb3f0c267881efb8dd9072",
-    "buildId": "95e65693-70a5-42cf-9590-d63e385a9951",
-    "xcodeCloudRunId": "7faf6504-20e4-4064-a5f8-281dba2ce430",
+    "marketingVersion": "1.1.3",
+    "buildNumber": "61",
+    "sourceTag": "v1.1.3",
+    "sourceCommit": "8ea2ceb656c46ecdf3975027f55c5b033e15e3a8",
+    "buildId": "f9a718d7-829d-4838-8b61-e5d9a968fe6f",
+    "xcodeCloudRunId": "0abb7047-2126-44f7-979b-d5388314fabb",
     "processingState": "VALID",
     "buildAudienceType": "APP_STORE_ELIGIBLE",
     "usesNonExemptEncryption": false,
-    "uploadedDate": "2026-08-07T23:24:20-07:00",
+    "uploadedDate": "2026-08-10T06:06:53-07:00",
     "artifactSha256": null,
     "betaGroup": "서리랩스 내부테스터",
     "betaGroupHasAccessToAllBuilds": true,
     "betaGroupBuildAssigned": true,
     "internalBuildState": "IN_BETA_TESTING",
     "betaTesterCount": 2,
-    "appStoreVersionRecord": "1.0.9 / build 57 관계 반영 완료",
+    "appStoreVersionRecord": "1.1.3 / build 61 관계 반영 완료",
     "submittedForReview": false,
     "appStoreState": "PREPARE_FOR_SUBMISSION"
   },
@@ -146,20 +146,20 @@
         "purposes": ["analytics", "third-party-advertising"]
       }
     ],
-    "verification": "운영 AdMob Android/iOS 앱·rewarded unit과 EU/미국 UMP 메시지 게시 완료. v1.1.1 archive privacy report와 ASC App Privacy readback 대기",
+    "verification": "운영 AdMob Android/iOS 앱·rewarded unit과 EU/미국 UMP 메시지 게시 완료. 2026-08-10 ASC App Privacy에 12개 유형·tracking=false를 게시하고 published 상태를 readback했다. v1.1.3 archive privacy report는 실기기 QA에서 확인한다.",
     "detailDoc": "docs/05-markets/store-data-disclosure.md"
   },
   "dsaTrader": "trader — EU 포함 전국가 배포. App Store Connect의 기존 검증된 trader 연락처를 사용",
   "notes": {
-    "_comment": "확정값+초안 등록 준비 원장. 2026-07-29 승인 범위는 App Store Connect/TestFlight 빌드 업로드까지이며, 실제 테스터 QA·App Review 제출·공개 출시는 별도 승인 전까지 금지.",
+    "_comment": "확정값과 App Store Connect readback 원장. 2026-08-10 승인 범위는 TestFlight 빌드 업로드와 비실기기 정책·메타데이터 반영까지이며, 실제 테스터 QA·App Review 제출·공개 출시는 수행하지 않았다.",
     "createdApp": "App Store Connect 앱 생성 완료(2026-07-18). appleId(adamId)=6792193162, sku=babynet-app, primaryLocale=ko. appName은 생성된 실제 이름(키워드형 타이틀)에 정렬.",
     "pushed": "2026-07-18 ASC API로 ko/en-US description·keywords·promotionalText, ko subtitle, 6.9\"(APP_IPHONE_67) 스크린샷 5컷 draft 반영. 버전 1.0 PREPARE_FOR_SUBMISSION.",
     "appStoreNameEn": "App Store en-US 표시 이름은 'BabyNest: Shared Baby Care Log'(2026-07-18 확정 반영). 단독 'BabyNest'는 타 계정 선점이라 Play 타이틀과 동일한 고유 문자열을 사용. 브랜드명은 여전히 BabyNest.",
-    "remaining": "App Privacy 콘솔 답변, 기존 검증 trader 상태 Console 확인, v1.1.1 내부 테스터 실제 설치·2기기 QA, 심사 제출. ASC API v2 전국가 availability 175개와 신규 지역 자동 포함은 readback 완료.",
+    "remaining": "v1.1.3 내부 테스터 실제 설치·2기기 QA와 App Review 제출. App Privacy 게시, DSA trader 확인, 비규제 의료기기 선언, ASC API v2 전국가 availability 175개와 신규 지역 자동 포함은 readback 완료.",
     "assetsDone": "아이콘 1024·iPhone 6.9\" 스크린샷 5컷 반영 완료. iPad target을 유지하고 13인치 Release 시뮬레이터 실화면 5컷(2064x2752)을 한국어 APP_IPAD_PRO_3GEN_129 set에 업로드했으며 2026-08-07 ASC에서 모두 COMPLETE를 readback했다. Xcode AppIcon.appiconset에는 iPhone/iPad/marketing 아이콘 반영 완료.",
-    "signingDone": "Xcode Cloud Default workflow를 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret으로 구성했다. 최신 후보 v1.0.9(source fe2b4b1) Build 57이 성공했고 ASC에서 VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false, IN_BETA_TESTING을 readback했다. v1.1.1 실제 테스터 설치·실기기 QA와 App Review 제출은 별도 게이트다.",
-    "urls": "제품별 privacyPolicyUrl은 한국어·영어 live 200이며 ASC appInfo localization에서 ko=/apps/babycare/privacy/, en-US=/en/apps/babycare/privacy/ PATCH·readback 완료(2026-08-09). supportUrl·marketingUrl도 확정 반영.",
-    "appStoreMetadata": "2026-08-09 ASC API readback 기준 앱 버전 1.0.9, Build 57 연결, 4+ 등급, primary Lifestyle·secondary Utilities, third-party content 미사용, AFTER_APPROVAL, 심사 연락처·노트 반영 완료. 활성 App Store 지역 175개 available=true와 availableInNewTerritories=true를 반영했다. App Privacy·DSA Console 확인·v1.1.1 실기기 QA 전이라 PREPARE_FOR_SUBMISSION이다."
+    "signingDone": "Xcode Cloud Default workflow를 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret으로 구성했다. 최신 후보 v1.1.3(source 8ea2ceb) Build 61이 성공했고 ASC에서 VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false, IN_BETA_TESTING을 readback했다. 실제 테스터 설치·실기기 QA와 App Review 제출은 별도 게이트다.",
+    "urls": "체온·복약을 반영한 제품별 privacyPolicyUrl은 한국어·영어 live 200이며 ASC appInfo localization에서 ko=/apps/babycare/privacy/, en-US=/en/apps/babycare/privacy/ readback 완료(2026-08-10). supportUrl·marketingUrl도 확정 반영.",
+    "appStoreMetadata": "2026-08-10 ASC API readback 기준 앱 버전 1.1.3, Build 61 연결, 4+ 등급, primary Lifestyle·secondary Utilities, third-party content 미사용, AFTER_APPROVAL, 체온·복약 설명과 심사 연락처·노트 반영 완료. 활성 App Store 지역 175개 available=true와 availableInNewTerritories=true, App Privacy published, DSA trader와 비규제 의료기기 선언을 확인했다. 실기기 QA 전이라 PREPARE_FOR_SUBMISSION이며 App Review에는 제출하지 않았다."
   },
   "screenshots": {
     "ko": {

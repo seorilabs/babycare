@@ -27,7 +27,7 @@
 - Vertical screenshots: `apps-in-toss/screenshots/*.png` — 636×1048 RGB 5장 검증. **2026-08-08에 AppsInToss sandbox에서 실행한 실제 미니앱 화면으로 교체했다** — 온보딩·홈·기록·통계·더보기. 이전 등록본은 같은 제품의 `apps/mobile` native 화면을 규격에 맞춘 것이라 미니앱 UI와 달랐다. 크기·구성은 `node scripts/check-store-screenshots.mjs`가 검사한다
 - Brand color: `#5FB49C`
 - Initial route branding: `함께봄` 제품 화면 반영
-- Privacy URL: `https://www.seorilabs.com/apps/babycare/privacy/` — 제품별 방침에 체온·복약을 반영한 공개 페이지 배포·readback 필요
+- Privacy URL: `https://www.seorilabs.com/apps/babycare/privacy/` — 체온·복약과 2026-08-10 시행일을 반영한 한국어·영어 공개 페이지 live 200 readback 완료
 - In-app feature candidate: 한국어 `수유·수면·체온·복약 기록하기`, 영어 `Log feeding, sleep, temperature and medication`, route `/`. 비게임은 최소 1개 등록·검토가 필요하며 현재 root route로 정상 진입 가능. Console 문구 재입력은 새 후보 QA 뒤 진행한다
 - Terms URL: `https://www.seorilabs.com/terms/` — Seorilabs 앱·서비스 공용 이용약관, 2026-08-07 live 200 확인
 - 추가 in-app feature: 없음 — v1은 root `/`의 `돌봄 기록하기` 1개만 Console 등록 후보로 유지

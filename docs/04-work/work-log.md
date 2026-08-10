@@ -1,5 +1,15 @@
 # Work Log
 
+## 2026-08-10 — 체온·복약 운영 반영과 Android·iOS 내부 배포
+
+- production Firestore Rules에 체온·복약 exact schema를 배포했다. live release는 ruleset `8c1ee475-b15f-44ea-9695-009dfe3621a4`이며 local/remote SHA-256 `a0ce55efd48b91f41bbbea6f4d23280796fc506a880765749552ff4c1fc30743` 일치를 readback했다. App Check enforcement는 새 설치본 실기기 token 확인 전까지 변경하지 않았다.
+- `seorilabs-official` PR #7로 제품별 한국어·영어 개인정보처리방침에 체온·복약 항목과 2026-08-10 시행일을 반영했다. Pages workflow `31390081724` 성공 뒤 두 URL의 HTTP 200과 temperature/medication 본문을 readback했다.
+- Google Play ko-KR·en-US 리스팅에 체온·복약·사용자 확인 간격·비의료기기 면책을 반영하고 Android Publisher API로 일치 여부를 확인했다. Console 건강 기능은 `영양 및 체중 관리`, `수면 관리`, `약물 및 치료 관리` 3개 선택을 저장·재진입 확인했다. Data Safety의 기존 건강 정보 범주가 체온·복약을 포함함을 재검토했다. 검토 전송은 하지 않았다.
+- App Store Connect에는 12개 App Privacy data type과 Tracking `No`를 게시하고 published 상태를 확인했다. DSA trader, 모든 국가·지역에서 규제 의료기기가 아님, 체온·복약 promotional text·description·review notes를 저장했다. 전국가 availability는 기존 175/175 상태를 유지했다.
+- 고정 태그 `v1.1.3`은 source `8ea2ceb656c46ecdf3975027f55c5b033e15e3a8`이다. Google Play AAB `1.1.3`/`1001003`, SHA-256 `6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb`를 internal `completed`로 업로드하고 API readback했다. Workflow run `31390061940`은 생성·서명 뒤 Publisher resumable upload가 60초 read timeout으로 중단돼, 같은 태그 소스를 로컬 재현 빌드하고 업로더를 600초 timeout·3회 재시도로 보강해 commit했다.
+- Xcode Cloud run `0abb7047-2126-44f7-979b-d5388314fabb`의 Build 61이 성공했다. ASC build `f9a718d7-829d-4838-8b61-e5d9a968fe6f`는 `1.1.3`/`61`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. 버전 레코드와 내부 그룹을 연결해 `IN_BETA_TESTING`, 테스터 2명을 readback했다.
+- 검증: `pnpm run test:static`, `pnpm run test:firebase`, local signed AAB build, AAB `jar verified`, Google Play/ASC 독립 API readback을 통과했다. 실제 Android/iOS 설치·2기기 동기화·광고·App Check token QA는 사용자 수행 범위로 남겼고 production 승격, App Review 제출, 공개 출시는 수행하지 않았다.
+
 ## 2026-08-10 — 체온·복약 공동 기록
 
 - `CareEvent`와 Firestore exact schema에 체온 값·측정부위, 복약 이름·분류·주성분·실제 투여량·단위·사용자 확인 간격을 추가했다. 체온은 섭씨 30.0~45.0, 복약 이름은 control/bidi 문자 차단, 양·간격·성분 조합은 core와 Rules 양쪽에서 검증한다.
