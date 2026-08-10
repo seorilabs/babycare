@@ -4,7 +4,7 @@
 
 - Google Play, Apple App Store, AppsInToss를 모두 공식 타깃으로 준비한다.
 - 세 타깃 release candidate 준비와 내부 배포를 병행하고, 실기기·정책 gate가 끝난 타깃부터 심사 제출한다.
-- 2026-08-06 Google Play internal `completed`와 App Store Connect/TestFlight 내부 배포까지 완료했다. store review submission·production promotion·AppsInToss production release는 아직 완료되지 않았다.
+- 2026-08-10 체온·복약 `v1.1.3`을 Google Play internal `completed`와 App Store Connect/TestFlight `IN_BETA_TESTING`까지 배포했다. store review submission·production promotion·AppsInToss production release는 아직 완료되지 않았다.
 - `.aab`, archive/`.ipa`, `.ait` 생성은 packaging 증거일 뿐 release-ready 증거가 아니다.
 
 ## 식별자 기준
@@ -25,10 +25,10 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 
 | Target | Repo 위치 | 목표 Artifact | 현재 상태 | 다음 Gate |
 | --- | --- | --- | --- | --- |
-| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ **`v1.0.9` AAB(1.0.9/1000009)를 internal `completed` 업로드·API readback 완료**. Analytics·AdMob/UMP 추가 source는 아직 새 artifact가 아님 | 운영 광고 설정·Data Safety 재제출·새 internal 설치 QA → production 심사·승격 |
-| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ **`v1.0.9` 1.0.9(57), ASC `VALID`·`APP_STORE_ELIGIBLE`·`IN_BETA_TESTING`**. Analytics·GMA/UMP 추가 source는 아직 새 build가 아님 | 운영 광고 설정·App Privacy 재입력·새 TestFlight QA → 심사 제출 |
+| Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ **`v1.1.3` AAB(1.1.3/1001003)를 internal `completed` 업로드·API readback 완료**. 체온·복약·Analytics·AdMob/UMP 포함 | Play Store app-signing 설치본 실기기 QA → production 심사·승격 |
+| App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ **`v1.1.3` 1.1.3(61), ASC `VALID`·`APP_STORE_ELIGIBLE`·`IN_BETA_TESTING`**. App Privacy·DSA·비규제 의료기기·버전 레코드 반영 완료 | TestFlight 2기기 실기기 QA → App Review 제출 |
 | AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. 두 계정 production API E2E 통과 후 `main@707df10`을 workflow run `31123595821`에서 비공개 deployment `019fd827-571d-791d-bd50-08f2da35afec`로 업로드 | sandbox 실기기 QA → 정책 답변·프로덕션 승인 |
-| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | Firestore·Storage·Functions·Platform 인증 bridge·GA4 relay·Platform Events가 LIVE. GA4 Realtime과 Platform BigQuery 실수집 readback 완료 | `v1.1.1` 기기 이벤트와 App Check token 검증 |
+| **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | 체온·복약 Rules를 포함한 Firestore·Storage·Functions·Platform 인증 bridge·GA4 relay·Platform Events가 LIVE. GA4 Realtime과 Platform BigQuery 실수집 readback 완료 | `v1.1.3` 기기 이벤트와 App Check token 검증 |
 
 ## 공통 Blocker
 
@@ -36,8 +36,8 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - ~~실제 production Firebase project와 Android/iOS client config 확정~~ 완료(`seorilabs-babycare`).
 - platform custom token의 실제 기존 사용자·실기기 UID 보존 migration. signer SA/IAM, registry sync, API 배포와 신규·합성 legacy UID live smoke는 2026-08-02 완료했다.
 - App Check 또는 edge rate limit, 실시간/offline sync, 멤버 제거와 cache purge 통합 검증.
-- 개인정보 처리방침과 계정 삭제 절차는 게시·운영 검증 완료. 아동 관련 정보·사진·돌봄 기록 disclosure의 콘솔 제출은 남음.
-- 연령등급, 성인 양육자용·비의료 목적 review note, 지역별 규제 검토.
+- ~~개인정보 처리방침·계정 삭제 절차와 아동·돌봄·건강 기록의 Google Play Data Safety·Apple App Privacy 공개~~ 완료. 체온·복약 공개 방침과 Console readback은 2026-08-10 완료.
+- ~~연령등급, 성인 양육자용·비의료 목적 review note, DSA trader와 비규제 의료기기 선언~~ 완료. 마켓 심사 제출은 실기기 QA 뒤 별도 수행.
 - ~~AdMob Android/iOS app ID·rewarded unit ID와 EU/미국 privacy message 발급·게시~~ 완료. AppsInToss adGroupId는 별도 타깃 gate다.
 - ~~Firebase Analytics와 Platform Events 양측 live 수집~~ 완료. GA4 Realtime·Platform BigQuery에서 PII 없는 `core_screen_view` smoke를 readback했다.
 - Google Play/App Store 앱 아이콘·feature graphic·phone screenshot은 완료. AppsInToss logo·thumbnail·vertical screenshot 후보는 exact size·RGB 검증 완료했으나 실제 AIT sandbox 화면으로 교체하고 Console 등록해야 한다. native launch 화면 사람 QA는 남음.
@@ -48,18 +48,18 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 
 - ~~확정 package `com.seorilabs.babycare`로 Play Console 앱 생성.~~ 완료.
 - ~~Play App Signing과 upload key, x64 Linux 기반 signed AAB release build.~~ 완료(1.0.1/1000001).
-- Data safety에 아동 관련 프로필·사진·돌봄/건강 데이터의 수집·공유·삭제를 실제 SDK와 일치시켜 신고.
-- IARC/GRAC, target audience, 광고/결제 여부와 Families 적용 범위 확인.
+- ~~Data safety에 아동 관련 프로필·돌봄/건강 데이터와 Analytics·Google Mobile Ads 자동 수집을 실제 SDK와 일치시켜 신고~~ 완료.
+- ~~IARC/GRAC, target audience, 광고/결제 여부와 Families 적용 범위 확인~~ 완료.
 - internal → closed test, crash/ANR, 오프라인 복귀와 계정 삭제 검증.
-- ~~`play-store/google-play.config.json`, listing text, icon/feature graphic/screenshots~~ 완료(아이콘 512·피처 1024×500·phone 9:16 3컷). release note와 privacy URL 호스팅은 남음.
-- 업로드 자동화: `deploy-google-play.yml` + `scripts/{resolve-release-version.mjs,upload-google-play-internal.py,restore-mobile-firebase-config.mjs}` 준비 완료. 시크릿·WIF·keystore는 `docs/06-release/store-upload-setup.md` 참고.
+- ~~`play-store/google-play.config.json`, listing text, icon/feature graphic/screenshots, release note와 privacy URL~~ 완료(아이콘 512·피처 1024×500·phone 9:16 3컷).
+- 업로드 자동화: `deploy-google-play.yml` + `scripts/{resolve-release-version.mjs,upload-google-play-internal.py,restore-mobile-firebase-config.mjs}` 준비 완료. Publisher resumable upload는 600초 timeout·3회 재시도로 보강했다. 시크릿·WIF·keystore는 `docs/06-release/store-upload-setup.md` 참고.
 
 ## App Store Blocker
 
 - ~~확정 bundle ID `com.seorilabs.babycare`의 App ID, signing certificate/profile과 App Store Connect 앱 생성.~~ 완료.
 - ~~macOS/Xcode에서 archive/export 및 TestFlight 업로드 검증.~~ 완료(1.0.1/1000001, ASC `VALID`).
-- Privacy Labels, age rating, export compliance, 계정 삭제와 review note 확정.
-- 성인 양육자용·비의료 목적, 초대된 그룹 내 아동 정보 공유 구조를 review note에 설명.
+- ~~Privacy Labels, age rating, export compliance, 계정 삭제와 review note 확정~~ 완료.
+- ~~성인 양육자용·비의료 목적, 초대된 그룹 내 아동 정보 공유 구조를 review note에 설명~~ 완료.
 - 양육자 2인 이상 TestFlight 테스트. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. ~~iPhone 6.9" screenshot~~ 완료(실기 시뮬레이터 캡처 5컷). store 아이콘 1024와 Xcode `AppIcon.appiconset` 반영 완료.
 - ~~`app-store/app-store.config.json` 작성~~ 완료(이름·subtitle·설명·키워드·review·export·privacy 초안).
 - 업로드 자동화: `deploy-app-store.yml`(scheme/workspace/bundle 기본값 채움) 준비 완료. signing·ASC 키는 `docs/06-release/store-upload-setup.md` 참고.

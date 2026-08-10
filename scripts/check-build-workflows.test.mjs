@@ -184,6 +184,17 @@ test('Google Play deployment pins the shared publisher toolchain contract', asyn
   assert.doesNotMatch(setup, /babycare-play-publisher@/);
 });
 
+test('Google Play upload tolerates slow resumable responses', async () => {
+  const upload = await read('scripts/upload-google-play-internal.py');
+
+  assert.match(upload, /HTTP_TIMEOUT_SECONDS = 600/);
+  assert.match(
+    upload,
+    /AuthorizedHttp\(credentials, http=httplib2\.Http\(timeout=HTTP_TIMEOUT_SECONDS\)\)/,
+  );
+  assert.match(upload, /execute\(num_retries=API_RETRIES\)/);
+});
+
 test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', async () => {
   const [prebuild, postClone, project, plist, readme] = await Promise.all([
     read('apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh'),
@@ -236,15 +247,15 @@ test('latest App Store candidate evidence stays consistent', async () => {
       betaTesterCount: release.betaTesterCount,
     },
     {
-      marketingVersion: '1.0.9',
-      buildNumber: '57',
-      sourceTag: 'v1.0.9',
-      sourceCommit: 'fe2b4b12be75d52e96bb3f0c267881efb8dd9072',
-      buildId: '95e65693-70a5-42cf-9590-d63e385a9951',
+      marketingVersion: '1.1.3',
+      buildNumber: '61',
+      sourceTag: 'v1.1.3',
+      sourceCommit: '8ea2ceb656c46ecdf3975027f55c5b033e15e3a8',
+      buildId: 'f9a718d7-829d-4838-8b61-e5d9a968fe6f',
       processingState: 'VALID',
       buildAudienceType: 'APP_STORE_ELIGIBLE',
       usesNonExemptEncryption: false,
-      uploadedDate: '2026-08-07T23:24:20-07:00',
+      uploadedDate: '2026-08-10T06:06:53-07:00',
       artifactSha256: null,
       betaGroupBuildAssigned: true,
       internalBuildState: 'IN_BETA_TESTING',
@@ -253,9 +264,9 @@ test('latest App Store candidate evidence stays consistent', async () => {
   );
 
   for (const document of [market, checklist, setup, workLog]) {
-    assert.match(document, /v1\.0\.9/);
-    assert.match(document, /7faf6504-20e4-4064-a5f8-281dba2ce430/);
-    assert.match(document, /95e65693-70a5-42cf-9590-d63e385a9951/);
+    assert.match(document, /v1\.1\.3/);
+    assert.match(document, /0abb7047-2126-44f7-979b-d5388314fabb/);
+    assert.match(document, /f9a718d7-829d-4838-8b61-e5d9a968fe6f/);
     assert.match(document, /APP_STORE_ELIGIBLE/);
   }
 });

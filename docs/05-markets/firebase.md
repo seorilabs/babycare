@@ -9,7 +9,7 @@
 - Firebase project ID: `seorilabs-babycare`
 - Region: `asia-northeast3`
 - Cloud Billing: `활성` — 2026-08-07 `gcloud beta billing projects describe seorilabs-babycare`에서 `billingEnabled=true` readback. 연결된 billing account 식별자는 보안상 원장에 기록하지 않는다.
-- Production project provisioning/deploy: Auth·Firestore Rules/indexes·Storage·초대/계정 삭제 callable 운영 중
+- Production project provisioning/deploy: Auth·Firestore Rules/indexes·Storage·초대/계정 삭제 callable 운영 중. 체온·복약 exact schema를 포함한 Rules를 2026-08-10 ruleset `8c1ee475-b15f-44ea-9695-009dfe3621a4`로 배포하고 local/remote SHA-256 일치를 readback했다.
 - Functions slice: `createInvite`·`acceptInvite`·`deleteAccount` production ACTIVE. AppsInToss GA4 중계 `logAnalyticsEvents`도 `GA4_MEASUREMENT_ID`와 Secret Manager의 `GA4_API_SECRET`을 사용해 production ACTIVE이며, 인증된 callable smoke에서 `accepted=1`을 확인했다(2026-08-09).
 
 로컬 규칙 검증은 실제 project나 자격증명 없이 `babycare-rules-test`라는 Emulator 전용 project ID로만 실행한다.

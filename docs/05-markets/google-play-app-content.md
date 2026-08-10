@@ -1,10 +1,10 @@
 # Google Play "앱 콘텐츠(App content)" 답변 시트
 
-> 2026-08-07 Play Console readback 이후 2026-08-08 Analytics·리워드 광고 도입으로 재입력이 필요해진 답변 원장이다. 심사 전송과 production 배포는 별도 게이트다.
+> 2026-08-10 Analytics·리워드 광고와 체온·복약 기준으로 Play Console 답변을 재검토한 원장이다. 심사 전송과 production 배포는 별도 게이트다.
 > 근거: `docs/05-markets/store-data-disclosure.md`, `docs/01-planning/product-spec.md`.
 
 ## 1. 개인정보처리방침 (Privacy policy)
-- URL: `https://www.seorilabs.com/apps/babycare/privacy/` — 한국어·영어 live 200 및 Play Console 저장 readback 완료(2026-08-09)
+- URL: `https://www.seorilabs.com/apps/babycare/privacy/` — 체온·복약과 2026-08-10 시행일을 반영한 한국어·영어 live 200 및 Play Console 저장 readback 완료
 - 계정 삭제 URL: `https://www.seorilabs.com/apps/babycare/account-deletion/`
 
 ## 2. 앱 액세스 (App access)
@@ -16,7 +16,7 @@
 - **예, 앱에 광고가 있습니다.**
 - 위치: 통계 탭의 `상세 통계 24시간 열기` 선택형 리워드 광고 1개.
 - 강제 전면 광고·배너·인앱결제는 없다. 광고를 보지 않아도 오늘 요약과 기본 통계는 계속 사용할 수 있다.
-- **Console 재입력·readback 대기.** 운영 AdMob app/unit ID, UMP 메시지와 새 release 설치본 QA가 선행돼야 한다.
+- **Console 저장·readback 완료.** 운영 AdMob app/unit ID와 UMP 메시지를 반영했다. 새 release 설치본의 광고 동작은 실기기 QA에서 확인한다.
 
 ## 4. 콘텐츠 등급 (Content ratings, IARC 설문)
 - 이메일: `cs@seorilabs.com`
@@ -60,7 +60,7 @@
 | 앱 정보 및 성능 | 비정상 종료 로그·진단 | 분석·광고·사기 방지 | SDK 자동 수집 | Google Mobile Ads 진단·성능 정보 |
 
 - 미수집: 이메일, 금융 정보, 연락처, 사진·동영상, 메시지, 정밀 위치.
-- 위 추가 행의 정확한 최신 Play CSV response ID는 임의 작성하지 않는다. Console에서 새 template CSV를 내보낸 뒤 `play-store/data-safety-responses.json`의 `pendingSdkRevision`을 실제 응답으로 교체하고 API 제출·Console readback한다.
+- 최신 Play CSV template에 Analytics·Google Mobile Ads 자동 수집 유형을 반영해 2026-08-09 import·Preview·저장했다. 체온·복약은 이미 신고한 건강 정보와 기타 사용자 제작 콘텐츠의 데이터 예시에 포함되므로 2026-08-10 재검토에서 response 행 변경은 없었다.
 
 ### 확정·참고
 1. **아기 생년월일 = "개인 정보 > 기타 정보", 돌봄 기록·메모 = "앱 활동 > 기타 사용자 제작 콘텐츠"**로 신고한다. 구조화된 수유·수면·체온·복약 기록은 비의료 도구라도 Google Play의 광범위한 분류에 따라 **"건강 및 피트니스 > 건강 정보"**에도 신고한다.
@@ -68,7 +68,7 @@
 
 ## 7. 기타 선언 (해당 없음)
 - 금융 기능: **없음**
-- 건강 기능: 기존 Console은 **영양 및 체중 관리**, **수면 관리**로 저장됐다. 체온·복약 추가 후 **복약 및 치료 관리**를 함께 선택하고 추가 질문·면책 문구를 재검토해야 한다. 의료기기가 아니며 진단·처방·용량 추천 기능은 없음
+- 건강 기능: **영양 및 체중 관리**, **수면 관리**, **약물 및 치료 관리**를 2026-08-10 Console에서 저장하고 재진입해 선택 상태를 readback했다. 의료기기가 아니며 진단·처방·용량 추천 기능은 없음
 - 정부 앱/뉴스 앱/AI 생성 콘텐츠: **아니요**
 - 광고 ID: **사용함**. Google Mobile Ads SDK 기준 `예`, 목적은 분석·광고/마케팅·사기 방지/보안으로 2026-08-09 Console 저장 readback 완료.
 

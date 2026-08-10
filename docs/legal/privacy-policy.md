@@ -1,6 +1,6 @@
 # 함께봄 개인정보처리방침 원장
 
-> **상태: 제품별 공개 방침의 근거 원장.** 스토어 `privacyPolicyUrl`은 `https://www.seorilabs.com/apps/babycare/privacy/`(en: `/en/apps/babycare/privacy/`)를 사용한다. 공개 페이지 source는 `seorilabs-official` PR #6에서 2026-08-09 병합했다.
+> **상태: 제품별 공개 방침의 근거 원장.** 스토어 `privacyPolicyUrl`은 `https://www.seorilabs.com/apps/babycare/privacy/`(en: `/en/apps/babycare/privacy/`)를 사용한다. 체온·복약 항목을 반영한 공개 페이지 source는 `seorilabs-official` PR #7에서 2026-08-10 병합했고 한국어·영어 live 200을 readback했다.
 
 Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이용자의 개인정보를 중요하게 생각하며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 본 방침은 서비스가 어떤 정보를 어떤 목적으로 처리하고 어떻게 보호하는지 설명합니다.
 
@@ -63,14 +63,12 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 
 ## 8. 개인정보 보호책임자 및 문의
 
-- 문의: cs@seorilabs.com
-- 개인정보 보호책임자: `확정 필요`
-- 회사 법적 상호·주소: `확정 필요`
+- 개인정보 및 앱 지원 문의: `cs@seorilabs.com`
 
 ## 9. 고지
 
 - 본 방침의 내용 추가·삭제·수정이 있을 경우 개정 최소 7일 전에 공지합니다.
-- 시행일: `확정 필요`
+- 시행일 및 최종 수정일: `2026-08-10`
 
 ---
 
@@ -87,4 +85,4 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 - **Security:** TLS in transit, membership-based access control; no admin keys shipped in the app.
 - **Contact:** cs@seorilabs.com
 
-> This English text is a summary of the Korean policy for reference and must be finalized with legal review before publishing.
+> This repository summary is subordinate to the full English product policy published at `https://www.seorilabs.com/en/apps/babycare/privacy/`.
