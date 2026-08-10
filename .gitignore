@@ -23,6 +23,8 @@ dist/
 build/
 coverage/
 *.log
+__pycache__/
+*.pyc
 
 # Firebase / secrets / local config
 .env

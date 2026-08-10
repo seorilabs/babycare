@@ -1,9 +1,35 @@
 import type { BabyId, EventId, GroupId, UserId } from './ids.ts';
+import { normalizeDisplayName } from '../value_objects/display-name.ts';
 
-export type CareEventKind = 'feeding' | 'diaper' | 'sleep';
+export type CareEventKind =
+  | 'feeding'
+  | 'diaper'
+  | 'sleep'
+  | 'temperature'
+  | 'medication';
+export const CARE_EVENT_KINDS: readonly CareEventKind[] = [
+  'feeding',
+  'diaper',
+  'sleep',
+  'temperature',
+  'medication',
+];
 export type FeedingType = 'breast' | 'bottle_breastmilk' | 'formula' | 'solid';
 export type DiaperType = 'wet' | 'dirty' | 'mixed';
 export type SleepType = 'nap' | 'night';
+export type TemperatureMeasurementSite =
+  | 'armpit'
+  | 'ear'
+  | 'forehead'
+  | 'oral'
+  | 'rectal'
+  | 'other';
+export type MedicationCategory = 'antipyretic' | 'antibiotic' | 'other';
+export type MedicationActiveIngredient =
+  | 'acetaminophen'
+  | 'ibuprofen'
+  | 'other';
+export type MedicationDoseUnit = 'ml' | 'mg' | 'tablet' | 'drop';
 
 export const MAX_SLEEP_DURATION_MS = 48 * 60 * 60 * 1_000;
 
@@ -40,7 +66,29 @@ export interface SleepEvent extends CareEventBase {
   readonly endedAt?: number;
 }
 
-export type CareEvent = FeedingEvent | DiaperEvent | SleepEvent;
+export interface TemperatureEvent extends CareEventBase {
+  readonly kind: 'temperature';
+  readonly temperatureCelsius: number;
+  readonly measurementSite: TemperatureMeasurementSite;
+}
+
+export interface MedicationEvent extends CareEventBase {
+  readonly kind: 'medication';
+  readonly medicationName: string;
+  readonly medicationCategory: MedicationCategory;
+  readonly activeIngredient: MedicationActiveIngredient;
+  readonly doseAmount: number;
+  readonly doseUnit: MedicationDoseUnit;
+  /** User-confirmed interval from the product label or a clinician. */
+  readonly minimumIntervalMinutes: number;
+}
+
+export type CareEvent =
+  | FeedingEvent
+  | DiaperEvent
+  | SleepEvent
+  | TemperatureEvent
+  | MedicationEvent;
 
 type CreateBase = Pick<
   CareEventBase,
@@ -51,7 +99,15 @@ export type CreateCareEventInput =
   | (CreateBase & Omit<FeedingEvent, keyof CareEventBase | 'kind'> & { readonly kind: 'feeding' })
   | (CreateBase & Omit<DiaperEvent, keyof CareEventBase | 'kind'> & { readonly kind: 'diaper' })
   | (Omit<CreateBase, 'occurredAt'> &
-      Omit<SleepEvent, keyof CareEventBase | 'kind'> & { readonly kind: 'sleep' });
+      Omit<SleepEvent, keyof CareEventBase | 'kind'> & { readonly kind: 'sleep' })
+  | (CreateBase &
+      Omit<TemperatureEvent, keyof CareEventBase | 'kind'> & {
+        readonly kind: 'temperature';
+      })
+  | (CreateBase &
+      Omit<MedicationEvent, keyof CareEventBase | 'kind'> & {
+        readonly kind: 'medication';
+      });
 
 export interface NewEventMetadata {
   readonly id: EventId;
@@ -76,6 +132,10 @@ function normalizedNote(note: string | undefined): string | undefined {
     throw new Error('Care event note must be at most 500 characters');
   }
   return value;
+}
+
+function normalizedMedicationName(name: string): string {
+  return normalizeDisplayName(name, 'Medication name');
 }
 
 export function createCareEvent(
@@ -160,6 +220,71 @@ export function createCareEvent(
       ...base,
       kind: 'diaper',
       diaperType: input.diaperType,
+    };
+  }
+
+  if (input.kind === 'temperature') {
+    if (
+      !Number.isFinite(input.temperatureCelsius) ||
+      input.temperatureCelsius < 30 ||
+      input.temperatureCelsius > 45
+    ) {
+      throw new Error('Temperature must be from 30 to 45 degrees Celsius');
+    }
+    if (
+      !['armpit', 'ear', 'forehead', 'oral', 'rectal', 'other'].includes(
+        input.measurementSite,
+      )
+    ) {
+      throw new Error('Temperature measurementSite is invalid');
+    }
+    return {
+      ...base,
+      kind: 'temperature',
+      temperatureCelsius: Math.round(input.temperatureCelsius * 10) / 10,
+      measurementSite: input.measurementSite,
+    };
+  }
+
+  if (input.kind === 'medication') {
+    if (!['antipyretic', 'antibiotic', 'other'].includes(input.medicationCategory)) {
+      throw new Error('Medication category is invalid');
+    }
+    if (!['acetaminophen', 'ibuprofen', 'other'].includes(input.activeIngredient)) {
+      throw new Error('Medication activeIngredient is invalid');
+    }
+    if (
+      input.medicationCategory === 'antipyretic' &&
+      input.activeIngredient === 'other'
+    ) {
+      throw new Error('Antipyretic medication requires a known active ingredient');
+    }
+    if (
+      input.medicationCategory !== 'antipyretic' &&
+      input.activeIngredient !== 'other'
+    ) {
+      throw new Error('Known antipyretic ingredients require antipyretic category');
+    }
+    validateFinitePositive(input.doseAmount, 'Medication doseAmount', 10_000);
+    if (!['ml', 'mg', 'tablet', 'drop'].includes(input.doseUnit)) {
+      throw new Error('Medication doseUnit is invalid');
+    }
+    if (
+      !Number.isInteger(input.minimumIntervalMinutes) ||
+      input.minimumIntervalMinutes < 15 ||
+      input.minimumIntervalMinutes > 10_080
+    ) {
+      throw new Error('Medication minimumIntervalMinutes must be from 15 to 10080');
+    }
+    return {
+      ...base,
+      kind: 'medication',
+      medicationName: normalizedMedicationName(input.medicationName),
+      medicationCategory: input.medicationCategory,
+      activeIngredient: input.activeIngredient,
+      doseAmount: input.doseAmount,
+      doseUnit: input.doseUnit,
+      minimumIntervalMinutes: input.minimumIntervalMinutes,
     };
   }
 

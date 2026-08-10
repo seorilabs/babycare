@@ -66,6 +66,16 @@ function LatestCard(props: {
       label: props.strings.home.lastSleep,
       color: props.theme.colors.sleep,
     },
+    temperature: {
+      icon: '🌡️',
+      label: props.strings.home.lastTemperature,
+      color: props.theme.colors.temperature,
+    },
+    medication: {
+      icon: '💊',
+      label: props.strings.home.lastMedication,
+      color: props.theme.colors.medication,
+    },
   }[props.kind];
 
   return (
@@ -185,6 +195,20 @@ export function HomeScreen(props: {
         : props.strings.home.quickHint,
     },
     {
+      kind: 'temperature',
+      icon: '🌡️',
+      label: props.strings.home.temperature,
+      color: props.theme.colors.temperature,
+      hint: props.strings.home.quickHint,
+    },
+    {
+      kind: 'medication',
+      icon: '💊',
+      label: props.strings.home.medication,
+      color: props.theme.colors.medication,
+      hint: props.strings.home.quickHint,
+    },
+    {
       kind: 'more',
       icon: '＋',
       label: props.strings.tabs.more,
@@ -244,6 +268,22 @@ export function HomeScreen(props: {
           caregiverNames={props.caregiverNames}
           event={activeSleep ?? summary.latest.sleep}
           kind="sleep"
+          now={props.now}
+          strings={props.strings}
+          theme={props.theme}
+        />
+        <LatestCard
+          caregiverNames={props.caregiverNames}
+          event={summary.latest.temperature}
+          kind="temperature"
+          now={props.now}
+          strings={props.strings}
+          theme={props.theme}
+        />
+        <LatestCard
+          caregiverNames={props.caregiverNames}
+          event={summary.latest.medication}
+          kind="medication"
           now={props.now}
           strings={props.strings}
           theme={props.theme}

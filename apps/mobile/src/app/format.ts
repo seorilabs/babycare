@@ -30,7 +30,15 @@ export function formatDuration(seconds: number, strings: Strings): string {
 }
 
 export function eventIcon(event: CareEvent): string {
-  return event.kind === 'feeding' ? '🍼' : event.kind === 'diaper' ? '🧷' : '🌙';
+  return event.kind === 'feeding'
+    ? '🍼'
+    : event.kind === 'diaper'
+      ? '🧷'
+      : event.kind === 'sleep'
+        ? '🌙'
+        : event.kind === 'temperature'
+          ? '🌡️'
+          : '💊';
 }
 
 export function eventTitle(event: CareEvent, strings: Strings): string {
@@ -66,6 +74,33 @@ export function eventTitle(event: CareEvent, strings: Strings): string {
           ? strings.event.diaperDirty
           : strings.event.diaperMixed;
     return strings.event.diaper(label);
+  }
+  if (event.kind === 'temperature') {
+    const site = {
+      armpit: strings.event.temperatureArmpit,
+      ear: strings.event.temperatureEar,
+      forehead: strings.event.temperatureForehead,
+      oral: strings.event.temperatureOral,
+      rectal: strings.event.temperatureRectal,
+      other: strings.event.temperatureOther,
+    }[event.measurementSite];
+    return strings.event.temperature(event.temperatureCelsius, site);
+  }
+  if (event.kind === 'medication') {
+    const unit =
+      event.doseUnit === 'tablet'
+        ? strings.intlLocale === 'ko-KR'
+          ? '정'
+          : ' tablet'
+        : event.doseUnit === 'drop'
+          ? strings.intlLocale === 'ko-KR'
+            ? '방울'
+            : ' drops'
+          : event.doseUnit;
+    return strings.event.medication(
+      event.medicationName,
+      `${event.doseAmount}${unit}`,
+    );
   }
   const label =
     event.sleepType === 'nap' ? strings.event.nap : strings.event.nightSleep;

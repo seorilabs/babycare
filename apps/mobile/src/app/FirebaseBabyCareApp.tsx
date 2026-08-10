@@ -338,6 +338,7 @@ export function FirebaseCareDashboard(props: {
         theme={theme}
       />
       <QuickRecordModal
+        events={overview.events}
         kind={recording}
         onClose={() => setRecording(undefined)}
         onSave={async input => {

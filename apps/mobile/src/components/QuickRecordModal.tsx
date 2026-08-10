@@ -11,11 +11,22 @@ import {
   View,
 } from 'react-native';
 import type {
+  CareEvent,
   CareEventKind,
   CreateCareEventInput,
   DiaperType,
   FeedingType,
+  MedicationActiveIngredient,
+  MedicationCategory,
+  MedicationDoseUnit,
+  MedicationEvent,
   SleepType,
+  TemperatureMeasurementSite,
+} from '@babycare/product-core';
+import {
+  assessMedicationTiming,
+  medicationIdentity,
+  nextMedicationTime,
 } from '@babycare/product-core';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -23,6 +34,8 @@ import {formatDuration} from '../app/format';
 import type {Strings} from '../app/i18n';
 import {domainContext, type LocalSession} from '../app/session';
 import type {AppTheme} from '../app/theme';
+
+const EMPTY_CARE_EVENTS: readonly CareEvent[] = [];
 
 function Choice<T extends string>(props: {
   readonly value: T;
@@ -54,6 +67,7 @@ function Choice<T extends string>(props: {
 
 export function QuickRecordModal(props: {
   readonly kind: CareEventKind | undefined;
+  readonly events?: readonly CareEvent[];
   readonly session: LocalSession;
   readonly strings: Strings;
   readonly theme: AppTheme;
@@ -61,12 +75,29 @@ export function QuickRecordModal(props: {
   readonly onSave: (input: CreateCareEventInput) => Promise<void>;
 }) {
   const strings = props.strings;
+  const events = props.events ?? EMPTY_CARE_EVENTS;
   const insets = useSafeAreaInsets();
   const [feedingType, setFeedingType] = useState<FeedingType>('formula');
   const [breastSide, setBreastSide] = useState<'left' | 'right'>('left');
   const [volumeMl, setVolumeMl] = useState(120);
   const [diaperType, setDiaperType] = useState<DiaperType>('wet');
   const [sleepType, setSleepType] = useState<SleepType>('nap');
+  const [temperatureCelsius, setTemperatureCelsius] = useState(36.5);
+  const [measurementSite, setMeasurementSite] =
+    useState<TemperatureMeasurementSite>('armpit');
+  const [medicationPreset, setMedicationPreset] = useState('acetaminophen');
+  const [medicationName, setMedicationName] = useState(
+    strings.quickRecord.medicationAcetaminophen,
+  );
+  const [medicationCategory, setMedicationCategory] =
+    useState<MedicationCategory>('antipyretic');
+  const [activeIngredient, setActiveIngredient] =
+    useState<MedicationActiveIngredient>('acetaminophen');
+  const [doseAmountText, setDoseAmountText] = useState('');
+  const [doseUnit, setDoseUnit] = useState<MedicationDoseUnit>('ml');
+  const [intervalHoursText, setIntervalHoursText] = useState('4');
+  const [medicationWarningConfirmed, setMedicationWarningConfirmed] =
+    useState(false);
   const [note, setNote] = useState('');
   const [occurredAt, setOccurredAt] = useState(Date.now());
   const [timeEdited, setTimeEdited] = useState(false);
@@ -100,8 +131,21 @@ export function QuickRecordModal(props: {
       setNote('');
       setSaving(false);
       setErrorMessage(undefined);
+      setMedicationWarningConfirmed(false);
     }
   }, [props.kind]);
+
+  useEffect(() => {
+    setMedicationWarningConfirmed(false);
+  }, [
+    activeIngredient,
+    doseAmountText,
+    intervalHoursText,
+    medicationCategory,
+    medicationName,
+    occurredAt,
+    timeEdited,
+  ]);
 
   const elapsed = useMemo(() => {
     const runningMs = timerStartedAt ? Date.now() - timerStartedAt : 0;
@@ -114,6 +158,26 @@ export function QuickRecordModal(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTimerSide, leftAccumulatedMs, rightAccumulatedMs, tick, timerStartedAt]);
 
+  const recentMedicationPresets = useMemo(() => {
+    const unique = new Map<string, MedicationEvent>();
+    for (const event of [...events].sort(
+      (left, right) => right.occurredAt - left.occurredAt,
+    )) {
+      if (
+        event.kind !== 'medication' ||
+        event.deletedAt !== undefined ||
+        event.activeIngredient !== 'other'
+      ) {
+        continue;
+      }
+      unique.set(medicationIdentity(event), event);
+      if (unique.size >= 4) {
+        break;
+      }
+    }
+    return [...unique.values()];
+  }, [events]);
+
   if (!props.kind) {
     return null;
   }
@@ -125,12 +189,52 @@ export function QuickRecordModal(props: {
       ? strings.quickRecord.feedingTitle
       : props.kind === 'diaper'
         ? strings.quickRecord.diaperTitle
-        : strings.quickRecord.sleepTitle;
-  const saveDisabled =
-    props.kind === 'feeding' && feedingType === 'breast' && elapsed.totalMs < 1_000;
-  const saveGuidance = saveDisabled
-    ? strings.quickRecord.saveGuidance
+        : props.kind === 'sleep'
+          ? strings.quickRecord.sleepTitle
+          : props.kind === 'temperature'
+            ? strings.quickRecord.temperatureTitle
+            : strings.quickRecord.medicationTitle;
+  const doseAmount = Number(doseAmountText);
+  const minimumIntervalMinutes = Math.round(Number(intervalHoursText) * 60);
+  const medicationInputValid =
+    medicationName.trim().length > 0 &&
+    Number.isFinite(doseAmount) &&
+    doseAmount > 0 &&
+    Number.isInteger(minimumIntervalMinutes) &&
+    minimumIntervalMinutes >= 15 &&
+    minimumIntervalMinutes <= 10_080;
+  const medicationAssessment = medicationInputValid
+    ? assessMedicationTiming(events, {
+        occurredAt: selectedOccurredAt,
+        medicationName,
+        medicationCategory,
+        activeIngredient,
+        minimumIntervalMinutes,
+      })
     : undefined;
+  const medicationWarning = medicationAssessment?.sameMedication
+    ? strings.quickRecord.medicationTooSoonWarning(
+        medicationAssessment.sameMedication.medicationName,
+      )
+    : medicationAssessment?.otherAntipyretic
+      ? strings.quickRecord.simultaneousAntipyreticWarning
+      : undefined;
+  const saveDisabled =
+    (props.kind === 'feeding' &&
+      feedingType === 'breast' &&
+      elapsed.totalMs < 1_000) ||
+    (props.kind === 'medication' && !medicationInputValid);
+  const saveGuidance =
+    props.kind === 'feeding' && saveDisabled
+      ? strings.quickRecord.saveGuidance
+      : props.kind === 'medication' && !medicationName.trim()
+        ? strings.quickRecord.medicationNameRequired
+        : props.kind === 'medication' &&
+            (!Number.isFinite(doseAmount) || doseAmount <= 0)
+          ? strings.quickRecord.medicationDoseRequired
+          : props.kind === 'medication' && !medicationInputValid
+            ? strings.quickRecord.intervalHint
+            : undefined;
   const saveOpacity = saving ? 0.65 : 1;
   const timerAction = timerStartedAt
     ? strings.quickRecord.timerPause
@@ -141,6 +245,40 @@ export function QuickRecordModal(props: {
     breastSide,
     timerAction,
   );
+
+  const selectMedicationPreset = (
+    selection: string,
+    recent?: MedicationEvent,
+  ) => {
+    setMedicationPreset(selection);
+    if (recent) {
+      setMedicationName(recent.medicationName);
+      setMedicationCategory(recent.medicationCategory);
+      setActiveIngredient(recent.activeIngredient);
+      setDoseAmountText(String(recent.doseAmount));
+      setDoseUnit(recent.doseUnit);
+      setIntervalHoursText(String(recent.minimumIntervalMinutes / 60));
+      return;
+    }
+    setDoseAmountText('');
+    setDoseUnit('ml');
+    if (selection === 'acetaminophen') {
+      setMedicationName(strings.quickRecord.medicationAcetaminophen);
+      setMedicationCategory('antipyretic');
+      setActiveIngredient('acetaminophen');
+      setIntervalHoursText('4');
+    } else if (selection === 'ibuprofen') {
+      setMedicationName(strings.quickRecord.medicationIbuprofen);
+      setMedicationCategory('antipyretic');
+      setActiveIngredient('ibuprofen');
+      setIntervalHoursText('6');
+    } else {
+      setMedicationName('');
+      setMedicationCategory(selection === 'antibiotic' ? 'antibiotic' : 'other');
+      setActiveIngredient('other');
+      setIntervalHoursText('');
+    }
+  };
 
   const save = async () => {
     if (saveRequestInFlight.current) {
@@ -174,8 +312,41 @@ export function QuickRecordModal(props: {
             };
     } else if (props.kind === 'diaper') {
       input = {...context, kind: 'diaper', diaperType, occurredAt: recordTime, note};
-    } else {
+    } else if (props.kind === 'sleep') {
       input = {...context, kind: 'sleep', sleepType, startedAt: recordTime, note};
+    } else if (props.kind === 'temperature') {
+      input = {
+        ...context,
+        kind: 'temperature',
+        temperatureCelsius,
+        measurementSite,
+        occurredAt: recordTime,
+        note,
+      };
+    } else {
+      const assessment = assessMedicationTiming(events, {
+        occurredAt: recordTime,
+        medicationName,
+        medicationCategory,
+        activeIngredient,
+        minimumIntervalMinutes,
+      });
+      if (assessment.requiresAcknowledgement && !medicationWarningConfirmed) {
+        setMedicationWarningConfirmed(true);
+        return;
+      }
+      input = {
+        ...context,
+        kind: 'medication',
+        medicationName,
+        medicationCategory,
+        activeIngredient,
+        doseAmount,
+        doseUnit,
+        minimumIntervalMinutes,
+        occurredAt: recordTime,
+        note,
+      };
     }
 
     saveRequestInFlight.current = true;
@@ -194,6 +365,23 @@ export function QuickRecordModal(props: {
       saveRequestInFlight.current = false;
       setSaving(false);
     }
+  };
+
+  const scheduleText = (nextAt: number | undefined): string => {
+    if (nextAt === undefined) {
+      return strings.quickRecord.noPriorDose;
+    }
+    if (nextAt <= Date.now()) {
+      return strings.quickRecord.doseReady;
+    }
+    return strings.quickRecord.nextDoseAt(
+      new Intl.DateTimeFormat(strings.intlLocale, {
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(nextAt),
+    );
   };
 
   return (
@@ -382,6 +570,189 @@ export function QuickRecordModal(props: {
             </>
           ) : null}
 
+          {props.kind === 'temperature' ? (
+            <>
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.temperatureLabel}
+              </Text>
+              <View style={[styles.stepper, {backgroundColor: props.theme.colors.surface}]}>
+                <Pressable
+                  accessibilityLabel={strings.quickRecord.decreaseTemperatureLabel}
+                  accessibilityRole="button"
+                  onPress={() =>
+                    setTemperatureCelsius(value =>
+                      Math.max(30, Math.round((value - 0.1) * 10) / 10),
+                    )
+                  }
+                  style={[styles.stepButton, {borderColor: props.theme.colors.border}]}>
+                  <Text style={[styles.stepText, {color: props.theme.colors.text}]}>−</Text>
+                </Pressable>
+                <View
+                  accessibilityLabel={strings.quickRecord.temperatureValueLabel(
+                    temperatureCelsius,
+                  )}
+                  accessibilityLiveRegion="polite"
+                  accessible
+                  style={styles.amount}>
+                  <Text style={[styles.amountValue, {color: props.theme.colors.text}]}>
+                    {temperatureCelsius.toFixed(1)}
+                  </Text>
+                  <Text style={[styles.amountUnit, {color: props.theme.colors.textMuted}]}>°C</Text>
+                </View>
+                <Pressable
+                  accessibilityLabel={strings.quickRecord.increaseTemperatureLabel}
+                  accessibilityRole="button"
+                  onPress={() =>
+                    setTemperatureCelsius(value =>
+                      Math.min(45, Math.round((value + 0.1) * 10) / 10),
+                    )
+                  }
+                  style={[styles.stepButton, {borderColor: props.theme.colors.border}]}>
+                  <Text style={[styles.stepText, {color: props.theme.colors.text}]}>＋</Text>
+                </Pressable>
+              </View>
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.measurementSiteLabel}
+              </Text>
+              <View style={styles.choiceRow}>
+                <Choice label={strings.quickRecord.siteArmpit} onSelect={setMeasurementSite} selected={measurementSite} theme={props.theme} value="armpit" />
+                <Choice label={strings.quickRecord.siteEar} onSelect={setMeasurementSite} selected={measurementSite} theme={props.theme} value="ear" />
+                <Choice label={strings.quickRecord.siteForehead} onSelect={setMeasurementSite} selected={measurementSite} theme={props.theme} value="forehead" />
+                <Choice label={strings.quickRecord.siteOral} onSelect={setMeasurementSite} selected={measurementSite} theme={props.theme} value="oral" />
+                <Choice label={strings.quickRecord.siteRectal} onSelect={setMeasurementSite} selected={measurementSite} theme={props.theme} value="rectal" />
+                <Choice label={strings.quickRecord.siteOther} onSelect={setMeasurementSite} selected={measurementSite} theme={props.theme} value="other" />
+              </View>
+            </>
+          ) : null}
+
+          {props.kind === 'medication' ? (
+            <>
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.medicationPresetLabel}
+              </Text>
+              <View style={styles.choiceRow}>
+                <Choice label={strings.quickRecord.medicationAcetaminophen} onSelect={selectMedicationPreset} selected={medicationPreset} theme={props.theme} value="acetaminophen" />
+                <Choice label={strings.quickRecord.medicationIbuprofen} onSelect={selectMedicationPreset} selected={medicationPreset} theme={props.theme} value="ibuprofen" />
+                <Choice label={strings.quickRecord.medicationAntibiotic} onSelect={selectMedicationPreset} selected={medicationPreset} theme={props.theme} value="antibiotic" />
+                <Choice label={strings.quickRecord.medicationCustom} onSelect={selectMedicationPreset} selected={medicationPreset} theme={props.theme} value="custom" />
+              </View>
+              {recentMedicationPresets.length ? (
+                <>
+                  <Text style={[styles.subLabel, {color: props.theme.colors.textMuted}]}>
+                    {strings.quickRecord.medicationRecent}
+                  </Text>
+                  <View style={styles.choiceRow}>
+                    {recentMedicationPresets.map(event => {
+                      const value = `recent:${event.id}`;
+                      return (
+                        <Choice
+                          key={event.id}
+                          label={event.medicationName}
+                          onSelect={() => selectMedicationPreset(value, event)}
+                          selected={medicationPreset}
+                          theme={props.theme}
+                          value={value}
+                        />
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
+
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.medicationNameLabel}
+              </Text>
+              <TextInput
+                maxLength={80}
+                onChangeText={setMedicationName}
+                placeholder={strings.quickRecord.medicationNamePlaceholder}
+                placeholderTextColor={props.theme.colors.textMuted}
+                style={[
+                  styles.singleLineInput,
+                  {
+                    backgroundColor: props.theme.colors.surface,
+                    borderColor: props.theme.colors.border,
+                    color: props.theme.colors.text,
+                  },
+                ]}
+                value={medicationName}
+              />
+
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.doseLabel}
+              </Text>
+              <View style={styles.doseRow}>
+                <TextInput
+                  keyboardType="decimal-pad"
+                  maxLength={8}
+                  onChangeText={setDoseAmountText}
+                  placeholder={strings.quickRecord.doseAmountPlaceholder}
+                  placeholderTextColor={props.theme.colors.textMuted}
+                  style={[
+                    styles.doseInput,
+                    {
+                      backgroundColor: props.theme.colors.surface,
+                      borderColor: props.theme.colors.border,
+                      color: props.theme.colors.text,
+                    },
+                  ]}
+                  value={doseAmountText}
+                />
+                <View style={[styles.choiceRow, styles.doseUnits]}>
+                  <Choice label="ml" onSelect={setDoseUnit} selected={doseUnit} theme={props.theme} value="ml" />
+                  <Choice label="mg" onSelect={setDoseUnit} selected={doseUnit} theme={props.theme} value="mg" />
+                  <Choice label={strings.intlLocale === 'ko-KR' ? '정' : 'tablet'} onSelect={setDoseUnit} selected={doseUnit} theme={props.theme} value="tablet" />
+                  <Choice label={strings.intlLocale === 'ko-KR' ? '방울' : 'drops'} onSelect={setDoseUnit} selected={doseUnit} theme={props.theme} value="drop" />
+                </View>
+              </View>
+
+              <Text style={[styles.label, {color: props.theme.colors.text}]}>
+                {strings.quickRecord.intervalLabel}
+              </Text>
+              <View style={[styles.intervalRow, {backgroundColor: props.theme.colors.surface}]}>
+                <TextInput
+                  keyboardType="decimal-pad"
+                  maxLength={6}
+                  onChangeText={setIntervalHoursText}
+                  placeholder="4"
+                  placeholderTextColor={props.theme.colors.textMuted}
+                  style={[styles.intervalInput, {color: props.theme.colors.text}]}
+                  value={intervalHoursText}
+                />
+                <Text style={[styles.intervalUnit, {color: props.theme.colors.textMuted}]}>
+                  {strings.quickRecord.intervalHours(1).replace('1', '')}
+                </Text>
+              </View>
+              <Text style={[styles.fieldHint, {color: props.theme.colors.textMuted}]}>
+                {strings.quickRecord.intervalHint}
+              </Text>
+
+              <View style={[styles.scheduleCard, {backgroundColor: props.theme.colors.surface}]}>
+                <Text style={[styles.scheduleTitle, {color: props.theme.colors.text}]}>
+                  {strings.quickRecord.antipyreticScheduleTitle}
+                </Text>
+                <Text style={[styles.scheduleLine, {color: props.theme.colors.textMuted}]}>
+                  {strings.quickRecord.medicationAcetaminophen} ·{' '}
+                  {scheduleText(nextMedicationTime(events, 'acetaminophen'))}
+                </Text>
+                <Text style={[styles.scheduleLine, {color: props.theme.colors.textMuted}]}>
+                  {strings.quickRecord.medicationIbuprofen} ·{' '}
+                  {scheduleText(nextMedicationTime(events, 'ibuprofen'))}
+                </Text>
+              </View>
+              <View style={[styles.safetyCard, {backgroundColor: props.theme.colors.primarySoft}]}>
+                <Text style={[styles.safetyText, {color: props.theme.colors.text}]}>
+                  {strings.quickRecord.medicationSafetyNotice}
+                </Text>
+              </View>
+              {medicationWarning ? (
+                <Text accessibilityRole="alert" style={[styles.warning, {color: props.theme.colors.danger}]}>
+                  {medicationWarning}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+
           <Text style={[styles.label, {color: props.theme.colors.text}]}>
             {strings.quickRecord.occurredAtLabel}
           </Text>
@@ -470,6 +841,8 @@ export function QuickRecordModal(props: {
             accessibilityLabel={
               saving
                 ? strings.quickRecord.savingLabel
+                : medicationWarning && !medicationWarningConfirmed
+                  ? strings.quickRecord.acknowledgeAndSave
                 : strings.quickRecord.saveLabel
             }
             accessibilityRole="button"
@@ -484,7 +857,11 @@ export function QuickRecordModal(props: {
               },
             ]}>
             <Text style={styles.saveText}>
-              {saving ? strings.quickRecord.saving : strings.quickRecord.save}
+              {saving
+                ? strings.quickRecord.saving
+                : medicationWarning && !medicationWarningConfirmed
+                  ? strings.quickRecord.acknowledgeAndSave
+                  : strings.quickRecord.save}
             </Text>
           </Pressable>
         </View>
@@ -501,6 +878,7 @@ const styles = StyleSheet.create({
   title: {flex: 1, fontSize: 17, fontWeight: '800', textAlign: 'center'},
   content: {padding: 20, paddingBottom: 40},
   label: {fontSize: 13, fontWeight: '800', marginBottom: 10, marginTop: 22},
+  subLabel: {fontSize: 11, fontWeight: '700', marginBottom: 8, marginTop: 14},
   choiceRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
   choice: {borderRadius: 12, borderWidth: 1, minWidth: 72, paddingHorizontal: 15, paddingVertical: 11},
   choiceText: {fontSize: 13, fontWeight: '700', textAlign: 'center'},
@@ -518,6 +896,20 @@ const styles = StyleSheet.create({
   amount: {alignItems: 'baseline', flex: 1, flexDirection: 'row', justifyContent: 'center'},
   amountValue: {fontSize: 32, fontVariant: ['tabular-nums'], fontWeight: '900'},
   amountUnit: {fontSize: 14, marginLeft: 5},
+  singleLineInput: {borderRadius: 15, borderWidth: 1, fontSize: 15, minHeight: 52, paddingHorizontal: 14},
+  doseRow: {alignItems: 'flex-start', flexDirection: 'row', gap: 10},
+  doseInput: {borderRadius: 15, borderWidth: 1, fontSize: 18, minHeight: 52, paddingHorizontal: 14, width: 105},
+  doseUnits: {flex: 1},
+  intervalRow: {alignItems: 'center', borderRadius: 15, flexDirection: 'row', maxWidth: 180, paddingHorizontal: 14},
+  intervalInput: {fontSize: 18, fontWeight: '800', minHeight: 52, minWidth: 70},
+  intervalUnit: {fontSize: 13, marginLeft: 5},
+  fieldHint: {fontSize: 11, lineHeight: 17, marginTop: 7},
+  scheduleCard: {borderRadius: 16, gap: 7, marginTop: 18, padding: 15},
+  scheduleTitle: {fontSize: 13, fontWeight: '800'},
+  scheduleLine: {fontSize: 12, lineHeight: 18},
+  safetyCard: {borderRadius: 16, marginTop: 12, padding: 15},
+  safetyText: {fontSize: 12, lineHeight: 19},
+  warning: {fontSize: 12, fontWeight: '800', lineHeight: 19, marginTop: 12},
   sleepNotice: {alignItems: 'center', borderRadius: 16, flexDirection: 'row', marginTop: 18, padding: 15},
   sleepIcon: {fontSize: 24, marginRight: 12},
   sleepText: {flex: 1, fontSize: 13, lineHeight: 20},

@@ -12,6 +12,7 @@ import type {
   SleepEvent,
 } from '@babycare/product-core';
 import {
+  CARE_EVENT_KINDS,
   compareCareEventNewestFirst,
   isActiveSleep,
 } from '@babycare/product-core';
@@ -27,12 +28,6 @@ import type {
   CareEventSyncLocalStorePort,
   CareEventSyncState,
 } from './persistent-care-event-sync-store.ts';
-
-const CARE_EVENT_KINDS: readonly CareEventKind[] = [
-  'feeding',
-  'diaper',
-  'sleep',
-];
 
 /**
  * Thirty calendar days plus the 48-hour sleep overlap, with one extra day for

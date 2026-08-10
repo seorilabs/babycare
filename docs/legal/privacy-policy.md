@@ -4,7 +4,7 @@
 
 Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이용자의 개인정보를 중요하게 생각하며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 본 방침은 서비스가 어떤 정보를 어떤 목적으로 처리하고 어떻게 보호하는지 설명합니다.
 
-- 서비스 성격: 성인 양육자가 아기의 수유·기저귀·수면을 함께 기록·공유하는 도구입니다. 의료 진단·처방·치료 판단을 제공하지 않습니다.
+- 서비스 성격: 성인 양육자가 아기의 수유·기저귀·수면·체온·복약을 함께 기록·공유하는 도구입니다. 의료 진단·처방·치료 판단이나 약 용량 추천을 제공하지 않습니다.
 - 이용 대상: 만 14세 이상 성인 양육자(부모·조부모·베이비시터 등). 아동이 직접 가입·이용하는 서비스가 아닙니다. 서비스에 입력되는 아기 관련 정보는 양육자가 자신이 돌보는 아기에 대해 직접 입력하는 정보입니다.
 
 ## 1. 수집하는 개인정보 항목
@@ -12,7 +12,7 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 | 구분 | 항목 | 수집 방식 |
 | --- | --- | --- |
 | 계정 정보 | 사용자 식별자(UID), 표시 이름 | 앱 최초 실행 시 기기 기반 계정 자동 생성, 이용자 직접 입력 |
-| 돌봄 기록 | 아기의 이름·생년월일, 수유·기저귀·수면 기록 값과 시각, 메모, 기록자 정보 | 이용자가 앱에서 직접 입력 |
+| 돌봄 기록 | 아기의 이름·생년월일, 수유·기저귀·수면·체온·복약 기록 값과 시각, 측정부위, 약 이름·분류·주성분·실제 투여량·사용자 확인 간격, 메모, 기록자 정보 | 이용자가 앱에서 직접 입력 |
 | 그룹 정보 | 돌봄 그룹 구성, 초대·합류 이력, 멤버십 | 그룹 생성·초대·합류 시 |
 | 이용·광고 정보 | 화면 조회, 온보딩·기록·초대 이벤트, 광고 요청·노출·보상, 광고/앱 인스턴스·기기 식별자, IP 기반 대략적 위치, SDK 진단·성능 정보 | Firebase Analytics, Seorilabs Platform Events, Google Mobile Ads 또는 AppsInToss 통합 광고 |
 
@@ -76,9 +76,9 @@ Seorilabs(이하 "회사")는 **함께봄 / BabyNest**(이하 "서비스") 이�
 
 ### English summary (draft)
 
-**BabyNest** is a tool for adult caregivers to log and share a baby's feeding, diaper, and sleep records. It is not a medical service and is not directed to children as users.
+**BabyNest** is a tool for adult caregivers to log and share a baby's feeding, diaper, sleep, temperature, and medication records. It does not diagnose, prescribe, or recommend medication doses and is not directed to children as users.
 
-- **Data we collect:** account info (automatically generated user ID and display name), care records you enter (baby name/birth date, feeding/diaper/sleep entries, notes), and care-group membership.
+- **Data we collect:** account info (automatically generated user ID and display name), care records you enter (baby name/birth date, feeding/diaper/sleep/temperature/medication entries, notes), and care-group membership.
 - **Usage and ads:** screen, onboarding, care-log, invitation, and rewarded-ad events are sent to Google Analytics and Seorilabs Platform Events. An optional rewarded ad unlocks detailed stats for 24 hours; the Android/iOS app requests non-personalized ads.
 - Google Mobile Ads may process app interactions, SDK diagnostics, advertising/app-instance identifiers, and approximate location inferred from IP. We do not collect precise location, payment data, or sell data.
 - **Purpose:** authentication, storing and real-time syncing of records within your invited care group, offline support, usage analytics, rewarded advertising, fraud prevention, and reliability/diagnostics.

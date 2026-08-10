@@ -1,6 +1,6 @@
 # BabyCare (가칭)
 
-여러 성인 양육자가 한 아기의 수유·기저귀·수면 기록을 함께 남기고 확인하는 클라우드 육아 케어 앱이다. 의료 진단·처방 도구가 아니라 돌봄 정보 공유·기록 도구이며, 기존 로컬 전용 `BabyCareApp`을 새 구조로 재구축한다.
+여러 성인 양육자가 한 아기의 수유·기저귀·수면·체온·복약 기록을 함께 남기고 확인하는 클라우드 육아 케어 앱이다. 의료 진단·처방 도구가 아니라 돌봄 정보 공유·기록 도구이며, 기존 로컬 전용 `BabyCareApp`을 새 구조로 재구축한다.
 
 ## 현재 상태
 
@@ -11,38 +11,38 @@
 | Deployment approval | **미승인** — 제출·프로덕션 배포 금지 |
 | 출시 목표 | Google Play, Apple App Store, AppsInToss |
 | 모바일 식별자 | Android/iOS `com.seorilabs.babycare` (2026-07-13 확정) |
-| 제품 이름 | `확정 필요` |
+| 제품 이름 | 한국어 `함께봄`, 영어 `BabyNest` |
 
-현재 `apps/mobile`의 기본 `App.tsx`는 로컬 개발 세로 슬라이스다. 온보딩, 수유·기저귀·수면 기록, 수면 종료, 홈 요약, 타임라인, 기본 통계와 기기 로컬 저장을 확인할 수 있다. 별도 인증 context factory에는 bounded timeline과 Home/Stats·active-sleep용 cloud projection 기반을 구현했지만, production Auth/group/baby UI root와 실제 Firebase project에는 아직 연결하지 않았다. `apps/ait`은 AppsInToss 정책 적합성과 영구 `appName`을 확정한 뒤 초기화한다.
+`apps/mobile`은 production Firebase Auth·공동 그룹·기록 동기화와 local-first outbox를 연결했고, `apps/ait`은 승인된 `babynest` Granite target으로 같은 핵심 흐름을 제공한다. 체온·복약은 소스·로컬 검증까지 완료했으며 새 Android/iOS/AIT 후보의 실기기 공동 기록 QA, 공개 개인정보처리방침·마켓 Console 재검토, 업로드·심사·공개는 별도 게이트다.
 
 ## MVP
 
 - 계정 생성/로그인 → 돌봄 그룹과 아기 생성 → 다른 양육자 초대
-- 수유·기저귀·수면 원터치 기록과 수면 세션 종료
+- 수유·기저귀·수면·체온·복약 빠른 기록과 수면 세션 종료
 - 홈의 마지막 기록·오늘 요약, 기록자 표시 타임라인, 기본 통계
 - 두 기기 간 실시간 공동 기록, 오프라인 기록 후 재연결 동기화
 - 초대된 그룹 멤버만 접근 가능한 Firestore/Storage 경계
 - Google Play, App Store, AppsInToss에서 동일한 핵심 흐름 제공
 
-성장·투약·예방접종, 알림, 다둥이, 내보내기, 구독, 광고, 위젯·워치·AI 예측은 MVP 밖이다. 상세 기준은 [제품 명세](docs/01-planning/product-spec.md)와 [백로그](docs/04-work/backlog.md)를 따른다.
+성장·예방접종·증상, 알림, 다둥이, 내보내기, 구독, 위젯·워치·AI 예측은 현재 범위 밖이다. 상세 기준은 [제품 명세](docs/01-planning/product-spec.md)와 [백로그](docs/04-work/backlog.md)를 따른다.
 
 ## 식별자
 
 | 용도 | 값 |
 | --- | --- |
 | repo/app id | `babycare` |
-| 현재 native target/display name | `BabyCare` (개발용, 최종 제품명 아님) |
+| 현재 native target/display name | `함께봄` / `BabyNest` |
 | Android application ID | `com.seorilabs.babycare` |
 | iOS bundle ID | `com.seorilabs.babycare` |
-| 한국어/영어 제품명 | `확정 필요` (`함께봄` / `BabyNest`는 후보) |
-| AppsInToss `appName` | `확정 필요` |
+| 한국어/영어 제품명 | `함께봄` / `BabyNest` |
+| AppsInToss `appName` | `babynest` |
 
 ## 구조
 
 ```text
 docs/                  # 제품·의사결정·작업·마켓·QA 실행 원장
 apps/mobile/           # Google Play/App Store bare React Native target
-apps/ait/              # AppsInToss Granite RN + TDS target (초기화 전)
+apps/ait/              # AppsInToss Granite RN + TDS target
 packages/product-core/ # 플랫폼 독립 도메인·유스케이스·포트·순수 테스트
 packages/product-data/ # target 공용 local-first 저장·outbox·동기화 정책
 firebase/              # Security Rules/indexes와 privileged Functions

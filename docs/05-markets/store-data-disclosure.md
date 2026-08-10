@@ -1,6 +1,6 @@
 # 스토어 데이터 공개 (Data Safety / App Privacy)
 
-> **상태: Google Play 변경 저장 완료, 검토 전송과 Apple 입력 대기.** `apps/mobile/package.json`과 production composition을 기준으로 확인한 스토어 공개 원장이다.
+> **상태: 체온·복약을 저장소 원장에 반영, Google Play·Apple Console 재검토 대기.** `apps/mobile/package.json`과 production composition을 기준으로 확인한 스토어 공개 원장이다.
 
 ## 공통 원칙 (product-spec 근거)
 
@@ -17,8 +17,8 @@
 | 개인 정보 — 이름 | 예(필수) | 아니요 | 앱 기능 | 양육자 표시 이름·아기 이름 |
 | 개인 정보 — 사용자 ID | 예(필수) | 아니요 | 앱 기능·계정 관리 | Firebase Authentication UID |
 | 개인 정보 — 기타 정보 | 예(필수) | 아니요 | 앱 기능 | 아기 생년월일 |
-| 앱 활동 — 기타 사용자 제작 콘텐츠 | 예(선택) | 아니요 | 앱 기능 | 수유·기저귀·수면 기록과 메모. 그룹 내부 공유 |
-| 건강 및 피트니스 — 건강 정보 | 예(선택) | 아니요 | 앱 기능 | 구조화된 수유·수면 등 돌봄 기록 |
+| 앱 활동 — 기타 사용자 제작 콘텐츠 | 예(선택) | 아니요 | 앱 기능 | 수유·기저귀·수면·체온·복약 기록과 메모. 그룹 내부 공유 |
+| 건강 및 피트니스 — 건강 정보 | 예(선택) | 아니요 | 앱 기능 | 구조화된 수유·수면·체온·복약 등 돌봄 기록 |
 | 기기 또는 기타 ID | 예(필수) | 아니요 | 앱 기능·사기 방지/보안 | Firebase Installation ID·Play Integrity/App Check attestation |
 | 위치 — 대략적 위치 | 예 | 예 | 광고·분석·사기 방지 | Google Mobile Ads가 IP 주소를 수집해 대략적 위치를 추정할 수 있음 |
 | 앱 활동 — 앱 상호작용 | 예 | 예 | 분석·광고 | 화면, 탭, 광고 요청·노출·보상, 앱 실행·탭·동영상 조회 |
@@ -30,14 +30,14 @@
 - Firebase 처리위탁과 초대 그룹의 사용자 주도 전송은 제3자 공유에서 제외한다. Google Mobile Ads가 자동 수집하는 위 광고 데이터는 Google 공식 안내에 따라 공유로 신고한다.
 - Firebase Authentication UID는 공식 분류상 "사용자 ID"다. Android release runtime에 `firebase-installations`가 포함되고 App Check가 Play Integrity를 사용하므로 "기기 또는 기타 ID"도 별도로 신고한다.
 - 대상 연령: 아동 대상 아님(성인 양육자용). Families 정책 비대상.
-- 건강 선언은 Google Play 분류 기준으로 `영양 및 체중 관리`, `수면 관리`를 선택했다. 앱은 의료 진단·처방·치료를 제공하지 않는다.
+- 건강 선언은 Google Play 분류 기준으로 기존 `영양 및 체중 관리`, `수면 관리`에 `복약 및 치료 관리`를 추가해야 한다. 저장소 원장은 갱신했지만 Console 입력·readback은 하지 않았다. 앱은 의료기기가 아니며 진단·처방·용량 추천을 제공하지 않는다.
 
 ## Apple — App Privacy
 
 | 데이터 유형 | 수집 | 연결(linked) | 추적 | 목적 |
 | --- | --- | --- | --- | --- |
 | Contact Info — Name | 예 | 예 | 아니요 | App Functionality |
-| Health & Fitness — Health(수유·기저귀·수면 기록) | 예 | 예 | 아니요 | App Functionality |
+| Health & Fitness — Health(수유·기저귀·수면·체온·복약 기록) | 예 | 예 | 아니요 | App Functionality |
 | User Content — Other User Content(자유 입력 메모) | 예 | 예 | 아니요 | App Functionality |
 | Other Data — Other Data Types(생년월일) | 예 | 예 | 아니요 | App Functionality |
 | Identifiers — User ID | 예 | 예 | 아니요 | App Functionality |
@@ -49,7 +49,7 @@
 | Diagnostics — Crash Data | 예 | 아니요 | 아니요 | Analytics |
 | Diagnostics — Performance Data | 예 | 예 | 아니요 | Analytics·Third-Party Advertising |
 
-- `Name`에는 양육자 표시 이름과 아기 이름, `Health`에는 구조화된 수유·기저귀·수면 기록, `Other User Content`에는 자유 입력 메모, `Other Data Types`에는 아기 생년월일을 답한다. 비의료 도구 포지셔닝은 Apple의 광범위한 Health data type 신고를 면제하지 않는다.
+- `Name`에는 양육자 표시 이름과 아기 이름, `Health`에는 구조화된 수유·기저귀·수면·체온·복약 기록, `Other User Content`에는 자유 입력 메모, `Other Data Types`에는 아기 생년월일을 답한다. 비의료 도구 포지셔닝은 Apple의 광범위한 Health data type 신고를 면제하지 않는다.
 - Google Mobile Ads 공식 공개는 IP 주소, crash/performance, Device ID, Advertising Data, Product Interaction 처리를 명시한다. Firebase Analytics의 실제 이벤트와 Platform 연계 여부까지 합쳐 위 표를 보수적으로 작성했다.
 - **Data Used to Track You: 없음.** 앱은 ATT를 요청하지 않고 native 광고 요청을 비개인화로 고정했다. EU UMP와 미국 주 privacy message를 Android/iOS 두 앱에 게시했고 앱 내 privacy options 경로를 구현했다. `v1.1.1` archive privacy report readback은 별도 QA 게이트다.
 - Export Compliance: `ITSAppUsesNonExemptEncryption = false` (표준 TLS/Firebase만 사용)
@@ -57,8 +57,9 @@
 
 ## 미확정 (blocker)
 
-- Google Play Data Safety·광고 있음·광고 ID 변경은 Console 저장 완료. production 후보와 함께 검토 전송 및 최종 readback.
+- Google Play Data Safety·건강 기능 선언·스토어 면책 문구를 체온·복약 기준으로 Console 재입력하고 production 후보와 함께 검토 전송·최종 readback.
 - Apple App Privacy 콘솔 입력·archive privacy report readback.
 - `v1.1.1` archive privacy report의 SDK·privacy manifest 검증.
 - 실제 Play Store/TestFlight `v1.1.1` 설치본의 계정 삭제 화면·cache purge 사람 QA.
 - 처리위탁/제3자 공유 판단 legal 확정.
+- 공개 개인정보 처리방침의 체온·복약 항목 반영과 Google Play Data safety·Apple App Privacy 콘솔 재검토.

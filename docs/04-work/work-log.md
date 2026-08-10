@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-10 — 체온·복약 공동 기록
+
+- `CareEvent`와 Firestore exact schema에 체온 값·측정부위, 복약 이름·분류·주성분·실제 투여량·단위·사용자 확인 간격을 추가했다. 체온은 섭씨 30.0~45.0, 복약 이름은 control/bidi 문자 차단, 양·간격·성분 조합은 core와 Rules 양쪽에서 검증한다.
+- Android/iOS와 AppsInToss 홈에 체온·복약 입력을 추가했다. 복약은 아세트아미노펜·이부프로펜·항생제·직접 입력 프리셋, 최근 직접 입력 약 재사용, 성분별 다음 확인 시각, 같은 약의 확인 간격 내 기록과 서로 다른 해열제의 동일 시각 기록에 대한 2차 확인을 제공한다.
+- 앱은 용량을 계산·추천하지 않는다. 아세트아미노펜 4시간·이부프로펜 6시간은 수정 가능한 초기값일 뿐이며, 항생제·직접 입력 약은 제품 라벨 또는 의료진에게 확인한 간격을 사용자가 직접 입력한다. 연령·동시/교차 복용 안전 문구와 비의료기기 면책을 노출한다.
+- 개인정보처리방침 원장, 위협 모델, Google Play Data Safety·건강 기능 선언, Apple App Privacy, AppsInToss 등록 문구를 체온·복약 기준으로 갱신했다. Google Play `복약 및 치료 관리`, 공개 방침 배포, 각 Console 재입력·readback, 새 설치본 실기기 QA는 별도 release gate이며 수행하지 않았다.
+- 검증: core 49건, mobile 328건, Functions 17건, Firebase config 3건, Firestore/Storage Rules 24건, AppsInToss 7건, build workflow 12건과 workspace typecheck·lint·architecture·docs·store screenshots·mobile/AIT target·App Privacy gate를 통과했다.
+
 ## 2026-08-09 — Google Play·App Store 글로벌 출시 운영 연결
 
 - 사용자가 Google Play·App Store 잔여 blocker 처리와 EU 포함 전국가 출시를 승인하고 Apple DSA status를 trader로 확정했다. Analytics·광고 변경을 포함하는 자연스러운 다음 patch 후보는 `v1.1.1`로 고정했다.

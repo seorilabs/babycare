@@ -12,13 +12,13 @@
     "email": "cs@seorilabs.com"
   },
   "legal": {
-    "privacyUrl": "https://www.seorilabs.com/privacy/",
+    "privacyUrl": "https://www.seorilabs.com/apps/babycare/privacy/",
     "termsUrl": "https://www.seorilabs.com/terms/"
   },
   "inAppFeatures": [
     {
-      "nameKo": "돌봄 기록하기",
-      "nameEn": "Log baby care",
+      "nameKo": "수유·수면·체온·복약 기록하기",
+      "nameEn": "Log feeding, sleep, temperature and medication",
       "route": "/"
     }
   ],

@@ -94,7 +94,7 @@ describe('HomeScreen', () => {
         node.props.accessibilityRole === 'button' &&
         typeof node.props.style === 'function',
     );
-    expect(actions).toHaveLength(4);
+    expect(actions).toHaveLength(6);
     for (const action of actions) {
       const style = StyleSheet.flatten(action.props.style({pressed: false}));
       expect(style.flexBasis).toBe('47%');

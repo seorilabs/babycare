@@ -27,7 +27,7 @@
 - Export compliance: `Info.plist`에 `ITSAppUsesNonExemptEncryption=false`를 반영했고, App Store Connect의 1.0.8/56 build readback에서도 `usesNonExemptEncryption=false`를 확인했다.
 - Review notes: 로그인 없이 기기 기반 계정을 자동 생성하는 실제 온보딩·2기기 초대·계정 삭제 절차를 ASC에 반영 완료
 - Demo account: 불필요. `demoAccountRequired=false`와 검증된 운영 연락처를 ASC에 반영 완료
-- App Privacy 답변: `docs/05-markets/store-data-disclosure.md`. Firebase Analytics와 Google Mobile Ads의 Product Interaction·Advertising Data·Device ID·Coarse Location·Diagnostics/Performance를 추가한 `v1.1.1` 기준으로 콘솔 입력·privacy report readback이 필요하다. native는 비개인화 광고만 요청하고 ATT를 사용하지 않으므로 Tracking은 `No`다. EU UMP와 미국 주 privacy message는 2026-08-09 두 native 앱에 게시했다.
+- App Privacy 답변: `docs/05-markets/store-data-disclosure.md`. Firebase Analytics와 Google Mobile Ads의 Product Interaction·Advertising Data·Device ID·Coarse Location·Diagnostics/Performance에 체온·복약 Health data를 포함한 답변으로 Console 재검토와 새 archive privacy report readback이 필요하다. native는 비개인화 광고만 요청하고 ATT를 사용하지 않으므로 Tracking은 `No`다. EU UMP와 미국 주 privacy message는 2026-08-09 두 native 앱에 게시했다.
 - DSA/trader: **trader**. EU를 포함한 App Store의 모든 제공 가능 국가·지역에 출시한다. App Store Connect 계정의 기존 검증된 trader 연락처를 선택하는 Console 확인은 남아 있다.
 - Availability: ASC API v2로 활성 App Store 지역 175개를 모두 `available=true`로 생성하고 `availableInNewTerritories=true`를 readback했다(2026-08-09). 현재 전 지역 `AVAILABLE_FOR_SALE_UNRELEASED_APP`와 미출시 앱 공통 `CANNOT_SELL` 상태이며, EU trader 누락 상태 코드는 반환되지 않았다.
 

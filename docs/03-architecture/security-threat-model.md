@@ -10,7 +10,7 @@
 
 | 등급 | 예시 | 기본 처리 |
 | --- | --- | --- |
-| 민감 | 성장·체온·투약·예방접종·증상·사진 | 초대된 그룹 멤버만, Analytics/Crash log 금지 |
+| 민감 | 체온·복약·성장·예방접종·증상·사진 | 초대된 그룹 멤버만, Analytics/Crash log 금지 |
 | 준민감 | 수유·기저귀·수면·메모·기록 시각 | 초대된 그룹 멤버만, 필요한 최소 field만 저장 |
 | 일반 | 성인 표시 이름·역할·표시색 | 그룹 내부만. 공개 profile로 사용하지 않음 |
 | 운영 비밀 | service account·private key·Admin credential | client/repo 금지, server/CI secret store만 |
@@ -46,6 +46,7 @@ flowchart LR
 | group 문서만 삭제한 뒤 동일 ID를 재사용해 orphan 문서·사진 탈취 | client group delete 금지, server-only tombstone ID 재사용 거부 | owner group delete와 tombstoned ID create deny 테스트 | server recursive delete가 tombstone을 먼저 기록하도록 구현 |
 | baby 문서 삭제·동일 ID 재생성으로 과거 사진 재연결 | client baby delete 금지, server-only baby tombstone | owner baby delete와 tombstoned ID create deny 테스트 | server가 Storage/event 정리 후 tombstone 유지 |
 | 미래 event/update timestamp로 타임라인·revision 오염 | server Rules 평가 시각 +5분 상한 | future create/update/sleep-end deny 테스트 | device clock 오류 UX와 server timestamp 전략 |
+| 복약 기록의 누락·동일 성분 중복·해열제 동시 기록 | 주성분과 사용자 확인 최소 간격을 event에 저장하고 이전·이후 동일 약 간격과 같은 분의 다른 해열제를 두 단계 경고 | core 간격 테스트, mobile UI 이중 확인, Rules schema/range 테스트 | Store/AIT 설치본 두 기기·과거 시각·offline 회귀. 앱 경고는 의료진 지시를 대체하지 않음 |
 | listener error를 빈 server snapshot으로 오인해 로컬 기록 소실 | cache/pending snapshot은 무시하고 server-confirmed snapshot과 typed error를 분리 | adapter metadata/error Jest, local error snapshot 보존 테스트 | 실제 permission revoke 재현 |
 | 로그아웃·멤버 제거 뒤 내려받은 아동 데이터 잔존 | Auth/membership/event observer 중단→in-flight sync generation 무효화→scoped envelope purge→revoked 상태 순서. concurrent close보다 purge가 우선되고 replacement writer는 보호한다 | sign-out, identity 변경, server-only membership 재확인, in-flight push·observer·close/purge race Jest | native Firestore disk persistence OFF와 실제 기기 purge 확인 |
 | disabled/deleted/revoked-token 계정의 local Auth identity 잔존 | Auth observer와 remote unauthenticated 오류를 함께 처리하고 `reload`+강제 ID-token refresh로 서버 identity를 검증한다 | revoked error mapping, identity 변경, 반복 401·teardown recovery 차단 Jest | 실제 production provider에서 disabled/deleted/revoked-token별 purge smoke |
@@ -68,7 +69,7 @@ flowchart LR
 6. event hard delete와 undelete는 client 권한에 없다.
 7. group hard delete는 client 권한에 없다. server가 하위 문서와 Storage를 먼저 안전하게 정리하고 ID 재사용을 막는다.
 8. baby hard delete도 client 권한에 없다. Storage는 실제 baby 문서와 membership이 모두 있어야 접근할 수 있다.
-9. 공개 download token URL, 아기 이름, 생년월일, 사진 경로, 돌봄 기록 값은 Analytics/Crash log에 넣지 않는다.
+9. 공개 download token URL, 아기 이름, 생년월일, 사진 경로, 체온·약 이름·복약량을 포함한 돌봄 기록 값은 Analytics/Crash log에 넣지 않는다.
 10. Remote Config나 UI 숨김은 보안 통제가 아니다.
 
 ## Release Blockers

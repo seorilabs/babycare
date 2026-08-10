@@ -89,6 +89,7 @@ flowchart TD
 ## Google Play Console 완료 상태
 
 - 2026-08-07 초기 설정 11개와 앱 콘텐츠를 입력·readback했다. Data Safety에는 건강 정보를 추가했고 IARC 한국 `12세 이상`, 타깃 만 18세 이상, `출산/육아`, 광고·광고 ID·정부·금융 해당 없음, 건강 기능 `영양 및 체중 관리`·`수면 관리`로 확정했다.
+- 2026-08-10 체온·복약 소스 추가로 저장소 원장은 `복약 및 치료 관리`와 비의료 도구 면책까지 갱신했다. Google Play Data Safety·건강 기능 선언과 Apple Health privacy 답변은 새 후보 전 Console 재입력·readback이 필요하다.
 - 게시 개요의 앱 콘텐츠 변경은 대기 중이지만 최초 production release 후보가 없어 심사 전송 버튼이 잠겨 있다. Play Store app-signing 내부 설치본 QA 뒤 production 후보를 구성하고 심사 전송한다.
 
 ## 남은 blocker

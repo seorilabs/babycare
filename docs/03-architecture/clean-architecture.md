@@ -32,7 +32,7 @@ flowchart LR
 
 | Layer | 현재 코드 |
 | --- | --- |
-| Domain | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, branded ID, 수유·기저귀·수면 `CareEvent`와 validation |
+| Domain | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, branded ID, 수유·기저귀·수면·체온·복약 `CareEvent`와 validation |
 | Value objects | 시간 경과, ml/oz 변환 |
 | Use cases | 기록 생성, 수면 세션 종료, 본인 기록 soft delete, 홈 집계와 caller-defined range 통계 집계 |
 | Ports | `AuthPort`, `CareGroupRepositoryPort`, `BabyRepositoryPort`, `InviteServicePort`, `CareEventRepositoryPort`, `CareEventRemoteStorePort`, `CareEventProjectionRemotePort`, `StringStoragePort`, `AnalyticsPort`, `ClockPort`, `IdGeneratorPort` |
@@ -77,7 +77,7 @@ Firebase 연결 시 `CareEventRepositoryPort` 구현을 교체하고 core use ca
 
 승인된 `appName=babynest`의 Granite RN + TDS target이다. AppsInToss `Storage`에 Firebase refresh token과 group session을 저장하고, Platform custom-token bridge와 Firebase Auth REST로 인증한다. Firestore REST commit/query와 Firebase callable로 그룹·아기·기록·초대·삭제를 처리한다. 기록 commit은 product-core domain validation과 canonical payload hash를 재사용해 event, mutation receipt, active-sleep lock을 원자 반영한다. native Firebase module은 사용하지 않는다.
 
-현재 AIT delivery는 핵심 수유·기저귀·수면과 홈·타임라인·통계 흐름을 제공하지만 mobile의 local-first outbox/realtime listener 전체를 그대로 재사용하지 않는다. 명시적 새로고침과 재실행 복구를 제공하며 offline queue·실시간 listener·App Check/edge 보호는 sandbox 이후 별도 gate다.
+현재 AIT delivery는 핵심 수유·기저귀·수면·체온·복약과 홈·타임라인·통계 흐름을 제공하지만 mobile의 local-first outbox/realtime listener 전체를 그대로 재사용하지 않는다. 명시적 새로고침과 재실행 복구를 제공하며 offline queue·실시간 listener·App Check/edge 보호는 sandbox 이후 별도 gate다.
 
 ### `firebase`
 
@@ -118,7 +118,7 @@ MVP에 필요한 외부 기능만 port로 추가한다.
 - 원격 cache/pending snapshot과 listener error를 실제 빈 server snapshot으로 취급하지 않는다. `fromCache=false`, `hasPendingWrites=false`인 snapshot만 reconcile한다.
 - 타임라인은 soft-delete tombstone을 포함한 server raw page를 `(occurredAt DESC, documentId DESC)`로 조회한다. cache/pending snapshot은 무시하며 `pageSize + 1` lookahead로 `hasMore`를 계산한다. 로드된 각 page listener의 server signature가 바뀌면 page 하나만 patch하지 않고 현재 로드 깊이만큼 HEAD부터 재조회해 envelope v3의 authoritative prefix를 한 번에 교체한다.
 - prefix 교체는 authoritative coverage 밖의 synced row를 제거하되 pending/failed/conflict overlay와 v3 named projection이 참조하는 row를 보존한다. raw tombstone은 cursor를 전진시키지만 UI에서는 숨긴다. `maxCachedEvents`에 도달하면 timeline을 capped 상태로 종료한다.
-- Home/Stats는 bounded timeline의 완전성을 전제로 하지 않는다. `CareEventOverviewFeed`가 30일 local calendar 통계와 최대 48시간 수면 overlap을 포괄하는 server-only window, feeding/diaper/sleep latest query와 active singleton을 독립 수집한다. 서로 다른 source의 동일 event identity/revision이 어긋나면 last-good projection을 유지하며, pending/failed local mutation은 optimistic overlay로만 합친다.
+- Home/Stats는 bounded timeline의 완전성을 전제로 하지 않는다. `CareEventOverviewFeed`가 30일 local calendar 통계와 최대 48시간 수면 overlap을 포괄하는 server-only window, feeding/diaper/sleep/temperature/medication latest query와 active singleton을 독립 수집한다. 서로 다른 source의 동일 event identity/revision이 어긋나면 last-good projection을 유지하며, pending/failed local mutation은 optimistic overlay로만 합친다.
 - active singleton은 `activeSleeps/{babyId}` lock을 먼저 읽고 해당 event의 group/baby/event/caregiver/start/create 일치를 확인한다. `confirmed_none`은 stale active row를 숨기고, migration 직후 `unknown`은 server 확인 전 임의 삭제를 막는다. overview와 active 교체는 atomic이어서 절반만 갱신된 projection을 노출하지 않는다.
 - cloud composition은 `LocalFirstCareEventRepository`를 `external_pages` mode로 구성하고 인증 scope마다 명시적 config의 `CareEventTimelineFeed`와 `CareEventOverviewFeed`를 정확히 하나씩 즉시 시작해 반환한다. generic `observe()`는 local projection만 배달하고 두 coordinator가 각 server read/reconnect 신호를 소유한다. server-confirmed projection 뒤 retryable/unauthenticated mutation retry/flush를 요청하고, 확인된 Auth/membership 복구 뒤 두 feed를 refresh한다. legacy `full_snapshot` mode는 bounded feed와 같은 scope에서 함께 사용하지 않는다.
 - 활성 page listener가 terminal retryable error를 내면 현재 epoch의 모든 page를 중단하고 HEAD server fetch를 한 번 재시도한다. fetch도 실패하면 head recovery listener를 남겨 다음 server-confirmed page가 사용자 조작 없이 전체 rebase를 재개하게 하되, 연속 terminal error를 tight loop로 재설치하지 않는다.

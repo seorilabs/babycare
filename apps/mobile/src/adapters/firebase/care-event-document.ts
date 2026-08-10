@@ -193,6 +193,72 @@ function createInput(data: Record<string, unknown>): CreateCareEventInput {
     };
   }
 
+  if (kind === 'temperature') {
+    onlyKeys(data, [
+      ...BASE_FIELDS,
+      'temperatureCelsius',
+      'measurementSite',
+    ]);
+    const measurementSite = stringField(data, 'measurementSite');
+    if (!['armpit', 'ear', 'forehead', 'oral', 'rectal', 'other'].includes(measurementSite)) {
+      throw new Error('Care event measurementSite is invalid');
+    }
+    return {
+      ...shared,
+      kind,
+      temperatureCelsius: numberField(data, 'temperatureCelsius'),
+      measurementSite: measurementSite as
+        | 'armpit'
+        | 'ear'
+        | 'forehead'
+        | 'oral'
+        | 'rectal'
+        | 'other',
+      occurredAt: timestampField(data, 'occurredAt'),
+    };
+  }
+
+  if (kind === 'medication') {
+    onlyKeys(data, [
+      ...BASE_FIELDS,
+      'medicationName',
+      'medicationCategory',
+      'activeIngredient',
+      'doseAmount',
+      'doseUnit',
+      'minimumIntervalMinutes',
+    ]);
+    const medicationCategory = stringField(data, 'medicationCategory');
+    const activeIngredient = stringField(data, 'activeIngredient');
+    const doseUnit = stringField(data, 'doseUnit');
+    if (!['antipyretic', 'antibiotic', 'other'].includes(medicationCategory)) {
+      throw new Error('Care event medicationCategory is invalid');
+    }
+    if (!['acetaminophen', 'ibuprofen', 'other'].includes(activeIngredient)) {
+      throw new Error('Care event activeIngredient is invalid');
+    }
+    if (!['ml', 'mg', 'tablet', 'drop'].includes(doseUnit)) {
+      throw new Error('Care event doseUnit is invalid');
+    }
+    return {
+      ...shared,
+      kind,
+      medicationName: stringField(data, 'medicationName'),
+      medicationCategory: medicationCategory as
+        | 'antipyretic'
+        | 'antibiotic'
+        | 'other',
+      activeIngredient: activeIngredient as
+        | 'acetaminophen'
+        | 'ibuprofen'
+        | 'other',
+      doseAmount: numberField(data, 'doseAmount'),
+      doseUnit: doseUnit as 'ml' | 'mg' | 'tablet' | 'drop',
+      minimumIntervalMinutes: numberField(data, 'minimumIntervalMinutes'),
+      occurredAt: timestampField(data, 'occurredAt'),
+    };
+  }
+
   throw new Error('Care event kind is invalid');
 }
 

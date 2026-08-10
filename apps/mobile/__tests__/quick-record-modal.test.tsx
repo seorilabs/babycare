@@ -1,6 +1,13 @@
 import React from 'react';
 import {StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
+import {
+  babyId,
+  createCareEvent,
+  eventId,
+  groupId,
+  userId,
+} from '@babycare/product-core';
 
 import type {LocalSession} from '../src/app/session';
 import {createTheme} from '../src/app/theme';
@@ -433,5 +440,180 @@ describe('QuickRecordModal', () => {
     expect(StyleSheet.flatten(timeButtons?.props.style)).toMatchObject({
       flexShrink: 0,
     });
+  });
+
+  it('records temperature with the selected measurement site', async () => {
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          kind="temperature"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('체온 기록 모달을 렌더링하지 못했어요');
+    }
+
+    ReactTestRenderer.act(() => {
+      renderer?.root
+        .findByProps({accessibilityLabel: '체온 0.1도 높이기'})
+        .props.onPress();
+      renderer?.root
+        .findAllByProps({accessibilityRole: 'radio'})
+        .find(node =>
+          node
+            .findAllByType(Text)
+            .some(child => child.props.children === '귀'),
+        )
+        ?.props.onPress();
+    });
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'temperature',
+        temperatureCelsius: 36.6,
+        measurementSite: 'ear',
+      }),
+    );
+  });
+
+  it('requires a second confirmation for a medication inside the saved interval', async () => {
+    const now = new Date('2026-08-10T10:00:00+09:00').getTime();
+    jest.setSystemTime(now);
+    const prior = createCareEvent(
+      {
+        groupId: groupId('group-1'),
+        babyId: babyId('baby-1'),
+        caregiverId: userId('caregiver-1'),
+        kind: 'medication',
+        medicationName: '아세트아미노펜',
+        medicationCategory: 'antipyretic',
+        activeIngredient: 'acetaminophen',
+        doseAmount: 3,
+        doseUnit: 'ml',
+        minimumIntervalMinutes: 240,
+        occurredAt: now - 60 * 60_000,
+      },
+      {id: eventId('medication-prior'), now: now - 60 * 60_000},
+    );
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          events={[prior]}
+          kind="medication"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('복약 기록 모달을 렌더링하지 못했어요');
+    }
+
+    ReactTestRenderer.act(() => {
+      renderer?.root
+        .findByProps({placeholder: '예: 3.5'})
+        .props.onChangeText('3');
+    });
+    const warningButton = renderer.root.findByProps({
+      accessibilityLabel: '경고 확인 후 기록',
+    });
+    await ReactTestRenderer.act(async () => {
+      await warningButton.props.onPress();
+    });
+    expect(onSave).not.toHaveBeenCalled();
+
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'medication',
+        activeIngredient: 'acetaminophen',
+        doseAmount: 3,
+        minimumIntervalMinutes: 240,
+      }),
+    );
+  });
+
+  it('reuses a recent user-defined medication as a synced preset', async () => {
+    const now = new Date('2026-08-10T10:00:00+09:00').getTime();
+    jest.setSystemTime(now);
+    const recent = createCareEvent(
+      {
+        groupId: groupId('group-1'),
+        babyId: babyId('baby-1'),
+        caregiverId: userId('caregiver-1'),
+        kind: 'medication',
+        medicationName: '처방 항생제 A',
+        medicationCategory: 'antibiotic',
+        activeIngredient: 'other',
+        doseAmount: 2.5,
+        doseUnit: 'ml',
+        minimumIntervalMinutes: 480,
+        occurredAt: now - 9 * 60 * 60_000,
+      },
+      {id: eventId('medication-custom'), now: now - 9 * 60 * 60_000},
+    );
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          events={[recent]}
+          kind="medication"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('복약 기록 모달을 렌더링하지 못했어요');
+    }
+
+    const recentPreset = renderer.root
+      .findAllByProps({accessibilityRole: 'radio'})
+      .find(node =>
+        node
+          .findAllByType(Text)
+          .some(child => child.props.children === '처방 항생제 A'),
+      );
+    expect(recentPreset).toBeDefined();
+    ReactTestRenderer.act(() => recentPreset?.props.onPress());
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'medication',
+        medicationName: '처방 항생제 A',
+        medicationCategory: 'antibiotic',
+        activeIngredient: 'other',
+        doseAmount: 2.5,
+        minimumIntervalMinutes: 480,
+      }),
+    );
   });
 });

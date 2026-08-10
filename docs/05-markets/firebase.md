@@ -116,7 +116,7 @@ auditLogs/{auditId}                  # server-only actor/action audit
 
 - `groups/{groupId}/members/{uid}` 존재 여부가 유일한 client access 권위 원장이다. `groups`의 배열이나 client claim을 권한 판정에 사용하지 않는다.
 - 시간은 `packages/product-core`와 동일하게 epoch milliseconds 정수로 저장한다.
-- `events`는 `feeding | diaper | sleep` subtype별 허용 field와 값 범위를 Rules에서 재검증한다.
+- `events`는 `feeding | diaper | sleep | temperature | medication` subtype별 허용 field와 값 범위를 Rules에서 재검증한다. 체온은 섭씨 30.0~45.0과 측정부위, 복약은 이름·분류·주성분·실제 투여량·단위·사용자 확인 간격을 exact schema로 검증한다.
 - `events`의 마지막 mutation metadata와 `eventMutationReceipts`는 같은 transaction에서만 생성·갱신된다. receipt ID는 event ID·revision·client canonical SHA-256에 결합한다. Rules는 hash를 직접 계산하지 않고 receipt가 보존한 전체 event payload를 같은 transaction의 event map과 비교하며 actor·kind·revision을 검증한다.
 - `activeSleeps/{babyId}`는 baby별 진행 중 수면 1건을 강제하며 event 생성·종료와 같은 transaction에서 생성·삭제한다.
 - 모유 수유는 `leftDurationSeconds`, `rightDurationSeconds`를 독립 저장하고 합계 12시간 이하를 검증한다. 삭제 여부는 query 가능한 `isDeleted`와 선택 `deletedAt`의 존재가 반드시 일치해야 한다.

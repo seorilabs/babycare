@@ -3,6 +3,7 @@ import type {
   CareEventKind,
   SleepEvent,
 } from '../domain/care-event.ts';
+import {CARE_EVENT_KINDS} from '../domain/care-event.ts';
 import {
   babyId as parseBabyId,
   groupId as parseGroupId,
@@ -61,12 +62,6 @@ export interface CareEventProjectionRemotePort {
     listener: (observation: ActiveSleepObservation) => void,
   ): () => void;
 }
-
-const CARE_EVENT_KINDS: readonly CareEventKind[] = [
-  'feeding',
-  'diaper',
-  'sleep',
-];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

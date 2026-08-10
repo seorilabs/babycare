@@ -17,8 +17,8 @@
 
 ## Store Listing
 
-- Short description KO: `수유·기저귀·수면을 여러 양육자가 실시간으로 함께 기록하는 공동 돌봄 앱` (40/80)
-- Full description: `play-store/google-play.config.json`의 `storeListing.fullDescription` (KO 656자 / EN 1254자, 한도 4000 내)
+- Short description KO: `수유·수면·체온·복약을 여러 양육자가 실시간으로 함께 기록하는 공동 돌봄 앱` (80자 한도 내)
+- Full description: `play-store/google-play.config.json`의 `storeListing.fullDescription`. 체온·복약과 비의료 도구 면책을 저장소 원장에 반영했으며 Console 재입력·readback은 새 후보 게이트다.
 - App icon (512x512): `play-store/assets/icon-512.png` ✅ 생성
 - Android launcher icon: 제품 브랜드 legacy/adaptive icon ✅ `1.0.8` Release AAB에 포함 확인
 - Feature graphic (1024x500): `play-store/assets/feature-graphic-1024x500.png` ✅ 생성
@@ -42,7 +42,7 @@
 - Ads declaration: **광고 있음(`yes`)** — 통계 상세의 선택형 리워드 광고. 2026-08-09 Console 저장 완료, 검토 전송 대기.
 - App access instructions: 제한된 로그인 없음. 앱이 기기 기반 계정을 자동 생성하며, 첫 기기에서 그룹 생성 후 초대 코드로 두 번째 기기가 합류함. 데모 계정 불필요
 - Target audience/content rating: ✅ 만 18세 이상, 아동 대상 아님 / IARC 한국 `12세 이상`(초대된 친구 사이의 비공개 사용자 상호작용)
-- Health declaration: ✅ `영양 및 체중 관리`, `수면 관리`; 지역별 추가 요구사항 없음. 의료 진단·처방 기능은 없음
+- Health declaration: 기존 Console은 `영양 및 체중 관리`, `수면 관리`로 저장 완료. 체온·복약 추가 후 저장소 원장은 `복약 및 치료 관리`도 포함하도록 갱신했으며 새 후보 전 Console 재입력·readback이 필요하다. 의료기기가 아니며 진단·처방·용량 추천 기능은 없음
 - Financial/payment features: 없음
 - Advertising ID / government app: Google Mobile Ads SDK 사용으로 **광고 ID 사용 `yes`**, 목적은 분석·광고/마케팅·사기 방지/보안. 2026-08-09 Console 저장 완료 / 정부 앱 아님
 - Privacy policy URL: `https://www.seorilabs.com/apps/babycare/privacy/` ✅ 제품별 한국어·영어 방침 live 200 및 2026-08-09 Play Console 저장 readback 완료. production 후보와 함께 검토 전송 대기.

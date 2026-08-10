@@ -367,11 +367,96 @@ service cloud.firestore {
             && data.endedAt - data.startedAt <= 172800000));
     }
 
+    function validTemperatureEvent(data) {
+      return data.kind == 'temperature'
+        && data.keys().hasAll(['temperatureCelsius', 'measurementSite'])
+        && data.keys().hasOnly([
+          'id',
+          'groupId',
+          'babyId',
+          'caregiverId',
+          'kind',
+          'occurredAt',
+          'createdAt',
+          'updatedAt',
+          'revision',
+          'isDeleted',
+          'lastMutationId',
+          'payloadHash',
+          'note',
+          'deletedAt',
+          'temperatureCelsius',
+          'measurementSite'
+        ])
+        && data.temperatureCelsius is number
+        && data.temperatureCelsius >= 30
+        && data.temperatureCelsius <= 45
+        && data.measurementSite in [
+          'armpit',
+          'ear',
+          'forehead',
+          'oral',
+          'rectal',
+          'other'
+        ];
+    }
+
+    function validMedicationEvent(data) {
+      return data.kind == 'medication'
+        && data.keys().hasAll([
+          'medicationName',
+          'medicationCategory',
+          'activeIngredient',
+          'doseAmount',
+          'doseUnit',
+          'minimumIntervalMinutes'
+        ])
+        && data.keys().hasOnly([
+          'id',
+          'groupId',
+          'babyId',
+          'caregiverId',
+          'kind',
+          'occurredAt',
+          'createdAt',
+          'updatedAt',
+          'revision',
+          'isDeleted',
+          'lastMutationId',
+          'payloadHash',
+          'note',
+          'deletedAt',
+          'medicationName',
+          'medicationCategory',
+          'activeIngredient',
+          'doseAmount',
+          'doseUnit',
+          'minimumIntervalMinutes'
+        ])
+        && validDisplayText(data.medicationName)
+        && data.medicationName == data.medicationName.trim()
+        && data.medicationCategory in ['antipyretic', 'antibiotic', 'other']
+        && data.activeIngredient in ['acetaminophen', 'ibuprofen', 'other']
+        && ((data.medicationCategory == 'antipyretic'
+            && data.activeIngredient in ['acetaminophen', 'ibuprofen'])
+          || (data.medicationCategory != 'antipyretic'
+            && data.activeIngredient == 'other'))
+        && data.doseAmount is number
+        && data.doseAmount > 0
+        && data.doseAmount <= 10000
+        && data.doseUnit in ['ml', 'mg', 'tablet', 'drop']
+        && data.minimumIntervalMinutes is int
+        && data.minimumIntervalMinutes >= 15
+        && data.minimumIntervalMinutes <= 10080;
+    }
+
     function validEvent(data, groupId, eventId) {
       return validEventBase(data, groupId, eventId)
         && (validFeedingEvent(data)
           || validDiaperEvent(data)
-          || validSleepEvent(data));
+          || validSleepEvent(data)
+          || validTemperatureEvent(data)
+          || validMedicationEvent(data));
     }
 
     function isActiveSleep(data) {
@@ -548,7 +633,15 @@ service cloud.firestore {
           'diaperType',
           'sleepType',
           'startedAt',
-          'endedAt'
+          'endedAt',
+          'temperatureCelsius',
+          'measurementSite',
+          'medicationName',
+          'medicationCategory',
+          'activeIngredient',
+          'doseAmount',
+          'doseUnit',
+          'minimumIntervalMinutes'
         ]);
     }
 

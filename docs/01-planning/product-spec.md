@@ -44,8 +44,8 @@
 
 1. 성인 양육자 계정 생성/로그인.
 2. 아기 1명과 돌봄 그룹 생성, 소유자가 다른 양육자를 코드/링크로 초대하고 상대가 합류.
-3. 수유(모유 좌·우 타이머, 유축·분유·이유식 양), 기저귀(소변·대변·혼합), 수면(낮잠·밤잠 시작/종료) 기록.
-4. 홈에서 마지막 수유·기저귀·수면과 오늘 요약 확인.
+3. 수유(모유 좌·우 타이머, 유축·분유·이유식 양), 기저귀(소변·대변·혼합), 수면(낮잠·밤잠 시작/종료), 체온(섭씨·측정부위), 복약(약 이름·주성분·실제 투여량·사용자 확인 간격) 기록.
+4. 홈에서 마지막 수유·기저귀·수면·체온·복약과 오늘 요약 확인.
 5. 기록자와 시각이 보이는 타임라인, 본인 기록 soft delete, 수유·수면·기저귀 기본 통계.
 6. 두 명 이상의 양육자 기기 사이 Firestore 실시간 공동 기록.
 7. 오프라인 기록, 앱 재시작 후 보존, 온라인 복귀 시 동기화와 실패/재시도 상태.
@@ -55,7 +55,7 @@
 
 ### Out
 
-- 성장·백분위, 체온·증상, 투약, 예방접종, 목욕·활동·발달, 사진·자유 일지.
+- 성장·백분위, 증상, 예방접종, 목욕·활동·발달, 사진·자유 일지.
 - FCM 리마인더와 다른 양육자 기록 알림.
 - 다둥이·수정월령, CSV/PDF 내보내기와 데이터 리포트.
 - 구독·결제, 광고, 유료 기능 경계. (수익화 방향은 ADR 0004에서 확정 — v1 무료, 출시 후 통계 상세에 보상형 광고 1개. `docs/04-work/backlog.md` P2 참고)
@@ -72,7 +72,7 @@ flowchart LR
   Auth["로그인"] --> Setup["아기·돌봄 그룹 생성"]
   Setup --> Invite["양육자 초대·합류"]
   Invite --> Home["마지막 기록·오늘 요약"]
-  Home --> Record["수유·기저귀·수면 기록"]
+  Home --> Record["수유·기저귀·수면·체온·복약 기록"]
   Record --> Queue["로컬 반영·오프라인 큐"]
   Queue --> Firestore["Firestore 동기화"]
   Firestore --> Other["다른 양육자 화면에 반영"]
@@ -85,7 +85,7 @@ flowchart LR
 | ID | 요구사항 | MVP 완료 증거 |
 | --- | --- | --- |
 | FR-01 | 계정과 그룹 멤버십으로 사용자·권한을 식별한다. | 실제 Auth 계정 2개로 owner/member 시나리오 통과 |
-| FR-02 | 수유·기저귀·수면을 현재/과거 시각으로 기록한다. | core 테스트 + Android/iOS/AIT 입력 smoke |
+| FR-02 | 수유·기저귀·수면·체온·복약을 현재/과거 시각으로 기록한다. 복약 용량은 추천하지 않고 사용자 확인 간격과 성분 중복 경고를 제공한다. | core/Rules 테스트 + Android/iOS/AIT 입력 smoke |
 | FR-03 | 진행 중 수면을 다른 그룹 멤버도 종료할 수 있고 원 기록 identity는 보존한다. | core/Rules 회귀 테스트 + 두 기기 QA |
 | FR-04 | 홈·타임라인·기본 통계가 soft-deleted 기록을 제외하고 일관된 값을 보인다. | core 집계 테스트 + UI smoke |
 | FR-05 | 기록이 로컬에 즉시 보이고 재연결 후 한 번만 서버에 반영된다. | 비행기 모드→재실행→재연결 QA |
@@ -101,7 +101,7 @@ flowchart LR
 - 민감 데이터는 초대된 그룹 내부에만 보이고 공개 download token URL을 저장하지 않는다.
 - service account, private key, Firebase Admin SDK는 client app에 포함하지 않는다.
 - 멤버 제거·로그아웃·계정 삭제 시 로컬 캐시 purge 경로를 검증한다.
-- 성장·건강 기능을 후속 도입해도 결과를 참고 정보로 표시하고 의료 판단 표현을 사용하지 않는다.
+- 체온·복약을 포함한 건강 기록은 참고 정보로만 표시하고 의료 판단 표현이나 용량 추천을 사용하지 않는다. 복약 안전 경계는 ADR 0006을 따른다.
 
 상세 위협과 통제는 [Security Threat Model](../03-architecture/security-threat-model.md)을 따른다.
 
@@ -109,7 +109,7 @@ flowchart LR
 
 | 영역 | 현재 구현 | MVP까지 남은 핵심 |
 | --- | --- | --- |
-| product core | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, `CareEvent`; 기록·수면종료·soft delete·대시보드 use case; Auth/그룹/아기/초대/기록·remote mutation·string storage port | 실제 non-production project와 기기 2대에서 전체 use-case 검증 |
+| product core | `Baby`, `CareGroup`, `Membership`, `CareGroupInvite`, 수유·기저귀·수면·체온·복약 `CareEvent`; 복약 간격 확인, 기록·수면종료·soft delete·대시보드 use case; Auth/그룹/아기/초대/기록·remote mutation·string storage port | 실제 non-production project와 기기 2대에서 전체 use-case 검증 |
 | mobile | 기본 개발 실행 경로에 Firebase composition root를 연결했다. native Firebase app이 없으면 `demo-babycare` Emulator에 Auth/Firestore/Functions를 연결하며, 개발용 익명 인증, owner 그룹·아기 생성, 6자리 초대 발급·합류 UI, UID-scoped cloud context cache, 실시간 Home/Timeline/Stats feed, 동기화 상태·재시도 배너와 멤버 목록을 제공한다. Firebase 초기화 오류는 fail-closed 재시도 화면으로 처리하고 local preview는 Jest에서만 사용한다. | 실제 Firebase client config와 Functions region, production Auth provider·계정 복구/삭제, 실제 기기 2대의 초대·offline/restart/reconnect·권한 회수 QA |
 | Firebase | Rules/Functions의 payload-bound mutation receipt와 baby별 active-sleep singleton lock을 검증한다. 별도 mobile shared-flow 테스트는 Auth Emulator의 익명 사용자 2명으로 owner 생성→초대 발급/수락→member 실시간 기록 수신→멤버 제거 후 접근 거부를 통과한다. | 실제 non-production project, App Check·Secret Manager·IAM·client config 통합 검증. Emulator의 두 client는 실제 기기 2대 증거가 아님 |
 | AppsInToss | Granite RN·TDS UI, `Storage` session, Platform custom-token/Firebase Auth REST, Firestore REST 기록·조회, callable 초대·삭제 adapter를 연결했다. 운영 두 계정 E2E를 통과한 `main@707df10` 후보를 비공개 deployment로 업로드했다. | 실제 sandbox에서 Storage·재실행·네트워크 복귀 QA, App Check/edge 보호, 실제 AIT 화면 screenshot |
@@ -122,7 +122,7 @@ RNFirebase adapter와 Firebase 개발 composition이 연결됐지만 production 
 - `pnpm run test`, `pnpm run check:mobile`, `pnpm run check:ait`가 통과한다.
 - 실제 비프로덕션 Firebase에서 Auth, Firestore, Storage, Functions, App Check 경계를 통합 검증한다.
 - 서로 다른 계정과 기기 2대에서 초대→합류→실시간 기록→오프라인 복귀→멤버 제거 흐름을 통과한다.
-- Android/iOS/AIT에서 수유·기저귀·수면의 입력·홈·타임라인·기본 통계가 동등하게 동작한다.
+- Android/iOS/AIT에서 수유·기저귀·수면·체온·복약의 입력·홈·타임라인이 동등하게 동작하고 기존 기본 통계가 유지된다.
 - native cold start에서 framework/template 문구가 노출되지 않는다.
 - privacy/data safety, 계정 삭제·export, signing, 스토어 자산과 review note blocker가 repo 원장에 반영된다.
 - release candidate는 승인된 EU 포함 전국가와 Apple trader 범위에서 제출하고 정책 답변은 실제 SDK·기능 근거와 일치시킨다.
