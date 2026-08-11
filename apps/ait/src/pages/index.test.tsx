@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {KeyboardAvoidingView, ScrollView, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {BabyNestHome} from './index';
@@ -67,6 +67,15 @@ describe('BabyNestHome', () => {
     expect(visibleText).toContain('의료 판단이나 진단을 제공하지 않습니다.');
     expect(visibleText).not.toContain('build-only');
     expect(visibleText).not.toContain('sandbox');
+    expect(renderer.root.findAllByType(KeyboardAvoidingView)).toHaveLength(1);
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '아기 생년월일 선택'})
+        .props.accessibilityRole,
+    ).toBe('button');
+    expect(renderer.root.findByType(ScrollView).props).toMatchObject({
+      automaticallyAdjustKeyboardInsets: true,
+      keyboardShouldPersistTaps: 'handled',
+    });
 
     ReactTestRenderer.act(() => renderer.unmount());
   });
