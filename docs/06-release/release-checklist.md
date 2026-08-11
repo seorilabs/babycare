@@ -31,6 +31,8 @@
 - [x] live custom token 신규 로그인과 합성 legacy UID 보존 smoke — UID 주입 거부·no-store·Firebase 교환·cleanup 포함
 - [x] production 초대 callable Secret Manager·Cloud Run 진입 계약 확인 — Domain Restricted Sharing 환경에서 `createInvite`·`acceptInvite` Invoker IAM check 비활성화, Firebase Auth/owner 검사는 유지
 - [x] 실제 project의 App Check 검증 경계 확정 — mobile Play Integrity·App Attest·DeviceCheck provider 운영 구성, Platform registry `require_app_check=true`, production callable `ENFORCE_APP_CHECK=true`, App Check 없는 custom-token 요청 `401 app_check_required` readback. 사용자가 `v1.1.3` 실기기 QA 통과를 보고함, 2026-08-10
+- [x] AppsInToss App Check attestation source·unit test — `appLogin` 일회용 코드 → mTLS Toss 검증 → 1시간 Firebase custom token, Platform·Firestore·Functions 전체 요청 header와 Storage 만료 갱신 구현, 2026-08-11
+- [ ] AppsInToss App Check 운영 연결 — mTLS 인증서 app별 catalog 백업·Secret Manager 연결, mint Function 배포·Invoker readback, 새 비공개 번들 실제 Toss 앱 QA
 - [x] production 계정 삭제 callable과 외부 삭제 경로 — `deleteAccount` ACTIVE·IAM 적용, Platform 삭제 mapping API production 배포, 외부 안내 페이지 live 200, 일회성 owner/member 계정 삭제·정리 live QA 완료
 - [x] GA4·Platform Analytics 운영 연결 — GA4 property `549232169`·3개 stream·BigQuery link, Secret Manager API secret, `logAnalyticsEvents` ACTIVE를 구성했다. 인증 callable `accepted=1`, GA4 Realtime `core_screen_view=1`, Platform registry의 14개 allowlist, ingest `accepted=1`, BigQuery `babycare-launch-smoke-20260809-0803`를 readback했다(2026-08-09)
 - [x] 최소 광고 운영 연결 — AdMob Android/iOS app·rewarded unit production ID, EU UMP·미국 주 privacy message, privacy options UI를 반영했다. 사용자가 `v1.1.3` Android/iOS 실기기 QA 통과를 보고함. AppsInToss 광고는 이번 Play/App Store 출시 범위 밖
@@ -43,7 +45,7 @@
 - [x] iOS RNFirebase arm64 Simulator build·light/dark first-screen smoke
 - [x] Android 1.0.8 AAB의 제품 브랜드 launcher icon·cold-start splash·온보딩 전환 확인 — 격리 API 36 AVD, `LaunchState: COLD`, template 문구 없음
 - [x] iOS TestFlight cold-start 제품 브랜딩 — 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함. 기기 모델·OS 상세는 제공되지 않음
-- [ ] AppsInToss sandbox smoke — 운영 두 계정 API E2E, `main@707df10` 비공개 deployment 업로드, 공식 iOS Sandbox 앱 설치·로그인 화면 실행, 최신 `20260807-3` 본인 test push와 `isTested=true` readback 통과 / 남음: Toss 설치 기기에서 private scheme을 열어 Storage·초대·기록·재실행·네트워크 복귀
+- [ ] AppsInToss sandbox smoke — 운영 두 계정 합성 API E2E, `main@707df10` 비공개 deployment 업로드, 공식 iOS Sandbox 앱 설치·로그인 화면 실행, 최신 `20260807-3` 본인 test push와 `isTested=true` readback 통과 / 현재 기존 번들은 App Check header 누락으로 보호 API 거부 / 남음: attestation 포함 새 private scheme을 Toss 설치 기기에서 열어 Storage·초대·기록·재실행·네트워크 복귀
 - [x] Offline/local-first smoke — Android 1.0.8 upload-signed AAB를 격리 API 36 AVD에 설치해 비행기 모드 기록·강제 종료·재실행 보존, online 복귀 뒤 수동 새로고침과 두 번째 기기 server readback 통과(2026-08-07)
 - [x] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀 — production custom-token 계정 `QAOwnerA`/`QAMemberB`, 격리 Android AVD 2대에서 초대·합류·양방향 기록자 반영·offline 기록 공유 통과. Play Store app-signing 설치본·물리 기기 App Check token은 별도 게이트
 - [x] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — 기존 iPhone owner 발급 확인과 production API 독립 2계정 E2E에 더해 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함
@@ -77,5 +79,5 @@
 - [ ] Google Play 심사 승인·production 공개·공개 listing `1.1.3` readback
 - [x] App Store 실제 테스터 설치·실기기 QA와 App Review 제출 — 사용자의 실기기 QA 통과 보고 뒤 review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d` 제출. 현재 `WAITING_FOR_REVIEW`, `AFTER_APPROVAL`, 2026-08-10
 - [ ] App Store 심사 승인·자동 공개·175개 국가/지역 listing `1.1.3` readback
-- [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA — `intoss-private://babynest?_deploymentId=019fd827-571d-791d-bd50-08f2da35afec`, 검토 요청 전 실제 테스트 최소 1회 필요
+- [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA — 기존 deployment `019fd827-571d-791d-bd50-08f2da35afec`는 현재 강제 경계와 호환되지 않으므로 App Check 포함 새 deployment ID로 교체 후 실제 테스트 최소 1회 필요
 - [ ] AppsInToss production release 승인

@@ -14,9 +14,10 @@ if (unknownArguments.length > 0) {
 }
 
 const apply = process.argv.includes('--apply');
+const gcloudBinary = process.env.SEORILABS_GCLOUD_BIN || 'gcloud';
 
 function gcloud(arguments_) {
-  return execFileSync('gcloud', arguments_, {
+  return execFileSync(gcloudBinary, arguments_, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit'],
   });
@@ -61,6 +62,49 @@ for (const role of manifest.runtime.projectRoles) {
 
 console.log(
   `${manifest.runtime.serviceAccountEmail}: ${manifest.runtime.projectRoles.join(', ')}`,
+);
+
+for (const role of manifest.runtime.selfRoles) {
+  if (apply) {
+    gcloud([
+      'iam',
+      'service-accounts',
+      'add-iam-policy-binding',
+      manifest.runtime.serviceAccountEmail,
+      `--member=${runtimeMember}`,
+      `--role=${role}`,
+      `--project=${manifest.projectId}`,
+      '--condition=None',
+      '--quiet',
+    ]);
+  }
+}
+
+const selfBindings = JSON.parse(
+  gcloud([
+    'iam',
+    'service-accounts',
+    'get-iam-policy',
+    manifest.runtime.serviceAccountEmail,
+    `--project=${manifest.projectId}`,
+    '--flatten=bindings[].members',
+    `--filter=bindings.members:${runtimeMember}`,
+    '--format=json(bindings.role)',
+  ]),
+);
+const selfRoles = new Set(
+  selfBindings.map(binding => binding.bindings?.role).filter(Boolean),
+);
+for (const role of manifest.runtime.selfRoles) {
+  if (!selfRoles.has(role)) {
+    throw new Error(
+      `${manifest.runtime.serviceAccountEmail}: 필수 self role ${role}이 없습니다.`,
+    );
+  }
+}
+
+console.log(
+  `${manifest.runtime.serviceAccountEmail}: self ${manifest.runtime.selfRoles.join(', ')}`,
 );
 
 for (const service of manifest.services) {

@@ -18,7 +18,7 @@ function sorted(values) {
   return [...values].sort((left, right) => left.localeCompare(right));
 }
 
-test('production callable exports have a DRS-compatible Cloud Run access contract', () => {
+test('production public Function exports have a DRS-compatible Cloud Run access contract', () => {
   assert.equal(manifest.projectId, 'seorilabs-babycare');
   assert.match(manifest.region, /^[a-z]+-[a-z]+\d$/);
   assert.match(
@@ -30,10 +30,13 @@ test('production callable exports have a DRS-compatible Cloud Run access contrac
     'roles/firebaseauth.admin',
     'roles/storage.objectAdmin',
   ]);
+  assert.deepEqual(manifest.runtime.selfRoles, [
+    'roles/iam.serviceAccountTokenCreator',
+  ]);
   assert.ok(Array.isArray(manifest.services));
 
-  const callableExports = sorted(
-    [...functionsSource.matchAll(/export const (\w+)\s*=\s*onCall\(/g)].map(
+  const publicFunctionExports = sorted(
+    [...functionsSource.matchAll(/export const (\w+)\s*=\s*on(?:Call|Request)\(/g)].map(
       match => match[1],
     ),
   );
@@ -43,8 +46,8 @@ test('production callable exports have a DRS-compatible Cloud Run access contrac
 
   assert.deepEqual(
     configuredFunctions,
-    callableExports,
-    'every callable export must have an explicit production access contract',
+    publicFunctionExports,
+    'every public Function export must have an explicit production access contract',
   );
 
   for (const service of manifest.services) {

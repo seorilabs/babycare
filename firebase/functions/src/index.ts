@@ -1,4 +1,5 @@
 import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAppCheck } from 'firebase-admin/app-check';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
@@ -8,7 +9,14 @@ import {
   defineSecret,
   defineString,
 } from 'firebase-functions/params';
-import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
+
+import {
+  AitAppCheckError,
+  createAitLoginTransport,
+  parseAitAuthorization,
+  verifyAitAuthorization,
+} from './ait-app-check-service.js';
 
 import { FirestoreInviteRepository } from './firestore-invite-repository.js';
 import { AccountDeletionError } from './account-deletion-error.js';
@@ -33,6 +41,11 @@ const FUNCTIONS_REGION = defineString('FUNCTIONS_REGION', {
 });
 const INVITE_CODE_HMAC_KEY = defineSecret('INVITE_CODE_HMAC_KEY');
 const GA4_API_SECRET = defineSecret('GA4_API_SECRET');
+const AIT_LOGIN_CLIENT_CERT = defineSecret('AIT_LOGIN_CLIENT_CERT');
+const AIT_LOGIN_CLIENT_KEY = defineSecret('AIT_LOGIN_CLIENT_KEY');
+const AIT_FIREBASE_WEB_APP_ID =
+  '1:104011164568:web:559d9ce7099c15ddc2d9ed';
+const AIT_APP_CHECK_TTL_MS = 60 * 60 * 1_000;
 const GA4_MEASUREMENT_ID = defineString('GA4_MEASUREMENT_ID', {
   description: 'Babycare GA4 web stream measurement ID for AppsInToss relay',
 });
@@ -102,6 +115,59 @@ const analyticsCallableOptions = {
   timeoutSeconds: 15,
   memory: '256MiB' as const,
 };
+
+export const mintAitAppCheckToken = onRequest(
+  {
+    region: FUNCTIONS_REGION,
+    secrets: [AIT_LOGIN_CLIENT_CERT, AIT_LOGIN_CLIENT_KEY],
+    timeoutSeconds: 15,
+    memory: '256MiB',
+    maxInstances: 10,
+  },
+  async (request, response) => {
+    response.set('Cache-Control', 'no-store');
+    if (request.method !== 'POST') {
+      response.status(405).set('Allow', 'POST').json({
+        error: { code: 'method-not-allowed', message: 'POST 요청이 필요해요.' },
+      });
+      return;
+    }
+
+    try {
+      const authorization = parseAitAuthorization(request.body);
+      const transport = createAitLoginTransport({
+        certificate: AIT_LOGIN_CLIENT_CERT.value(),
+        privateKey: AIT_LOGIN_CLIENT_KEY.value(),
+      });
+      await verifyAitAuthorization(authorization, transport);
+      const token = await getAppCheck(app).createToken(AIT_FIREBASE_WEB_APP_ID, {
+        ttlMillis: AIT_APP_CHECK_TTL_MS,
+      });
+      response.status(200).json({
+        token: token.token,
+        expireTimeMillis: Date.now() + token.ttlMillis,
+      });
+    } catch (error) {
+      const known = error instanceof AitAppCheckError ? error : undefined;
+      const status =
+        known?.code === 'invalid-request'
+          ? 400
+          : known?.code === 'verification-failed'
+            ? 401
+            : 503;
+      console.error('AIT App Check token mint failed', {
+        code: known?.code ?? 'token-mint-failed',
+      });
+      response.status(status).json({
+        error: {
+          code: known?.code ?? 'token-mint-failed',
+          message:
+            known?.message ?? 'AppsInToss 앱 확인 token을 만들지 못했어요.',
+        },
+      });
+    }
+  },
+);
 
 export const logAnalyticsEvents = onCall(
   analyticsCallableOptions,

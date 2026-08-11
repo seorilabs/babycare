@@ -7,6 +7,9 @@
       "roles/datastore.user",
       "roles/firebaseauth.admin",
       "roles/storage.objectAdmin"
+    ],
+    "selfRoles": [
+      "roles/iam.serviceAccountTokenCreator"
     ]
   },
   "services": [
@@ -28,6 +31,11 @@
     {
       "functionName": "logAnalyticsEvents",
       "serviceName": "loganalyticsevents",
+      "invokerIamCheck": "disabled"
+    },
+    {
+      "functionName": "mintAitAppCheckToken",
+      "serviceName": "mintaitappchecktoken",
       "invokerIamCheck": "disabled"
     }
   ]

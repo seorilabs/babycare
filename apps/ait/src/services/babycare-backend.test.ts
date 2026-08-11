@@ -1,6 +1,10 @@
 const mockStored = new Map<string, string>();
 
 jest.mock('@apps-in-toss/framework', () => ({
+  appLogin: jest.fn(async () => ({
+    authorizationCode: 'one-time-code',
+    referrer: 'SANDBOX',
+  })),
   Storage: {
     getItem: jest.fn(async (key: string) => mockStored.get(key) ?? null),
     setItem: jest.fn(async (key: string, value: string) => {
@@ -12,7 +16,11 @@ jest.mock('@apps-in-toss/framework', () => ({
   },
 }));
 
-import {createCareGroup, recordQuickCareEvent} from './babycare-backend';
+import {
+  createCareGroup,
+  createInviteCode,
+  recordQuickCareEvent,
+} from './babycare-backend';
 
 function response(value: unknown): Response {
   return {
@@ -29,8 +37,19 @@ describe('AppsInToss BabyCare backend', () => {
 
   it('commits canonical Firestore resource names for groups and care events', async () => {
     const commits: Record<string, unknown>[] = [];
+    const protectedRequests: {url: string; headers: Record<string, string>}[] = [];
     const request = jest.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/mintAitAppCheckToken')) {
+        return response({
+          token: 'app-check-token',
+          expireTimeMillis: Date.now() + 60 * 60 * 1_000,
+        });
+      }
       if (url.includes('/v1/auth/firebase-custom-token')) {
+        protectedRequests.push({
+          url,
+          headers: init?.headers as Record<string, string>,
+        });
         return response({
           ok: true,
           result: {firebaseCustomToken: 'custom-token', appUserId: 'user-1'},
@@ -51,8 +70,19 @@ describe('AppsInToss BabyCare backend', () => {
         });
       }
       if (url.endsWith('documents:commit')) {
+        protectedRequests.push({
+          url,
+          headers: init?.headers as Record<string, string>,
+        });
         commits.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
         return response({commitTime: '2026-08-06T00:00:00Z'});
+      }
+      if (url.endsWith('/createInvite')) {
+        protectedRequests.push({
+          url,
+          headers: init?.headers as Record<string, string>,
+        });
+        return response({result: {code: 'ABC234'}});
       }
       throw new Error(`Unexpected request: ${url}`);
     });
@@ -78,6 +108,7 @@ describe('AppsInToss BabyCare backend', () => {
       doseUnit: 'ml',
       minimumIntervalMinutes: 240,
     });
+    await expect(createInviteCode(ready)).resolves.toBe('ABC234');
 
     expect(commits).toHaveLength(4);
     const writes = commits.flatMap(commit => commit.writes as Record<string, unknown>[]);
@@ -94,5 +125,11 @@ describe('AppsInToss BabyCare backend', () => {
     expect(names.some(name => name.includes('/eventMutationReceipts/'))).toBe(true);
     expect(JSON.stringify(commits)).toContain('temperatureCelsius');
     expect(JSON.stringify(commits)).toContain('minimumIntervalMinutes');
+    expect(protectedRequests.length).toBeGreaterThan(0);
+    expect(
+      protectedRequests.every(
+        request => request.headers['X-Firebase-AppCheck'] === 'app-check-token',
+      ),
+    ).toBe(true);
   });
 });

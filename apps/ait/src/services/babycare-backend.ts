@@ -23,6 +23,7 @@ import {
   careEventMutationId,
   careEventPayloadHash,
 } from '../../../../packages/product-data/src/care-event-revision.ts';
+import {currentAitAppCheckToken} from './ait-app-check';
 
 const PROJECT_ID = 'seorilabs-babycare';
 const PLATFORM_URL =
@@ -267,6 +268,7 @@ async function refreshAccessSession(
 }
 
 async function createAccessSession(): Promise<AccessSession> {
+  const appCheckToken = await currentAitAppCheckToken();
   const platformResponse = await fetch(
     `${PLATFORM_URL}/v1/auth/firebase-custom-token`,
     {
@@ -274,6 +276,7 @@ async function createAccessSession(): Promise<AccessSession> {
       headers: {
         'Content-Type': 'application/json',
         'X-Seori-App': 'babycare',
+        'X-Firebase-AppCheck': appCheckToken,
       },
       body: JSON.stringify({appId: 'babycare'}),
     },
@@ -325,11 +328,13 @@ async function firestoreRequest(
   path: string,
   init: RequestInit = {},
 ): Promise<unknown> {
+  const appCheckToken = await currentAitAppCheckToken();
   const response = await fetch(`${FIRESTORE_URL}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${session.idToken}`,
       'Content-Type': 'application/json',
+      'X-Firebase-AppCheck': appCheckToken,
       ...init.headers,
     },
   });
@@ -670,11 +675,13 @@ async function callFunction(
     | 'logAnalyticsEvents',
   data: Readonly<Record<string, unknown>>,
 ): Promise<Record<string, unknown>> {
+  const appCheckToken = await currentAitAppCheckToken();
   const response = await fetch(`${FUNCTIONS_URL}/${name}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${session.idToken}`,
       'Content-Type': 'application/json',
+      'X-Firebase-AppCheck': appCheckToken,
     },
     body: JSON.stringify({data}),
   });
@@ -985,11 +992,13 @@ export async function deleteCareAccount(ready: ReadyCareSession): Promise<void> 
   if (session.uid !== ready.uid) {
     throw new Error('현재 사용자를 다시 확인해 주세요.');
   }
+  const appCheckToken = await currentAitAppCheckToken();
   const platformResponse = await fetch(`${PLATFORM_URL}/v1/auth/firebase-account`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
       'X-Seori-App': 'babycare',
+      'X-Firebase-AppCheck': appCheckToken,
     },
     body: JSON.stringify({
       appId: 'babycare',

@@ -77,7 +77,7 @@ Firebase 연결 시 `CareEventRepositoryPort` 구현을 교체하고 core use ca
 
 승인된 `appName=babynest`의 Granite RN + TDS target이다. AppsInToss `Storage`에 Firebase refresh token과 group session을 저장하고, Platform custom-token bridge와 Firebase Auth REST로 인증한다. Firestore REST commit/query와 Firebase callable로 그룹·아기·기록·초대·삭제를 처리한다. 기록 commit은 product-core domain validation과 canonical payload hash를 재사용해 event, mutation receipt, active-sleep lock을 원자 반영한다. native Firebase module은 사용하지 않는다.
 
-현재 AIT delivery는 핵심 수유·기저귀·수면·체온·복약과 홈·타임라인·통계 흐름을 제공하지만 mobile의 local-first outbox/realtime listener 전체를 그대로 재사용하지 않는다. 명시적 새로고침과 재실행 복구를 제공하며 offline queue·실시간 listener·App Check/edge 보호는 sandbox 이후 별도 gate다.
+현재 AIT delivery는 핵심 수유·기저귀·수면·체온·복약과 홈·타임라인·통계 흐름을 제공하지만 mobile의 local-first outbox/realtime listener 전체를 그대로 재사용하지 않는다. 명시적 새로고침과 재실행 복구를 제공한다. App Check는 Toss `appLogin`·서버 mTLS 검증 기반 custom provider source까지 구현했으며 운영 secret·Function 배포와 새 비공개 번들 QA가 남아 있다. offline queue·실시간 listener는 별도 gate다.
 
 ### `firebase`
 
