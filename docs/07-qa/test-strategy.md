@@ -19,7 +19,8 @@
 | Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded projection, transaction receipt·active lock, Firebase runtime host/config, session restore·그룹 생성·초대 합류, strict cloud context cache, cloud onboarding UI |
 | Mobile lint | RN source 정적 검사 | `pnpm --filter @babycare/mobile lint` | mobile source |
 | Mobile target | RN Android/iOS target과 iOS launch | `pnpm run check:mobile` | native project 존재, framework launch 문구 탐지 |
-| AIT target | Granite·TDS 구성과 Console 식별자 | `pnpm run check:ait`, `pnpm --dir apps/ait check`, `pnpm --dir apps/ait build` | 자동 build 후보, sandbox 실기기 QA 미검증 |
+| AIT unit/parity | 상세 기록·홈·타임라인·통계·더보기와 offline outbox | `pnpm run test:ait` | 5종 기록 variant, 과거 시각·메모, latest 5종, 작성자·삭제, 12h/7d/30d, 구성원·초대·privacy, remote 실패 local 보존 |
+| AIT target | Granite·TDS 구성과 Console 식별자 | `pnpm run check:ait`, `pnpm --dir apps/ait check`, `pnpm --dir apps/ait build` | 패리티 local build 완료, Console 업로드·sandbox 실기기 QA 미검증 |
 | Release inventory | market/release blocker | `pnpm run check:release` | placeholder와 필수 market config; 현재 실패가 정상 |
 
 전체 개발 게이트:
@@ -28,7 +29,7 @@
 pnpm run test
 ```
 
-현재 root `test`는 core/mobile unit, Firebase Rules, Functions unit/transaction, `test:firebase:mobile-flow`, workspace typecheck/lint, architecture/docs를 순서대로 검증한다. Firebase Emulator 실행에는 Java와 의존성 설치가 필요하며 target/device build와 `check:release`는 별도다.
+현재 root `test`는 core/mobile/AIT unit, Firebase Rules, Functions unit/transaction, `test:firebase:mobile-flow`, workspace typecheck/lint, architecture/docs를 순서대로 검증한다. Firebase Emulator 실행에는 Java와 의존성 설치가 필요하며 target/device build와 `check:release`는 별도다.
 
 ## Core Test 기준
 
@@ -121,7 +122,7 @@ Firebase root는 platform custom token Auth session restore, owner 그룹·아�
 | --- | --- | --- | --- |
 | Android | debug device/emulator, 이후 signed AAB internal | 작은 화면·back·offline·cold start | 1.0.8 upload-signed AAB를 격리 API 36 AVD 2대에 설치. 브랜드 icon·cold start, production owner/member 초대·양방향 기록, offline 기록→재실행→복귀·server readback, 교차 기기 수면 종료, member/owner 삭제와 cache purge를 통과. Play Store app-signing 설치·물리 기기 App Check token은 미검증 |
 | iOS | simulator/device, 이후 archive/TestFlight | safe area·keyboard·dark mode·cold start | RN `0.85.3`/RNFirebase arm64 Simulator clean/incremental build, iPhone 16 Pro light와 SE(3세대) dark first-screen 통과 |
-| AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/realtime, 재실행 | Granite RN·TDS UI, `.ait` 로컬 빌드, production 두 계정의 그룹·기록·초대·공동 조회·삭제 API E2E 통과. 실제 sandbox Storage·화면·재실행·네트워크 복귀 미검증 |
+| AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/polling, 재실행 | mobile 기능 패리티 renderer와 공통 local-first outbox, REST polling/resume sync를 자동 검증했다. production 두 계정의 그룹·기록·초대·공동 조회·삭제 API E2E는 기존 통과. 패리티 `.ait`의 실제 Toss Storage·상세 입력·재실행·네트워크 복귀는 미검증 |
 
 ## Regression Rules
 

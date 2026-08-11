@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {
   buildCareStatsBuckets,
@@ -9,12 +9,12 @@ import {
   type CareStatsBucket,
   type RewardedAdPort,
   type StringStoragePort,
-} from '@babycare/product-core';
+} from '../../../../packages/product-core/src/index.ts';
 
-import {formatDuration} from '../app/format';
-import type {Strings} from '../app/i18n';
-import {buildStatsRanges, type StatsPeriod} from '../app/stats-ranges';
-import type {AppTheme} from '../app/theme';
+import {formatDuration} from './format';
+import type {Strings} from './strings';
+import {buildStatsRanges, type StatsPeriod} from './stats-ranges';
+import type {AppTheme} from './theme';
 
 export type Period = StatsPeriod;
 export {buildStatsRanges};

@@ -4,22 +4,34 @@ import ReactTestRenderer from 'react-test-renderer';
 
 import {BabyNestHome} from './index';
 
+jest.mock('@toss/tds-react-native', () => {
+  const ReactModule = jest.requireActual<typeof React>('react');
+  const Native = jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    Button: ({children, ...props}: React.PropsWithChildren<Record<string, unknown>>) =>
+      ReactModule.createElement(
+        Native.Pressable,
+        props,
+        ReactModule.createElement(Native.Text, undefined, children),
+      ),
+  };
+});
+
+jest.mock('@apps-in-toss/framework', () => ({
+  Storage: {
+    getItem: jest.fn(async () => null),
+    setItem: jest.fn(async () => undefined),
+    removeItem: jest.fn(async () => undefined),
+  },
+}));
+
 jest.mock('../services/babycare-backend', () => ({
   bootstrapCareSession: jest.fn(async () => undefined),
   createCareGroup: jest.fn(),
   createInviteCode: jest.fn(),
   deleteCareAccount: jest.fn(),
   joinCareGroup: jest.fn(),
-  recordQuickCareEvent: jest.fn(),
   reloadCareSession: jest.fn(),
-  todaySummary: jest.fn(() => ({
-    feedingCount: 0,
-    feedingVolumeMl: 0,
-    diaperCount: 0,
-    sleepCount: 0,
-    sleepDurationSeconds: 0,
-    latest: {},
-  })),
 }));
 
 jest.mock('../services/analytics', () => ({
@@ -31,8 +43,6 @@ jest.mock('../services/rewarded-ad', () => ({
     preload: jest.fn(async () => undefined),
     show: jest.fn(async () => ({status: 'unavailable'})),
   },
-  statsDetailUnlockedUntilOnAit: jest.fn(async () => undefined),
-  unlockStatsDetailOnAit: jest.fn(async () => Date.now() + 86_400_000),
 }));
 
 function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {

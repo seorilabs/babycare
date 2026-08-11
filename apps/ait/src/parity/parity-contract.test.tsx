@@ -1,0 +1,275 @@
+import React from 'react';
+import {Text} from 'react-native';
+import ReactTestRenderer from 'react-test-renderer';
+import {
+  babyId,
+  createCareEvent,
+  eventId,
+  groupId,
+  userId,
+  type CareEvent,
+  type Membership,
+} from '../../../../packages/product-core/src/index.ts';
+
+import {HomeScreen} from './HomeScreen';
+import {MoreScreen} from './MoreScreen';
+import {QuickRecordModal} from './QuickRecordModal';
+import type {LocalSession} from './session';
+import {StatsScreen} from './StatsScreen';
+import {createStrings} from './strings';
+import {createTheme} from './theme';
+import {TimelineScreen} from './TimelineScreen';
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({bottom: 34, left: 0, right: 0, top: 47}),
+}));
+
+const now = new Date(2026, 7, 11, 12).getTime();
+const strings = createStrings('ko');
+const theme = createTheme(false);
+const session: LocalSession = {
+  groupId: 'group-parity',
+  babyId: 'baby-parity',
+  caregiverId: 'user-owner',
+  caregiverName: '엄마',
+  babyName: '지안',
+  birthDate: '2026-08-01',
+  inviteCode: 'ABC234',
+  runtimeMode: 'firebase',
+  membershipRole: 'owner',
+};
+const context = {
+  groupId: groupId(session.groupId),
+  babyId: babyId(session.babyId),
+  caregiverId: userId(session.caregiverId),
+};
+
+function event(
+  input: Parameters<typeof createCareEvent>[0],
+  id: string,
+): CareEvent {
+  return createCareEvent(input, {id: eventId(id), now});
+}
+
+const events: readonly CareEvent[] = [
+  event(
+    {
+      ...context,
+      kind: 'medication',
+      medicationName: '아세트아미노펜',
+      medicationCategory: 'antipyretic',
+      activeIngredient: 'acetaminophen',
+      doseAmount: 3.5,
+      doseUnit: 'ml',
+      minimumIntervalMinutes: 240,
+      occurredAt: now - 5 * 60_000,
+      note: '복약 메모',
+    },
+    'event-medication',
+  ),
+  event(
+    {
+      ...context,
+      kind: 'temperature',
+      temperatureCelsius: 38.2,
+      measurementSite: 'ear',
+      occurredAt: now - 10 * 60_000,
+    },
+    'event-temperature',
+  ),
+  event(
+    {
+      ...context,
+      kind: 'sleep',
+      sleepType: 'nap',
+      startedAt: now - 80 * 60_000,
+      endedAt: now - 20 * 60_000,
+    },
+    'event-sleep',
+  ),
+  event(
+    {
+      ...context,
+      kind: 'diaper',
+      diaperType: 'mixed',
+      occurredAt: now - 90 * 60_000,
+    },
+    'event-diaper',
+  ),
+  event(
+    {
+      ...context,
+      kind: 'feeding',
+      feedingType: 'formula',
+      volumeMl: 120,
+      occurredAt: now - 100 * 60_000,
+      note: '수유 메모',
+    },
+    'event-feeding',
+  ),
+];
+
+function textOf(element: React.ReactElement): string {
+  let renderer!: ReactTestRenderer.ReactTestRenderer;
+  ReactTestRenderer.act(() => {
+    renderer = ReactTestRenderer.create(element);
+  });
+  const read = (value: unknown): string =>
+    Array.isArray(value)
+      ? value.map(read).join('')
+      : typeof value === 'string' || typeof value === 'number'
+        ? String(value)
+        : '';
+  const text = renderer.root
+    .findAllByType(Text)
+    .map(node => read(node.props.children))
+    .join(' ')
+    .replace(/\s+/g, ' ');
+  ReactTestRenderer.act(() => renderer.unmount());
+  return text;
+}
+
+describe('AppsInToss feature parity contract', () => {
+  it('shows the same five latest cards and quick-record entry points', () => {
+    const text = textOf(
+      <HomeScreen
+        activeSleep={undefined}
+        caregiverNames={new Map([[session.caregiverId, '엄마']])}
+        events={events}
+        now={now}
+        onMore={jest.fn()}
+        onRecord={jest.fn()}
+        onStopSleep={jest.fn()}
+        session={session}
+        strings={strings}
+        theme={theme}
+      />,
+    );
+
+    expect(text).toContain('생후 10일');
+    expect(text).toContain('마지막 수유');
+    expect(text).toContain('마지막 기저귀');
+    expect(text).toContain('마지막 수면');
+    expect(text).toContain('마지막 체온');
+    expect(text).toContain('마지막 복약');
+    expect(text).toContain('빠른 기록');
+  });
+
+  it('exposes every detailed record variant, time editing, and notes', () => {
+    const commonProps = {
+      events,
+      onClose: jest.fn(),
+      onSave: jest.fn(async () => undefined),
+      session,
+      strings,
+      theme,
+    };
+    const text = (['feeding', 'diaper', 'sleep', 'temperature', 'medication'] as const)
+      .map(kind => textOf(<QuickRecordModal {...commonProps} kind={kind} />))
+      .join(' ');
+
+    for (const label of [
+      '모유',
+      '유축',
+      '분유',
+      '이유식',
+      '소변',
+      '대변',
+      '둘 다',
+      '낮잠',
+      '밤잠',
+      '측정 부위',
+      '약 선택',
+      '기록 시각',
+      '−10분',
+      '메모 (선택)',
+    ]) {
+      expect(text).toContain(label);
+    }
+  });
+
+  it('keeps grouped timeline metadata, notes, and deletion affordance', () => {
+    const text = textOf(
+      <TimelineScreen
+        capped={false}
+        caregiverNames={new Map([[session.caregiverId, '엄마']])}
+        events={events}
+        hasMore={false}
+        loadingMore={false}
+        now={now}
+        onDelete={jest.fn()}
+        onLoadMore={jest.fn()}
+        onRetryLoadMore={jest.fn()}
+        session={session}
+        strings={strings}
+        theme={theme}
+      />,
+    );
+
+    expect(text).toContain('오늘');
+    expect(text).toContain('엄마');
+    expect(text).toContain('복약 메모');
+    expect(text).toContain('내 기록을 길게 누르면 삭제할 수 있어요.');
+  });
+
+  it('provides 12-hour, 7-day, and 30-day stats with charts', () => {
+    const text = textOf(
+      <StatsScreen
+        events={events}
+        now={now}
+        strings={strings}
+        theme={theme}
+      />,
+    );
+
+    expect(text).toContain('12시간');
+    expect(text).toContain('7일');
+    expect(text).toContain('30일');
+    expect(text).toContain('수유 횟수');
+    expect(text).toContain('수면 시간');
+  });
+
+  it('shows all caregivers, invite sharing, sync, language, and privacy', () => {
+    const memberships: readonly Membership[] = [
+      {
+        userId: userId('user-owner'),
+        groupId: groupId(session.groupId),
+        caregiverRole: 'parent',
+        membershipRole: 'owner',
+        displayName: '엄마',
+        color: '#5FB49C',
+        joinedAt: now - 1000,
+      },
+      {
+        userId: userId('user-member'),
+        groupId: groupId(session.groupId),
+        caregiverRole: 'parent',
+        membershipRole: 'member',
+        displayName: '아빠',
+        color: '#397CB3',
+        joinedAt: now,
+      },
+    ];
+    const text = textOf(
+      <MoreScreen
+        inviteExpiresAt={now + 86_400_000}
+        memberships={memberships}
+        onCreateInvite={jest.fn()}
+        onDeleteAccount={jest.fn()}
+        onRefreshMembers={jest.fn()}
+        onReset={jest.fn()}
+        session={session}
+        strings={strings}
+        theme={theme}
+      />,
+    );
+
+    expect(text).toContain('엄마');
+    expect(text).toContain('아빠');
+    expect(text).toContain('공유');
+    expect(text).toContain('구성원 목록 새로고침');
+    expect(text).toContain('언어');
+    expect(text).toContain('개인정보 처리방침');
+    expect(text).toContain('계정 삭제');
+  });
+});

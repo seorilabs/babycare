@@ -8,20 +8,37 @@ import {
   type MedicationDoseUnit,
   type TemperatureMeasurementSite,
 } from '../../../../packages/product-core/src/domain/care-event.ts';
+import type {CareEventQuery} from '../../../../packages/product-core/src/ports/care-event-repository.ts';
+import type {
+  CareEventMutation,
+  CareEventPushResult,
+  CareEventRemoteObservation,
+  CareEventRemotePage,
+  CareEventRemotePageObservation,
+  CareEventRemoteStorePort,
+} from '../../../../packages/product-core/src/ports/care-event-remote-store.ts';
+import type {CareEventPageRequest} from '../../../../packages/product-core/src/ports/care-event-timeline.ts';
 import {
   type CareGroup,
   type Membership,
 } from '../../../../packages/product-core/src/domain/care-group.ts';
 import {
+  inviteCode,
+  type CareGroupInvite,
+} from '../../../../packages/product-core/src/domain/invite.ts';
+import {
   babyId,
   eventId,
   groupId,
+  inviteId,
   userId,
+  type EventId,
+  type GroupId,
 } from '../../../../packages/product-core/src/domain/ids.ts';
-import {buildDashboardSummary} from '../../../../packages/product-core/src/use_cases/dashboard.ts';
 import {
   careEventMutationId,
   careEventPayloadHash,
+  careEventsEqual,
 } from '../../../../packages/product-data/src/care-event-revision.ts';
 import {currentAitAppCheckToken} from './ait-app-check';
 
@@ -52,7 +69,13 @@ export interface ReadyCareSession {
   readonly group: CareGroup;
   readonly baby: Baby;
   readonly membership: Membership;
+  readonly memberships: readonly Membership[];
   readonly events: readonly CareEvent[];
+}
+
+interface FirestoreListResponse {
+  readonly documents?: readonly FirestoreDocument[];
+  readonly nextPageToken?: string;
 }
 
 type FirestoreValue =
@@ -107,10 +130,6 @@ function enumValue<T extends string>(
     throw new Error(`${label} 응답을 확인하지 못했어요.`);
   }
   return value as T;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : '알 수 없는 오류';
 }
 
 function randomId(prefix: string): string {
@@ -206,12 +225,16 @@ async function jsonResponse(response: Response): Promise<unknown> {
   }
   if (!response.ok) {
     const body = record(value, '서버');
-    const error = body.error;
+    const responseError = body.error;
     const message =
-      error && typeof error === 'object' && 'message' in error
-        ? String(error.message)
+      responseError &&
+      typeof responseError === 'object' &&
+      'message' in responseError
+        ? String(responseError.message)
         : '서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.';
-    throw new Error(message);
+    const error = new Error(message) as Error & {status?: number};
+    error.status = response.status;
+    throw error;
   }
   return value;
 }
@@ -323,13 +346,13 @@ async function accessSession(): Promise<AccessSession> {
   }
 }
 
-async function firestoreRequest(
+async function firestoreRawRequest(
   session: AccessSession,
   path: string,
   init: RequestInit = {},
-): Promise<unknown> {
+): Promise<Response> {
   const appCheckToken = await currentAitAppCheckToken();
-  const response = await fetch(`${FIRESTORE_URL}${path}`, {
+  return fetch(`${FIRESTORE_URL}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${session.idToken}`,
@@ -338,6 +361,14 @@ async function firestoreRequest(
       ...init.headers,
     },
   });
+}
+
+async function firestoreRequest(
+  session: AccessSession,
+  path: string,
+  init: RequestInit = {},
+): Promise<unknown> {
+  const response = await firestoreRawRequest(session, path, init);
   return jsonResponse(response);
 }
 
@@ -346,6 +377,17 @@ async function getDocument(
   path: string,
 ): Promise<FirestoreDocument> {
   return (await firestoreRequest(session, `/${path}`)) as FirestoreDocument;
+}
+
+async function getOptionalDocument(
+  session: AccessSession,
+  path: string,
+): Promise<FirestoreDocument | undefined> {
+  const response = await firestoreRawRequest(session, `/${path}`);
+  if (response.status === 404) {
+    return undefined;
+  }
+  return (await jsonResponse(response)) as FirestoreDocument;
 }
 
 async function discoverGroupId(
@@ -553,24 +595,68 @@ function decodeEvent(data: Record<string, unknown>): CareEvent {
   };
 }
 
-async function loadEvents(
+const MAX_EVENT_PAGES = 10;
+
+async function listCollectionDocuments(
   session: AccessSession,
-  group: CareGroup,
-  baby: Baby,
+  collectionPath: string,
+  options: {readonly orderBy?: string; readonly maxPages?: number} = {},
+): Promise<readonly FirestoreDocument[]> {
+  const documents: FirestoreDocument[] = [];
+  let pageToken: string | undefined;
+  const maxPages = options.maxPages ?? 1;
+  for (let page = 0; page < maxPages; page += 1) {
+    const query = new URLSearchParams({pageSize: '100'});
+    if (options.orderBy) {
+      query.set('orderBy', options.orderBy);
+    }
+    if (pageToken) {
+      query.set('pageToken', pageToken);
+    }
+    const value = (await firestoreRequest(
+      session,
+      `/${collectionPath}?${query.toString()}`,
+    )) as FirestoreListResponse;
+    documents.push(...(value.documents ?? []));
+    pageToken = value.nextPageToken;
+    if (!pageToken) {
+      break;
+    }
+  }
+  return documents;
+}
+
+async function loadAllEvents(
+  session: AccessSession,
+  groupValue: string,
+  babyValue: string,
 ): Promise<readonly CareEvent[]> {
-  const body = record(
-    await firestoreRequest(
+  const documents = await listCollectionDocuments(
     session,
-    `/groups/${group.id}/events?pageSize=100&orderBy=occurredAt%20desc`,
-    ),
-    '돌봄 기록',
+    `groups/${groupValue}/events`,
+    {orderBy: 'occurredAt desc', maxPages: MAX_EVENT_PAGES},
   );
-  const documents = Array.isArray(body.documents)
-    ? (body.documents as FirestoreDocument[])
-    : [];
   return documents
     .map(document => decodeEvent(fromFirestoreDocument(document)))
-    .filter(event => event.babyId === baby.id && event.deletedAt === undefined);
+    .filter(event => event.babyId === babyValue)
+    .sort(
+      (left, right) =>
+        right.occurredAt - left.occurredAt ||
+        right.id.localeCompare(left.id),
+    );
+}
+
+async function loadMemberships(
+  session: AccessSession,
+  group: CareGroup,
+): Promise<readonly Membership[]> {
+  const documents = await listCollectionDocuments(
+    session,
+    `groups/${group.id}/members`,
+  );
+  return documents
+    .map(document => decodeMembership(fromFirestoreDocument(document)))
+    .sort((left, right) => left.joinedAt - right.joinedAt);
 }
 
 async function readySession(
@@ -585,16 +671,19 @@ async function readySession(
   }
   const groupDocument = await getDocument(session, `groups/${foundGroupId}`);
   const group = decodeGroup(fromFirestoreDocument(groupDocument));
-  const [membershipDocument, babyDocument] = await Promise.all([
+  const [membershipDocument, babyDocument, memberships] = await Promise.all([
     getDocument(session, `groups/${group.id}/members/${session.uid}`),
     getDocument(session, `groups/${group.id}/babies/${group.babyIds[0]}`),
+    loadMemberships(session, group),
   ]);
   const membership = decodeMembership(
     fromFirestoreDocument(membershipDocument),
   );
   const baby = decodeBaby(fromFirestoreDocument(babyDocument));
-  const events = await loadEvents(session, group, baby);
-  return {uid: session.uid, group, baby, membership, events};
+  const events = (await loadAllEvents(session, group.id, baby.id)).filter(
+    event => event.deletedAt === undefined,
+  );
+  return {uid: session.uid, group, baby, membership, memberships, events};
 }
 
 export async function bootstrapCareSession(): Promise<ReadyCareSession | undefined> {
@@ -663,7 +752,14 @@ export async function createCareGroup(input: {
     }),
   });
   await saveStoredSession({...session, groupId: group.id});
-  return {uid: session.uid, group, baby, membership, events: []};
+  return {
+    uid: session.uid,
+    group,
+    baby,
+    membership,
+    memberships: [membership],
+    events: [],
+  };
 }
 
 async function callFunction(
@@ -728,7 +824,7 @@ export async function joinCareGroup(input: {
 
 export async function createInviteCode(
   ready: ReadyCareSession,
-): Promise<string> {
+): Promise<CareGroupInvite> {
   const session = await accessSession();
   if (session.uid !== ready.uid) {
     throw new Error('현재 사용자를 다시 확인해 주세요.');
@@ -736,7 +832,19 @@ export async function createInviteCode(
   const result = await callFunction(session, 'createInvite', {
     groupId: ready.group.id,
   });
-  return text(result.code, '초대 코드');
+  const createdAt = finiteNumber(result.createdAt, '초대 생성 시각');
+  const expiresAt = finiteNumber(result.expiresAt, '초대 만료 시각');
+  if (!Number.isSafeInteger(createdAt) || !Number.isSafeInteger(expiresAt)) {
+    throw new Error('초대 코드 시각을 확인하지 못했어요.');
+  }
+  return {
+    id: inviteId(text(result.inviteId, '초대')),
+    groupId: ready.group.id,
+    invitedBy: userId(ready.uid),
+    code: inviteCode(text(result.code, '초대 코드')),
+    createdAt,
+    expiresAt,
+  };
 }
 
 function encodedEvent(event: CareEvent): Record<string, unknown> {
@@ -749,242 +857,417 @@ function encodedEvent(event: CareEvent): Record<string, unknown> {
   };
 }
 
-async function commitNewEvent(
-  session: AccessSession,
-  event: CareEvent,
-): Promise<void> {
-  const payloadHash = careEventPayloadHash(event);
-  const mutationId = careEventMutationId(event);
-  const payload = encodedEvent(event);
-  const root = `${FIRESTORE_DOCUMENT_ROOT}/groups/${event.groupId}`;
-  const writes: Record<string, unknown>[] = [
-    {
-      update: {
-        name: `${root}/events/${event.id}`,
-        fields: toFirestoreFields(payload),
-      },
-      currentDocument: {exists: false},
-    },
-  ];
-  if (event.kind === 'sleep' && event.endedAt === undefined) {
-    writes.push({
-      update: {
-        name: `${root}/activeSleeps/${event.babyId}`,
-        fields: toFirestoreFields({
-          groupId: event.groupId,
-          babyId: event.babyId,
-          eventId: event.id,
-          caregiverId: event.caregiverId,
-          startedAt: event.startedAt,
-          createdAt: event.createdAt,
-        }),
-      },
-      currentDocument: {exists: false},
-    });
-  }
-  writes.push({
-    update: {
-      name: `${root}/eventMutationReceipts/${mutationId}`,
-      fields: toFirestoreFields({
-        id: mutationId,
-        groupId: event.groupId,
-        babyId: event.babyId,
-        eventId: event.id,
-        revision: event.revision,
-        payloadHash,
-        kind: 'create',
-        actorUid: session.uid,
-        payload,
-      }),
-    },
-    updateTransforms: [
-      {fieldPath: 'appliedAt', setToServerValue: 'REQUEST_TIME'},
-    ],
-    currentDocument: {exists: false},
-  });
-  await firestoreRequest(session, ':commit', {
-    method: 'POST',
-    body: JSON.stringify({writes}),
-  });
+function remoteFailure(error: unknown): {
+  readonly remoteError: {
+    readonly code:
+      | 'retryable'
+      | 'unauthenticated'
+      | 'permission_denied'
+      | 'invalid';
+    readonly cause: unknown;
+  };
+} {
+  const status =
+    error && typeof error === 'object' && 'status' in error
+      ? Number(error.status)
+      : undefined;
+  const code =
+    status === 401
+      ? 'unauthenticated'
+      : status === 403
+        ? 'permission_denied'
+        : status === 400 || status === 422
+          ? 'invalid'
+          : 'retryable';
+  return {remoteError: {code, cause: error}};
 }
 
-async function endActiveSleep(
+function eventMatchesQuery(event: CareEvent, query: CareEventQuery): boolean {
+  return (
+    event.groupId === query.groupId &&
+    event.babyId === query.babyId &&
+    (query.includeDeleted === true || event.deletedAt === undefined) &&
+    (query.from === undefined || event.occurredAt >= query.from) &&
+    (query.to === undefined || event.occurredAt < query.to) &&
+    (!query.kinds || query.kinds.includes(event.kind))
+  );
+}
+
+function sortedEvents(events: readonly CareEvent[]): readonly CareEvent[] {
+  return [...events].sort(
+    (left, right) =>
+      right.occurredAt - left.occurredAt ||
+      right.id.localeCompare(left.id),
+  );
+}
+
+function receiptMatches(
+  document: FirestoreDocument,
+  mutation: CareEventMutation,
+  actorUid: string,
+): boolean {
+  const data = fromFirestoreDocument(document);
+  return (
+    data.id === mutation.id &&
+    data.groupId === mutation.event.groupId &&
+    data.babyId === mutation.event.babyId &&
+    data.eventId === mutation.event.id &&
+    data.revision === mutation.event.revision &&
+    data.payloadHash === mutation.payloadHash &&
+    data.kind === mutation.kind &&
+    data.actorUid === actorUid
+  );
+}
+
+async function activeSleepFromLock(
   session: AccessSession,
-  event: CareEvent & {readonly kind: 'sleep'},
-): Promise<CareEvent> {
-  let source: FirestoreDocument;
-  try {
-    source = await getDocument(
-      session,
-      `groups/${event.groupId}/events/${event.id}`,
-    );
-  } catch (error) {
-    throw new Error(`수면 기록을 다시 확인하지 못했어요: ${errorMessage(error)}`);
+  groupValue: GroupId,
+  babyValue: string,
+): Promise<CareEvent | undefined> {
+  const lock = await getOptionalDocument(
+    session,
+    `groups/${groupValue}/activeSleeps/${babyValue}`,
+  );
+  if (!lock) {
+    return undefined;
   }
-  const endedAt = Math.max(Date.now(), event.startedAt + 1);
-  const updated: CareEvent = {
-    ...event,
-    endedAt,
-    updatedAt: endedAt,
-    revision: event.revision + 1,
-  };
-  const payloadHash = careEventPayloadHash(updated);
-  const mutationId = careEventMutationId(updated);
-  const payload = encodedEvent(updated);
-  const root = `${FIRESTORE_DOCUMENT_ROOT}/groups/${event.groupId}`;
-  try {
-    await firestoreRequest(session, ':commit', {
-      method: 'POST',
-      body: JSON.stringify({
-        writes: [
+  const lockData = fromFirestoreDocument(lock);
+  const lockedEventId = text(lockData.eventId, '활성 수면 기록');
+  const document = await getOptionalDocument(
+    session,
+    `groups/${groupValue}/events/${lockedEventId}`,
+  );
+  return document
+    ? decodeEvent(fromFirestoreDocument(document))
+    : undefined;
+}
+
+/**
+ * AppsInToss Firestore REST transport. UI writes are placed behind the shared
+ * durable local outbox; this class only owns server acknowledgement and polling.
+ */
+export class AitFirestoreCareEventRemoteStore
+  implements CareEventRemoteStorePort
+{
+  readonly #actorUid: string;
+
+  constructor(actorUid: string) {
+    this.#actorUid = actorUid;
+  }
+
+  async push(mutation: CareEventMutation): Promise<CareEventPushResult> {
+    const event = mutation.event;
+    if (
+      (event.caregiverId !== this.#actorUid && mutation.kind !== 'end_sleep') ||
+      mutation.id !== careEventMutationId(event) ||
+      mutation.payloadHash !== careEventPayloadHash(event) ||
+      mutation.baseRevision !== event.revision - 1
+    ) {
+      throw remoteFailure(new Error('돌봄 기록 변경 요청이 올바르지 않아요.'));
+    }
+    try {
+      const session = await accessSession();
+      if (session.uid !== this.#actorUid) {
+        throw Object.assign(new Error('현재 사용자를 다시 확인해 주세요.'), {
+          status: 401,
+        });
+      }
+      const root = `${FIRESTORE_DOCUMENT_ROOT}/groups/${event.groupId}`;
+      const eventPath = `groups/${event.groupId}/events/${event.id}`;
+      const receiptPath =
+        `groups/${event.groupId}/eventMutationReceipts/${mutation.id}`;
+      const [source, receipt] = await Promise.all([
+        getOptionalDocument(session, eventPath),
+        getOptionalDocument(session, receiptPath),
+      ]);
+      const remote = source
+        ? decodeEvent(fromFirestoreDocument(source))
+        : undefined;
+      if (receipt) {
+        if (!receiptMatches(receipt, mutation, session.uid) || !remote) {
+          throw Object.assign(new Error('동기화 확인 정보가 올바르지 않아요.'), {
+            status: 422,
+          });
+        }
+        return remote.revision === event.revision && careEventsEqual(remote, event)
+          ? {kind: 'already_applied', remote}
+          : {kind: 'revision_conflict', remote};
+      }
+      if (mutation.kind === 'create') {
+        if (remote) {
+          return {kind: 'revision_conflict', remote};
+        }
+      } else if (!remote || remote.revision !== mutation.baseRevision) {
+        if (remote) {
+          return {kind: 'revision_conflict', remote};
+        }
+        throw Object.assign(new Error('서버 돌봄 기록을 찾지 못했어요.'), {
+          status: 422,
+        });
+      }
+
+      const lockEvent =
+        event.kind === 'sleep'
+          ? await activeSleepFromLock(session, event.groupId, event.babyId)
+          : undefined;
+      if (
+        mutation.kind === 'create' &&
+        event.kind === 'sleep' &&
+        event.endedAt === undefined &&
+        lockEvent &&
+        lockEvent.id !== event.id &&
+        lockEvent.kind === 'sleep' &&
+        lockEvent.endedAt === undefined
+      ) {
+        return {kind: 'active_sleep_conflict', remoteActiveSleep: lockEvent};
+      }
+
+      const payload = encodedEvent(event);
+      const writes: Record<string, unknown>[] = [
         {
           update: {
             name: `${root}/events/${event.id}`,
             fields: toFirestoreFields(payload),
           },
-          currentDocument: {updateTime: source.updateTime},
+          currentDocument:
+            mutation.kind === 'create'
+              ? {exists: false}
+              : {updateTime: source?.updateTime},
         },
-        {
-          delete: `${root}/activeSleeps/${event.babyId}`,
-          currentDocument: {exists: true},
-        },
-        {
+      ];
+      if (
+        mutation.kind === 'create' &&
+        event.kind === 'sleep' &&
+        event.endedAt === undefined
+      ) {
+        writes.push({
           update: {
-            name: `${root}/eventMutationReceipts/${mutationId}`,
+            name: `${root}/activeSleeps/${event.babyId}`,
             fields: toFirestoreFields({
-              id: mutationId,
               groupId: event.groupId,
               babyId: event.babyId,
               eventId: event.id,
-              revision: updated.revision,
-              payloadHash,
-              kind: 'end_sleep',
-              actorUid: session.uid,
-              payload,
+              caregiverId: event.caregiverId,
+              startedAt: event.startedAt,
+              createdAt: event.createdAt,
             }),
           },
-          updateTransforms: [
-            {fieldPath: 'appliedAt', setToServerValue: 'REQUEST_TIME'},
-          ],
           currentDocument: {exists: false},
+        });
+      } else if (lockEvent?.id === event.id) {
+        writes.push({
+          delete: `${root}/activeSleeps/${event.babyId}`,
+          currentDocument: {exists: true},
+        });
+      }
+      writes.push({
+        update: {
+          name: `${root}/eventMutationReceipts/${mutation.id}`,
+          fields: toFirestoreFields({
+            id: mutation.id,
+            groupId: event.groupId,
+            babyId: event.babyId,
+            eventId: event.id,
+            revision: event.revision,
+            payloadHash: mutation.payloadHash,
+            kind: mutation.kind,
+            actorUid: session.uid,
+            payload,
+          }),
         },
+        updateTransforms: [
+          {fieldPath: 'appliedAt', setToServerValue: 'REQUEST_TIME'},
         ],
-      }),
-    });
-  } catch (error) {
-    throw new Error(`수면 종료를 저장하지 못했어요: ${errorMessage(error)}`);
-  }
-  return updated;
-}
-
-export type AitCareRecordInput =
-  | 'feeding'
-  | 'diaper'
-  | 'sleep'
-  | {
-      readonly kind: 'temperature';
-      readonly temperatureCelsius: number;
-      readonly measurementSite: TemperatureMeasurementSite;
+        currentDocument: {exists: false},
+      });
+      await firestoreRequest(session, ':commit', {
+        method: 'POST',
+        body: JSON.stringify({writes}),
+      });
+      return {kind: 'applied', remote: event};
+    } catch (error) {
+      if (error && typeof error === 'object' && 'remoteError' in error) {
+        throw error;
+      }
+      const status =
+        error && typeof error === 'object' && 'status' in error
+          ? Number(error.status)
+          : undefined;
+      if (status === 409 || status === 412) {
+        try {
+          const session = await accessSession();
+          const [source, receipt] = await Promise.all([
+            getOptionalDocument(
+              session,
+              `groups/${event.groupId}/events/${event.id}`,
+            ),
+            getOptionalDocument(
+              session,
+              `groups/${event.groupId}/eventMutationReceipts/${mutation.id}`,
+            ),
+          ]);
+          const remote = source
+            ? decodeEvent(fromFirestoreDocument(source))
+            : undefined;
+          if (receipt && remote && receiptMatches(receipt, mutation, session.uid)) {
+            return remote.revision === event.revision &&
+              careEventsEqual(remote, event)
+              ? {kind: 'already_applied', remote}
+              : {kind: 'revision_conflict', remote};
+          }
+          const active =
+            event.kind === 'sleep'
+              ? await activeSleepFromLock(
+                  session,
+                  event.groupId,
+                  event.babyId,
+                )
+              : undefined;
+          if (
+            mutation.kind === 'create' &&
+            event.kind === 'sleep' &&
+            event.endedAt === undefined &&
+            active?.kind === 'sleep' &&
+            active.endedAt === undefined &&
+            active.id !== event.id
+          ) {
+            return {kind: 'active_sleep_conflict', remoteActiveSleep: active};
+          }
+          if (remote) {
+            return {kind: 'revision_conflict', remote};
+          }
+        } catch {
+          // Preserve the original precondition failure when reconciliation fails.
+        }
+      }
+      throw remoteFailure(error);
     }
-  | {
-      readonly kind: 'medication';
-      readonly medicationName: string;
-      readonly medicationCategory: MedicationCategory;
-      readonly activeIngredient: MedicationActiveIngredient;
-      readonly doseAmount: number;
-      readonly doseUnit: MedicationDoseUnit;
-      readonly minimumIntervalMinutes: number;
-    };
+  }
 
-export async function recordQuickCareEvent(
-  ready: ReadyCareSession,
-  input: AitCareRecordInput,
-): Promise<ReadyCareSession> {
-  const session = await accessSession();
-  const kind = typeof input === 'string' ? input : input.kind;
-  const activeSleep = ready.events.find(
-    (event): event is CareEvent & {readonly kind: 'sleep'} =>
-      event.kind === 'sleep' && event.endedAt === undefined,
-  );
-  if (kind === 'sleep' && activeSleep) {
-    const updated = await endActiveSleep(session, activeSleep);
+  async findById(
+    groupValue: GroupId,
+    targetEventId: EventId,
+  ): Promise<CareEvent | undefined> {
+    try {
+      const session = await accessSession();
+      const document = await getOptionalDocument(
+        session,
+        `groups/${groupValue}/events/${targetEventId}`,
+      );
+      return document
+        ? decodeEvent(fromFirestoreDocument(document))
+        : undefined;
+    } catch (error) {
+      throw remoteFailure(error);
+    }
+  }
+
+  async list(query: CareEventQuery): Promise<readonly CareEvent[]> {
+    try {
+      const session = await accessSession();
+      const all = await loadAllEvents(session, query.groupId, query.babyId);
+      const matching = sortedEvents(all.filter(event => eventMatchesQuery(event, query)));
+      return query.limit === undefined
+        ? matching
+        : matching.slice(0, query.limit);
+    } catch (error) {
+      throw remoteFailure(error);
+    }
+  }
+
+  async fetchPage(request: CareEventPageRequest): Promise<CareEventRemotePage> {
+    const all = await this.list({
+      groupId: request.groupId,
+      babyId: request.babyId,
+      includeDeleted: true,
+      ...(request.from !== undefined ? {from: request.from} : {}),
+      ...(request.to !== undefined ? {to: request.to} : {}),
+      ...(request.kinds ? {kinds: request.kinds} : {}),
+    });
+    const after = request.after
+      ? all.filter(
+          event =>
+            event.occurredAt < request.after!.occurredAt ||
+            (event.occurredAt === request.after!.occurredAt &&
+              event.id.localeCompare(request.after!.eventId) < 0),
+        )
+      : all;
+    const events = after.slice(0, request.pageSize);
+    const last = events.at(-1);
     return {
-      ...ready,
-      events: ready.events.map(event =>
-        event.id === updated.id ? updated : event,
-      ),
+      events,
+      hasMore: after.length > request.pageSize,
+      ...(last
+        ? {endCursor: {occurredAt: last.occurredAt, eventId: last.id}}
+        : {}),
     };
   }
 
-  const now = Date.now();
-  const id = eventId(randomId('event'));
-  const common = {
-    groupId: ready.group.id,
-    babyId: ready.baby.id,
-    caregiverId: userId(ready.uid),
-  };
-  let event: CareEvent;
-  if (input === 'feeding') {
-    event = createCareEvent(
-      {
-        ...common,
-        kind: 'feeding',
-        feedingType: 'formula',
-        volumeMl: 120,
-        occurredAt: now,
-      },
-      {id, now},
-    );
-  } else if (input === 'diaper') {
-    event = createCareEvent(
-      {...common, kind: 'diaper', diaperType: 'wet', occurredAt: now},
-      {id, now},
-    );
-  } else if (input === 'sleep') {
-    event = createCareEvent(
-      {...common, kind: 'sleep', sleepType: 'nap', startedAt: now},
-      {id, now},
-    );
-  } else if (input.kind === 'temperature') {
-    event = createCareEvent(
-      {
-        ...common,
-        ...input,
-        occurredAt: now,
-      },
-      {id, now},
-    );
-  } else {
-    event = createCareEvent(
-      {
-        ...common,
-        ...input,
-        occurredAt: now,
-      },
-      {id, now},
-    );
+  observe(
+    query: CareEventQuery,
+    listener: (observation: CareEventRemoteObservation) => void,
+  ): () => void {
+    let active = true;
+    let running = false;
+    const poll = async () => {
+      if (!active || running) {
+        return;
+      }
+      running = true;
+      try {
+        listener({kind: 'server_snapshot', events: await this.list(query)});
+      } catch (error) {
+        const failure = remoteFailure(error).remoteError;
+        listener({kind: 'error', error: failure});
+      } finally {
+        running = false;
+      }
+    };
+    void poll();
+    const timer = setInterval(() => void poll(), 15_000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
   }
-  await commitNewEvent(session, event);
-  return {...ready, events: [event, ...ready.events]};
+
+  observePage(
+    request: CareEventPageRequest,
+    listener: (observation: CareEventRemotePageObservation) => void,
+  ): () => void {
+    let active = true;
+    let running = false;
+    const poll = async () => {
+      if (!active || running) {
+        return;
+      }
+      running = true;
+      try {
+        listener({kind: 'server_page', page: await this.fetchPage(request)});
+      } catch (error) {
+        listener({kind: 'error', error: remoteFailure(error).remoteError});
+      } finally {
+        running = false;
+      }
+    };
+    void poll();
+    const timer = setInterval(() => void poll(), 15_000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }
 }
 
 export async function reloadCareSession(
   ready: ReadyCareSession,
 ): Promise<ReadyCareSession> {
   const session = await accessSession();
-  const events = await loadEvents(session, ready.group, ready.baby);
-  return {...ready, events};
-}
-
-export function todaySummary(ready: ReadyCareSession) {
-  const now = Date.now();
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  return buildDashboardSummary(
-    ready.events,
-    {from: start.getTime(), to: start.getTime() + 24 * 60 * 60 * 1_000},
-    now,
-  );
+  const latest = await readySession({...session, groupId: ready.group.id});
+  if (!latest || latest.group.id !== ready.group.id) {
+    throw new Error('돌봄 그룹을 다시 불러오지 못했어요.');
+  }
+  return latest;
 }
 
 export async function deleteCareAccount(ready: ReadyCareSession): Promise<void> {

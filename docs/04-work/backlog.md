@@ -28,8 +28,8 @@
 | 결정 대기 | 아동 정보·계정·그룹 공유·클라우드 저장 정책 적합성 확인 | 공식 정책/콘솔 기준 근거 기록 |
 | 완료 | AppsInToss 영구 `appName` 확정 | Console 승인값 `babynest` readback 완료(2026-08-04) |
 | 구현·운영 API E2E 완료·신규 기록 실기기 대기 | `apps/ait` Granite RN + TDS 핵심 흐름 | 수유·기저귀·수면·체온·복약·홈·타임라인·통계·초대·삭제 구현. 기존 흐름 `.ait` local build와 운영 E2E 통과, 체온·복약은 새 후보 sandbox QA 필요 |
-| App Check backend 운영 연결 완료·실기기 QA 대기 | AIT auth/storage/Firestore adapter | Platform/Firebase Auth REST, AppsInToss Storage session, Firestore REST/callable production 합성 2계정 E2E 통과. Toss Login·mTLS secret version 1·mint Function ACTIVE·전체 요청 header 연결 완료. 유효 Toss code token QA와 realtime/offline queue는 남음 |
-| 새 비공개 배포·test push 완료·runtime QA 대기 | AIT 실제 기기 sandbox QA | `main@2704ff7`, `20260811-6` / `019fee32-8415-761c-be38-9c5769aa00b2`, `CREATED`, `isTested=true`, `deployed=false`. 로그인된 실제 Toss 설치 기기에서 App Check·Storage·초대·기록·재실행·네트워크 복귀 검증 |
+| 기능 패리티·local-first 구현 완료·실기기 QA 대기 | AIT auth/storage/Firestore adapter | mobile과 같은 event envelope v3/outbox를 AppsInToss Storage에 연결하고 REST mutation receipt·active lock·15초 polling·resume sync를 구현했다. Toss Login·mTLS App Check와 전체 요청 header도 운영 연결됨. 남음: 실제 Toss 설치 기기의 재실행·offline→online·두 계정 충돌 QA |
+| 패리티 로컬 후보 빌드 완료·콘솔 업로드/QA 대기 | AIT 실제 기기 sandbox QA | 기존 날짜·키보드 업로드 후보 `20260811-7` / `019ff016-36a2-75bc-a29e-ea987c0bfed4`, `CREATED`, `isTested=true`, `deployed=false`. 패리티 소스는 로컬 `.ait` `019ff122-6c76-7f8d-81b5-9a92efed2cc5`, SHA-256 `6d5e2fc10ec60118689ca7b42e70cb0b3cf68f10be6191b3b7f5c52a3a6fd69c`까지 검증했다. 남음: 새 비공개 업로드와 로그인된 실제 Toss 설치 기기의 상세 기록·Storage·초대·삭제·재실행·네트워크 복귀 검증 |
 
 ## P1 — Release candidate 준비
 
