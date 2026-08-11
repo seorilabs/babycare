@@ -28,8 +28,8 @@
 | 결정 대기 | 아동 정보·계정·그룹 공유·클라우드 저장 정책 적합성 확인 | 공식 정책/콘솔 기준 근거 기록 |
 | 완료 | AppsInToss 영구 `appName` 확정 | Console 승인값 `babynest` readback 완료(2026-08-04) |
 | 구현·운영 API E2E 완료·신규 기록 실기기 대기 | `apps/ait` Granite RN + TDS 핵심 흐름 | 수유·기저귀·수면·체온·복약·홈·타임라인·통계·초대·삭제 구현. 기존 흐름 `.ait` local build와 운영 E2E 통과, 체온·복약은 새 후보 sandbox QA 필요 |
-| App Check source 완료·운영 연결 대기 | AIT auth/storage/Firestore adapter | Platform/Firebase Auth REST, AppsInToss Storage session, Firestore REST/callable production 합성 2계정 E2E 통과. `appLogin`·mTLS custom provider와 전체 요청 header 구현 완료. mTLS secret·Function 배포·실제 Toss QA, realtime/offline queue는 남음 |
-| 기존 비공개 배포 호환 중단·교체 대기 | AIT 실제 기기 sandbox QA | `main@707df10` deployment `019fd827-571d-791d-bd50-08f2da35afec`는 App Check header가 없어 현재 보호 API에서 거부됨. attestation 포함 새 deployment로 Storage·초대·기록·재실행·네트워크 복귀 검증 |
+| App Check backend 운영 연결 완료·실기기 QA 대기 | AIT auth/storage/Firestore adapter | Platform/Firebase Auth REST, AppsInToss Storage session, Firestore REST/callable production 합성 2계정 E2E 통과. Toss Login·mTLS secret version 1·mint Function ACTIVE·전체 요청 header 연결 완료. 유효 Toss code token QA와 realtime/offline queue는 남음 |
+| 새 비공개 배포·test push 완료·runtime QA 대기 | AIT 실제 기기 sandbox QA | `main@2704ff7`, `20260811-6` / `019fee32-8415-761c-be38-9c5769aa00b2`, `CREATED`, `isTested=true`, `deployed=false`. 로그인된 실제 Toss 설치 기기에서 App Check·Storage·초대·기록·재실행·네트워크 복귀 검증 |
 
 ## P1 — Release candidate 준비
 
@@ -40,7 +40,7 @@
 | 내부 배포 완료·실기기 QA 대기 | iOS signing, archive/export와 TestFlight | TestFlight 1.0.8 `IN_BETA_TESTING`, 2인 실제 기기 QA 남음 |
 | 대기 | 개인정보 처리방침·Data safety·Privacy Labels·연령등급 | 실제 SDK/데이터 흐름과 일치해야 함 |
 | 대기 | 계정·그룹 완전 삭제, 데이터 export, owner 이전 | privileged workflow와 재인증 필요. 미구현 export는 제품 UI에 노출하지 않음 |
-| 진행 | 3마켓 icon/thumbnail/screenshots/listing/review note | Android/iOS 자산과 AIT exact-size 후보 완료. AIT sandbox 실화면 교체·Console 등록, policy 설문 남음 |
+| 진행 | 3마켓 icon/thumbnail/screenshots/listing/review note | Android/iOS 자산과 AIT exact-size·sandbox 실화면 교체 완료. AIT Console 업로드·readback과 policy 설문 남음 |
 | 대기 | 실제 project App Check/IAM/Rules/indexes 통합 QA | Emulator 통과만으로 완료 처리하지 않음 |
 | 외부 입력 대기 | store 제출·production promotion | 진행 승인 완료. 국가 availability·법적 사업자 선택, Console privacy/policy 답변과 실기기 QA 필요 |
 
@@ -53,7 +53,7 @@
 | 구현·로컬 검증 완료·운영 설정 대기 | 보상형 광고 1개(통계 상세) | 모바일 AdMob+UMP, AIT 통합 리워드, 보상 완료 후 24h unlock, 기록 루프 무광고. 운영 광고 ID·UMP·마켓 설문·실기기 QA 남음 |
 | 아이디어·데이터 대기 | v2 또래 비교 인사이트(월령 밴드 익명 집계) | unlock 보상을 또래 비교로 격상. cohort당 최소 N명(k-익명), 비의료 프레이밍, 백엔드 집계 job + 개인정보방침 "익명 집계 벤치마크" 고지. 데이터 볼륨 확보 후 |
 | 완료 | 비용 가드레일: GCP 예산 알림 | `seorilabs-babycare` 월 ₩20,000, 50/90/100% 이메일 알림 설정됨(2026-07-19) |
-| mobile 완료·AIT 운영 연결 대기 | 확장 전 App Check 활성화 | production callable·Platform 강제 완료. AIT mTLS attestation source 완료, secret·Function 배포·실제 Toss QA pending |
+| mobile·AIT backend 완료·AIT 실기기 QA 대기 | 확장 전 App Check 활성화 | production callable·Platform 강제와 AIT mTLS secret·mint Function·새 private 후보 연결 완료. 실제 Toss token 발급·갱신 QA pending |
 
 ## MVP 밖 — 다음 Planning 후보
 

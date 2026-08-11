@@ -4,7 +4,11 @@
 
 - 기존 AIT 비공개 번들은 Platform custom-token, Firestore REST, Functions 요청에 App Check header가 없어 운영 강제 경계에서 `앱 확인 token이 필요해요`로 거부됐다. mobile 보호를 낮추는 대신 AIT `appLogin` 일회용 인가 코드를 서버에서 mTLS로 Toss token·사용자 API에 교환하고 성공 시 Firebase App Check custom token을 발급하는 경계를 구현했다.
 - AIT는 token을 만료 시각과 함께 AppsInToss Storage에 보관하고 만료 5분 전에 갱신하며 Platform custom-token·Firestore·callable·계정 삭제 요청에 `X-Firebase-AppCheck`를 보낸다. Toss access token과 `userKey`는 저장·응답·로그에 남기지 않는다.
-- source·typecheck·Functions/AIT unit test는 완료했다. mTLS 인증서 발급·app별 credential backup·Secret Manager 연결, Function production 배포, 새 `.ait` 비공개 업로드와 실제 Toss 앱 QA는 외부 운영 gate로 남았다.
+- source·typecheck·Functions/AIT unit test와 전체 static·Emulator gate를 통과했고 PR #52를 squash merge해 `main@2704ff7`에 반영했다.
+- Toss Login은 최소 필수 `USER_NAME`과 공용 이용약관만 설정했다. mTLS 인증서 `babynestAppCheckProd20260811`을 발급해 app catalog `app/babycare/apps-in-toss/mtls-client`로 등록했고, local·BeeStation 암호화 backup/restore, cert/key 일치와 expiry `2027-09-05`를 확인했다. 원본 다운로드 ZIP은 삭제 승인을 받지 않아 로컬 Downloads에 남겼다.
+- Secret Manager의 cert/key version 1과 runtime SA 자기 자신 대상 `roles/iam.serviceAccountTokenCreator`를 연결했다. `mintAitAppCheckToken` revision `mintaitappchecktoken-00001-law`는 ACTIVE이고 callable 접근 계약 readback을 통과했다. GET 405와 가짜 code POST 401 `verification-failed`로 HTTP/mTLS 거부 경계를 확인했다.
+- 같은 main 소스의 `.ait` SHA-256 `02a268b0dae3ff8f8ae0817e319b78b0c1ec511da7bbc0133c186fc4465e4b26`를 `20260811-6` / `019fee32-8415-761c-be38-9c5769aa00b2`로 업로드했다. Console은 `CREATED`, `isTested=true`, `deployed=false`다. `20260811-5` / `019fee31-b55a-7bde-907e-cb8125a5d3fe`는 파일 PUT 없는 `PREPARE` 흔적이며 사용하지 않는다.
+- Android `Seeker`에는 운영 Toss가 아닌 `viva.republica.toss.test` 셸만 설치돼 scheme 입력 화면까지만 확인했다. 유효 Toss 로그인 code 요청과 App Check token 발급 로그가 없어 실제 Toss runtime QA, Storage·초대·기록·재실행·네트워크 복귀는 완료 처리하지 않았다. AppsInToss 검수 제출·production 공개도 수행하지 않았다.
 
 ## 2026-08-11 — Google Play production track 심사 중 readback
 
