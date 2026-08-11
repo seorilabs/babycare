@@ -1,7 +1,10 @@
 import {createRoute} from '@granite-js/react-native';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -18,6 +21,11 @@ import {
   nextMedicationTime,
   type MedicationEvent,
 } from '../../../../packages/product-core/src/index.ts';
+
+import {
+  BirthDatePicker,
+  isSelectableBirthDate,
+} from '../components/birth-date-picker';
 
 import {
   bootstrapCareSession,
@@ -41,6 +49,46 @@ import {
 export const Route = createRoute('/', {component: BabyNestHome});
 
 type Tab = 'home' | 'timeline' | 'stats' | 'more';
+type InputFocusHandler = NonNullable<
+  React.ComponentProps<typeof TextInput>['onFocus']
+>;
+type KeyboardScrollTarget = Parameters<
+  ScrollView['scrollResponderScrollNativeHandleToKeyboard']
+>[0];
+
+function useKeyboardAwareScroll() {
+  const scrollViewRef = useRef<ScrollView | null>(null);
+  const focusedInputRef = useRef<KeyboardScrollTarget | null>(null);
+
+  const revealFocusedInput = useCallback(() => {
+    if (focusedInputRef.current === null) {
+      return;
+    }
+    scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+      focusedInputRef.current,
+      24,
+      true,
+    );
+  }, []);
+
+  useEffect(() => {
+    const subscription = Keyboard.addListener(
+      'keyboardDidShow',
+      revealFocusedInput,
+    );
+    return () => subscription.remove();
+  }, [revealFocusedInput]);
+
+  const onInputFocus = useCallback<InputFocusHandler>(
+    event => {
+      focusedInputRef.current = event.target;
+      requestAnimationFrame(revealFocusedInput);
+    },
+    [revealFocusedInput],
+  );
+
+  return {scrollViewRef, onInputFocus};
+}
 
 const TABS: readonly {readonly id: Tab; readonly label: string}[] = [
   {id: 'home', label: '홈'},
@@ -139,14 +187,18 @@ function Onboarding({onReady}: {readonly onReady: (value: ReadyCareSession) => v
   const [inviteCode, setInviteCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const {scrollViewRef, onInputFocus} = useKeyboardAwareScroll();
 
   const submit = useCallback(async () => {
     if (!caregiverName.trim()) {
       setError('양육자 이름을 입력해 주세요.');
       return;
     }
-    if (mode === 'create' && (!babyName.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate))) {
-      setError('아기 이름과 생년월일을 YYYY-MM-DD 형식으로 입력해 주세요.');
+    if (
+      mode === 'create' &&
+      (!babyName.trim() || !isSelectableBirthDate(birthDate, new Date()))
+    ) {
+      setError('아기 이름과 생년월일을 확인해 주세요.');
       return;
     }
     if (mode === 'join' && inviteCode.replace(/\s/g, '').length !== 6) {
@@ -177,7 +229,15 @@ function Onboarding({onReady}: {readonly onReady: (value: ReadyCareSession) => v
   }, [babyName, birthDate, caregiverName, inviteCode, mode, onReady]);
 
   return (
-    <ScrollView contentContainerStyle={styles.onboardingContent} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'android' ? 'height' : undefined}
+      style={styles.keyboardAvoider}>
+      <ScrollView
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        contentContainerStyle={styles.onboardingContent}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        keyboardShouldPersistTaps="handled"
+        ref={scrollViewRef}>
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>함께봄</Text>
         <Text style={styles.title}>함께 남기는{`\n`}아기 돌봄 기록</Text>
@@ -211,6 +271,7 @@ function Onboarding({onReady}: {readonly onReady: (value: ReadyCareSession) => v
           accessibilityLabel="양육자 이름"
           autoCapitalize="none"
           onChangeText={setCaregiverName}
+          onFocus={onInputFocus}
           placeholder="예: 엄마"
           placeholderTextColor="#8A9A94"
           style={styles.input}
@@ -222,21 +283,14 @@ function Onboarding({onReady}: {readonly onReady: (value: ReadyCareSession) => v
             <TextInput
               accessibilityLabel="아기 이름"
               onChangeText={setBabyName}
+              onFocus={onInputFocus}
               placeholder="예: 지안"
               placeholderTextColor="#8A9A94"
               style={styles.input}
               value={babyName}
             />
             <Text style={styles.fieldLabel}>생년월일</Text>
-            <TextInput
-              accessibilityLabel="아기 생년월일"
-              keyboardType="numbers-and-punctuation"
-              onChangeText={setBirthDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#8A9A94"
-              style={styles.input}
-              value={birthDate}
-            />
+            <BirthDatePicker onChange={setBirthDate} value={birthDate} />
           </>
         ) : (
           <>
@@ -246,6 +300,7 @@ function Onboarding({onReady}: {readonly onReady: (value: ReadyCareSession) => v
               autoCapitalize="characters"
               maxLength={6}
               onChangeText={setInviteCode}
+              onFocus={onInputFocus}
               placeholder="6자리 코드"
               placeholderTextColor="#8A9A94"
               style={styles.input}
@@ -263,7 +318,8 @@ function Onboarding({onReady}: {readonly onReady: (value: ReadyCareSession) => v
       <Text style={styles.disclaimer}>
         함께봄은 성인 양육자용 기록 도구이며 의료 판단이나 진단을 제공하지 않습니다.
       </Text>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -271,10 +327,12 @@ function HomeTab({
   ready,
   busy,
   onRecord,
+  onInputFocus,
 }: {
   readonly ready: ReadyCareSession;
   readonly busy: boolean;
   readonly onRecord: (input: AitCareRecordInput) => Promise<boolean>;
+  readonly onInputFocus: InputFocusHandler;
 }) {
   const [healthForm, setHealthForm] = useState<'temperature' | 'medication'>();
   const [temperature, setTemperature] = useState('36.5');
@@ -466,6 +524,7 @@ function HomeTab({
           <TextInput
             keyboardType="decimal-pad"
             onChangeText={setTemperature}
+            onFocus={onInputFocus}
             style={styles.input}
             value={temperature}
           />
@@ -536,9 +595,9 @@ function HomeTab({
             })}
           </View>
           <Text style={styles.fieldLabel}>약 이름</Text>
-          <TextInput onChangeText={setMedicationName} placeholder="제품명 또는 처방 약 이름" style={styles.input} value={medicationName} />
+          <TextInput onChangeText={setMedicationName} onFocus={onInputFocus} placeholder="제품명 또는 처방 약 이름" style={styles.input} value={medicationName} />
           <Text style={styles.fieldLabel}>실제로 먹인 양</Text>
-          <TextInput keyboardType="decimal-pad" onChangeText={setDoseAmount} placeholder="예: 3.5" style={styles.input} value={doseAmount} />
+          <TextInput keyboardType="decimal-pad" onChangeText={setDoseAmount} onFocus={onInputFocus} placeholder="예: 3.5" style={styles.input} value={doseAmount} />
           <View style={styles.compactChoices}>
             {(['ml', 'mg', 'tablet', 'drop'] as const).map(value => (
               <Pressable
@@ -552,7 +611,7 @@ function HomeTab({
             ))}
           </View>
           <Text style={styles.fieldLabel}>최소 복용 간격 시간</Text>
-          <TextInput keyboardType="decimal-pad" onChangeText={setIntervalHours} placeholder="제품 라벨 또는 의료진 안내" style={styles.input} value={intervalHours} />
+          <TextInput keyboardType="decimal-pad" onChangeText={setIntervalHours} onFocus={onInputFocus} placeholder="제품 라벨 또는 의료진 안내" style={styles.input} value={intervalHours} />
           <Text style={styles.cardMeta}>제품 라벨이나 의료진 안내에서 확인한 간격을 입력하세요.</Text>
           <View style={styles.scheduleBox}>
             <Text style={styles.fieldLabel}>해열제 간격 확인</Text>
@@ -852,6 +911,7 @@ export function BabyNestHome() {
   const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const {scrollViewRef, onInputFocus} = useKeyboardAwareScroll();
 
   const bootstrap = useCallback(async () => {
     setLoading(true);
@@ -932,7 +992,14 @@ export function BabyNestHome() {
       return null;
     }
     if (tab === 'home') {
-      return <HomeTab ready={ready} busy={busy} onRecord={record} />;
+      return (
+        <HomeTab
+          ready={ready}
+          busy={busy}
+          onInputFocus={onInputFocus}
+          onRecord={record}
+        />
+      );
     }
     if (tab === 'timeline') {
       return <TimelineTab ready={ready} />;
@@ -950,7 +1017,7 @@ export function BabyNestHome() {
         }}
       />
     );
-  }, [busy, ready, record, tab]);
+  }, [busy, onInputFocus, ready, record, tab]);
 
   if (loading) {
     return (
@@ -978,14 +1045,22 @@ export function BabyNestHome() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor="#397663" />
-        }>
-        {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
-        {content}
-      </ScrollView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'android' ? 'height' : undefined}
+        style={styles.keyboardAvoider}>
+        <ScrollView
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          contentContainerStyle={styles.content}
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardShouldPersistTaps="handled"
+          ref={scrollViewRef}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor="#397663" />
+          }>
+          {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+          {content}
+        </ScrollView>
+      </KeyboardAvoidingView>
       <View style={styles.tabBar}>
         {TABS.map(item => (
           <Pressable
@@ -1005,10 +1080,11 @@ export function BabyNestHome() {
 
 const styles = StyleSheet.create({
   safeArea: {flex: 1, backgroundColor: '#F5F8F6'},
+  keyboardAvoider: {flex: 1},
   centered: {flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, backgroundColor: '#F5F8F6'},
   loadingText: {color: '#536962', fontSize: 15},
   content: {padding: 20, paddingBottom: 34, gap: 16},
-  onboardingContent: {padding: 20, paddingBottom: 40, gap: 18},
+  onboardingContent: {flexGrow: 1, padding: 20, paddingBottom: 40, gap: 18},
   hero: {gap: 9, borderRadius: 24, backgroundColor: '#DFF1EB', padding: 22},
   heroCompact: {gap: 6, borderRadius: 22, backgroundColor: '#DFF1EB', padding: 20},
   eyebrow: {color: '#397663', fontSize: 14, fontWeight: '800'},

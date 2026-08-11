@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-11 — AppsInToss 실제 로그인 확인과 온보딩 입력 수정
+
+- 사용자가 비공개 후보에서 실제 Toss 로그인을 수행한 뒤 운영 Cloud Run을 readback했다. `mintAitAppCheckToken`은 17:44:16 KST에 POST 200을 반환했고, 17:44:46 KST에 새 그룹 1건·owner membership 1건·아기 1건이 Firestore에 생성됐다. 최초 상태와 일치하게 돌봄 기록은 0건이었다. 이름·생년월일·UID 원문은 조회 결과에 출력하거나 원장에 남기지 않았다.
+- 이 결과로 유효 Toss 인가 코드의 mTLS 검증, Firebase App Check custom token 발급, 보호된 인증·Firestore 생성 경로는 실제 Toss runtime에서 통과했다. 토큰 만료 갱신, 재실행 Storage 복구, 초대·공동 기록·네트워크 복귀는 아직 별도 QA gate다.
+- 온보딩 생년월일이 날짜 입력처럼 보이지만 실제로는 문자열 `TextInput`뿐이던 문제를 AIT 호환 순수 React Native 달력으로 교체했다. 실제 달력 날짜만 선택할 수 있고 오늘 이후 날짜는 비활성화한다. AIT에 보장되지 않는 별도 native date-time 모듈은 추가하지 않았다.
+- 온보딩과 체온·복약 입력 화면을 `KeyboardAvoidingView`와 keyboard inset 대응 ScrollView로 감싸고, 키보드가 열린 뒤 포커스된 입력칸을 여유 공간 24로 자동 스크롤한다. 드래그로 키보드를 내릴 수 있고 키보드가 떠 있어도 버튼·달력 탭을 처리한다.
+- 검증: AIT 6 suites/14건, 전체 `pnpm run test:static`의 core 49건·mobile 328건·Functions 20건과 typecheck·lint·architecture·docs·store/workflow gate, `pnpm run check:ait`, `git diff --check`가 통과했다. `.ait`은 RN 0.84.0/0.72.6 양쪽 Android·iOS 번들 0 errors/0 warnings로 생성됐고 source map에서 새 달력 모듈, bundle에서 keyboard inset 처리를 확인했다. 새 비공개 후보 업로드와 실제 Toss 기기 날짜·키보드 재검증은 남아 있다.
+
 ## 2026-08-11 — AppsInToss App Check 근본 경계 구현
 
 - 기존 AIT 비공개 번들은 Platform custom-token, Firestore REST, Functions 요청에 App Check header가 없어 운영 강제 경계에서 `앱 확인 token이 필요해요`로 거부됐다. mobile 보호를 낮추는 대신 AIT `appLogin` 일회용 인가 코드를 서버에서 mTLS로 Toss token·사용자 API에 교환하고 성공 시 Firebase App Check custom token을 발급하는 경계를 구현했다.
