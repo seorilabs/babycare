@@ -1,15 +1,10 @@
 import {
-  Storage,
   loadFullScreenAd,
   showFullScreenAd,
 } from '@apps-in-toss/framework';
 import type {
   RewardedAdPort,
   RewardedAdResult,
-} from '../../../../packages/product-core/src/index.ts';
-import {
-  statsDetailUnlockedUntil,
-  unlockStatsDetail,
 } from '../../../../packages/product-core/src/index.ts';
 
 const TEST_REWARDED_AD_GROUP_ID = 'ait-ad-test-rewarded-id';
@@ -115,13 +110,3 @@ export class AppsInTossRewardedAd implements RewardedAdPort {
 }
 
 export const appsInTossRewardedAd = new AppsInTossRewardedAd();
-
-export function statsDetailUnlockedUntilOnAit(
-  now: number,
-): Promise<number | undefined> {
-  return statsDetailUnlockedUntil(Storage, now);
-}
-
-export function unlockStatsDetailOnAit(now: number): Promise<number> {
-  return unlockStatsDetail(Storage, now);
-}

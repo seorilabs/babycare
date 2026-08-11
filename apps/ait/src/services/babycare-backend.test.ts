@@ -17,17 +17,40 @@ jest.mock('@apps-in-toss/framework', () => ({
 }));
 
 import {
+  AitFirestoreCareEventRemoteStore,
   createCareGroup,
   createInviteCode,
-  recordQuickCareEvent,
 } from './babycare-backend';
+import {
+  createCareEvent,
+  eventId,
+  type CareEvent,
+  type CareEventMutation,
+} from '../../../../packages/product-core/src/index.ts';
+import {
+  careEventMutationId,
+  careEventPayloadHash,
+} from '../../../../packages/product-data/src/index.ts';
 
-function response(value: unknown): Response {
+function response(
+  value: unknown,
+  options: {readonly ok?: boolean; readonly status?: number} = {},
+): Response {
   return {
-    ok: true,
-    status: 200,
+    ok: options.ok ?? true,
+    status: options.status ?? 200,
     json: async () => value,
   } as Response;
+}
+
+function createMutation(event: CareEvent): CareEventMutation {
+  return {
+    id: careEventMutationId(event),
+    kind: 'create',
+    event,
+    baseRevision: 0,
+    payloadHash: careEventPayloadHash(event),
+  };
 }
 
 describe('AppsInToss BabyCare backend', () => {
@@ -38,6 +61,7 @@ describe('AppsInToss BabyCare backend', () => {
   it('commits canonical Firestore resource names for groups and care events', async () => {
     const commits: Record<string, unknown>[] = [];
     const protectedRequests: {url: string; headers: Record<string, string>}[] = [];
+    let readyGroupId = '';
     const request = jest.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/mintAitAppCheckToken')) {
         return response({
@@ -77,12 +101,26 @@ describe('AppsInToss BabyCare backend', () => {
         commits.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
         return response({commitTime: '2026-08-06T00:00:00Z'});
       }
+      if (
+        url.includes('/events/') ||
+        url.includes('/eventMutationReceipts/')
+      ) {
+        return response({error: {message: 'not found'}}, {ok: false, status: 404});
+      }
       if (url.endsWith('/createInvite')) {
         protectedRequests.push({
           url,
           headers: init?.headers as Record<string, string>,
         });
-        return response({result: {code: 'ABC234'}});
+        return response({
+          result: {
+            inviteId: 'a'.repeat(64),
+            groupId: readyGroupId,
+            code: 'ABC234',
+            createdAt: 1_786_051_200_000,
+            expiresAt: 1_786_137_600_000,
+          },
+        });
       }
       throw new Error(`Unexpected request: ${url}`);
     });
@@ -93,22 +131,59 @@ describe('AppsInToss BabyCare backend', () => {
       babyName: '지안',
       birthDate: '2026-08-01',
     });
-    await recordQuickCareEvent(ready, 'feeding');
-    await recordQuickCareEvent(ready, {
-      kind: 'temperature',
-      temperatureCelsius: 38.2,
-      measurementSite: 'ear',
+    readyGroupId = ready.group.id;
+    const now = Date.now();
+    const common = {
+      groupId: ready.group.id,
+      babyId: ready.baby.id,
+      caregiverId: ready.membership.userId,
+    };
+    const events = [
+      createCareEvent(
+        {
+          ...common,
+          kind: 'feeding',
+          feedingType: 'breast',
+          leftDurationSeconds: 180,
+          rightDurationSeconds: 120,
+          occurredAt: now - 20 * 60_000,
+          note: '양쪽 수유',
+        },
+        {id: eventId('event-feeding'), now},
+      ),
+      createCareEvent(
+        {
+          ...common,
+          kind: 'temperature',
+          temperatureCelsius: 38.2,
+          measurementSite: 'ear',
+          occurredAt: now - 10 * 60_000,
+        },
+        {id: eventId('event-temperature'), now},
+      ),
+      createCareEvent(
+        {
+          ...common,
+          kind: 'medication',
+          medicationName: '아세트아미노펜',
+          medicationCategory: 'antipyretic',
+          activeIngredient: 'acetaminophen',
+          doseAmount: 3.5,
+          doseUnit: 'ml',
+          minimumIntervalMinutes: 240,
+          occurredAt: now,
+        },
+        {id: eventId('event-medication'), now},
+      ),
+    ];
+    const remote = new AitFirestoreCareEventRemoteStore(ready.uid);
+    for (const event of events) {
+      await remote.push(createMutation(event));
+    }
+    await expect(createInviteCode(ready)).resolves.toMatchObject({
+      code: 'ABC234',
+      groupId: ready.group.id,
     });
-    await recordQuickCareEvent(ready, {
-      kind: 'medication',
-      medicationName: '아세트아미노펜',
-      medicationCategory: 'antipyretic',
-      activeIngredient: 'acetaminophen',
-      doseAmount: 3.5,
-      doseUnit: 'ml',
-      minimumIntervalMinutes: 240,
-    });
-    await expect(createInviteCode(ready)).resolves.toBe('ABC234');
 
     expect(commits).toHaveLength(4);
     const writes = commits.flatMap(commit => commit.writes as Record<string, unknown>[]);

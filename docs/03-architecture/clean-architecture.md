@@ -21,6 +21,8 @@ flowchart LR
   CloudRoot --> ProductData
   CloudRoot --> FirebaseAdapters
   AITAdapters["apps/ait adapters<br/>REST transport · Storage session"] --> Ports
+  AITRoot["AIT composition root<br/>local outbox · polling"] --> ProductData
+  AITRoot --> AITAdapters
   AITAdapters --> Domain
 ```
 
@@ -75,9 +77,9 @@ Firebase 연결 시 `CareEventRepositoryPort` 구현을 교체하고 core use ca
 
 ### `apps/ait`
 
-승인된 `appName=babynest`의 Granite RN + TDS target이다. AppsInToss `Storage`에 Firebase refresh token과 group session을 저장하고, Platform custom-token bridge와 Firebase Auth REST로 인증한다. Firestore REST commit/query와 Firebase callable로 그룹·아기·기록·초대·삭제를 처리한다. 기록 commit은 product-core domain validation과 canonical payload hash를 재사용해 event, mutation receipt, active-sleep lock을 원자 반영한다. native Firebase module은 사용하지 않는다.
+승인된 `appName=babynest`의 Granite RN + TDS target이다. AppsInToss `Storage`에 Firebase refresh token·group session과 user/group/baby scoped event envelope v3를 저장하고, Platform custom-token bridge와 Firebase Auth REST로 인증한다. 그룹·아기·구성원·초대·삭제는 Firestore REST/callable adapter가 처리한다. 돌봄 기록은 mobile과 같은 `PersistentCareEventSyncStore`와 `LocalFirstCareEventRepository` 뒤에서 Firestore REST transport로 전송하며 canonical payload hash, mutation receipt, active-sleep lock을 원자 반영한다. native Firebase module과 mobile target의 React Native runtime은 사용하지 않는다.
 
-현재 AIT delivery는 핵심 수유·기저귀·수면·체온·복약과 홈·타임라인·통계 흐름을 제공하지만 mobile의 local-first outbox/realtime listener 전체를 그대로 재사용하지 않는다. 명시적 새로고침과 재실행 복구를 제공한다. App Check는 Toss `appLogin`·서버 mTLS 검증 기반 custom provider source까지 구현했으며 운영 secret·Function 배포와 새 비공개 번들 QA가 남아 있다. offline queue·실시간 listener는 별도 gate다.
+AIT renderer는 mobile과 같은 기능 계약을 별도 RN 0.84/TDS delivery로 구현한다. 수유 4종·모유 좌우 timer, 기저귀 3종, 낮잠/밤잠, 체온·복약, 과거 시각·메모, 홈 latest 5종, 작성자·날짜 그룹·본인 삭제 timeline, 12시간/7일/30일 chart, 전체 구성원·초대 공유/만료·privacy를 제공한다. server observation은 Firestore SDK listener 대신 15초 REST polling과 host `AppState=active` 즉시 sync를 사용한다. UI save는 local envelope까지만 기다리며 retryable 실패는 sync banner와 명시적 retry로 복구한다. App Check는 Toss `appLogin`·서버 mTLS 검증 기반 custom provider를 사용한다. 실제 Toss 설치 기기의 재실행·offline→online·두 계정 QA는 release gate로 남는다.
 
 ### `firebase`
 
@@ -99,7 +101,7 @@ MVP에 필요한 외부 기능만 port로 추가한다.
 | 원격 기록 transport | `CareEventRemoteStorePort` | revision mutation/result/error와 server-only raw page 계약. transaction receipt와 active-sleep lock을 쓰며 화면 repository로 직접 구성 금지 |
 | 타임라인 페이지 | `CareEventCursor`, `CareEventPageRequest` | `(occurredAt DESC, documentId DESC)` scalar cursor와 pure ordering/page 계약. Firebase SDK type 금지 |
 | 홈·통계·active projection | `CareEventProjectionRemotePort` | server-confirmed half-open window, 종류별 latest, `activeSleeps/{babyId}` singleton→event read/observe. bounded timeline completeness와 분리 |
-| 문자열 저장 | `StringStoragePort` | mobile AsyncStorage / AIT session은 AppsInToss Storage. core는 SDK를 모름 |
+| 문자열 저장 | `StringStoragePort` | mobile AsyncStorage / AIT session·event envelope는 AppsInToss Storage. core/data는 SDK를 모름 |
 | 분석 | 기존 `AnalyticsPort` | PII-free Firebase/AIT analytics adapter |
 | 시간·ID | 기존 `ClockPort`, `IdGeneratorPort` | target별 system adapter |
 
@@ -125,6 +127,7 @@ MVP에 필요한 외부 기능만 port로 추가한다.
 - v1 또는 더 큰 이전 cache bound를 offline으로 연 경우 UI는 새 `maxCachedEvents`까지만 노출하되, cursor를 추측해 로컬 데이터를 파괴하지 않는다. 첫 server-confirmed HEAD rebase에서 envelope까지 새 bound로 정리한다.
 - sign-out·identity 변경·membership 제거가 확인되면 observer를 먼저 중단하고 scoped cache를 purge한 뒤 revoked UI state를 통지한다. permission listener 오류의 membership 재확인은 native cache가 아닌 server-only query를 사용한다. 실제 RNFirebase composition에서는 native disk persistence를 끄고 custom envelope를 유일한 durable queue로 사용해야 한다.
 - 정상 UI teardown은 event sync를 `quiesce()`하고 pending Auth/membership 검증을 drain한 뒤 store를 `close()`해 cache는 보존하고 single-writer claim만 해제한다. revocation `clear()`와 경쟁하면 privacy purge가 우선되며, 완료된 close 뒤 purge도 scoped claim을 다시 획득해야 한다. revocation과 정상 unmount를 같은 동작으로 취급하지 않는다.
+- AIT는 SDK realtime listener 대신 REST full snapshot을 15초마다 확인하고 Toss host가 다시 active가 되면 즉시 retry한다. polling snapshot은 shared local outbox에 merge하며 화면은 network 응답을 save 완료 신호로 기다리지 않는다.
 - Home은 active sleep을 event 목록에서 추론하지 않고 명시적 `activeSleep` projection을 입력받는다. Stats의 12시간/7일/30일 범위는 mobile delivery layer가 device-local calendar와 DST를 반영해 만들고 core는 명시된 `[from, to)` 범위만 집계한다.
 - Analytics에는 event type 같은 allowlist만 보내고 기록 값·메모·아기 식별자는 보내지 않는다.
 

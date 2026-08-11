@@ -9,11 +9,12 @@
     "pnpm": ">=11 <12"
   },
   "scripts": {
-    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run test:firebase:mobile-flow && pnpm run test:firebase-config && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run check:screenshots && pnpm run test:build-workflows",
-    "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:functions && pnpm run test:firebase-config && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run check:screenshots && pnpm run test:build-workflows",
+    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:ait && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run test:firebase:mobile-flow && pnpm run test:firebase-config && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run check:screenshots && pnpm run test:build-workflows",
+    "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:ait && pnpm run test:functions && pnpm run test:firebase-config && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run check:screenshots && pnpm run test:build-workflows",
     "test:build-workflows": "node --test scripts/check-build-workflows.test.mjs scripts/check-google-play-data-safety.test.mjs",
     "test:core": "bash scripts/test_core.sh",
     "test:mobile": "pnpm --dir apps/mobile test",
+    "test:ait": "pnpm --dir apps/ait test --runInBand",
     "test:firebase": "firebase emulators:exec --config firebase/firebase.json --project babycare-rules-test --only firestore,storage \"node --test --test-concurrency=1 firebase/tests/security-rules.test.mjs\"",
     "test:firebase:mobile-flow": "bash scripts/test_firebase_mobile_flow.sh",
     "test:firebase-config": "node --test scripts/check-firestore-indexes.test.mjs scripts/check-firebase-callable-access.test.mjs",
