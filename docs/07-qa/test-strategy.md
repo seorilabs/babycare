@@ -16,7 +16,7 @@
 | TypeScript | workspace compile contract | `pnpm run typecheck` | core, product-data, mobile, Functions의 `tsc --noEmit` |
 | Architecture | core/data import·runtime dependency boundary | `pnpm run check:architecture` | core와 product-data의 RN/Firebase/AIT/native 의존 탐지 |
 | Docs | docs source-of-truth 구조 | `pnpm run check:docs` | 필수 planning/architecture/market/release/QA 문서 |
-| Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded projection, transaction receipt·active lock, Firebase runtime host/config, session restore·그룹 생성·초대 합류, strict cloud context cache, cloud onboarding UI |
+| Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded projection, transaction receipt·active lock, Firebase runtime host/config, session restore·그룹 생성·초대 합류, strict cloud context cache, ko/en cloud onboarding·server-confirmed 0건 첫 기록 가이드·onboarding screen-view event |
 | Mobile lint | RN source 정적 검사 | `pnpm --filter @babycare/mobile lint` | mobile source |
 | Mobile target | RN Android/iOS target과 iOS launch | `pnpm run check:mobile` | native project 존재, framework launch 문구 탐지 |
 | AIT unit/parity | 상세 기록·홈·타임라인·통계·더보기와 offline outbox | `pnpm run test:ait` | 5종 기록 variant, 과거 시각·메모, latest 5종, 작성자·삭제, 12h/7d/30d, 구성원·초대·privacy, remote 실패 local 보존 |

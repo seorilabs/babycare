@@ -1,5 +1,12 @@
 # Work Log
 
+## 2026-08-11 — 영어 신규 사용자 온보딩과 첫 기록 가이드
+
+- 기존 Android/iOS 온보딩은 그룹 생성·참여 방법만 설명해 신규 사용자가 첫 화면에서 제품 가치와 첫 행동을 이해하기 어려웠다. 기존의 한 화면 한 입력 구조는 유지하고, 시작 화면에 `빠른 기록`·`쉬운 인수인계`·`초대 전용 공유` 가치를 한국어·영어로 짧게 추가했다.
+- 그룹 설정이 끝난 뒤 server-confirmed 기록이 0건인 경우에만 홈 최상단에 첫 기록 가이드를 노출한다. 수유·기저귀·수면을 바로 열 수 있고, 첫 기록이 생기면 별도 완료 상태를 저장하지 않고 자동으로 사라진다. 초기 cloud projection 로딩 중에는 가이드를 보이지 않아 잠깐 나타났다 사라지는 오탐을 막았다.
+- 신규 사용자 퍼널은 새 이벤트를 추가하지 않고 운영 중인 `core_screen_view - onboarding` 진입, `bc_onboarding_complete` 완료, `bc_first_log` 첫 기록으로 측정한다. 이름·생년월일·초대 코드는 Analytics에 보내지 않는 기존 경계를 유지했다.
+- 검증: `pnpm run test:static`에서 core 49건·mobile 330건·AIT 20건·Functions 20건과 Firebase config 3건, typecheck·lint·architecture·docs·store/workflow gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다. 실제 Android/iOS 작은 화면, 영어 Dynamic Type, 검증된 새 그룹에서의 첫 기록 CTA, 공개 후 로케일별 `onboarding → complete → first_log` 전환율은 새 릴리스 후 QA·지표 gate로 남겼다.
+
 ## 2026-08-11 — AppsInToss 기능 패리티와 local-first 동기화
 
 - 기존 AIT는 수유 120ml·젖은 기저귀·낮잠을 고정 저장하고 최근 3건·단순 timeline·7일 숫자·현재 구성원만 표시해 mobile 기능 계약과 달랐다. AIT renderer를 RN 0.84/TDS target 안에 분리하고 수유 4종·좌우 timer, 기저귀 3종, 낮잠/밤잠, 체온·복약, 과거 시각·메모, latest 5종 홈, 날짜/작성자/삭제 timeline, 12시간·7일·30일 chart, 전체 구성원·초대 공유/만료·privacy까지 반영했다.

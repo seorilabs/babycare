@@ -197,6 +197,34 @@ export function CloudOnboardingScreen(props: {
             >
               {strings.onboarding.chooseSubtitle}
             </Text>
+            <View
+              testID="onboarding-benefits"
+              style={[
+                styles.benefits,
+                {
+                  backgroundColor: props.theme.colors.surface,
+                  borderColor: props.theme.colors.border,
+                },
+              ]}
+            >
+              {[
+                { icon: '⚡️', title: strings.onboarding.quickBenefitTitle },
+                { icon: '🤝', title: strings.onboarding.handoffBenefitTitle },
+                { icon: '🔒', title: strings.onboarding.privateBenefitTitle },
+              ].map(benefit => (
+                <View key={benefit.title} style={styles.benefitItem}>
+                  <Text style={styles.benefitIcon}>{benefit.icon}</Text>
+                  <Text
+                    style={[
+                      styles.benefitTitle,
+                      { color: props.theme.colors.text },
+                    ]}
+                  >
+                    {benefit.title}
+                  </Text>
+                </View>
+              ))}
+            </View>
             <View style={styles.choiceList}>
               <Pressable
                 accessibilityLabel={strings.onboarding.createChoiceTitle}
@@ -449,7 +477,26 @@ const styles = StyleSheet.create({
   progress: { fontSize: 13, fontWeight: '800', marginTop: 30 },
   title: { fontSize: 32, fontWeight: '800', letterSpacing: -1.2, marginTop: 8 },
   subtitle: { fontSize: 15, lineHeight: 23, marginTop: 12 },
-  choiceList: { gap: 12, marginTop: 32 },
+  benefits: {
+    alignItems: 'stretch',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 13,
+  },
+  benefitItem: { alignItems: 'center', flex: 1, justifyContent: 'flex-start' },
+  benefitIcon: { fontSize: 20 },
+  benefitTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 15,
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  choiceList: { gap: 10, marginTop: 16 },
   choice: { borderRadius: 18, borderWidth: 1, padding: 20 },
   choiceTitle: { fontSize: 17, fontWeight: '800' },
   choiceDescription: { fontSize: 13, lineHeight: 20, marginTop: 6 },

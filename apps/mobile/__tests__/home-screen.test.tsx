@@ -41,6 +41,40 @@ function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
 }
 
 describe('HomeScreen', () => {
+  it('guides a verified empty group directly into its first care entry', () => {
+    const onRecord = jest.fn();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <HomeScreen
+          activeSleep={undefined}
+          caregiverNames={new Map()}
+          events={[]}
+          now={new Date('2026-07-31T09:00:00+09:00').getTime()}
+          onMore={jest.fn()}
+          onRecord={onRecord}
+          onStopSleep={jest.fn()}
+          session={session}
+          showFirstEntryGuide
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    expect(renderer.root.findByProps({testID: 'first-entry-guide'})).toBeDefined();
+    expect(renderedText(renderer)).toContain('가장 최근의 돌봄부터 남겨보세요');
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '첫 수유 기록하기'})
+        .props.onPress();
+    });
+    expect(onRecord).toHaveBeenCalledWith('feeding');
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('does not present the single-baby MVP name as an unavailable selector', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
 

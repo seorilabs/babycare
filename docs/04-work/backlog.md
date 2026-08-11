@@ -38,6 +38,7 @@
 | 완료 | 최종 앱 이름과 대표 색상 | `함께봄`/`BabyNest`, `#5FB49C`를 2026-07-18 사용자 확정. Android/iOS 표시 이름에 `함께봄` 반영 |
 | 내부 배포 완료·실기기 QA 대기 | Android release signing과 x64 Linux AAB | Play 1.0.8 internal `completed`, Play Store 설치본 QA 남음 |
 | 내부 배포 완료·실기기 QA 대기 | iOS signing, archive/export와 TestFlight | TestFlight 1.0.8 `IN_BETA_TESTING`, 2인 실제 기기 QA 남음 |
+| 구현·로컬 검증 완료·실기기/지표 QA 대기 | 영어 신규 사용자 온보딩 | 가치 안내, 그룹 설정, server-confirmed 0건의 첫 기록 CTA를 ko/en으로 구현. 새 후보 Android/iOS 작은 화면·Dynamic Type QA와 공개 후 `onboarding → complete → first_log` 로케일별 지표 확인 필요 |
 | 대기 | 개인정보 처리방침·Data safety·Privacy Labels·연령등급 | 실제 SDK/데이터 흐름과 일치해야 함 |
 | 대기 | 계정·그룹 완전 삭제, 데이터 export, owner 이전 | privileged workflow와 재인증 필요. 미구현 export는 제품 UI에 노출하지 않음 |
 | 진행 | 3마켓 icon/thumbnail/screenshots/listing/review note | Android/iOS 자산과 AIT exact-size·sandbox 실화면 교체 완료. AIT Console 업로드·readback과 policy 설문 남음 |
