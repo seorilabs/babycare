@@ -1,5 +1,11 @@
 # Work Log
 
+## 2026-08-11 — AppsInToss App Check 근본 경계 구현
+
+- 기존 AIT 비공개 번들은 Platform custom-token, Firestore REST, Functions 요청에 App Check header가 없어 운영 강제 경계에서 `앱 확인 token이 필요해요`로 거부됐다. mobile 보호를 낮추는 대신 AIT `appLogin` 일회용 인가 코드를 서버에서 mTLS로 Toss token·사용자 API에 교환하고 성공 시 Firebase App Check custom token을 발급하는 경계를 구현했다.
+- AIT는 token을 만료 시각과 함께 AppsInToss Storage에 보관하고 만료 5분 전에 갱신하며 Platform custom-token·Firestore·callable·계정 삭제 요청에 `X-Firebase-AppCheck`를 보낸다. Toss access token과 `userKey`는 저장·응답·로그에 남기지 않는다.
+- source·typecheck·Functions/AIT unit test는 완료했다. mTLS 인증서 발급·app별 credential backup·Secret Manager 연결, Function production 배포, 새 `.ait` 비공개 업로드와 실제 Toss 앱 QA는 외부 운영 gate로 남았다.
+
 ## 2026-08-11 — Google Play production track 심사 중 readback
 
 - Android Publisher API에서 production과 internal 모두 `1.1.3`/`1001003`, `status=completed`를 readback했다. Play Console 제출 활동의 제출 ID `1`은 같은 시각 `검토 중`이고 한국 공개 listing은 HTTP 404라 approval·release·live smoke gate는 pending으로 유지했다.

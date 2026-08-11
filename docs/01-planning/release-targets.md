@@ -27,7 +27,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 | --- | --- | --- | --- | --- |
 | Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ **`v1.1.3` AAB(1.1.3/1001003)를 internal `completed` 업로드·API readback 완료**. 체온·복약·Analytics·AdMob/UMP 포함 | Play Store app-signing 설치본 실기기 QA → production 심사·승격 |
 | App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ **`v1.1.3` 1.1.3(61), ASC `VALID`·`APP_STORE_ELIGIBLE`·`IN_BETA_TESTING`**. App Privacy·DSA·비규제 의료기기·버전 레코드 반영 완료 | TestFlight 2기기 실기기 QA → App Review 제출 |
-| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. 두 계정 production API E2E 통과 후 `main@707df10`을 workflow run `31123595821`에서 비공개 deployment `019fd827-571d-791d-bd50-08f2da35afec`로 업로드 | sandbox 실기기 QA → 정책 답변·프로덕션 승인 |
+| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. 기존 deployment `019fd827-571d-791d-bd50-08f2da35afec`는 현재 App Check 강제와 호환되지 않음. `appLogin`·mTLS custom provider source·unit test 완료 | mTLS secret·Function 배포 → 새 비공개 번들 실제 Toss QA → 정책 답변·프로덕션 승인 |
 | **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | 체온·복약 Rules를 포함한 Firestore·Storage·Functions·Platform 인증 bridge·GA4 relay·Platform Events가 LIVE. GA4 Realtime과 Platform BigQuery 실수집 readback 완료 | `v1.1.3` 기기 이벤트와 App Check token 검증 |
 
 ## 공통 Blocker
@@ -35,7 +35,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - ~~최종 한국어/영어 앱 이름과 AppsInToss `appName` 확정~~ 완료(`함께봄`/`BabyNest`, `babynest`).
 - ~~실제 production Firebase project와 Android/iOS client config 확정~~ 완료(`seorilabs-babycare`).
 - platform custom token의 실제 기존 사용자·실기기 UID 보존 migration. signer SA/IAM, registry sync, API 배포와 신규·합성 legacy UID live smoke는 2026-08-02 완료했다.
-- App Check 또는 edge rate limit, 실시간/offline sync, 멤버 제거와 cache purge 통합 검증.
+- mobile App Check 강제와 cache purge는 완료. AIT mTLS attestation 운영 연결·실제 Toss QA, AIT 실시간/offline sync는 별도 gate.
 - ~~개인정보 처리방침·계정 삭제 절차와 아동·돌봄·건강 기록의 Google Play Data Safety·Apple App Privacy 공개~~ 완료. 체온·복약 공개 방침과 Console readback은 2026-08-10 완료.
 - ~~연령등급, 성인 양육자용·비의료 목적 review note, DSA trader와 비규제 의료기기 선언~~ 완료. 마켓 심사 제출은 실기기 QA 뒤 별도 수행.
 - ~~AdMob Android/iOS app ID·rewarded unit ID와 EU/미국 privacy message 발급·게시~~ 완료. AppsInToss adGroupId는 별도 타깃 gate다.
@@ -69,7 +69,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - 아동 관련 민감정보, 계정 로그인, 그룹 공유, 클라우드 저장과 향후 구독의 AppsInToss 정책 적합성 확인.
 - ~~영구 `appName`과 제품명 확정, `apps/ait` Granite RN target 생성~~ 완료(`babynest`, `함께봄`/`BabyNest`).
 - ~~TDS React Native UI, AppsInToss `Storage`, 인증/Firebase bridge와 native Firebase module 없는 REST adapter 경계 확정~~ 완료. sandbox runtime 검증은 남음.
-- App Check 또는 edge rate limit과 알림 지원 범위 검증.
+- AIT mTLS App Check custom provider 운영 연결과 알림 지원 범위 검증.
 - sandbox 실제 기기에서 로그인·초대·기록·재실행·네트워크 복귀 QA.
 - console metadata, 600×600 logo, 1932×828 thumbnail, 636×1048 screenshots와 customer support email 등록.
 - ~~`apps-in-toss/apps-in-toss.config.json`과 `apps/ait/granite.config.ts` 작성~~ 완료.

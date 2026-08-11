@@ -4,7 +4,7 @@
 
 이 문서는 MVP의 `groups`, `members`, `babies`, `events`, `activeSleeps`, `eventMutationReceipts`, `invites`, 아기 이미지 Storage 경계를 다룬다. 앱의 직접 사용자는 성인 양육자지만 저장 대상에는 아동의 식별·돌봄·건강·사진 정보가 포함되므로 기본 공개나 추측 가능한 링크 공유를 허용하지 않는다.
 
-현재 증거는 로컬 Rules 테스트, client transaction adapter Jest, Functions 순수 unit/Firestore Admin transaction Emulator 테스트와 platform custom token bridge 단위 테스트다. 또한 실제 signer resource IAM·registry sync·API 배포, 신규 custom token 교환과 합성 legacy UID 보존 live smoke까지 검증했다. App Check client/Platform 검증 경계와 계정 삭제 workflow는 구현·로컬 검증했으며, 실제 기존 사용자 migration, App Check 실기기 token, 계정 삭제 production callable·일회성 live QA가 남았다.
+현재 mobile은 Play Integrity·App Attest·DeviceCheck와 production App Check 강제 경계를 사용한다. Platform custom token bridge, 초대·계정 삭제 callable, Rules와 기존 UID 보존은 운영 및 실기기 증거가 있다. AIT는 `appLogin` 인가 코드를 Babycare Function에서 mTLS로 Toss API에 교환하고 사용자 확인이 성공한 경우에만 AIT Web app ID의 1시간 Firebase App Check custom token을 발급하는 source·unit test까지 구현했다. mTLS secret 연결·Function 배포·새 비공개 번들의 실제 Toss 앱 QA는 남아 있다.
 
 ## Data Classification
 
@@ -19,15 +19,22 @@
 
 ```mermaid
 flowchart LR
-  Client["인증된 RN/AIT client<br/>불신 입력"] --> Rules["Firestore / Storage Rules"]
+  Native["인증된 mobile client<br/>불신 입력"] --> AppCheck["Firebase App Check"]
+  AIT["AppsInToss client<br/>불신 입력"] --> Toss["Toss appLogin"]
+  Toss --> Mint["Babycare mTLS attestation Function"]
+  Mint --> AppCheck
+  AIT --> AppCheck
+  AppCheck --> Rules["Firestore / Storage Rules"]
   Rules --> GroupData["그룹 내부 아동 데이터"]
-  Client --> Callable["초대·삭제·내보내기 API"]
+  AppCheck --> Callable["초대·삭제·분석 API"]
   Callable --> Admin["Privileged server<br/>Admin SDK"]
   Admin --> GroupData
   GroupData -.금지.-> Analytics["Analytics / Crash logs"]
 ```
 
 - client 인증은 신원만 증명한다. 권한은 매 요청 시 Firestore membership 문서로 재평가한다.
+- AIT의 Firebase Auth refresh token은 앱 확인 증거가 아니다. 보호 API마다 별도 App Check token을 보내며, mint Function은 Toss 로그인 검증 전 token을 발급하지 않는다.
+- Toss access token과 `userKey`는 검증 과정에서만 사용하고 저장·응답·로그에 포함하지 않는다. mTLS 개인 키는 client/repo가 아닌 Secret Manager에만 둔다.
 - Admin SDK는 Security Rules를 우회하므로 client에 포함하지 않고, callable API에서 인증·권한·입력·재사용 방지를 별도로 검증해야 한다.
 - 오프라인 캐시는 서버 접근 회수와 별개다. 멤버 제거 시 새 요청은 즉시 차단되지만 이미 내려받은 데이터 삭제는 app workflow가 담당한다.
 
@@ -35,7 +42,7 @@ flowchart LR
 
 | 위협 | 통제 | 현재 증거 | 잔여 작업 |
 | --- | --- | --- | --- |
-| 비멤버가 group ID를 추측해 아동 데이터 조회 | parent group 존재 + `members/{uid}` 존재를 Rules에서 모두 확인 | Firestore/Storage Emulator 비멤버·비로그인 deny 테스트 | App Check와 abuse monitoring |
+| 비멤버가 group ID를 추측해 아동 데이터 조회 | App Check와 parent group 존재 + `members/{uid}` 존재를 Rules에서 모두 확인 | production App Check 강제 readback, Firestore/Storage Emulator 비멤버·비로그인 deny 테스트 | AIT 실기기 token과 abuse monitoring |
 | 일반 멤버가 owner 권한으로 승격하거나 타 멤버 제거 | membership write는 owner만, ownerId/owner role 일치, owner membership 삭제 금지 | owner/member create·update·delete 테스트 | 소유권 이전 server workflow |
 | 다른 양육자 명의로 event 위조 | create 시 `caregiverId == request.auth.uid` | forged author deny 테스트 | Admin 기록 생성 시 audit actor 설계 |
 | 작성자·아기·그룹·종류를 바꿔 기록 출처 세탁 | event identity와 createdAt 불변, revision 단조 증가 | identity 변조 deny 테스트 | server-side export에 revision 포함 |
@@ -51,13 +58,16 @@ flowchart LR
 | 로그아웃·멤버 제거 뒤 내려받은 아동 데이터 잔존 | Auth/membership/event observer 중단→in-flight sync generation 무효화→scoped envelope purge→revoked 상태 순서. concurrent close보다 purge가 우선되고 replacement writer는 보호한다 | sign-out, identity 변경, server-only membership 재확인, in-flight push·observer·close/purge race Jest | native Firestore disk persistence OFF와 실제 기기 purge 확인 |
 | disabled/deleted/revoked-token 계정의 local Auth identity 잔존 | Auth observer와 remote unauthenticated 오류를 함께 처리하고 `reload`+강제 ID-token refresh로 서버 identity를 검증한다 | revoked error mapping, identity 변경, 반복 401·teardown recovery 차단 Jest | 실제 production provider에서 disabled/deleted/revoked-token별 purge smoke |
 | custom token 전환 중 기존 UID 단절 | 기존 Firebase ID token을 platform이 검증해 같은 uid로 서명하고 client가 bridge·Firebase credential uid를 이중 대조 | legacy uid 보존, mismatch fail-closed Jest와 platform service 테스트, 합성 legacy UID live 교환 | 실제 기존 사용자·실기기 migration |
-| 공개 custom token bootstrap 남용 | feature allowlist, uid 서버 생성, private key 없는 resource-level IAM 원격 서명 | 임의 uid 주입 live 거부, 앱 SA resource-level Token Creator, 신규 custom token live 교환 | App Check 또는 edge rate limit과 비용 alert |
-| 초대 raw code 유출·재사용·임의 membership 생성 | raw 미저장, HMAC hash, current owner, expiry, single-use transaction, 7-field Admin membership | unit + Firestore Emulator owner/expiry/concurrent accept/audit 테스트 | 실제 callable Auth/App Check/Secret Manager smoke |
-| 6자리 code online brute force | 유효 형식 실패도 먼저 커밋되는 UID별 rate limit, accept 상태 oracle 통합 | UID rate threshold Emulator 테스트 | verified Auth, anonymous UID 정책, App Check 강제 |
+| 공개 custom token bootstrap 남용 | feature allowlist, uid 서버 생성, App Check 필수, private key 없는 resource-level IAM 원격 서명 | 임의 uid 주입·App Check 누락 live 거부, 앱 SA resource-level Token Creator, 신규 custom token live 교환 | AIT 실기기 attestation과 비용 alert |
+| 임의 client가 AIT App Check mint endpoint 호출 | Toss `appLogin` 일회용 코드, mTLS token 교환, `login-me`의 양수 `userKey` 확인 뒤에만 1시간 token 발급 | malformed/provider failure fail-closed unit, token cache·갱신 unit | mTLS secret 연결, replay·부하 관측, 실제 Toss 비공개 번들 QA |
+| App Check token 서명 권한 과다 부여 | Functions runtime 서비스 계정 자기 자신에만 `Service Account Token Creator` 부여 | version-controlled IAM 계약·readback script | production self-binding 적용·readback |
+| Toss 사용자 식별자·access token 유출 | 검증 함수 내부에서만 사용하고 응답·Storage·로그·Firestore에 저장 금지 | source review와 오류 응답 unit | production log sampling readback |
+| 초대 raw code 유출·재사용·임의 membership 생성 | raw 미저장, HMAC hash, current owner, expiry, single-use transaction, 7-field Admin membership | unit + Firestore Emulator owner/expiry/concurrent accept/audit 테스트 | AIT 실제 App Check callable smoke |
+| 6자리 code online brute force | 유효 형식 실패도 먼저 커밋되는 UID별 rate limit, accept 상태 oracle 통합 | UID rate threshold Emulator 테스트, production App Check 강제 | AIT 실기기 attestation과 비용 alert |
 | HMAC key 유출·rotation으로 기존 초대 무효화 | deploy-time secret, 최소 32 bytes fail-closed, 24h 기본 TTL, previous key 없이 active invite 무효화+재발급 | unit secret/hash 테스트 | Secret Manager IAM과 owner 재발급 안내 운영 검증 |
 | 사진 URL 유출 또는 임의 파일 저장 | 그룹-scoped object path, membership 재평가, image MIME/10 MiB 제한, token URL 저장 금지 | member/nonmember, MIME, unscoped path, membership revoke 테스트 | EXIF 제거, malware/content 검사 필요성 검토 |
 | Analytics/Crashlytics로 아동 정보 유출 | core event에는 동작 type만, PII/기록 값 금지 정책 | 문서 정책만 있음 | adapter allowlist 테스트와 console 검수 |
-| service credential 유출 | repo/client 금지, 실제 project 미생성 | `.gitignore`, 문서 정책 | CI secret/IAM 최소권한 검수 |
+| service credential 유출 | repo/client 금지, app별 credential catalog 백업과 Secret Manager만 사용 | `.gitignore`, credential preflight, production project 분리 | AIT mTLS 발급 뒤 catalog·Secret Manager IAM readback |
 
 ## Security Invariants
 
@@ -74,12 +84,12 @@ flowchart LR
 
 ## Release Blockers
 
-- 실제 non-production Functions/Auth callable, Secret Manager, App Check, IAM 통합 검증
-- `FUNCTIONS_REGION`, HMAC rotation/reissue, platform auth bridge App Check 또는 edge rate limit 확정
+- AIT mTLS 인증서·개인 키의 app별 catalog 등록·복구 검증·Secret Manager 최소권한 연결
+- `mintAitAppCheckToken` production 배포·Invoker 계약·오류 로그 비밀값 비노출 readback
 - 계정/그룹 완전 삭제, 데이터 export, owner 이전의 재인증·권한 설계
 - 멤버 제거/로그아웃 시 mobile·AIT 로컬 캐시 purge 검증
 - custom token 계정 복구·탈퇴 정책
 - production Auth provider에서 remote unauthenticated 후 disabled/deleted/revoked-token 분류와 실제 cache purge 검증
-- App Check mobile 적용 및 AppsInToss 호환성 검증
+- 새 AIT 비공개 번들의 실제 Toss `appLogin`·App Check token·초대·기록·재실행 검증
 - Storage EXIF 처리와 사진 보존 기간 결정
 - 실제 non-production project에서 Rules, indexes, Storage↔Firestore IAM 통합 검증
