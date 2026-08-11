@@ -5,7 +5,15 @@
 - 기존 Android/iOS 온보딩은 그룹 생성·참여 방법만 설명해 신규 사용자가 첫 화면에서 제품 가치와 첫 행동을 이해하기 어려웠다. 기존의 한 화면 한 입력 구조는 유지하고, 시작 화면에 `빠른 기록`·`쉬운 인수인계`·`초대 전용 공유` 가치를 한국어·영어로 짧게 추가했다.
 - 그룹 설정이 끝난 뒤 server-confirmed 기록이 0건인 경우에만 홈 최상단에 첫 기록 가이드를 노출한다. 수유·기저귀·수면을 바로 열 수 있고, 첫 기록이 생기면 별도 완료 상태를 저장하지 않고 자동으로 사라진다. 초기 cloud projection 로딩 중에는 가이드를 보이지 않아 잠깐 나타났다 사라지는 오탐을 막았다.
 - 신규 사용자 퍼널은 새 이벤트를 추가하지 않고 운영 중인 `core_screen_view - onboarding` 진입, `bc_onboarding_complete` 완료, `bc_first_log` 첫 기록으로 측정한다. 이름·생년월일·초대 코드는 Analytics에 보내지 않는 기존 경계를 유지했다.
-- 검증: `pnpm run test:static`에서 core 49건·mobile 330건·Functions 20건과 Firebase config 3건, typecheck·lint·architecture·docs·store/workflow gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다. 실제 Android/iOS 작은 화면, 영어 Dynamic Type, 검증된 새 그룹에서의 첫 기록 CTA, 공개 후 로케일별 `onboarding → complete → first_log` 전환율은 새 릴리스 후 QA·지표 gate로 남겼다.
+- 검증: `pnpm run test:static`에서 core 49건·mobile 330건·AIT 20건·Functions 20건과 Firebase config 3건, typecheck·lint·architecture·docs·store/workflow gate가 통과했고 `pnpm run check:mobile`, `git diff --check`도 통과했다. 실제 Android/iOS 작은 화면, 영어 Dynamic Type, 검증된 새 그룹에서의 첫 기록 CTA, 공개 후 로케일별 `onboarding → complete → first_log` 전환율은 새 릴리스 후 QA·지표 gate로 남겼다.
+
+## 2026-08-11 — AppsInToss 기능 패리티와 local-first 동기화
+
+- 기존 AIT는 수유 120ml·젖은 기저귀·낮잠을 고정 저장하고 최근 3건·단순 timeline·7일 숫자·현재 구성원만 표시해 mobile 기능 계약과 달랐다. AIT renderer를 RN 0.84/TDS target 안에 분리하고 수유 4종·좌우 timer, 기저귀 3종, 낮잠/밤잠, 체온·복약, 과거 시각·메모, latest 5종 홈, 날짜/작성자/삭제 timeline, 12시간·7일·30일 chart, 전체 구성원·초대 공유/만료·privacy까지 반영했다.
+- mobile RN 0.85 component를 직접 import하면 pnpm이 다른 React Native·safe-area native module을 함께 해석하므로 금지했다. AIT target은 자체 renderer와 RN 0.84 dependency만 사용하고 product-core/domain 및 product-data/local-first 계약을 공유한다. `check:ait`이 mobile source·AsyncStorage·RNFirebase import를 fail closed 한다.
+- AppsInToss Storage에 공통 event envelope v3/outbox를 연결했다. UI save는 local durable commit에서 반환하고 Firestore REST transport가 mutation receipt와 active-sleep lock을 원자 반영한다. retryable 실패는 failed sync state로 보존하며 15초 polling, Toss host active 복귀, 사용자 retry에서 재전송한다.
+- 구성원 collection을 실제 조회하고 초대 code·만료를 보존하며, 계정 삭제 성공 뒤 scoped event cache를 purge한다. Stats storage도 화면 내부 native singleton 대신 composition root에서 주입하도록 바꿔 AIT에 mobile native module이 섞이지 않게 했다.
+- 자동 검증에 AIT 5개 화면 기능 계약과 offline remote 실패 local 보존 테스트를 추가했고 root `test`/`test:static`이 `test:ait`을 필수 실행한다. RN 0.84.0/0.72.6 iOS·Android 4개 bundle을 담은 로컬 `.ait` `019ff122-6c76-7f8d-81b5-9a92efed2cc5`, SHA-256 `6d5e2fc10ec60118689ca7b42e70cb0b3cf68f10be6191b3b7f5c52a3a6fd69c`를 오류·경고 없이 생성하고 source map에서 패리티 module 포함/mobile native dependency 제외를 확인했다. Console 업로드와 실제 Toss 설치 기기의 상세 입력·재실행·offline→online·두 계정 QA는 별도 release gate다.
 
 ## 2026-08-11 — AppsInToss 실제 로그인 확인과 온보딩 입력 수정
 

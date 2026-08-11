@@ -168,23 +168,6 @@ export interface CareEventSyncLocalStorePort {
   close(): Promise<void>;
 }
 
-interface PersistedCareEventSyncStateV1 {
-  readonly version: 1;
-  readonly scope: CareEventSyncScope;
-  readonly events: readonly CareEvent[];
-  readonly outbox: readonly CareEventOutboxEntry[];
-  readonly issues: readonly CareEventSyncIssue[];
-}
-
-interface PersistedCareEventSyncStateV2 {
-  readonly version: 2;
-  readonly scope: CareEventSyncScope;
-  readonly events: readonly CareEvent[];
-  readonly outbox: readonly CareEventOutboxEntry[];
-  readonly issues: readonly CareEventSyncIssue[];
-  readonly timelineCoverage: CareEventTimelineCoverage;
-}
-
 interface PersistedCareEventSyncStateV3 {
   readonly version: 3;
   readonly scope: CareEventSyncScope;

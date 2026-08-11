@@ -20,6 +20,16 @@ rg -q '"build": "ait build"' apps/ait/package.json
 rg -q "appName: 'babynest'" apps/ait/granite.config.ts
 rg -q "displayName: '함께봄: 아기돌봄 기록'" apps/ait/granite.config.ts
 rg -q 'TDSProvider' apps/ait/src/_app.tsx
+rg -q "from '@toss/tds-react-native'" apps/ait/src/pages/index.tsx
+rg -q 'PersistentCareEventSyncStore' apps/ait/src/services/care-event-runtime.ts
+rg -q 'AitFirestoreCareEventRemoteStore' apps/ait/src/services/babycare-backend.ts
+rg -q 'QuickRecordModal' apps/ait/src/components/parity-dashboard.tsx
+
+if rg -n "mobile/src|@react-native-async-storage/async-storage|@react-native-firebase" \
+  apps/ait/src; then
+  echo "AIT source must not load the mobile target or mobile-only native modules." >&2
+  exit 1
+fi
 
 node -e '
 const {readFileSync} = require("node:fs");

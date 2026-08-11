@@ -1,6 +1,5 @@
 import type {
   CareEvent,
-  CareEventKind,
   CareEventProjectionRemotePort,
   CareEventProjectionScope,
   CareEventRemoteError,

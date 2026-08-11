@@ -219,6 +219,7 @@ export function FirebaseCareDashboard(props: {
           now={now}
           analytics={props.runtime.analytics}
           rewardedAd={props.runtime.rewardedAd}
+          storage={AsyncStorage}
           strings={strings}
           theme={theme}
         />
