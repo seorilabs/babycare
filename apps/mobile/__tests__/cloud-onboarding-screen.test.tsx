@@ -88,7 +88,10 @@ describe('CloudOnboardingScreen', () => {
       .filter(value => typeof value === 'string')
       .join(' ');
 
-    expect(visibleText).toContain('함께봄 공동 기록');
+    expect(visibleText).toContain('내가 없을 때의 돌봄도 한눈에');
+    expect(visibleText).toContain('10초 기록');
+    expect(visibleText).toContain('쉬운 인수인계');
+    expect(visibleText).toContain('초대 전용 공유');
     expect(visibleText).toContain(
       '앱을 삭제하거나 기기를 바꾸면 현재 계정과 기록에 다시 접근하지 못할 수 있어요.',
     );
@@ -104,7 +107,7 @@ describe('CloudOnboardingScreen', () => {
     expect(() =>
       state.renderer.root.findByProps({ accessibilityLabel: '양육자 이름' }),
     ).toThrow();
-    press(state.renderer, '처음 시작하기');
+    press(state.renderer, '내 아기로 시작');
     changeText(state.renderer, '양육자 이름', '엄마');
     expect(
       state.renderer.root.findByProps({ accessibilityLabel: '다음' }).props
@@ -142,7 +145,7 @@ describe('CloudOnboardingScreen', () => {
 
   it('explains the actual birth-date use without promising growth records', () => {
     const state = setup();
-    press(state.renderer, '처음 시작하기');
+    press(state.renderer, '내 아기로 시작');
     changeText(state.renderer, '양육자 이름', '엄마');
     press(state.renderer, '다음');
     changeText(state.renderer, '아기 이름', '하루');
@@ -179,7 +182,7 @@ describe('CloudOnboardingScreen', () => {
       );
     });
 
-    press(renderer, '처음 시작하기');
+    press(renderer, '내 아기로 시작');
     changeText(renderer, '양육자 이름', '엄마');
     press(renderer, '다음');
     changeText(renderer, '아기 이름', '하루');
@@ -229,7 +232,7 @@ describe('CloudOnboardingScreen', () => {
         );
       },
     });
-    press(state.renderer, '처음 시작하기');
+    press(state.renderer, '내 아기로 시작');
     changeText(state.renderer, '양육자 이름', '엄마');
     press(state.renderer, '다음');
     changeText(state.renderer, '아기 이름', '하루');
@@ -262,7 +265,7 @@ describe('CloudOnboardingScreen', () => {
 
   it('requires six invite characters after choosing the join flow', async () => {
     const state = setup();
-    press(state.renderer, '초대 코드로 참여');
+    press(state.renderer, '초대 코드가 있어요');
     changeText(state.renderer, '양육자 이름', '아빠');
     press(state.renderer, '다음');
 
@@ -300,7 +303,7 @@ describe('CloudOnboardingScreen', () => {
         );
       },
     });
-    press(state.renderer, '초대 코드로 참여');
+    press(state.renderer, '초대 코드가 있어요');
     changeText(state.renderer, '양육자 이름', '아빠');
     press(state.renderer, '다음');
     changeText(state.renderer, '초대 코드', 'ABC234');

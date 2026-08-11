@@ -171,7 +171,10 @@ describe('English rendering leaves no Korean copy on screen', () => {
       />,
     );
 
-    expect(text).toContain('Care for today, together');
+    expect(text).toContain("Know what happened, even when you weren't there");
+    expect(text).toContain('Log care in seconds');
+    expect(text).toContain('Easy handoffs');
+    expect(text).toContain('Invite-only sharing');
     expect(text).not.toMatch(HANGUL);
   });
 

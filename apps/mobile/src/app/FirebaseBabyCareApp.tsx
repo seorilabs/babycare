@@ -265,6 +265,11 @@ export function FirebaseCareDashboard(props: {
           }
         }}
         session={session}
+        showFirstEntryGuide={
+          overview.status === 'server_confirmed' &&
+          overview.events.length === 0 &&
+          overview.activeSleep === undefined
+        }
         strings={strings}
         theme={theme}
       />
@@ -382,6 +387,7 @@ export function FirebaseBabyCareApp(
   const [state, setState] = useState<RootState>({kind: 'loading'});
   const [runtimeError, setRuntimeError] = useState<Error>();
   const [retryKey, setRetryKey] = useState(0);
+  const setupAnalytics = state.kind === 'setup' ? state.runtime.analytics : undefined;
 
   useEffect(() => {
     mounted.current = true;
@@ -389,6 +395,18 @@ export function FirebaseBabyCareApp(
       mounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    setupAnalytics
+      ?.track({
+        name: 'core_screen_view',
+        params: {
+          screen_name: 'onboarding',
+          screen_class: 'CloudOnboardingScreen',
+        },
+      })
+      .catch(() => undefined);
+  }, [setupAnalytics]);
 
   const activateReadySession = useCallback(
     async (
