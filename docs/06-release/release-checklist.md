@@ -32,7 +32,7 @@
 - [x] production 초대 callable Secret Manager·Cloud Run 진입 계약 확인 — Domain Restricted Sharing 환경에서 `createInvite`·`acceptInvite` Invoker IAM check 비활성화, Firebase Auth/owner 검사는 유지
 - [x] 실제 project의 App Check 검증 경계 확정 — mobile Play Integrity·App Attest·DeviceCheck provider 운영 구성, Platform registry `require_app_check=true`, production callable `ENFORCE_APP_CHECK=true`, App Check 없는 custom-token 요청 `401 app_check_required` readback. 사용자가 `v1.1.3` 실기기 QA 통과를 보고함, 2026-08-10
 - [x] AppsInToss App Check attestation source·unit test — `appLogin` 일회용 코드 → mTLS Toss 검증 → 1시간 Firebase custom token, Platform·Firestore·Functions 전체 요청 header와 Storage 만료 갱신 구현, 2026-08-11
-- [ ] AppsInToss App Check 운영 연결 — 진행: mTLS 인증서 app별 catalog·local/BeeStation backup/restore, Secret Manager cert/key version 1, runtime SA self Token Creator, `mintAitAppCheckToken` revision `mintaitappchecktoken-00001-law` ACTIVE·Invoker 계약, `main@2704ff7` 후보 `20260811-6` 업로드·test push, 실제 Toss 로그인에서 token mint POST 200과 운영 그룹·owner membership·아기 생성 readback / 남음: 새 날짜·키보드 수정 후보 test push, 토큰 만료 갱신·재실행 Storage 복구·초대·공동 기록·네트워크 복귀 QA
+- [ ] AppsInToss App Check 운영 연결 — 진행: mTLS 인증서 app별 catalog·local/BeeStation backup/restore, Secret Manager cert/key version 1, runtime SA self Token Creator, `mintAitAppCheckToken` revision `mintaitappchecktoken-00001-law` ACTIVE·Invoker 계약, 실제 Toss 로그인에서 token mint POST 200과 운영 그룹·owner membership·아기 생성 readback, `main@21a8573` 날짜·키보드 후보 `20260811-7` 업로드·test push / 남음: 이 후보의 토큰 만료 갱신·재실행 Storage 복구·초대·공동 기록·네트워크 복귀 QA
 - [x] production 계정 삭제 callable과 외부 삭제 경로 — `deleteAccount` ACTIVE·IAM 적용, Platform 삭제 mapping API production 배포, 외부 안내 페이지 live 200, 일회성 owner/member 계정 삭제·정리 live QA 완료
 - [x] GA4·Platform Analytics 운영 연결 — GA4 property `549232169`·3개 stream·BigQuery link, Secret Manager API secret, `logAnalyticsEvents` ACTIVE를 구성했다. 인증 callable `accepted=1`, GA4 Realtime `core_screen_view=1`, Platform registry의 14개 allowlist, ingest `accepted=1`, BigQuery `babycare-launch-smoke-20260809-0803`를 readback했다(2026-08-09)
 - [x] 최소 광고 운영 연결 — AdMob Android/iOS app·rewarded unit production ID, EU UMP·미국 주 privacy message, privacy options UI를 반영했다. 사용자가 `v1.1.3` Android/iOS 실기기 QA 통과를 보고함. AppsInToss 광고는 이번 Play/App Store 출시 범위 밖
@@ -45,7 +45,7 @@
 - [x] iOS RNFirebase arm64 Simulator build·light/dark first-screen smoke
 - [x] Android 1.0.8 AAB의 제품 브랜드 launcher icon·cold-start splash·온보딩 전환 확인 — 격리 API 36 AVD, `LaunchState: COLD`, template 문구 없음
 - [x] iOS TestFlight cold-start 제품 브랜딩 — 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함. 기기 모델·OS 상세는 제공되지 않음
-- [ ] AppsInToss sandbox smoke — 운영 두 계정 합성 API E2E와 공식 iOS Sandbox 로컬 dev 흐름 통과. `main@2704ff7`, `20260811-6`은 `CREATED`, test push, `isTested=true`, `deployed=false`이며 실제 Toss 로그인에서 App Check token mint와 그룹·owner membership·아기 생성까지 확인했다 / 남음: 날짜 달력·키보드 수정 후보의 test push와 실제 Toss 기기 입력·Storage·초대·기록·재실행·토큰 갱신·네트워크 복귀
+- [ ] AppsInToss sandbox smoke — 운영 두 계정 합성 API E2E와 공식 iOS Sandbox 로컬 dev 흐름 통과. `main@21a8573`, `20260811-7`은 `CREATED`, test push, `isTested=true`, `deployed=false`이며 이전 실제 Toss 로그인에서 App Check token mint와 그룹·owner membership·아기 생성까지 확인했다 / 남음: 새 후보의 날짜 달력·키보드 입력·Storage·초대·기록·재실행·토큰 갱신·네트워크 복귀
 - [x] Offline/local-first smoke — Android 1.0.8 upload-signed AAB를 격리 API 36 AVD에 설치해 비행기 모드 기록·강제 종료·재실행 보존, online 복귀 뒤 수동 새로고침과 두 번째 기기 server readback 통과(2026-08-07)
 - [x] 서로 다른 계정·기기 2대의 초대·실시간·offline 복귀 — production custom-token 계정 `QAOwnerA`/`QAMemberB`, 격리 Android AVD 2대에서 초대·합류·양방향 기록자 반영·offline 기록 공유 통과. Play Store app-signing 설치본·물리 기기 App Check token은 별도 게이트
 - [x] TestFlight 인증 owner의 초대 코드 발급과 다른 계정 수락 재확인 — 기존 iPhone owner 발급 확인과 production API 독립 2계정 E2E에 더해 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함
@@ -68,6 +68,7 @@
 - [x] AppsInToss 기능 후보 local build·production API E2E — Platform custom-token/Firebase Auth REST, Storage session, Firestore 기록·조회, callable 초대·삭제로 독립 두 계정 공동 기록 및 정리 통과, exact-size 등록 자산 검증, 2026-08-07
 - [x] AppsInToss 기능 후보 비공개 업로드 — source `707df10`, workflow run `31123595821`, artifact `8974273502`, deployment `019fd827-571d-791d-bd50-08f2da35afec`, 2026-08-07
 - [x] AppsInToss App Check 후보 비공개 업로드·test push — source `2704ff7`, `.ait` SHA-256 `02a268b0dae3ff8f8ae0817e319b78b0c1ec511da7bbc0133c186fc4465e4b26`, `20260811-6`, deployment `019fee32-8415-761c-be38-9c5769aa00b2`, `CREATED`, `isTested=true`, `deployed=false`, 2026-08-11. `20260811-5` / `019fee31-b55a-7bde-907e-cb8125a5d3fe`는 파일 PUT 없는 `PREPARE` 미사용 항목
+- [x] AppsInToss 날짜·키보드 수정 후보 비공개 업로드·test push — source `21a8573`, `.ait` SHA-256 `baf0e95078a7156a74c54b2c8b3bb50bfeaf233feb68b54049a7567d7973c495`, 3,153,626 bytes, `20260811-7`, deployment `019ff016-36a2-75bc-a29e-ea987c0bfed4`, `CREATED`, `isTested=true`, `deployed=false`, 2026-08-11
 - [x] Google Play WIF 자동 업로드 복구 — `iam.googleapis.com` 활성화, 공용 publisher SA에 repo-scoped `seorilabs/babycare` principal의 `roles/iam.workloadIdentityUser` 추가·readback. run `31132461743`에서 GitHub OIDC 인증과 `internal → internal` 재배포가 성공했고 API에서 `v1.0.8`/`1000008`, `completed` 확인, 2026-08-07
 - [x] Google Play internal 릴리스 활성화·테스터 배포 — `1.0.8`/`1000008`, `status=completed` API readback
 - [x] Google Play 초기 설정·앱 콘텐츠 — 대시보드 11개 완료, Data Safety 완료, IARC 한국 12세 이상, 타깃 18세 이상, 출산/육아, 건강 기능 `영양 및 체중 관리`·`수면 관리`, 2026-08-07
@@ -80,5 +81,5 @@
 - [ ] Google Play 심사 승인·production 공개·공개 listing `1.1.3` readback
 - [x] App Store 실제 테스터 설치·실기기 QA와 App Review 제출 — 사용자의 실기기 QA 통과 보고 뒤 review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d` 제출. 현재 `WAITING_FOR_REVIEW`, `AFTER_APPROVAL`, 2026-08-10
 - [ ] App Store 심사 승인·자동 공개·175개 국가/지역 listing `1.1.3` readback
-- [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA — App Check 포함 deployment `019fee32-8415-761c-be38-9c5769aa00b2`에서 유효 token과 최초 데이터 생성은 확인했다. 날짜 달력·키보드 수정본을 새 deployment로 test push하고 입력·재실행·초대·공동 기록까지 확인해야 한다
+- [ ] AppsInToss private build sandbox 실기기 설치·초기 route QA — App Check 포함 이전 후보에서 유효 token과 최초 데이터 생성은 확인했다. 날짜 달력·키보드 수정 deployment `019ff016-36a2-75bc-a29e-ea987c0bfed4`를 test push했으며 입력·재실행·초대·공동 기록까지 확인해야 한다
 - [ ] AppsInToss production release 승인
