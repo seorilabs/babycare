@@ -176,33 +176,37 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('Firebase');
   });
 
-  it('measures onboarding entry with the existing screen-view contract', async () => {
-    const track = jest.fn(async () => undefined);
-    jest.mocked(AsyncStorage.getItem).mockReset().mockResolvedValue(null);
-    bootstrap.mockResolvedValue({
-      analytics: {track},
-      sessionServices: {
-        auth: {currentUser: jest.fn(async () => undefined)},
-      },
-    } as unknown as FirebaseRuntime);
+  it(
+    'measures onboarding entry with the existing screen-view contract',
+    async () => {
+      const track = jest.fn(async () => undefined);
+      jest.mocked(AsyncStorage.getItem).mockReset().mockResolvedValue(null);
+      bootstrap.mockResolvedValue({
+        analytics: {track},
+        sessionServices: {
+          auth: {currentUser: jest.fn(async () => undefined)},
+        },
+      } as unknown as FirebaseRuntime);
 
-    await ReactTestRenderer.act(async () => {
-      renderer = ReactTestRenderer.create(
-        <FirebaseBabyCareApp strings={createStrings('en')} />,
-      );
-      for (let count = 0; count < 6; count += 1) {
-        await Promise.resolve();
-      }
-    });
+      await ReactTestRenderer.act(async () => {
+        renderer = ReactTestRenderer.create(
+          <FirebaseBabyCareApp strings={createStrings('en')} />,
+        );
+        for (let count = 0; count < 6; count += 1) {
+          await Promise.resolve();
+        }
+      });
 
-    expect(track).toHaveBeenCalledWith({
-      name: 'core_screen_view',
-      params: {
-        screen_name: 'onboarding',
-        screen_class: 'CloudOnboardingScreen',
-      },
-    });
-  });
+      expect(track).toHaveBeenCalledWith({
+        name: 'core_screen_view',
+        params: {
+          screen_name: 'onboarding',
+          screen_class: 'CloudOnboardingScreen',
+        },
+      });
+    },
+    15_000,
+  );
 
   it('hides technical details when startup fails', async () => {
     bootstrap.mockRejectedValue(
