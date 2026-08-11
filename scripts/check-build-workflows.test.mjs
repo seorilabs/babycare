@@ -41,17 +41,17 @@ test('latest AppsInToss private upload evidence stays consistent', async () => {
 
   assert.deepEqual(upload, {
     ref: 'main',
-    sourceSha: '2704ff763639858069417b4f6c6e779aaeff704f',
+    sourceSha: '21a857312fe4d5b64fb80bf3fdf8e0b638217b9a',
     buildMethod: 'local-main-worktree',
     artifactSha256:
-      '02a268b0dae3ff8f8ae0817e319b78b0c1ec511da7bbc0133c186fc4465e4b26',
-    artifactBytes: 3117587,
-    versionName: '20260811-6',
-    deploymentId: '019fee32-8415-761c-be38-9c5769aa00b2',
+      'baf0e95078a7156a74c54b2c8b3bb50bfeaf233feb68b54049a7567d7973c495',
+    artifactBytes: 3153626,
+    versionName: '20260811-7',
+    deploymentId: '019ff016-36a2-75bc-a29e-ea987c0bfed4',
     status: 'created',
     isTested: true,
     deployed: false,
-    uploadedAt: '2026-08-11T09:22:22+09:00',
+    uploadedAt: '2026-08-11T18:11:17+09:00',
   });
   assert.equal(
     registration.release.sandboxQa,
@@ -59,16 +59,16 @@ test('latest AppsInToss private upload evidence stays consistent', async () => {
   );
 
   for (const document of [market, checklist, workLog]) {
-    assert.match(document, /2704ff7/);
-    assert.match(document, /20260811-6/);
-    assert.match(document, /019fee32-8415-761c-be38-9c5769aa00b2/);
+    assert.match(document, /21a8573/);
+    assert.match(document, /20260811-7/);
+    assert.match(document, /019ff016-36a2-75bc-a29e-ea987c0bfed4/);
   }
   assert.match(market, /isTested=true/);
   assert.match(checklist, /isTested=true/);
   assert.match(workLog, /isTested=true/);
   assert.match(
     market,
-    /intoss-private:\/\/babynest\?_deploymentId=019fee32-8415-761c-be38-9c5769aa00b2/,
+    /intoss-private:\/\/babynest\?_deploymentId=019ff016-36a2-75bc-a29e-ea987c0bfed4/,
   );
 
   assert.match(checklist, /- \[ \] AppsInToss private build sandbox/);

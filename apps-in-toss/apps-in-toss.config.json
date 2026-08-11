@@ -42,16 +42,16 @@
     "sandboxQa": "latest-bundle-test-push-succeeded: runtime-qa-pending",
     "latestPrivateUpload": {
       "ref": "main",
-      "sourceSha": "2704ff763639858069417b4f6c6e779aaeff704f",
+      "sourceSha": "21a857312fe4d5b64fb80bf3fdf8e0b638217b9a",
       "buildMethod": "local-main-worktree",
-      "artifactSha256": "02a268b0dae3ff8f8ae0817e319b78b0c1ec511da7bbc0133c186fc4465e4b26",
-      "artifactBytes": 3117587,
-      "versionName": "20260811-6",
-      "deploymentId": "019fee32-8415-761c-be38-9c5769aa00b2",
+      "artifactSha256": "baf0e95078a7156a74c54b2c8b3bb50bfeaf233feb68b54049a7567d7973c495",
+      "artifactBytes": 3153626,
+      "versionName": "20260811-7",
+      "deploymentId": "019ff016-36a2-75bc-a29e-ea987c0bfed4",
       "status": "created",
       "isTested": true,
       "deployed": false,
-      "uploadedAt": "2026-08-11T09:22:22+09:00"
+      "uploadedAt": "2026-08-11T18:11:17+09:00"
     }
   }
 }
