@@ -10,7 +10,7 @@
 - Region: `asia-northeast3`
 - Cloud Billing: `활성` — 2026-08-07 `gcloud beta billing projects describe seorilabs-babycare`에서 `billingEnabled=true` readback. 연결된 billing account 식별자는 보안상 원장에 기록하지 않는다.
 - Production project provisioning/deploy: Auth·Firestore Rules/indexes·Storage·초대/계정 삭제 callable 운영 중. 체온·복약 exact schema를 포함한 Rules를 2026-08-10 ruleset `8c1ee475-b15f-44ea-9695-009dfe3621a4`로 배포하고 local/remote SHA-256 일치를 readback했다.
-- Functions slice: `createInvite`·`acceptInvite`·`deleteAccount` production ACTIVE. AppsInToss GA4 중계 `logAnalyticsEvents`도 `GA4_MEASUREMENT_ID`와 Secret Manager의 `GA4_API_SECRET`을 사용해 production ACTIVE이며, 인증된 callable smoke에서 `accepted=1`을 확인했다(2026-08-09). AIT attestation용 `mintAitAppCheckToken`은 source·unit test 완료, mTLS secret 연결과 production 배포 pending이다.
+- Functions slice: `createInvite`·`acceptInvite`·`deleteAccount` production ACTIVE. AppsInToss GA4 중계 `logAnalyticsEvents`도 `GA4_MEASUREMENT_ID`와 Secret Manager의 `GA4_API_SECRET`을 사용해 production ACTIVE이며, 인증된 callable smoke에서 `accepted=1`을 확인했다(2026-08-09). AIT attestation용 `mintAitAppCheckToken`은 mTLS secret version 1과 revision `mintaitappchecktoken-00001-law`로 production ACTIVE다(2026-08-11).
 
 로컬 규칙 검증은 실제 project나 자격증명 없이 `babycare-rules-test`라는 Emulator 전용 project ID로만 실행한다.
 
@@ -21,13 +21,13 @@
 | Auth | 예 | 성인 양육자 신원과 그룹 멤버십 연결. production mobile은 platform custom token bridge, 개발 Emulator는 direct anonymous |
 | Firestore | 예 | 그룹, 멤버십, 아기, 돌봄 이벤트 실시간 동기화. native app composition과 production project 연결 완료 |
 | Storage | 예 | 기본 bucket과 Rules 운영. 그룹 경로의 지원 이미지, 파일당 10 MiB 이하만 허용. 현재 MVP UI에 upload 흐름 없음 |
-| Cloud Functions / Run | 예 | 초대·삭제 callable 운영. `logAnalyticsEvents`는 인증·allowlist·PII key 차단 후 GA4 Measurement Protocol로 최대 20개를 중계하며 production ACTIVE. `mintAitAppCheckToken`은 Toss mTLS login 검증 후 AIT Web app ID의 1시간 App Check token을 발급하도록 구현, 배포 pending |
+| Cloud Functions / Run | 예 | 초대·삭제 callable 운영. `logAnalyticsEvents`는 인증·allowlist·PII key 차단 후 GA4 Measurement Protocol로 최대 20개를 중계하며 production ACTIVE. `mintAitAppCheckToken`은 Toss mTLS login 검증 후 AIT Web app ID의 1시간 App Check token을 발급하며 production ACTIVE |
 | Analytics | 예 | GA4 property `549232169`, Android/iOS/Web data stream과 BigQuery daily+streaming link 운영. Realtime `core_screen_view=1` 및 callable `accepted=1` readback. 동일 제품 이벤트를 Platform Events에도 fan-out |
 | Remote Config | MVP 미사용 | 후속 기능 flag/tuning 후보. 보안 결정에는 사용하지 않음 |
 | Crashlytics | 연결 전 | PII/돌봄 기록 값을 log·custom key에 넣지 않음 |
 | Performance | 미사용 | 현재 의존성·native 구성에 포함하지 않음. 도입 시 privacy disclosure 재검토 |
 | FCM | MVP 밖 | 후속 opt-in 리마인더·공동 기록 알림 후보. 민감 내용을 잠금화면에 기본 노출하지 않음 |
-| App Check | 예 | mobile에 Play Integrity·App Attest·DeviceCheck fallback 적용. production callable `ENFORCE_APP_CHECK=true`, Platform `require_app_check=true`. AIT는 `appLogin`·mTLS 기반 custom provider source 구현 완료, 운영 secret·Function·비공개 실기기 QA pending |
+| App Check | 예 | mobile에 Play Integrity·App Attest·DeviceCheck fallback 적용. production callable `ENFORCE_APP_CHECK=true`, Platform `require_app_check=true`. AIT는 `appLogin`·mTLS custom provider, 운영 secret·Function과 새 비공개 후보 연결 완료. 유효 Toss code의 token 발급·갱신 실기기 QA pending |
 
 ## Firestore Model
 
@@ -204,8 +204,8 @@ sequenceDiagram
 | `INVITE_CREATE_LIMIT_PER_HOUR` | `defineInt` | 기본 10/UID |
 | `INVITE_ACCEPT_LIMIT_PER_HOUR` | `defineInt` | 기본 20/UID |
 | `ENFORCE_APP_CHECK` | `defineBoolean` | 코드 기본 false, production Parameter true |
-| `AIT_LOGIN_CLIENT_CERT` | `defineSecret` | AppsInToss login API mTLS certificate, 운영 연결 pending |
-| `AIT_LOGIN_CLIENT_KEY` | `defineSecret` | AppsInToss login API mTLS private key, 운영 연결 pending |
+| `AIT_LOGIN_CLIENT_CERT` | `defineSecret` | AppsInToss login API mTLS certificate, production version 1 연결 완료 |
+| `AIT_LOGIN_CLIENT_KEY` | `defineSecret` | AppsInToss login API mTLS private key, production version 1 연결 완료 |
 
 Production `FUNCTIONS_REGION`은 `asia-northeast3`이다. `firebase/callable-access.json`은 callable의 project·region·Cloud Run service 접근 계약과 런타임 서비스 계정의 Firestore·Auth·Storage 역할, App Check token 서명을 위한 자기 자신 대상 `Service Account Token Creator` 원장이며, 다음 명령으로 운영 상태를 읽기 전용 확인하거나 명시적으로 복구한다.
 
@@ -255,6 +255,6 @@ Rules 23건은 비멤버 차단, 멤버 read/record, 동일 timestamp raw timeli
 - Storage Rules가 Firestore membership을 조회하므로 실제 project에서 두 서비스 연결용 IAM 설정을 확인한다.
 - 계정 삭제 server/app workflow와 그룹 recursive delete·tombstone·로컬 cache purge는 구현·Emulator 검증을 마쳤다. production callable 배포와 일회성 owner/member 계정 live QA는 release blocker로 남는다. 데이터 export와 소유권 이전은 별도 정책·기능 결정이 필요하다.
 - mutation receipt가 revision 당시 event payload를 중복 보존하므로 offline retry window와 충돌하지 않는 보존 기간·cleanup/export/완전 삭제 정책을 실제 project 배포 전에 확정한다. 신규 transaction을 위한 미존재 valid-ID get은 허용하므로 exact ID 존재 여부 oracle도 abuse 검토에 포함한다.
-- AIT mTLS secret과 mint Function을 배포한 뒤 실제 Toss 비공개 번들에서 token 발급·갱신·복구 절차를 검증한다.
+- AIT mTLS secret과 mint Function은 production 연결됐다. `20260811-6` 비공개 번들을 로그인된 실제 Toss 설치 기기에서 열어 유효 code 기반 token 발급·갱신·복구 절차를 검증한다.
 
 상세 위협과 잔여 위험은 `docs/03-architecture/security-threat-model.md`를 따른다.
