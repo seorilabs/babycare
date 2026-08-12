@@ -37,6 +37,7 @@ const config = JSON.parse(readFileSync("apps-in-toss/apps-in-toss.config.json", 
 const policy = config.monetization;
 if (policy?.ads !== true || policy?.rewardedPlacement !== "stats_detail" ||
     policy?.rewardDurationHours !== 24 ||
+    !/^ait\.v2\.live\.[0-9a-f]{16}$/.test(policy?.adGroupId ?? "") ||
     policy?.adGroupIdSource !== "AIT_REWARDED_AD_GROUP_ID" ||
     policy?.inAppPurchase !== false || policy?.tossPay !== false) {
   console.error("AIT monetization must allow only the 24-hour stats-detail rewarded placement.");

@@ -113,6 +113,43 @@ test('AppsInToss build and dev paths both inject the Firebase web API key', asyn
   assert.match(workflow, /\[ -n "\$FIREBASE_WEB_API_KEY" \] \|\|/);
 });
 
+test('AppsInToss production rewarded ad id comes from the environment', async () => {
+  const [registration, graniteConfig, rewardedAd, workflow] = await Promise.all([
+    json('apps-in-toss/apps-in-toss.config.json'),
+    read('apps/ait/granite.config.ts'),
+    read('apps/ait/src/services/rewarded-ad.ts'),
+    read('.github/workflows/deploy-apps-in-toss.yml'),
+  ]);
+
+  assert.match(registration.monetization.adGroupId, /^ait\.v2\.live\.[0-9a-f]{16}$/);
+  assert.equal(registration.monetization.adGroupIdSource, 'AIT_REWARDED_AD_GROUP_ID');
+  assert.deepEqual(registration.release.latestRewardedAdBuild, {
+    baseSourceSha: 'ff837dd1e16e27686a5c01d4888a35cbfb8316c8',
+    artifactSha256:
+      '3895283b679b2434cb5deab0a2716cf2d734df3799c5cb904c95d85fe1bc1e8e',
+    artifactBytes: 3771389,
+    deploymentId: '019ff443-31e2-79a2-b68b-cfde741ac42a',
+    bundleCount: 4,
+    operatingAdGroupIdEmbedded: true,
+    uploaded: false,
+    builtAt: '2026-08-12T13:38:12+09:00',
+  });
+  assert.match(
+    graniteConfig,
+    /'process\.env\.AIT_REWARDED_AD_GROUP_ID': JSON\.stringify\(/,
+  );
+  assert.match(rewardedAd, /ait-ad-test-rewarded-id/);
+  assert.match(
+    rewardedAd,
+    /__DEV__ \? TEST_REWARDED_AD_GROUP_ID : AIT_REWARDED_AD_GROUP_ID/,
+  );
+  assert.match(
+    workflow,
+    /AIT_REWARDED_AD_GROUP_ID: \$\{\{ vars\.AIT_REWARDED_AD_GROUP_ID \}\}/,
+  );
+  assert.match(workflow, /\[ -n "\$AIT_REWARDED_AD_GROUP_ID" \] \|\|/);
+});
+
 // 등록 자산 목록과 실제 파일이 어긋나면 Console에 빠진 컷을 올리게 된다.
 test('AppsInToss asset manifest matches the screenshot files on disk', async () => {
   const [manifest, checker] = await Promise.all([

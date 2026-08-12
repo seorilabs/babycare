@@ -51,7 +51,7 @@
 
 | 상태 | 작업 | 완료 증거 / Blocker |
 | --- | --- | --- |
-| 구현·로컬 검증 완료·운영 설정 대기 | 보상형 광고 1개(통계 상세) | 모바일 AdMob+UMP, AIT 통합 리워드, 보상 완료 후 24h unlock, 기록 루프 무광고. 운영 광고 ID·UMP·마켓 설문·실기기 QA 남음 |
+| 구현·운영 ID 등록·로컬 production 빌드 완료 | 보상형 광고 1개(통계 상세) | 모바일 AdMob+UMP, AIT 통합 리워드, 보상 완료 후 24h unlock, 기록 루프 무광고. AIT 운영 ID는 GitHub `apps-in-toss` environment에 등록하고 production build에만 주입한다. Console 광고 설문·공식 test ID 실기기 QA·업로드는 남음 |
 | 아이디어·데이터 대기 | v2 또래 비교 인사이트(월령 밴드 익명 집계) | unlock 보상을 또래 비교로 격상. cohort당 최소 N명(k-익명), 비의료 프레이밍, 백엔드 집계 job + 개인정보방침 "익명 집계 벤치마크" 고지. 데이터 볼륨 확보 후 |
 | 완료 | 비용 가드레일: GCP 예산 알림 | `seorilabs-babycare` 월 ₩20,000, 50/90/100% 이메일 알림 설정됨(2026-07-19) |
 | mobile·AIT backend 완료·AIT 실기기 QA 대기 | 확장 전 App Check 활성화 | production callable·Platform 강제와 AIT mTLS secret·mint Function·새 private 후보 연결 완료. 실제 Toss token 발급·갱신 QA pending |

@@ -17,8 +17,9 @@ screenshot 5장은 AppsInToss sandbox에서 실행한 실제 미니앱 화면 �
 기능은 Toss `appLogin`이 동작하는 sandbox/비공개 실행 환경과 배포된 App Check mint Function이 필요하다.
 
 ```bash
-echo "FIREBASE_WEB_API_KEY=<값>" > apps/ait/.env   # gitignore 대상
-pnpm --dir apps/ait dev                            # 포트 8081 고정
+printf 'FIREBASE_WEB_API_KEY=%s\nAIT_REWARDED_AD_GROUP_ID=%s\n' \
+  '<Firebase Web API key>' '<AppsInToss 운영 광고 그룹 ID>' > apps/ait/.env # gitignore 대상
+pnpm --dir apps/ait dev                            # 포트 8081 고정, 광고는 test ID 사용
 xcrun simctl launch <UDID> com.vivarepublica.ent.cash.test
 xcrun simctl openurl <UDID> "intoss-sandbox://babynest"
 ```

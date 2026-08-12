@@ -28,8 +28,9 @@
     "tossPay": false,
     "rewardedPlacement": "stats_detail",
     "rewardDurationHours": 24,
+    "adGroupId": "ait.v2.live.0468737e1e074c40",
     "adGroupIdSource": "AIT_REWARDED_AD_GROUP_ID",
-    "evidence": "통계 요약은 무료이며 상세 통계만 선택형 리워드 광고 완료 후 24시간 열린다. 운영 adGroupId 설정과 Console QR 실기기 검증은 남아 있다."
+    "evidence": "통계 요약은 무료이며 상세 통계만 선택형 리워드 광고 완료 후 24시간 열린다. 운영 adGroupId는 2026-08-12 Console ENABLED readback과 GitHub apps-in-toss environment 등록을 완료했다. 개발·QA는 공식 test ID만 사용하며 Console QR 실기기 검증은 남아 있다."
   },
   "assets": {
     "logo": "apps-in-toss/assets/logo-600.png",
@@ -40,6 +41,16 @@
   "release": {
     "artifact": "apps/ait/*.ait",
     "sandboxQa": "latest-bundle-test-push-succeeded: runtime-qa-pending",
+    "latestRewardedAdBuild": {
+      "baseSourceSha": "ff837dd1e16e27686a5c01d4888a35cbfb8316c8",
+      "artifactSha256": "3895283b679b2434cb5deab0a2716cf2d734df3799c5cb904c95d85fe1bc1e8e",
+      "artifactBytes": 3771389,
+      "deploymentId": "019ff443-31e2-79a2-b68b-cfde741ac42a",
+      "bundleCount": 4,
+      "operatingAdGroupIdEmbedded": true,
+      "uploaded": false,
+      "builtAt": "2026-08-12T13:38:12+09:00"
+    },
     "latestPrivateUpload": {
       "ref": "main",
       "sourceSha": "21a857312fe4d5b64fb80bf3fdf8e0b638217b9a",

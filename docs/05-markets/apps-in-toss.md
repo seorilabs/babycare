@@ -58,7 +58,8 @@ screenshot은 sandbox에서 실행한 미니앱 실제 화면이다. 저장소 �
 - 이 경로로 2026-08-08에 온보딩→그룹 생성→수유·기저귀·수면 기록→탭 전환까지 운영 Firebase 대상으로 실행하고 화면을 캡처했다. Console 로그인이 필요한 것은 배포된 번들을 여는 경우다
 - 체온·복약은 소스와 로컬 테스트까지 구현됐으며 2026-08-08 기존 sandbox 캡처·비공개 번들에는 포함되지 않는다. 새 `.ait` 후보의 입력·간격 경고·두 계정 동기화 실기기 QA가 필요하다
 - Console review: 승인 완료(2026-08-04 readback)
-- Ads/payment policy answers: **광고 있음 · 인앱 결제 없음 · Toss Pay 없음**으로 변경 필요. 운영 `AIT_REWARDED_AD_GROUP_ID` 등록과 Console QR/private bundle 실기기에서 load→show→`userEarnedReward`→24시간 해제를 확인해야 한다. Sandbox는 광고 검증 근거가 아니다.
+- Ads/payment policy answers: **광고 있음 · 인앱 결제 없음 · Toss Pay 없음**으로 변경 필요. `통계 보상형 광고`는 2026-08-12 11:31 KST 생성 후 13:35 KST `ENABLED`와 정식 `groupId`를 Console API로 readback했고, 같은 ID를 GitHub `apps-in-toss` environment의 `AIT_REWARDED_AD_GROUP_ID` variable로 등록했다. 운영 ID는 production build에만 주입한다. 개발·QA의 load→show→`userEarnedReward`→24시간 해제는 공식 test ID `ait-ad-test-rewarded-id`로 확인하며, 실제 광고 ID를 테스트 노출에 사용하지 않는다.
+- Rewarded-ad local production artifact: `origin/main@ff837dd` 기반 `019ff443-31e2-79a2-b68b-cfde741ac42a`, SHA-256 `3895283b679b2434cb5deab0a2716cf2d734df3799c5cb904c95d85fe1bc1e8e`, 3,771,389 bytes. RN 0.84.0/0.72.6 Android·iOS 번들 4개 모두 운영 ID 포함, 광고/Firebase 환경 placeholder 없음, Firebase key 인라인, test ID 제외를 확인했다. 로컬 생성만 했으며 Console 업로드·test push·배포는 수행하지 않았다.
 - Release review prerequisite: 날짜·키보드 수정 후보 `20260811-7` test push·`isTested=true`와 실제 Toss 로그인 기반 App Check token 발급·그룹·membership·아기 생성은 확인했다. 이 후보에서 날짜·키보드, Storage 재실행 복구·토큰 만료 갱신·초대·공동 기록·네트워크 복귀를 확인하고 검수를 요청한다
 - 기존 `019fd827-571d-791d-bd50-08f2da35afec` 번들은 App Check header가 없어 보호 API가 거부된다. 최신 후보는 `019ff016-36a2-75bc-a29e-ea987c0bfed4`이며 운영 강제를 낮추지 않는다.
 

@@ -14,7 +14,8 @@ pnpm --dir apps/ait build
 - sandbox scheme: `intoss://babynest/`
 - build artifact: `apps/ait/*.ait`
 - TDS React Native와 `react-native-safe-area-context`를 사용한다.
-- `FIREBASE_WEB_API_KEY`는 빌드 시 주입한다. 값이 없으면 build를 실패시킨다.
+- `FIREBASE_WEB_API_KEY`와 운영 `AIT_REWARDED_AD_GROUP_ID`는 빌드 시 주입한다.
+  CI는 `apps-in-toss` environment의 secret/variable을 사용하며 로컬 값은 gitignore된 `.env`에 둔다.
 
 ## 구현 범위
 
