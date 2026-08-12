@@ -252,7 +252,7 @@ describe('AppsInToss feature parity contract', () => {
     ];
     const text = textOf(
       <MoreScreen
-        inviteExpiresAt={now + 86_400_000}
+        inviteExpiresAt={Date.UTC(2099, 0, 1)}
         memberships={memberships}
         onCreateInvite={jest.fn()}
         onDeleteAccount={jest.fn()}
@@ -267,6 +267,7 @@ describe('AppsInToss feature parity contract', () => {
     expect(text).toContain('엄마');
     expect(text).toContain('아빠');
     expect(text).toContain('공유');
+    expect(text).not.toContain('초대 코드가 만료됐어요');
     expect(text).toContain('구성원 목록 새로고침');
     expect(text).toContain('언어');
     expect(text).toContain('개인정보 처리방침');

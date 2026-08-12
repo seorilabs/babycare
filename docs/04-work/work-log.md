@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-12 — AppsInToss 운영 리워드 광고 ID 등록과 production build
+
+- AppsInToss Console에서 `통계 보상형 광고` 리워드 그룹을 11:31 KST 생성했다. Google 광고 시스템 반영 뒤 13:35 KST에 `ENABLED`, 정식 `groupId`, 제한 없음 상태를 API로 readback하고 공개 ID를 repo config와 GitHub `apps-in-toss` environment의 `AIT_REWARDED_AD_GROUP_ID` variable에 등록했다.
+- 개발·QA는 공식 `ait-ad-test-rewarded-id`, production만 운영 ID를 사용하도록 기존 경계를 회귀 테스트로 고정했다. 실제 운영 광고를 테스트 노출하지 않았고 Console 정책 답변·실기기 보상 흐름은 별도 gate로 유지했다.
+- 기존 Firebase 환경값을 출력 없이 재사용해 RN 0.84.0/0.72.6 Android·iOS 번들 4개를 `0 errors`, `0 warnings`로 만들었다. `.ait` deployment ID는 `019ff443-31e2-79a2-b68b-cfde741ac42a`, SHA-256은 `3895283b679b2434cb5deab0a2716cf2d734df3799c5cb904c95d85fe1bc1e8e`, 크기는 3,771,389 bytes다.
+- 4개 production bundle에서 운영 ID 포함, `process.env.AIT_REWARDED_AD_GROUP_ID`·`process.env.FIREBASE_WEB_API_KEY` 부재, Firebase key 인라인, test ID 제외를 확인했다. artifact는 로컬 후보이며 Console 업로드·test push·배포는 수행하지 않았다.
+- 전체 static gate 재실행 중 고정 시각에 하루만 더한 초대 코드 fixture가 실제 실행 날짜를 지나 `공유` 대신 만료 UI를 렌더링하는 테스트 시간 의존성을 확인했다. 유효 초대 계약은 2099년 고정 만료 시각과 만료 문구 부재 assertion으로 바꿔 실행 날짜와 무관하게 고정했다.
+
 ## 2026-08-11 — 영어 신규 사용자 온보딩과 첫 기록 가이드
 
 - 기존 Android/iOS 온보딩은 그룹 생성·참여 방법만 설명해 신규 사용자가 첫 화면에서 제품 가치와 첫 행동을 이해하기 어려웠다. 기존의 한 화면 한 입력 구조는 유지하고, 시작 화면에 `빠른 기록`·`쉬운 인수인계`·`초대 전용 공유` 가치를 한국어·영어로 짧게 추가했다.

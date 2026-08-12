@@ -27,7 +27,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 | --- | --- | --- | --- | --- |
 | Google Play | `apps/mobile`, `play-store/` | signed `.aab` | ✅ **`v1.1.3` AAB(1.1.3/1001003)를 internal `completed` 업로드·API readback 완료**. 체온·복약·Analytics·AdMob/UMP 포함 | Play Store app-signing 설치본 실기기 QA → production 심사·승격 |
 | App Store | `apps/mobile`, `app-store/` | Xcode archive/export | ✅ **`v1.1.3` 1.1.3(61), ASC `VALID`·`APP_STORE_ELIGIBLE`·`IN_BETA_TESTING`**. App Privacy·DSA·비규제 의료기기·버전 레코드 반영 완료 | TestFlight 2기기 실기기 QA → App Review 제출 |
-| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. Toss Login·mTLS secret·App Check mint Function 운영 연결, 최신 private `20260811-6` / `019fee32-8415-761c-be38-9c5769aa00b2` test push·`isTested=true` 완료 | 로그인된 실제 Toss 설치 기기 App Check·핵심 흐름 QA → 정책 답변·프로덕션 승인 |
+| AppsInToss | `apps/ait`, `apps-in-toss/` | `.ait` | Granite RN·TDS UI와 운영 Auth/Firestore/Functions adapter 구현. Toss Login·mTLS App Check 운영 연결, 운영 rewarded adGroupId `ENABLED`·GitHub environment 등록·로컬 production 번들 주입 검증 완료. 최신 private는 `20260811-7` / `019ff016-36a2-75bc-a29e-ea987c0bfed4`, `isTested=true`, `deployed=false` | 로그인된 실제 Toss 설치 기기 핵심 흐름·test ID 광고 QA → Console 정책 답변·프로덕션 승인 |
 | **백엔드(Firebase + Platform)** | `firebase/`, `seorilabs/platform` | 프로덕션 프로젝트 | 체온·복약 Rules를 포함한 Firestore·Storage·Functions·Platform 인증 bridge·GA4 relay·Platform Events가 LIVE. GA4 Realtime과 Platform BigQuery 실수집 readback 완료 | `v1.1.3` 기기 이벤트와 App Check token 검증 |
 
 ## 공통 Blocker
@@ -38,7 +38,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - mobile App Check 강제와 cache purge는 완료. AIT mTLS attestation backend·새 비공개 후보 연결도 완료했으며 실제 Toss QA, AIT 실시간/offline sync는 별도 gate.
 - ~~개인정보 처리방침·계정 삭제 절차와 아동·돌봄·건강 기록의 Google Play Data Safety·Apple App Privacy 공개~~ 완료. 체온·복약 공개 방침과 Console readback은 2026-08-10 완료.
 - ~~연령등급, 성인 양육자용·비의료 목적 review note, DSA trader와 비규제 의료기기 선언~~ 완료. 마켓 심사 제출은 실기기 QA 뒤 별도 수행.
-- ~~AdMob Android/iOS app ID·rewarded unit ID와 EU/미국 privacy message 발급·게시~~ 완료. AppsInToss adGroupId는 별도 타깃 gate다.
+- ~~AdMob Android/iOS app ID·rewarded unit ID와 EU/미국 privacy message 발급·게시~~ 완료. AppsInToss adGroupId도 `ENABLED` readback·GitHub environment 등록·로컬 production 번들 주입까지 완료했으며 test ID 실기기 QA와 Console 광고 답변은 별도 gate다.
 - ~~Firebase Analytics와 Platform Events 양측 live 수집~~ 완료. GA4 Realtime·Platform BigQuery에서 PII 없는 `core_screen_view` smoke를 readback했다.
 - Google Play/App Store 앱 아이콘·feature graphic·phone screenshot은 완료. AppsInToss logo·thumbnail·vertical screenshot은 exact size·RGB와 실제 AIT sandbox 화면 교체를 완료했고 Console 업로드·readback이 남았다. native launch 화면 사람 QA는 남음.
 - 서로 다른 계정·기기 2대의 초대·실시간·오프라인·접근 회수 사람 QA.
