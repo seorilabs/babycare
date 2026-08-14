@@ -122,6 +122,7 @@ export function HomeScreen(props: {
   readonly now: number;
   readonly strings: Strings;
   readonly theme: AppTheme;
+  readonly showFirstEntryGuide?: boolean;
   readonly onRecord: (kind: CareEventKind) => void;
   readonly onMore: () => void;
   readonly onStopSleep: (event: CareEvent) => Promise<void>;
@@ -243,6 +244,48 @@ export function HomeScreen(props: {
           </Text>
         </View>
       </View>
+
+      {props.showFirstEntryGuide ? (
+        <View
+          testID="first-entry-guide"
+          style={[
+            styles.firstEntryGuide,
+            {
+              backgroundColor: props.theme.colors.primarySoft,
+              borderColor: props.theme.colors.primary,
+            },
+          ]}>
+          <Text style={[styles.firstEntryEyebrow, {color: props.theme.colors.primary}]}>
+            {props.strings.home.firstEntryEyebrow}
+          </Text>
+          <Text style={[styles.firstEntryTitle, {color: props.theme.colors.text}]}>
+            {props.strings.home.firstEntryTitle}
+          </Text>
+          <Text style={[styles.firstEntryDescription, {color: props.theme.colors.textMuted}]}>
+            {props.strings.home.firstEntryDescription}
+          </Text>
+          <View style={styles.firstEntryActions}>
+            {[
+              {accessibilityLabel: props.strings.home.firstFeedingAction, color: props.theme.colors.feeding, icon: '🍼', kind: 'feeding' as const, label: props.strings.home.feeding},
+              {accessibilityLabel: props.strings.home.firstDiaperAction, color: props.theme.colors.diaper, icon: '🧷', kind: 'diaper' as const, label: props.strings.home.diaper},
+              {accessibilityLabel: props.strings.home.firstSleepAction, color: props.theme.colors.sleep, icon: '🌙', kind: 'sleep' as const, label: props.strings.home.sleep},
+            ].map(action => (
+              <Pressable
+                accessibilityLabel={action.accessibilityLabel}
+                accessibilityRole="button"
+                key={action.kind}
+                onPress={() => props.onRecord(action.kind)}
+                style={({pressed}) => [
+                  styles.firstEntryAction,
+                  {backgroundColor: props.theme.colors.surface, borderColor: `${action.color}66`, opacity: pressed ? 0.78 : 1},
+                ]}>
+                <Text style={styles.firstEntryActionIcon}>{action.icon}</Text>
+                <Text style={[styles.firstEntryActionLabel, {color: props.theme.colors.text}]}>{action.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
 
       <Text style={[styles.sectionEyebrow, {color: props.theme.colors.textMuted}]}>
         {props.strings.home.recentSection}
@@ -393,6 +436,14 @@ const styles = StyleSheet.create({
   syncBadge: {alignItems: 'center', borderRadius: 999, flexDirection: 'row', flexShrink: 0, marginLeft: 12, paddingHorizontal: 10, paddingVertical: 7},
   syncDot: {borderRadius: 4, height: 7, marginRight: 6, width: 7},
   syncText: {fontSize: 11, fontWeight: '700'},
+  firstEntryGuide: {borderRadius: 20, borderWidth: 1, marginBottom: 24, padding: 18},
+  firstEntryEyebrow: {fontSize: 11, fontWeight: '900', letterSpacing: 1.2},
+  firstEntryTitle: {fontSize: 20, fontWeight: '900', marginTop: 7},
+  firstEntryDescription: {fontSize: 13, lineHeight: 20, marginTop: 7},
+  firstEntryActions: {flexDirection: 'row', gap: 8, marginTop: 16},
+  firstEntryAction: {alignItems: 'center', borderRadius: 14, borderWidth: 1, flex: 1, minHeight: 76, paddingHorizontal: 6, paddingVertical: 10},
+  firstEntryActionIcon: {fontSize: 21},
+  firstEntryActionLabel: {fontSize: 12, fontWeight: '800', marginTop: 5, textAlign: 'center'},
   sectionEyebrow: {fontSize: 12, fontWeight: '700', letterSpacing: 0.5, marginBottom: 9, textTransform: 'uppercase'},
   latestList: {gap: 9},
   latestCard: {alignItems: 'center', borderRadius: 17, borderWidth: 1, flexDirection: 'row', minHeight: 88, padding: 13},

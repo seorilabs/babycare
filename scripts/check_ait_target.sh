@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+node scripts/check-ait-source-parity.mjs
+
 required_files=(
   "apps-in-toss/apps-in-toss.config.json"
   "apps/ait/package.json"
@@ -20,7 +22,7 @@ rg -q '"build": "ait build"' apps/ait/package.json
 rg -q "appName: 'babynest'" apps/ait/granite.config.ts
 rg -q "displayName: '함께봄: 아기돌봄 기록'" apps/ait/granite.config.ts
 rg -q 'TDSProvider' apps/ait/src/_app.tsx
-rg -q "from '@toss/tds-react-native'" apps/ait/src/pages/index.tsx
+rg -q 'CloudOnboardingScreen' apps/ait/src/pages/index.tsx
 rg -q 'PersistentCareEventSyncStore' apps/ait/src/services/care-event-runtime.ts
 rg -q 'AitFirestoreCareEventRemoteStore' apps/ait/src/services/babycare-backend.ts
 rg -q 'QuickRecordModal' apps/ait/src/components/parity-dashboard.tsx

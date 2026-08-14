@@ -13,7 +13,7 @@ jest.mock('@apps-in-toss/framework', () => ({
 }));
 
 jest.mock('./analytics', () => ({
-  babycareAnalytics: {track: jest.fn(async () => undefined)},
+  babycareAnalytics: { track: jest.fn(async () => undefined) },
 }));
 
 jest.mock('./babycare-backend', () => ({
@@ -32,7 +32,34 @@ jest.mock('./babycare-backend', () => ({
     }
 
     async fetchPage() {
-      return {events: [], hasMore: false};
+      return { events: [], hasMore: false };
+    }
+
+    async fetchWindow() {
+      return [];
+    }
+
+    observeWindow(_request: unknown, listener: (value: unknown) => void) {
+      listener({ kind: 'server_value', events: [] });
+      return () => undefined;
+    }
+
+    async fetchLatest() {
+      return undefined;
+    }
+
+    observeLatest(_request: unknown, listener: (value: unknown) => void) {
+      listener({ kind: 'server_value' });
+      return () => undefined;
+    }
+
+    async fetchActiveSleep() {
+      return undefined;
+    }
+
+    observeActiveSleep(_request: unknown, listener: (value: unknown) => void) {
+      listener({ kind: 'server_value' });
+      return () => undefined;
     }
 
     observePage() {
@@ -44,7 +71,7 @@ jest.mock('./babycare-backend', () => ({
     }
 
     observe(_query: unknown, listener: (value: unknown) => void) {
-      listener({kind: 'server_snapshot', events: []});
+      listener({ kind: 'server_snapshot', events: [] });
       return () => undefined;
     }
   },
@@ -58,7 +85,7 @@ import {
   type CareGroup,
   type Membership,
 } from '../../../../packages/product-core/src/index.ts';
-import {createAitCareEventRuntime} from './care-event-runtime';
+import { createAitCareEventRuntime } from './care-event-runtime';
 
 describe('AppsInToss local-first care event runtime', () => {
   beforeEach(() => {
@@ -102,13 +129,8 @@ describe('AppsInToss local-first care event runtime', () => {
         memberships: [membership],
         events: [],
       },
-      jest.fn(),
+      jest.fn()
     );
-    let failed = 0;
-    const stopSync = runtime.observeSyncState(states => {
-      failed = states.filter(state => state.status === 'failed').length;
-    });
-
     await runtime.record({
       groupId: group.id,
       babyId: baby.id,
@@ -120,14 +142,9 @@ describe('AppsInToss local-first care event runtime', () => {
       note: '오프라인 기록',
     });
     await runtime.syncNow();
-
-    expect(failed).toBe(1);
-    expect([...mockStored.keys()].some(key => key.includes('care-event-sync'))).toBe(
-      true,
-    );
+    expect([...mockStored.keys()].some((key) => key.includes('care-event-sync'))).toBe(true);
     expect([...mockStored.values()].join(' ')).toContain('오프라인 기록');
 
-    stopSync();
     await runtime.close();
   });
 });

@@ -19,7 +19,7 @@
 | Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded projection, transaction receipt·active lock, Firebase runtime host/config, session restore·그룹 생성·초대 합류, strict cloud context cache, ko/en cloud onboarding·server-confirmed 0건 첫 기록 가이드·onboarding screen-view event |
 | Mobile lint | RN source 정적 검사 | `pnpm --filter @babycare/mobile lint` | mobile source |
 | Mobile target | RN Android/iOS target과 iOS launch | `pnpm run check:mobile` | native project 존재, framework launch 문구 탐지 |
-| AIT unit/parity | 상세 기록·홈·타임라인·통계·더보기와 offline outbox | `pnpm run test:ait` | 5종 기록 variant, 과거 시각·메모, latest 5종, 작성자·삭제, 12h/7d/30d, 구성원·초대·privacy, remote 실패 local 보존 |
+| AIT unit/parity | mobile UI 소스 동기, 상세 기록·홈·타임라인·통계·더보기와 offline outbox | `pnpm run check:ait:parity`, `pnpm run test:ait` | 13개 UI/표시 소스 드리프트, 5종 기록 variant, 첫 기록 가이드, 20개 단위 타임라인 페이지네이션, 과거 시각·메모, latest 5종, 작성자·삭제, 12h/7d/30d, 구성원·초대·privacy, remote 실패 local 보존 |
 | AIT target | Granite·TDS 구성과 Console 식별자 | `pnpm run check:ait`, `pnpm --dir apps/ait check`, `pnpm --dir apps/ait build` | 패리티 local build 완료, Console 업로드·sandbox 실기기 QA 미검증 |
 | Release inventory | market/release blocker | `pnpm run check:release` | placeholder와 필수 market config; 현재 실패가 정상 |
 
