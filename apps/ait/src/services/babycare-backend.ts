@@ -3,6 +3,7 @@ import {type Baby} from '../../../../packages/product-core/src/domain/baby.ts';
 import {
   createCareEvent,
   type CareEvent,
+  type SleepEvent,
   type MedicationActiveIngredient,
   type MedicationCategory,
   type MedicationDoseUnit,
@@ -18,6 +19,15 @@ import type {
   CareEventRemoteStorePort,
 } from '../../../../packages/product-core/src/ports/care-event-remote-store.ts';
 import type {CareEventPageRequest} from '../../../../packages/product-core/src/ports/care-event-timeline.ts';
+import type {
+  ActiveSleepObservation,
+  CareEventProjectionRemotePort,
+  CareEventProjectionScope,
+  CareEventWindowObservation,
+  CareEventWindowRequest,
+  LatestCareEventObservation,
+  LatestCareEventRequest,
+} from '../../../../packages/product-core/src/ports/care-event-projection.ts';
 import {
   type CareGroup,
   type Membership,
@@ -947,7 +957,7 @@ async function activeSleepFromLock(
  * durable local outbox; this class only owns server acknowledgement and polling.
  */
 export class AitFirestoreCareEventRemoteStore
-  implements CareEventRemoteStorePort
+  implements CareEventRemoteStorePort, CareEventProjectionRemotePort
 {
   readonly #actorUid: string;
 
@@ -1200,6 +1210,100 @@ export class AitFirestoreCareEventRemoteStore
       ...(last
         ? {endCursor: {occurredAt: last.occurredAt, eventId: last.id}}
         : {}),
+    };
+  }
+
+  async fetchWindow(request: CareEventWindowRequest): Promise<readonly CareEvent[]> {
+    return this.list({
+      groupId: request.groupId,
+      babyId: request.babyId,
+      from: request.from,
+      ...(request.to !== undefined ? {to: request.to} : {}),
+      ...(request.kinds ? {kinds: request.kinds} : {}),
+    });
+  }
+
+  observeWindow(
+    request: CareEventWindowRequest,
+    listener: (observation: CareEventWindowObservation) => void,
+  ): () => void {
+    return this.observeProjection(
+      () => this.fetchWindow(request),
+      events => ({kind: 'server_value' as const, events}),
+      listener,
+    );
+  }
+
+  async fetchLatest(request: LatestCareEventRequest): Promise<CareEvent | undefined> {
+    return (
+      await this.list({
+        groupId: request.groupId,
+        babyId: request.babyId,
+        kinds: [request.kind],
+        limit: 1,
+      })
+    )[0];
+  }
+
+  observeLatest(
+    request: LatestCareEventRequest,
+    listener: (observation: LatestCareEventObservation) => void,
+  ): () => void {
+    return this.observeProjection(
+      () => this.fetchLatest(request),
+      event => ({kind: 'server_value' as const, ...(event ? {event} : {})}),
+      listener,
+    );
+  }
+
+  async fetchActiveSleep(scope: CareEventProjectionScope): Promise<SleepEvent | undefined> {
+    const events = await this.list({
+      groupId: scope.groupId,
+      babyId: scope.babyId,
+      kinds: ['sleep'],
+    });
+    return events.find(
+      (event): event is SleepEvent =>
+        event.kind === 'sleep' &&
+        event.endedAt === undefined &&
+        event.deletedAt === undefined,
+    );
+  }
+
+  observeActiveSleep(
+    scope: CareEventProjectionScope,
+    listener: (observation: ActiveSleepObservation) => void,
+  ): () => void {
+    return this.observeProjection(
+      () => this.fetchActiveSleep(scope),
+      event => ({kind: 'server_value' as const, ...(event ? {event} : {})}),
+      listener,
+    );
+  }
+
+  private observeProjection<T, O>(
+    load: () => Promise<T>,
+    success: (value: T) => O,
+    listener: (observation: O | {readonly kind: 'error'; readonly error: ReturnType<typeof remoteFailure>['remoteError']}) => void,
+  ): () => void {
+    let active = true;
+    let running = false;
+    const poll = async () => {
+      if (!active || running) return;
+      running = true;
+      try {
+        listener(success(await load()));
+      } catch (error) {
+        listener({kind: 'error', error: remoteFailure(error).remoteError});
+      } finally {
+        running = false;
+      }
+    };
+    void poll();
+    const timer = setInterval(() => void poll(), 15_000);
+    return () => {
+      active = false;
+      clearInterval(timer);
     };
   }
 

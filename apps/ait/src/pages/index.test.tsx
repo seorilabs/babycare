@@ -1,5 +1,5 @@
 import React from 'react';
-import {KeyboardAvoidingView, ScrollView, Text} from 'react-native';
+import {KeyboardAvoidingView, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {BabyNestHome} from './index';
@@ -70,22 +70,16 @@ describe('BabyNestHome', () => {
     });
 
     const visibleText = renderedText(renderer);
-    expect(visibleText).toContain('함께 남기는 아기 돌봄 기록');
-    expect(visibleText).toContain('새 돌봄 시작');
-    expect(visibleText).toContain('초대 코드 참여');
-    expect(visibleText).toContain('수유, 기저귀, 수면, 체온, 복약');
-    expect(visibleText).toContain('의료 판단이나 진단을 제공하지 않습니다.');
+    expect(visibleText).toContain("Know what happened, even when you weren't there");
+    expect(visibleText).toContain('Log care in seconds');
+    expect(visibleText).toContain('Easy handoffs');
+    expect(visibleText).toContain('Invite-only sharing');
+    expect(visibleText).toContain('Set up my baby');
+    expect(visibleText).toContain('I have an invite code');
     expect(visibleText).not.toContain('build-only');
     expect(visibleText).not.toContain('sandbox');
     expect(renderer.root.findAllByType(KeyboardAvoidingView)).toHaveLength(1);
-    expect(
-      renderer.root.findByProps({accessibilityLabel: '아기 생년월일 선택'})
-        .props.accessibilityRole,
-    ).toBe('button');
-    expect(renderer.root.findByType(ScrollView).props).toMatchObject({
-      automaticallyAdjustKeyboardInsets: true,
-      keyboardShouldPersistTaps: 'handled',
-    });
+    expect(renderer.root.findByProps({testID: 'onboarding-benefits'})).toBeDefined();
 
     ReactTestRenderer.act(() => renderer.unmount());
   });

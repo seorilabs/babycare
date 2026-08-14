@@ -9,7 +9,11 @@ import {
   View,
 } from 'react-native';
 import type {CareEvent, CareEventKind} from '../../../../packages/product-core/src/index.ts';
-import type {CareEventSyncState} from '../../../../packages/product-data/src/index.ts';
+import type {
+  CareEventOverviewFeedState,
+  CareEventSyncState,
+  CareEventTimelineFeedState,
+} from '../../../../packages/product-data/src/index.ts';
 import {deviceAppLocale} from '../parity/locale';
 import {createStrings} from '../parity/strings';
 import type {LocalSession} from '../parity/session';
@@ -47,6 +51,23 @@ export function ParityDashboard({
   const strings = useMemo(() => createStrings(deviceAppLocale()), []);
   const [ready, setReady] = useState(initialReady);
   const [runtime, setRuntime] = useState<AitCareEventRuntime>();
+  const [timeline, setTimeline] = useState<CareEventTimelineFeedState>({
+    events: initialReady.events,
+    hasMore: true,
+    loadingMore: false,
+    loadMoreError: undefined,
+    capped: false,
+  });
+  const [overview, setOverview] = useState<CareEventOverviewFeedState>({
+    events: initialReady.events,
+    activeSleep: initialReady.events.find(
+      (event): event is CareEvent & {readonly kind: 'sleep'} =>
+        event.kind === 'sleep' &&
+        event.endedAt === undefined &&
+        event.deletedAt === undefined,
+    ),
+    status: 'loading',
+  });
   const [tab, setTab] = useState<AppTab>('home');
   const [recording, setRecording] = useState<CareEventKind>();
   const [syncStates, setSyncStates] = useState<readonly CareEventSyncState[]>([]);
@@ -62,6 +83,7 @@ export function ParityDashboard({
     let active = true;
     let created: AitCareEventRuntime | undefined;
     let stopEvents: () => void = () => undefined;
+    let stopOverview: () => void = () => undefined;
     let stopSync: () => void = () => undefined;
     createAitCareEventRuntime(initialReady, error => {
       if (active) {
@@ -74,8 +96,13 @@ export function ParityDashboard({
         }
         created = value;
         setRuntime(value);
-        stopEvents = value.observe(events => {
-          setReady(current => ({...current, events}));
+        stopEvents = value.observeTimeline(state => {
+          setTimeline(state);
+          setNow(Date.now());
+        });
+        stopOverview = value.observeOverview(state => {
+          setOverview(state);
+          setReady(current => ({...current, events: state.events}));
           setNow(Date.now());
         });
         stopSync = value.observeSyncState(setSyncStates);
@@ -93,6 +120,7 @@ export function ParityDashboard({
     return () => {
       active = false;
       stopEvents();
+      stopOverview();
       stopSync();
       void created?.close();
     };
@@ -158,12 +186,7 @@ export function ParityDashboard({
     }),
     [invite?.code, ready],
   );
-  const activeSleep = ready.events.find(
-    (event): event is CareEvent & {readonly kind: 'sleep'} =>
-      event.kind === 'sleep' &&
-      event.endedAt === undefined &&
-      event.deletedAt === undefined,
-  );
+  const activeSleep = overview.activeSleep;
 
   const reportError = (error: unknown, fallback: string) => {
     setRuntimeError(error instanceof Error ? error.message : fallback);
@@ -173,11 +196,12 @@ export function ParityDashboard({
     if (tab === 'timeline') {
       return (
         <TimelineScreen
-          capped={ready.events.length >= 1_000}
+          capped={timeline.capped}
           caregiverNames={caregiverNames}
-          events={ready.events}
-          hasMore={false}
-          loadingMore={false}
+          events={timeline.events}
+          hasMore={timeline.hasMore}
+          loadingMore={timeline.loadingMore}
+          loadMoreError={timeline.loadMoreError}
           now={now}
           onDelete={async event => {
             if (!runtime) {
@@ -186,8 +210,10 @@ export function ParityDashboard({
             await runtime.softDelete(event);
             setSavedMessage(strings.app.eventDeleted);
           }}
-          onLoadMore={async () => undefined}
-          onRetryLoadMore={async () => undefined}
+          onLoadMore={() => runtime?.loadMoreTimeline() ?? Promise.resolve()}
+          onRetryLoadMore={() =>
+            runtime?.retryLoadMoreTimeline() ?? Promise.resolve()
+          }
           session={session}
           strings={strings}
           theme={theme}
@@ -198,7 +224,7 @@ export function ParityDashboard({
       return (
         <StatsScreen
           analytics={babycareAnalytics}
-          events={ready.events}
+          events={overview.events}
           now={now}
           rewardedAd={appsInTossRewardedAd}
           storage={Storage}
@@ -237,7 +263,7 @@ export function ParityDashboard({
       <HomeScreen
         activeSleep={activeSleep}
         caregiverNames={caregiverNames}
-        events={ready.events}
+        events={overview.events}
         now={now}
         onMore={() => setTab('more')}
         onRecord={kind => {
@@ -253,6 +279,11 @@ export function ParityDashboard({
           setSavedMessage(strings.app.sleepRecorded);
         }}
         session={session}
+        showFirstEntryGuide={
+          overview.status === 'server_confirmed' &&
+          overview.events.length === 0 &&
+          overview.activeSleep === undefined
+        }
         strings={strings}
         theme={theme}
       />
@@ -305,7 +336,7 @@ export function ParityDashboard({
       ) : null}
       <TabBar active={tab} onChange={setTab} strings={strings} theme={theme} />
       <QuickRecordModal
-        events={ready.events}
+        events={overview.events}
         kind={recording}
         onClose={() => setRecording(undefined)}
         onSave={async input => {

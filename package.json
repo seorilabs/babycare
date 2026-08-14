@@ -33,6 +33,7 @@
     "check:screenshots": "node scripts/check-store-screenshots.mjs",
     "check:mobile": "bash scripts/check_mobile_target.sh",
     "check:ait": "bash scripts/check_ait_target.sh",
+    "check:ait:parity": "node scripts/check-ait-source-parity.mjs",
     "bootstrap:mobile": "bash scripts/bootstrap_mobile.sh",
     "bootstrap:ait": "bash scripts/bootstrap_ait.sh"
   },
