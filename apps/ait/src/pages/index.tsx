@@ -1,9 +1,10 @@
 import {createRoute} from '@granite-js/react-native';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {ActivityIndicator, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {ParityDashboard} from '../components/parity-dashboard';
+import {ServiceIntroScreen} from '../components/service-intro-screen';
 import {CloudOnboardingScreen} from '../parity/CloudOnboardingScreen';
 import {deviceAppLocale} from '../parity/locale';
 import {createStrings} from '../parity/strings';
@@ -28,7 +29,8 @@ export function BabyNestHome() {
   const dark = useColorScheme() === 'dark';
   const theme = useMemo(() => createTheme(dark), [dark]);
   const strings = useMemo(() => createStrings(deviceAppLocale()), []);
-  const [loading, setLoading] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState<ReadyCareSession>();
   const [error, setError] = useState('');
 
@@ -44,9 +46,18 @@ export function BabyNestHome() {
     }
   }, []);
 
-  useEffect(() => {
-    void bootstrap();
-  }, [bootstrap]);
+  if (!started) {
+    return (
+      <ServiceIntroScreen
+        onStart={() => {
+          setStarted(true);
+          void bootstrap();
+        }}
+        strings={strings}
+        theme={theme}
+      />
+    );
+  }
 
   if (loading) {
     return (
