@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {KeyboardAvoidingView, Platform, StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 import {
   babyId,
@@ -21,8 +21,9 @@ import {createTheme} from './theme';
 import {TimelineScreen} from './TimelineScreen';
 import {aitBottomInset} from './TabBar';
 
+let mockSafeAreaBottom = 34;
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({bottom: 34, left: 0, right: 0, top: 47}),
+  useSafeAreaInsets: () => ({bottom: mockSafeAreaBottom, left: 0, right: 0, top: 47}),
 }));
 
 const now = new Date(2026, 7, 11, 12).getTime();
@@ -192,6 +193,44 @@ describe('AppsInToss feature parity contract', () => {
       '메모 (선택)',
     ]) {
       expect(text).toContain(label);
+    }
+  });
+
+  it('keeps the quick-record footer above Android navigation and keyboard areas', () => {
+    const originalPlatform = Platform.OS;
+    Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'});
+    mockSafeAreaBottom = 0;
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    try {
+      ReactTestRenderer.act(() => {
+        renderer = ReactTestRenderer.create(
+          <QuickRecordModal
+            events={events}
+            kind="diaper"
+            onClose={jest.fn()}
+            onSave={jest.fn(async () => undefined)}
+            session={session}
+            strings={strings}
+            theme={theme}
+          />,
+        );
+      });
+
+      expect(renderer.root.findByType(KeyboardAvoidingView).props.behavior).toBe(
+        'height',
+      );
+      const footer = renderer.root.findByProps({testID: 'quick-record-footer'});
+      expect(StyleSheet.flatten(footer.props.style).paddingBottom).toBe(32);
+    } finally {
+      if (renderer) {
+        ReactTestRenderer.act(() => renderer.unmount());
+      }
+      Object.defineProperty(Platform, 'OS', {
+        configurable: true,
+        value: originalPlatform,
+      });
+      mockSafeAreaBottom = 34;
     }
   });
 

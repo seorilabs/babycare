@@ -33,6 +33,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {formatDuration} from './format';
 import type {Strings} from './strings';
 import {domainContext, type LocalSession} from './session';
+import {aitBottomInset} from './TabBar';
 import type {AppTheme} from './theme';
 
 const EMPTY_CARE_EVENTS: readonly CareEvent[] = [];
@@ -77,6 +78,7 @@ export function QuickRecordModal(props: {
   const strings = props.strings;
   const events = props.events ?? EMPTY_CARE_EVENTS;
   const insets = useSafeAreaInsets();
+  const bottomInset = aitBottomInset(insets.bottom, Platform.OS);
   const [feedingType, setFeedingType] = useState<FeedingType>('formula');
   const [breastSide, setBreastSide] = useState<'left' | 'right'>('left');
   const [volumeMl, setVolumeMl] = useState(120);
@@ -386,7 +388,7 @@ export function QuickRecordModal(props: {
   return (
     <Modal animationType="slide" onRequestClose={props.onClose} presentationStyle="pageSheet" visible>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={[styles.fill, {backgroundColor: props.theme.colors.background}]}>
         <View style={[styles.header, {borderBottomColor: props.theme.colors.border}]}>
           <Pressable accessibilityRole="button" onPress={props.onClose} style={styles.headerButton}>
@@ -816,11 +818,12 @@ export function QuickRecordModal(props: {
           />
         </ScrollView>
         <View
+          testID="quick-record-footer"
           style={[
             styles.footer,
             {
               borderTopColor: props.theme.colors.border,
-              paddingBottom: Math.max(16, insets.bottom + 8),
+              paddingBottom: Math.max(16, bottomInset + 8),
             },
           ]}>
           {errorMessage ? (
