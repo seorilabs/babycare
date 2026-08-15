@@ -19,6 +19,7 @@ const pairs = [
 
 function normalize(source) {
   return source
+    .replace(/Platform,\s*/g, '')
     .replace(/import React(?:, \{([^}]*)\})? from 'react';/g, (_match, names) =>
       names ? `import {${names}} from 'react';` : '',
     )
@@ -30,7 +31,14 @@ function normalize(source) {
     .replaceAll("'./i18n'", "'./strings'")
     .replace(/'\.\.\/app\/(format|session|theme|stats-ranges)'/g, "'./$1'")
     .replace(/\/\/ eslint-disable-next-line react-hooks\/exhaustive-deps/g, '')
+    .replace(/\/\/[^\n]*/g, '')
     .replace(/\s+/g, '')
+    .replace(
+      /exportfunctionaitBottomInset\(bottomInset:number,platform:string\):number\{returnbottomInset>0\?bottomInset:platform==='android'\?24:0;\}/g,
+      '',
+    )
+    .replace(/constbottomInset=aitBottomInset\(insets\.bottom,Platform\.OS\);/g, '')
+    .replace(/Math\.max\(6,bottomInset\)/g, 'Math.max(6,insets.bottom)')
     .replace(/,([}\]])/g, '$1');
 }
 
