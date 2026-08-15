@@ -6,6 +6,11 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {BabyNestHome} from './index';
 import {bootstrapCareSession} from '../services/babycare-backend';
 
+jest.mock('react-native-safe-area-context', () => ({
+  ...jest.requireActual('react-native-safe-area-context'),
+  useSafeAreaInsets: () => ({bottom: 34, left: 0, right: 0, top: 47}),
+}));
+
 jest.mock('@toss/tds-react-native', () => {
   const ReactModule = jest.requireActual<typeof React>('react');
   const Native = jest.requireActual<typeof import('react-native')>('react-native');
@@ -73,7 +78,28 @@ function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
 
 describe('BabyNestHome', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     jest.mocked(bootstrapCareSession).mockResolvedValue(undefined);
+  });
+
+  it('shows the service intro without starting Toss login', () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(<BabyNestHome />);
+    });
+
+    const visibleText = renderedText(renderer);
+    expect(visibleText).toContain('Keep every caregiver');
+    expect(visibleText).toContain('Log in seconds');
+    expect(visibleText).toContain('Share care');
+    expect(visibleText).toContain('See the day');
+    expect(visibleText).toContain('Continue with Toss');
+    expect(visibleText).toContain('Toss login starts only after you tap this button');
+    expect(renderer.root.findByProps({testID: 'service-intro'})).toBeDefined();
+    expect(bootstrapCareSession).not.toHaveBeenCalled();
+
+    ReactTestRenderer.act(() => renderer.unmount());
   });
 
   it('shows the functional create and invite onboarding paths', async () => {
@@ -81,9 +107,13 @@ describe('BabyNestHome', () => {
 
     await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(<BabyNestHome />);
+    });
+    await ReactTestRenderer.act(async () => {
+      renderer.root.findByProps({testID: 'service-intro-start'}).props.onPress();
       await Promise.resolve();
     });
 
+    expect(bootstrapCareSession).toHaveBeenCalledTimes(1);
     const visibleText = renderedText(renderer);
     expect(visibleText).toContain("Know what happened, even when you weren't there");
     expect(visibleText).toContain('Log care in seconds');
@@ -105,6 +135,9 @@ describe('BabyNestHome', () => {
 
     await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(<BabyNestHome />);
+    });
+    await ReactTestRenderer.act(async () => {
+      renderer.root.findByProps({testID: 'service-intro-start'}).props.onPress();
       await Promise.resolve();
     });
 
