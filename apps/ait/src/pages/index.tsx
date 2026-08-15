@@ -1,6 +1,6 @@
 import {createRoute} from '@granite-js/react-native';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, StyleSheet, Text, useColorScheme} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {ParityDashboard} from '../components/parity-dashboard';
@@ -61,9 +61,11 @@ export function BabyNestHome() {
 
   if (ready) {
     return (
-      <SafeAreaView style={[styles.safeArea, {backgroundColor: theme.colors.background}]} edges={['bottom']}>
+      <View
+        testID="active-dashboard-frame"
+        style={[styles.safeArea, {backgroundColor: theme.colors.background}]}>
         <ParityDashboard initialReady={ready} onDeleted={() => setReady(undefined)} />
-      </SafeAreaView>
+      </View>
     );
   }
 

@@ -19,6 +19,7 @@ import {StatsScreen} from './StatsScreen';
 import {createStrings} from './strings';
 import {createTheme} from './theme';
 import {TimelineScreen} from './TimelineScreen';
+import {aitBottomInset} from './TabBar';
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({bottom: 34, left: 0, right: 0, top: 47}),
@@ -130,6 +131,12 @@ function textOf(element: React.ReactElement): string {
 }
 
 describe('AppsInToss feature parity contract', () => {
+  it('reserves the Android system navigation area when the host reports zero', () => {
+    expect(aitBottomInset(0, 'android')).toBe(24);
+    expect(aitBottomInset(34, 'android')).toBe(34);
+    expect(aitBottomInset(0, 'ios')).toBe(0);
+  });
+
   it('shows the same five latest cards and quick-record entry points', () => {
     const text = textOf(
       <HomeScreen
