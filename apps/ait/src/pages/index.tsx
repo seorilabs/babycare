@@ -61,7 +61,9 @@ export function BabyNestHome() {
 
   if (ready) {
     return (
-      <View style={[styles.safeArea, {backgroundColor: theme.colors.background}]}>
+      <View
+        testID="active-dashboard-frame"
+        style={[styles.safeArea, {backgroundColor: theme.colors.background}]}>
         <ParityDashboard initialReady={ready} onDeleted={() => setReady(undefined)} />
       </View>
     );

@@ -1,8 +1,10 @@
 import React from 'react';
 import {KeyboardAvoidingView, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {BabyNestHome} from './index';
+import {bootstrapCareSession} from '../services/babycare-backend';
 
 jest.mock('@toss/tds-react-native', () => {
   const ReactModule = jest.requireActual<typeof React>('react');
@@ -45,6 +47,15 @@ jest.mock('../services/rewarded-ad', () => ({
   },
 }));
 
+jest.mock('../components/parity-dashboard', () => {
+  const ReactModule = jest.requireActual<typeof React>('react');
+  const Native = jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    ParityDashboard: () =>
+      ReactModule.createElement(Native.View, {testID: 'parity-dashboard'}),
+  };
+});
+
 function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
   const read = (value: unknown): string =>
     Array.isArray(value)
@@ -61,6 +72,10 @@ function renderedText(renderer: ReactTestRenderer.ReactTestRenderer): string {
 }
 
 describe('BabyNestHome', () => {
+  beforeEach(() => {
+    jest.mocked(bootstrapCareSession).mockResolvedValue(undefined);
+  });
+
   it('shows the functional create and invite onboarding paths', async () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
 
@@ -80,6 +95,22 @@ describe('BabyNestHome', () => {
     expect(visibleText).not.toContain('sandbox');
     expect(renderer.root.findAllByType(KeyboardAvoidingView)).toHaveLength(1);
     expect(renderer.root.findByProps({testID: 'onboarding-benefits'})).toBeDefined();
+
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('lets the AIT tab bar own the active dashboard bottom inset', async () => {
+    jest.mocked(bootstrapCareSession).mockResolvedValueOnce({} as never);
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(<BabyNestHome />);
+      await Promise.resolve();
+    });
+
+    expect(renderer.root.findByProps({testID: 'active-dashboard-frame'})).toBeDefined();
+    expect(renderer.root.findByProps({testID: 'parity-dashboard'})).toBeDefined();
+    expect(renderer.root.findAllByType(SafeAreaView)).toHaveLength(0);
 
     ReactTestRenderer.act(() => renderer.unmount());
   });
