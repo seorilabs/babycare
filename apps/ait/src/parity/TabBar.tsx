@@ -3,6 +3,7 @@ import {Platform, Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import type {Strings} from './strings';
+import {aitBottomInset} from './system-insets';
 import type {AppTheme} from './theme';
 
 export type AppTab = 'home' | 'timeline' | 'stats' | 'more';
@@ -17,13 +18,6 @@ const tabs: ReadonlyArray<{
   {id: 'stats', icon: '▦', label: strings => strings.tabs.stats},
   {id: 'more', icon: '•••', label: strings => strings.tabs.more},
 ];
-
-// AppsInToss Android hosts can report a zero bottom inset while drawing the
-// system navigation surface over the mini-app. Keep the native inset when it
-// exists and reserve the Android gesture area only for that zero-inset case.
-export function aitBottomInset(bottomInset: number, platform: string): number {
-  return bottomInset > 0 ? bottomInset : platform === 'android' ? 24 : 0;
-}
 
 export function TabBar(props: {
   readonly active: AppTab;
