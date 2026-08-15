@@ -19,11 +19,17 @@ import {StatsScreen} from './StatsScreen';
 import {createStrings} from './strings';
 import {createTheme} from './theme';
 import {TimelineScreen} from './TimelineScreen';
-import {aitBottomInset} from './TabBar';
+import {aitBottomInset, aitTopInset} from './system-insets';
 
 let mockSafeAreaBottom = 34;
+let mockSafeAreaTop = 47;
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({bottom: mockSafeAreaBottom, left: 0, right: 0, top: 47}),
+  useSafeAreaInsets: () => ({
+    bottom: mockSafeAreaBottom,
+    left: 0,
+    right: 0,
+    top: mockSafeAreaTop,
+  }),
 }));
 
 const now = new Date(2026, 7, 11, 12).getTime();
@@ -133,9 +139,12 @@ function textOf(element: React.ReactElement): string {
 
 describe('AppsInToss feature parity contract', () => {
   it('reserves the Android system navigation area when the host reports zero', () => {
-    expect(aitBottomInset(0, 'android')).toBe(24);
+    expect(aitBottomInset(0, 'android')).toBe(32);
     expect(aitBottomInset(34, 'android')).toBe(34);
     expect(aitBottomInset(0, 'ios')).toBe(0);
+    expect(aitTopInset(0, 'android')).toBe(32);
+    expect(aitTopInset(47, 'android')).toBe(47);
+    expect(aitTopInset(0, 'ios')).toBe(0);
   });
 
   it('shows the same five latest cards and quick-record entry points', () => {
@@ -196,10 +205,11 @@ describe('AppsInToss feature parity contract', () => {
     }
   });
 
-  it('keeps the quick-record footer above Android navigation and keyboard areas', () => {
+  it('keeps the quick-record title and footer outside Android system areas', () => {
     const originalPlatform = Platform.OS;
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'});
     mockSafeAreaBottom = 0;
+    mockSafeAreaTop = 0;
     let renderer!: ReactTestRenderer.ReactTestRenderer;
 
     try {
@@ -220,8 +230,13 @@ describe('AppsInToss feature parity contract', () => {
       expect(renderer.root.findByType(KeyboardAvoidingView).props.behavior).toBe(
         'height',
       );
+      const header = renderer.root.findByProps({testID: 'quick-record-header'});
+      expect(StyleSheet.flatten(header.props.style)).toMatchObject({
+        minHeight: 90,
+        paddingTop: 32,
+      });
       const footer = renderer.root.findByProps({testID: 'quick-record-footer'});
-      expect(StyleSheet.flatten(footer.props.style).paddingBottom).toBe(32);
+      expect(StyleSheet.flatten(footer.props.style).paddingBottom).toBe(40);
     } finally {
       if (renderer) {
         ReactTestRenderer.act(() => renderer.unmount());
@@ -231,6 +246,7 @@ describe('AppsInToss feature parity contract', () => {
         value: originalPlatform,
       });
       mockSafeAreaBottom = 34;
+      mockSafeAreaTop = 47;
     }
   });
 

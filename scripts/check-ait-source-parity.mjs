@@ -30,18 +30,20 @@ function normalize(source) {
     .replace(/'\.\.\/app\/i18n'/g, "'./strings'")
     .replaceAll("'./i18n'", "'./strings'")
     .replace(/'\.\.\/app\/(format|session|theme|stats-ranges)'/g, "'./$1'")
-    .replace(/import\s+\{aitBottomInset\}\s+from\s+'\.\/TabBar';/g, '')
+    .replace(
+      /import\s+\{aitBottomInset(?:,\s*aitTopInset)?\}\s+from\s+'\.\/system-insets';/g,
+      '',
+    )
     .replace(/\/\/ eslint-disable-next-line react-hooks\/exhaustive-deps/g, '')
     .replace(/^\s*\/\/[^\n]*(?:\n|$)/gm, '')
     .replace(/\s+/g, '')
-    .replace(
-      /exportfunctionaitBottomInset\(bottomInset:number,platform:string\):number\{returnbottomInset>0\?bottomInset:platform==='android'\?24:0;\}/g,
-      '',
-    )
     .replace(/constbottomInset=aitBottomInset\(insets\.bottom,Platform\.OS\);/g, '')
+    .replace(/consttopInset=aitTopInset\(insets\.top,Platform\.OS\);/g, '')
     .replace(/Platform\.OS==='ios'\?'padding':'height'/g, "Platform.OS==='ios'?'padding':undefined")
+    .replace(/testID="quick-record-header"/g, '')
     .replace(/testID="quick-record-footer"/g, '')
-    .replace(/Math\.max\(16,bottomInset\+8\)/g, 'Math.max(16,insets.bottom+8)')
+    .replace(/,minHeight:58\+topInset,paddingTop:topInset/g, '')
+    .replace(/Math\.max\(24,bottomInset\+8\)/g, 'Math.max(16,insets.bottom+8)')
     .replace(/Math\.max\(6,bottomInset\)/g, 'Math.max(6,insets.bottom)')
     .replace(/,([}\]])/g, '$1');
 }
