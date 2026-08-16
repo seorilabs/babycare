@@ -17,6 +17,7 @@ import {QuickRecordModal} from './QuickRecordModal';
 import type {LocalSession} from './session';
 import {StatsScreen} from './StatsScreen';
 import {createStrings} from './strings';
+import {TabBar} from './TabBar';
 import {createTheme} from './theme';
 import {TimelineScreen} from './TimelineScreen';
 import {aitBottomInset, aitTopInset} from './system-insets';
@@ -145,6 +146,41 @@ describe('AppsInToss feature parity contract', () => {
     expect(aitTopInset(0, 'android')).toBe(32);
     expect(aitTopInset(47, 'android')).toBe(47);
     expect(aitTopInset(0, 'ios')).toBe(0);
+  });
+
+  it('uses the AppsInToss floating tab bar shape and keeps four navigation tabs', () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <TabBar
+          active="home"
+          onChange={jest.fn()}
+          strings={strings}
+          theme={theme}
+        />,
+      );
+    });
+
+    const shell = renderer.root.findByProps({testID: 'floating-tab-bar-shell'});
+    expect(StyleSheet.flatten(shell.props.style)).toMatchObject({
+      paddingBottom: 44,
+      paddingHorizontal: 16,
+      paddingTop: 10,
+    });
+    const surface = renderer.root.findByProps({testID: 'floating-tab-bar-surface'});
+    expect(StyleSheet.flatten(surface.props.style)).toMatchObject({
+      borderRadius: 36,
+      elevation: 8,
+      minHeight: 68,
+      shadowOpacity: 0.14,
+      shadowRadius: 12,
+    });
+    for (const tab of ['home', 'timeline', 'stats', 'more']) {
+      expect(surface.findByProps({testID: `floating-tab-${tab}`})).toBeDefined();
+    }
+
+    ReactTestRenderer.act(() => renderer.unmount());
   });
 
   it('shows the same five latest cards and quick-record entry points', () => {

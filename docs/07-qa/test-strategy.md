@@ -19,7 +19,7 @@
 | Mobile unit/adapter | RN root, local-first sync와 Firebase boundary | `pnpm --filter @babycare/mobile test` | scoped atomic envelope/outbox/restart/retry/conflict/purge, bounded projection, transaction receipt·active lock, Firebase runtime host/config, session restore·그룹 생성·초대 합류, strict cloud context cache, ko/en cloud onboarding·server-confirmed 0건 첫 기록 가이드·onboarding screen-view event |
 | Mobile lint | RN source 정적 검사 | `pnpm --filter @babycare/mobile lint` | mobile source |
 | Mobile target | RN Android/iOS target과 iOS launch | `pnpm run check:mobile` | native project 존재, framework launch 문구 탐지 |
-| AIT unit/parity | mobile UI 소스 동기, 상세 기록·홈·타임라인·통계·더보기와 offline outbox | `pnpm run check:ait:parity`, `pnpm run test:ait` | 13개 UI/표시 소스 드리프트, 5종 기록 variant, 첫 기록 가이드, 20개 단위 타임라인 페이지네이션, 과거 시각·메모, latest 5종, 작성자·삭제, 12h/7d/30d, 구성원·초대·privacy, remote 실패 local 보존 |
+| AIT unit/parity | mobile UI 소스 동기, 상세 기록·홈·타임라인·통계·더보기와 offline outbox | `pnpm run check:ait:parity`, `pnpm run test:ait` | 12개 UI/표시 소스와 4개 탭 destination 드리프트, AppsInToss 플로팅 탭바 구조, 로그인 전 서비스 인트로, 5종 기록 variant, 첫 기록 가이드, 20개 단위 타임라인 페이지네이션, 과거 시각·메모, latest 5종, 작성자·삭제, 12h/7d/30d, 구성원·초대·privacy, remote 실패 local 보존 |
 | AIT target | Granite·TDS 구성과 Console 식별자 | `pnpm run check:ait`, `pnpm --dir apps/ait check`, `pnpm --dir apps/ait build` | 패리티 local build 완료, Console 업로드·sandbox 실기기 QA 미검증 |
 | AIT bottom safe area | AppsInToss host 하단 inset과 시스템 내비게이션 겹침 방지 | `pnpm run test:ait` | host inset 우선, Android zero-inset일 때만 24dp fallback, active dashboard의 중복 bottom SafeArea 제거 |
 | Release inventory | market/release blocker | `pnpm run check:release` | placeholder와 필수 market config; 현재 실패가 정상 |
@@ -123,7 +123,7 @@ Firebase root는 platform custom token Auth session restore, owner 그룹·아�
 | --- | --- | --- | --- |
 | Android | debug device/emulator, 이후 signed AAB internal | 작은 화면·back·offline·cold start | 1.0.8 upload-signed AAB를 격리 API 36 AVD 2대에 설치. 브랜드 icon·cold start, production owner/member 초대·양방향 기록, offline 기록→재실행→복귀·server readback, 교차 기기 수면 종료, member/owner 삭제와 cache purge를 통과. Play Store app-signing 설치·물리 기기 App Check token은 미검증 |
 | iOS | simulator/device, 이후 archive/TestFlight | safe area·keyboard·dark mode·cold start | RN `0.85.3`/RNFirebase arm64 Simulator clean/incremental build, iPhone 16 Pro light와 SE(3세대) dark first-screen 통과 |
-| AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/polling, 재실행 | 첫 렌더에서는 서비스 소개 인트로만 표시하고 사용자가 `토스로 시작하기`를 선택한 뒤에만 인증 bootstrap을 호출한다. mobile 기능 패리티 renderer와 공통 local-first outbox, REST polling/resume sync를 자동 검증했다. Android host가 zero inset을 반환해도 활성 탭과 빠른 기록 상·하단에 32dp 시스템 영역을 예약하며 빠른 기록은 키보드 표시 시 높이를 줄인다. production 두 계정의 그룹·기록·초대·공동 조회·삭제 API E2E는 기존 통과. 패리티 `.ait`의 실제 Toss Storage·상세 입력·재실행·네트워크 복귀는 미검증 |
+| AppsInToss | Granite sandbox 실제 기기 | TDS, Storage, auth/polling, 재실행 | 첫 렌더에서는 서비스 소개 인트로만 표시하고 사용자가 `토스로 시작하기`를 선택한 뒤에만 인증 bootstrap을 호출한다. 하단 4개 destination은 좌우·하단 여백, 완전한 둥근 모서리, 그림자를 가진 플로팅 탭바로 표시한다. mobile 기능 패리티 renderer와 공통 local-first outbox, REST polling/resume sync를 자동 검증했다. Android host가 zero inset을 반환해도 활성 탭과 빠른 기록 상·하단에 32dp 시스템 영역을 예약하며 빠른 기록은 키보드 표시 시 높이를 줄인다. production 두 계정의 그룹·기록·초대·공동 조회·삭제 API E2E는 기존 통과. 최신 `.ait`의 인트로·플로팅 탭바 시각 확인과 Toss Storage·상세 입력·재실행·네트워크 복귀는 미검증 |
 
 ## Regression Rules
 

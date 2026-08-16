@@ -1,5 +1,13 @@
 # Work Log
 
+## 2026-08-16 — AppsInToss 재반려 인트로·플로팅 탭바 보완
+
+- 최신 `origin/main`에는 서비스 가치·주요 기능·초대 그룹 공유 범위를 먼저 설명하고 사용자가 `토스로 시작하기`를 누르기 전에는 인증 bootstrap을 호출하지 않는 인트로가 이미 반영돼 있었다. 첫 렌더에서 `bootstrapCareSession`이 0회이고 CTA 뒤에만 1회 호출되는 회귀 테스트를 다시 통과시켰다.
+- 화면 전체 폭에 붙어 있던 AIT 하단 탭바를 공식 UI/UX 가이드의 플로팅 형태로 교체했다. 좌우 16dp와 상단 10dp를 띄우고, 36dp 둥근 모서리·그림자·system inset 아래 여백을 가진 독립 surface로 만들었다. 홈·기록·통계·더보기 4개 destination과 선택 상태 접근성 계약은 유지했다.
+- mobile target의 탭바는 변경하지 않았다. source parity gate는 나머지 12개 화면·표시 소스를 계속 완전 대조하고, AIT 정책 예외인 탭바는 4개 destination 계약과 2~5개 개수 제한을 대조하도록 분리했다.
+- 검증: AIT 8 suites/25건, core 49건, mobile 40 suites/330건, Functions 20건, Firebase config 3건, build workflow 14건과 workspace typecheck·lint·architecture·docs·store screenshot·AIT target gate를 통과했다. RN 0.84.0/0.72.6 iOS·Android 번들 4개와 `.ait` 패키징은 0 errors/0 warnings로 성공했다.
+- 로컬 AppsInToss sandbox 시각 QA는 sandbox가 고정 사용하는 `8081`을 요청 범위 밖의 기존 Metro 프로세스가 점유해 수행하지 않았다. 해당 프로세스를 종료하거나 Console 업로드·재검수 제출은 하지 않았으며, 최신 production 후보의 인트로·플로팅 탭바 실기기 확인은 release gate로 남긴다.
+
 ## 2026-08-12 — AppsInToss 운영 리워드 광고 ID 등록과 production build
 
 - AppsInToss Console에서 `통계 보상형 광고` 리워드 그룹을 11:31 KST 생성했다. Google 광고 시스템 반영 뒤 13:35 KST에 `ENABLED`, 정식 `groupId`, 제한 없음 상태를 API로 readback하고 공개 ID를 repo config와 GitHub `apps-in-toss` environment의 `AIT_REWARDED_AD_GROUP_ID` variable에 등록했다.
