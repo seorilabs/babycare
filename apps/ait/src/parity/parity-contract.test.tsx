@@ -150,12 +150,13 @@ describe('AppsInToss feature parity contract', () => {
 
   it('uses the AppsInToss floating tab bar shape and keeps four navigation tabs', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
+    const onChange = jest.fn();
 
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <TabBar
           active="home"
-          onChange={jest.fn()}
+          onChange={onChange}
           strings={strings}
           theme={theme}
         />,
@@ -179,6 +180,15 @@ describe('AppsInToss feature parity contract', () => {
     for (const tab of ['home', 'timeline', 'stats', 'more']) {
       expect(surface.findByProps({testID: `floating-tab-${tab}`})).toBeDefined();
     }
+    expect(surface.findByProps({testID: 'floating-tab-home'}).props.accessibilityState)
+      .toEqual({selected: true});
+    expect(surface.findByProps({testID: 'floating-tab-timeline'}).props.accessibilityState)
+      .toEqual({selected: false});
+
+    ReactTestRenderer.act(() => {
+      surface.findByProps({testID: 'floating-tab-timeline'}).props.onPress();
+    });
+    expect(onChange).toHaveBeenCalledWith('timeline');
 
     ReactTestRenderer.act(() => renderer.unmount());
   });
