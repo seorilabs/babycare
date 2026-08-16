@@ -8,13 +8,17 @@ const pairs = [
   ['apps/mobile/src/screens/MoreScreen.tsx', 'apps/ait/src/parity/MoreScreen.tsx'],
   ['apps/mobile/src/components/QuickRecordModal.tsx', 'apps/ait/src/parity/QuickRecordModal.tsx'],
   ['apps/mobile/src/components/SyncStatusBanner.tsx', 'apps/ait/src/parity/SyncStatusBanner.tsx'],
-  ['apps/mobile/src/components/TabBar.tsx', 'apps/ait/src/parity/TabBar.tsx'],
   ['apps/mobile/src/app/format.ts', 'apps/ait/src/parity/format.ts'],
   ['apps/mobile/src/app/i18n/locale.ts', 'apps/ait/src/parity/locale.ts'],
   ['apps/mobile/src/app/i18n/strings.ts', 'apps/ait/src/parity/strings.ts'],
   ['apps/mobile/src/app/theme.ts', 'apps/ait/src/parity/theme.ts'],
   ['apps/mobile/src/app/stats-ranges.ts', 'apps/ait/src/parity/stats-ranges.ts'],
   ['apps/mobile/src/app/session.ts', 'apps/ait/src/parity/session.ts'],
+];
+
+const tabBarPair = [
+  'apps/mobile/src/components/TabBar.tsx',
+  'apps/ait/src/parity/TabBar.tsx',
 ];
 
 function normalize(source) {
@@ -63,4 +67,41 @@ for (const [mobilePath, aitPath] of pairs) {
   );
 }
 
-console.log(`AIT UI source parity check passed (${pairs.length} source pairs).`);
+function tabContract(source) {
+  return [
+    ...source.matchAll(
+      /\{\s*id:\s*'([^']+)'\s*,\s*icon:\s*'[^']+'\s*,\s*label:\s*(?:\(\s*strings\s*\)|strings)\s*=>\s*strings\.tabs\.([A-Za-z_$][A-Za-z0-9_$]*)\s*,?\s*\}/g,
+    ),
+  ].map(([, id, label]) => ({id, label}));
+}
+
+assert.deepEqual(
+  tabContract("{ id: 'timeline2', icon: '≡', label: (strings) => strings.tabs.timeline_v2 }"),
+  [{id: 'timeline2', label: 'timeline_v2'}],
+  'Tab contract parser must preserve the full destination identifier.',
+);
+
+const mobileTabs = tabContract(readFileSync(tabBarPair[0], 'utf8'));
+const aitTabs = tabContract(readFileSync(tabBarPair[1], 'utf8'));
+
+assert.ok(
+  mobileTabs.length > 0,
+  `Failed to parse tab contract: ${tabBarPair[0]}`,
+);
+assert.ok(
+  aitTabs.length > 0,
+  `Failed to parse tab contract: ${tabBarPair[1]}`,
+);
+assert.ok(
+  aitTabs.length >= 2 && aitTabs.length <= 5,
+  `${tabBarPair[1]} must contain between two and five tabs.`,
+);
+assert.deepEqual(
+  aitTabs,
+  mobileTabs,
+  `${tabBarPair[1]} destinations drifted from ${tabBarPair[0]}.`,
+);
+
+console.log(
+  `AIT UI source parity check passed (${pairs.length} source pairs + tab contract).`,
+);
