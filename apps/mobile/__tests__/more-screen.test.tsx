@@ -138,6 +138,51 @@ describe('MoreScreen', () => {
       await Promise.resolve();
     });
     expect(onInviteShared).toHaveBeenCalledTimes(1);
+    expect(onInviteShared).toHaveBeenCalledWith();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('does not report an invite share the user dismissed', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({
+      action: 'dismissedAction',
+    });
+    share.mockClear();
+    const onInviteShared = jest.fn();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onInviteShared={onInviteShared}
+          onReset={async () => undefined}
+          session={{
+            groupId: 'group-1',
+            babyId: 'baby-1',
+            caregiverId: 'owner-1',
+            caregiverName: '엄마',
+            babyName: '하루',
+            birthDate: '2026-01-01',
+            inviteCode: 'ABC234',
+            runtimeMode: 'firebase',
+            membershipRole: 'owner',
+          }}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드 공유'})
+        .props.onPress();
+    });
+    await ReactTestRenderer.act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(share).toHaveBeenCalledTimes(1);
+    expect(onInviteShared).not.toHaveBeenCalled();
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
