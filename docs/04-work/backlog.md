@@ -39,6 +39,7 @@
 | 내부 배포 완료·실기기 QA 대기 | Android release signing과 x64 Linux AAB | Play 1.0.8 internal `completed`, Play Store 설치본 QA 남음 |
 | 내부 배포 완료·실기기 QA 대기 | iOS signing, archive/export와 TestFlight | TestFlight 1.0.8 `IN_BETA_TESTING`, 2인 실제 기기 QA 남음 |
 | 구현·로컬 검증 완료·실기기/지표 QA 대기 | 영어 신규 사용자 온보딩 | 가치 안내, 그룹 설정, server-confirmed 0건의 첫 기록 CTA를 ko/en으로 구현. 새 후보 Android/iOS 작은 화면·Dynamic Type QA와 공개 후 `onboarding → complete → first_log` 로케일별 지표 확인 필요 |
+| 구현·정적 검증 완료·스토어 반영 대기 | 초대 공유 링크와 초대 퍼널 계측 | 공유 문구에 초대 코드·합류 방법·Play/App Store 주소를 담고 `bc_invite_shared`를 추가했다. AIT의 `bc_invite_created` 누락도 연결했다. 28일 `bc_invite_joined`가 0건이라 개선 효과는 다음 릴리스 이후 `invite_created → invite_shared → invite_joined`로 확인한다 |
 | 대기 | 개인정보 처리방침·Data safety·Privacy Labels·연령등급 | 실제 SDK/데이터 흐름과 일치해야 함 |
 | 대기 | 계정·그룹 완전 삭제, 데이터 export, owner 이전 | privileged workflow와 재인증 필요. 미구현 export는 제품 UI에 노출하지 않음 |
 | 진행 | 3마켓 icon/thumbnail/screenshots/listing/review note | Android/iOS 자산과 AIT exact-size·sandbox 실화면 교체 완료. AIT Console 업로드·readback과 policy 설문 남음 |

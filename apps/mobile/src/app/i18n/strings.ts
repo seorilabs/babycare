@@ -2,6 +2,11 @@ import type {AppLocale} from './locale';
 
 type TimeAgoUnit = 'minute' | 'hour' | 'day';
 
+/** 초대받은 양육자가 앱을 직접 검색하지 않도록 공유 문구에 넣는 마켓 주소다. */
+const androidStoreUrl =
+  'https://play.google.com/store/apps/details?id=com.seorilabs.babycare';
+const appleStoreUrl = 'https://apps.apple.com/app/id6792193162';
+
 function englishPlural(value: number, singular: string): string {
   return value === 1 ? singular : `${singular}s`;
 }
@@ -222,7 +227,15 @@ const ko = {
     inviteCreate: '코드 만들기',
     inviteOwnerOnly: '소유자만 초대할 수 있어요',
     inviteLocalDisabled: '연결 후 활성화',
-    shareMessage: (code: string) => `함께봄 돌봄 그룹 초대 코드: ${code}`,
+    shareMessage: (code: string) =>
+      [
+        '함께봄 돌봄 그룹에 초대했어요.',
+        `초대 코드: ${code}`,
+        '',
+        '앱을 설치한 뒤 "초대 코드가 있어요"에서 이 코드를 입력하면 함께 기록할 수 있어요.',
+        `Android: ${androidStoreUrl}`,
+        `iPhone: ${appleStoreUrl}`,
+      ].join('\n'),
     settingsSection: '설정',
     unitTitle: '단위',
     unitDetail: 'ml',
@@ -611,7 +624,15 @@ const en: Strings = {
     inviteCreate: 'Create code',
     inviteOwnerOnly: 'Only the owner can invite',
     inviteLocalDisabled: 'Available once connected',
-    shareMessage: (code: string) => `BabyNest care group invite code: ${code}`,
+    shareMessage: (code: string) =>
+      [
+        "You're invited to a BabyNest care group.",
+        `Invite code: ${code}`,
+        '',
+        'Install the app, tap "I have an invite code", and enter this code to log care together.',
+        `Android: ${androidStoreUrl}`,
+        `iPhone: ${appleStoreUrl}`,
+      ].join('\n'),
     settingsSection: 'Settings',
     unitTitle: 'Unit',
     unitDetail: 'ml',

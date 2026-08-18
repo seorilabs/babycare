@@ -44,6 +44,7 @@ export function MoreScreen(props: {
   readonly memberships?: readonly Membership[];
   readonly inviteExpiresAt?: number;
   readonly onCreateInvite?: () => Promise<void>;
+  readonly onInviteShared?: () => void;
   readonly onRefreshMembers?: () => Promise<void>;
   readonly onDeleteAccount?: () => Promise<void>;
   readonly onOpenAdPrivacyOptions?: () => Promise<boolean>;
@@ -92,11 +93,17 @@ export function MoreScreen(props: {
   const shareInvite = () => {
     Share.share({
       message: strings.more.shareMessage(props.session.inviteCode),
-    }).catch(() =>
-      Alert.alert(
-        strings.more.shareFailedTitle,
-        strings.more.shareFailedMessage,
-      ),
+    }).then(
+      result => {
+        if (result.action === Share.sharedAction) {
+          props.onInviteShared?.();
+        }
+      },
+      () =>
+        Alert.alert(
+          strings.more.shareFailedTitle,
+          strings.more.shareFailedMessage,
+        ),
     );
   };
 

@@ -240,12 +240,22 @@ export function ParityDashboard({
           memberships={ready.memberships}
           onCreateInvite={async () => {
             const created = await createInviteCode(ready);
+            await babycareAnalytics.track({
+              name: 'bc_invite_created',
+              params: {},
+            });
             setInvite({code: created.code, expiresAt: created.expiresAt});
           }}
           onDeleteAccount={async () => {
             await deleteCareAccount(ready);
             await runtime?.purge();
             onDeleted();
+          }}
+          onInviteShared={() => {
+            void babycareAnalytics.track({
+              name: 'bc_invite_shared',
+              params: {},
+            });
           }}
           onRefreshMembers={async () => {
             const latest = await reloadCareSession(ready);

@@ -17,7 +17,7 @@
     "test:ait": "pnpm --dir apps/ait test --runInBand",
     "test:firebase": "firebase emulators:exec --config firebase/firebase.json --project babycare-rules-test --only firestore,storage \"node --test --test-concurrency=1 firebase/tests/security-rules.test.mjs\"",
     "test:firebase:mobile-flow": "bash scripts/test_firebase_mobile_flow.sh",
-    "test:firebase-config": "node --test scripts/check-firestore-indexes.test.mjs scripts/check-firebase-callable-access.test.mjs",
+    "test:firebase-config": "node --test scripts/check-firestore-indexes.test.mjs scripts/check-firebase-callable-access.test.mjs scripts/check-analytics-event-allowlist.test.mjs",
     "test:firestore-indexes": "node --test scripts/check-firestore-indexes.test.mjs",
     "test:functions": "pnpm --dir firebase/functions test",
     "test:functions:emulator": "pnpm --dir firebase/functions build && firebase emulators:exec --config firebase/firebase.functions-test.json --project babycare-functions-test --only firestore \"pnpm --dir firebase/functions test:emulator\"",

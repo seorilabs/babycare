@@ -6,6 +6,7 @@ const ALLOWED_EVENT_NAMES = new Set([
   'bc_onboarding_complete',
   'bc_group_created',
   'bc_invite_created',
+  'bc_invite_shared',
   'bc_invite_joined',
   'bc_first_log',
   'bc_log_create',

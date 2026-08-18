@@ -25,6 +25,21 @@ test('accepts an allowlisted analytics batch and normalizes booleans', () => {
   assert.equal(parseAnalyticsClientId('ait-client.123'), 'ait-client.123');
 });
 
+test('accepts the invite funnel events the AppsInToss relay sends', () => {
+  assert.deepEqual(
+    parseAnalyticsEvents([
+      {name: 'bc_invite_created', params: {}},
+      {name: 'bc_invite_shared', params: {}},
+      {name: 'bc_invite_joined', params: {}},
+    ]),
+    [
+      {name: 'bc_invite_created', params: {}},
+      {name: 'bc_invite_shared', params: {}},
+      {name: 'bc_invite_joined', params: {}},
+    ],
+  );
+});
+
 test('rejects unknown events and PII parameter keys', () => {
   assert.throws(
     () => parseAnalyticsEvents([{name: 'unknown', params: {}}]),

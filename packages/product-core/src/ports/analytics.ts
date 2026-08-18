@@ -38,6 +38,7 @@ export type BabyCareAnalyticsEvent =
     }
   | {readonly name: 'bc_group_created'; readonly params: EmptyAnalyticsParams}
   | {readonly name: 'bc_invite_created'; readonly params: EmptyAnalyticsParams}
+  | {readonly name: 'bc_invite_shared'; readonly params: EmptyAnalyticsParams}
   | {readonly name: 'bc_invite_joined'; readonly params: EmptyAnalyticsParams}
   | { readonly name: 'bc_first_log'; readonly params: { readonly type: string } }
   | { readonly name: 'bc_log_create'; readonly params: { readonly type: string } }
