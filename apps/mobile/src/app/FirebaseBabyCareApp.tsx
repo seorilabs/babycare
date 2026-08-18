@@ -232,6 +232,11 @@ export function FirebaseCareDashboard(props: {
           memberships={props.ready.memberships}
           onCreateInvite={props.onInvite}
           onDeleteAccount={props.onDeleteAccount}
+          onInviteShared={() => {
+            props.runtime.analytics
+              ?.track({name: 'bc_invite_shared', params: {}})
+              .catch(() => undefined);
+          }}
           onOpenAdPrivacyOptions={props.runtime.openAdPrivacyOptions}
           onRefreshMembers={props.onRefreshMembers}
           onReset={async () => undefined}

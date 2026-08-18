@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-08-18 — 초대 공유 링크와 초대 퍼널 계측, GA4 BigQuery export 복구
+
+- GA4 property `549232169`를 조회해 공개 이후 지표를 확인했다. 90일 누적 사용자 18명·세션 20건이고, 8/14~8/16 신규 4명 중 온보딩 완료 2명·첫 기록 1명이다. 28일 동안 `bc_invite_created`는 3건인데 `bc_invite_joined`는 0건이라, ADR 0004가 성장 엔진으로 지목한 초대 경로가 실제로 한 번도 완결되지 않았다.
+- 기존 공유 문구는 `함께봄 돌봄 그룹 초대 코드: ABC234`처럼 코드만 담고 있어 초대받은 양육자가 앱을 직접 검색해야 했다. 공유 문구를 초대 안내·코드·합류 방법과 Google Play·App Store 주소를 담은 형태로 바꿨다. mobile과 AIT는 같은 `strings` 소스를 쓰므로 두 target의 문구가 동일하고 parity gate로 계속 대조한다.
+- 초대 퍼널 중간 구간을 볼 수 있도록 `bc_invite_shared`를 추가했다. 공유 시트가 실제 공유로 끝났을 때만(`Share.sharedAction`) 발생하고 취소는 집계하지 않는다. AIT에는 누락돼 있던 `bc_invite_created`도 함께 연결해 mobile과 같은 퍼널을 만든다. 초대 코드 값은 이벤트 파라미터에 넣지 않는다.
+- GA4 BigQuery export는 link `wNHaEpdIQ3SwUe_4OuyUhA`가 2026-08-09부터 daily·streaming 모두 켜져 있었지만 `firebase-measurement@system.gserviceaccount.com`에 BigQuery 권한이 없어 `seorilabs-babycare`에 데이터셋이 만들어지지 않았다. 조직에서 조회 가능한 17개 프로젝트 전체에 `analytics_549232169`가 없음을 확인한 뒤 `roles/bigquery.user`를 부여하고 IAM readback했다. 비용이 붙는 streaming export는 끄고 daily export만 남겼으며 link readback으로 확인했다. 과거 구간은 백필되지 않는다.
+- 검증: `pnpm run test:static`이 core 49건, mobile 40 suites/330건, AIT 8 suites/25건, Functions·Firebase config·build workflow 게이트와 typecheck·lint·architecture·docs·screenshot·AIT parity까지 통과했다.
+- 남은 것: 새 공유 문구와 초대 계측은 현재 공개된 마켓 빌드 `1.1.3`에 없으므로 다음 스토어 릴리스에 포함해야 반영된다. BigQuery 데이터셋 생성과 첫 daily export 산출은 다음 export 주기에 확인한다.
+
 ## 2026-08-16 — AppsInToss 재반려 인트로·플로팅 탭바 보완
 
 - 최신 `origin/main`에는 서비스 가치·주요 기능·초대 그룹 공유 범위를 먼저 설명하고 사용자가 `토스로 시작하기`를 누르기 전에는 인증 bootstrap을 호출하지 않는 인트로가 이미 반영돼 있었다. 첫 렌더에서 `bootstrapCareSession`이 0회이고 CTA 뒤에만 1회 호출되는 회귀 테스트를 다시 통과시켰다.

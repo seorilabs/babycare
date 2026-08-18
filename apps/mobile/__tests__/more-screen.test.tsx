@@ -88,16 +88,18 @@ describe('MoreScreen', () => {
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
-  it('shares an invite with the confirmed product name', async () => {
+  it('shares an invite with the product name, code and install links', async () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({
       action: 'sharedAction',
     });
     share.mockClear();
+    const onInviteShared = jest.fn();
     let renderer!: ReactTestRenderer.ReactTestRenderer;
 
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <MoreScreen
+          onInviteShared={onInviteShared}
           onReset={async () => undefined}
           session={{
             groupId: 'group-1',
@@ -123,11 +125,19 @@ describe('MoreScreen', () => {
     });
 
     expect(share).toHaveBeenCalledWith({
-      message: '함께봄 돌봄 그룹 초대 코드: ABC234',
+      message: [
+        '함께봄 돌봄 그룹에 초대했어요.',
+        '초대 코드: ABC234',
+        '',
+        '앱을 설치한 뒤 "초대 코드가 있어요"에서 이 코드를 입력하면 함께 기록할 수 있어요.',
+        'Android: https://play.google.com/store/apps/details?id=com.seorilabs.babycare',
+        'iPhone: https://apps.apple.com/app/id6792193162',
+      ].join('\n'),
     });
     await ReactTestRenderer.act(async () => {
       await Promise.resolve();
     });
+    expect(onInviteShared).toHaveBeenCalledTimes(1);
     ReactTestRenderer.act(() => renderer.unmount());
   });
 
