@@ -6,6 +6,7 @@
 - 기존 공유 문구는 `함께봄 돌봄 그룹 초대 코드: ABC234`처럼 코드만 담고 있어 초대받은 양육자가 앱을 직접 검색해야 했다. 공유 문구를 초대 안내·코드·합류 방법과 Google Play·App Store 주소를 담은 형태로 바꿨다. mobile과 AIT는 같은 `strings` 소스를 쓰므로 두 target의 문구가 동일하고 parity gate로 계속 대조한다.
 - 초대 퍼널 중간 구간을 볼 수 있도록 `bc_invite_shared`를 추가했다. 공유 시트가 실제 공유로 끝났을 때만(`Share.sharedAction`) 발생하고 취소는 집계하지 않는다. AIT에는 누락돼 있던 `bc_invite_created`도 함께 연결해 mobile과 같은 퍼널을 만든다. 초대 코드 값은 이벤트 파라미터에 넣지 않는다.
 - GA4 BigQuery export는 link `wNHaEpdIQ3SwUe_4OuyUhA`가 2026-08-09부터 daily·streaming 모두 켜져 있었지만 `firebase-measurement@system.gserviceaccount.com`에 BigQuery 권한이 없어 `seorilabs-babycare`에 데이터셋이 만들어지지 않았다. 조직에서 조회 가능한 17개 프로젝트 전체에 `analytics_549232169`가 없음을 확인한 뒤 `roles/bigquery.user`를 부여하고 IAM readback했다. 비용이 붙는 streaming export는 끄고 daily export만 남겼으며 link readback으로 확인했다. 과거 구간은 백필되지 않는다.
+- Copilot 리뷰에서 AIT의 GA4 중계 callable `logAnalyticsEvents`의 `ALLOWED_EVENT_NAMES`에 `bc_invite_shared`가 없다는 결함을 확인했다. 이 상태로는 AIT의 공유 이벤트가 `invalid-argument`로 거부되고, 배치 전체가 재시도 큐에 남아 이후 GA4 이벤트까지 막힌다. 허용 목록에 이벤트를 추가하고, 제품 이벤트 계약과 중계 허용 목록이 어긋나면 실패하는 `scripts/check-analytics-event-allowlist.test.mjs` 게이트를 `test:firebase-config`에 추가했다.
 - 검증: `pnpm run test:static`이 core 49건, mobile 40 suites/330건, AIT 8 suites/25건, Functions·Firebase config·build workflow 게이트와 typecheck·lint·architecture·docs·screenshot·AIT parity까지 통과했다.
 - 남은 것: 새 공유 문구와 초대 계측은 현재 공개된 마켓 빌드 `1.1.3`에 없으므로 다음 스토어 릴리스에 포함해야 반영된다. BigQuery 데이터셋 생성과 첫 daily export 산출은 다음 export 주기에 확인한다.
 
