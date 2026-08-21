@@ -28,7 +28,7 @@
     "secondary": "유틸리티 (Utilities) 제안"
   },
   "supportUrl": "https://www.seorilabs.com/support/",
-  "marketingUrl": "https://www.seorilabs.com/",
+  "marketingUrl": "https://seorilabs.com/",
   "privacyPolicyUrl": "https://www.seorilabs.com/apps/babycare/privacy/",
   "accountDeletionUrl": "https://www.seorilabs.com/apps/babycare/account-deletion/",
   "copyright": "2026 Seorilabs",
@@ -162,7 +162,7 @@
     "remaining": "App Review 승인, AFTER_APPROVAL 자동 공개, 175개 국가·지역 public listing과 실제 버전 readback.",
     "assetsDone": "아이콘 1024·iPhone 6.9\" 스크린샷 5컷 반영 완료. iPad target을 유지하고 13인치 Release 시뮬레이터 실화면 5컷(2064x2752)을 한국어 APP_IPAD_PRO_3GEN_129 set에 업로드했으며 2026-08-07 ASC에서 모두 COMPLETE를 readback했다. Xcode AppIcon.appiconset에는 iPhone/iPad/marketing 아이콘 반영 완료.",
     "signingDone": "Xcode Cloud Default workflow를 Automatic managed signing, 태그 v* 시작 조건, App Store Connect 배포 준비, redacted Firebase iOS plist secret으로 구성했다. 최신 후보 v1.1.3(source 8ea2ceb) Build 61이 성공했고 ASC에서 VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false, IN_BETA_TESTING을 readback했다. 사용자 실기기 QA 통과 뒤 같은 build 61을 App Review에 제출했다.",
-    "urls": "체온·복약을 반영한 제품별 privacyPolicyUrl은 한국어·영어 live 200이며 ASC appInfo localization에서 ko=/apps/babycare/privacy/, en-US=/en/apps/babycare/privacy/ readback 완료(2026-08-10). supportUrl·marketingUrl도 확정 반영.",
+    "urls": "체온·복약을 반영한 제품별 privacyPolicyUrl은 한국어·영어 live 200이며 ASC appInfo localization에서 ko=/apps/babycare/privacy/, en-US=/en/apps/babycare/privacy/ readback 완료(2026-08-10). supportUrl은 반영 완료. 공개 1.1.3의 ko/en-US marketingUrl은 2026-08-21 API readback에서 null이었고 READY_FOR_SALE 상태라 수정이 거부됐다. 다음 편집 가능한 버전에 https://seorilabs.com/를 반영해야 한다.",
     "appStoreMetadata": "2026-08-10 ASC API readback 기준 앱 버전 1.1.3, Build 61 연결, 4+ 등급, primary Lifestyle·secondary Utilities, 제3자 광고 콘텐츠 사용, advertising=true, usesIdfa=false, AFTER_APPROVAL, 체온·복약 설명과 심사 연락처·노트 반영 완료. 활성 App Store 지역 175개 available=true와 availableInNewTerritories=true, App Privacy published, DSA trader와 비규제 의료기기 선언을 확인했다. reviewSubmission ee65dd96-0297-4a11-b71d-c4bc73e6a39d는 WAITING_FOR_REVIEW다."
   },
   "screenshots": {
