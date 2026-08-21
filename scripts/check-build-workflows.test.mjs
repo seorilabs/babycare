@@ -218,6 +218,9 @@ test('Google Play deployment uses the RPI caller and x64 Cloud Build contract', 
 
   assert.match(workflow, /runs-on: seorilabs-rpi-arm64/);
   assert.match(workflow, /google-github-actions\/auth@v3/);
+  assert.match(workflow, /actions\/setup-python@v7/);
+  assert.match(workflow, /python-version: "3\.13"/);
+  assert.match(workflow, /architecture: arm64/);
   assert.match(workflow, /gcloud config set billing\/quota_project seorilabs-ci/);
   assert.match(workflow, /gcloud builds submit/);
   assert.match(workflow, /if: \$\{\{ inputs\.upload \}\}/);

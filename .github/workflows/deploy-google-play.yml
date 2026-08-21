@@ -198,10 +198,15 @@ jobs:
           workload_identity_provider: ${{ vars.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL }}
 
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          architecture: arm64
+
       - name: Install publisher client
         shell: bash
         run: |
-          python3 -m pip install --break-system-packages \
+          python3 -m pip install --disable-pip-version-check \
             google-api-python-client google-auth google-auth-httplib2 httplib2
 
       - name: Download localized release notes
