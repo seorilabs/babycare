@@ -15,7 +15,7 @@
 - Subtitle EN: `Shared baby care tracker` (24/30)
 - Category: primary `라이프스타일(Lifestyle)` / secondary `유틸리티(Utilities)` — ASC API 반영·readback 완료
 - Support URL: `https://www.seorilabs.com/support/` (ASC version loc 반영 완료)
-- Marketing URL: `https://www.seorilabs.com/`(선택)
+- Marketing URL: `https://seorilabs.com/` — AdMob 앱 확인을 위한 필수 운영값. 공개 `1.1.3`의 `ko`·`en-US` localization은 2026-08-21 ASC API readback에서 `null`이었고, `READY_FOR_SALE` 상태라 PATCH가 `409 STATE_ERROR`로 거부됐다. 다음 편집 가능한 App Store 버전에 반영하고 제출 전 readback한다.
 
 > App Store 이름은 정책(2.3.7) 키워드 나열 리스크로 브랜드명 `함께봄`을 쓰고, 설명 키워드는 subtitle/keywords로 분리. Play 타이틀(키워드형)과 의도적으로 다름.
 

@@ -11,7 +11,7 @@
 - Cloud Billing: `활성` — 2026-08-07 `gcloud beta billing projects describe seorilabs-babycare`에서 `billingEnabled=true` readback. 연결된 billing account 식별자는 보안상 원장에 기록하지 않는다.
 - Production project provisioning/deploy: Auth·Firestore Rules/indexes·Storage·초대/계정 삭제 callable 운영 중. 체온·복약 exact schema를 포함한 Rules를 2026-08-10 ruleset `8c1ee475-b15f-44ea-9695-009dfe3621a4`로 배포하고 local/remote SHA-256 일치를 readback했다.
 - Functions slice: `createInvite`·`acceptInvite`·`deleteAccount` production ACTIVE. AppsInToss GA4 중계 `logAnalyticsEvents`도 `GA4_MEASUREMENT_ID`와 Secret Manager의 `GA4_API_SECRET`을 사용해 production ACTIVE이며, 인증된 callable smoke에서 `accepted=1`을 확인했다(2026-08-09). AIT attestation용 `mintAitAppCheckToken`은 mTLS secret version 1과 revision `mintaitappchecktoken-00001-law`로 production ACTIVE다(2026-08-11).
-- GA4 BigQuery export: link `wNHaEpdIQ3SwUe_4OuyUhA`는 2026-08-09에 생성됐지만 `firebase-measurement@system.gserviceaccount.com`에 BigQuery 권한이 없어 `analytics_549232169` 데이터셋이 만들어지지 않았다. 2026-08-18에 `roles/bigquery.user`를 부여하고 readback했으며, 비용이 발생하는 streaming export는 끄고 daily export만 유지한다. 이전 구간은 백필되지 않으므로 최초 daily export 산출과 데이터셋 생성은 다음 export 주기에 확인한다.
+- GA4 BigQuery export: link `wNHaEpdIQ3SwUe_4OuyUhA`는 2026-08-09에 생성됐지만 `firebase-measurement@system.gserviceaccount.com`의 BigQuery 권한 누락으로 초기 dataset 생성이 지연됐다. 2026-08-18 `roles/bigquery.user` 부여·readback 뒤 비용이 발생하는 streaming export는 끄고 daily export만 유지했다. 2026-08-21 `analytics_549232169` dataset과 `events_20260813`~`events_20260816` daily table을 BigQuery API로 readback해 복구를 확인했다.
 
 로컬 규칙 검증은 실제 project나 자격증명 없이 `babycare-rules-test`라는 Emulator 전용 project ID로만 실행한다.
 

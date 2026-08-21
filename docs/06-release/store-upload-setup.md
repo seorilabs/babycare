@@ -114,7 +114,7 @@ Cloud Build 산출물과 로그는 BabyCare 전용
 ## 남은 blocker
 
 1. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
-2. **다음 스토어 릴리스** — 현재 공개본은 `1.1.3`이고, 온보딩·첫 기록 가이드와 초대 설치 링크·`bc_invite_shared` 계측은 이후 `main`에만 있다. 새 후보의 실기기 QA 뒤 별도 deployment 승인이 필요하다.
+2. **다음 스토어 릴리스** — 현재 공개본은 `1.1.3`이고, 온보딩·첫 기록 가이드와 초대 설치 링크·`bc_invite_shared` 계측은 이후 `main`에만 있다. App Store의 다음 편집 가능한 버전에는 AdMob 앱 확인용 Marketing URL `https://seorilabs.com/`을 `ko`·`en-US` 모두 반영하고 API readback해야 한다. 새 후보의 실기기 QA 뒤 별도 deployment 승인이 필요하다.
 3. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
 
 ## 완료된 후보 readback
