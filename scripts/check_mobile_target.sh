@@ -170,12 +170,12 @@ if rg -n '로컬 미리보기|setLocalPreview|onUseLocalPreview' \
   exit 1
 fi
 
-if ! rg -Fq "${brand_name} 돌봄 그룹 초대 코드:" "${app_strings}"; then
+if ! rg -Fq "${brand_name} 돌봄 그룹에 초대했어요." "${app_strings}"; then
   echo "Korean invite sharing must use the confirmed ${brand_name} brand." >&2
   exit 1
 fi
 
-if ! rg -Fq "${en_brand_name} care group invite code:" "${app_strings}"; then
+if ! rg -Fq "You're invited to a ${en_brand_name} care group." "${app_strings}"; then
   echo "English invite sharing must use the confirmed ${en_brand_name} brand." >&2
   exit 1
 fi
