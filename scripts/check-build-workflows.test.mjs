@@ -227,8 +227,9 @@ test('Google Play deployment uses the RPI caller and x64 Cloud Build contract', 
   );
   assert.match(
     workflow,
-    /Install publisher client[\s\S]*?Download localized release notes[\s\S]*?--pattern release-notes\.json[\s\S]*?Upload to Google Play[\s\S]*?--release-notes-json/,
+    /Install publisher client[\s\S]*?Download localized release notes[\s\S]*?download-github-release-asset\.mjs[\s\S]*?--asset release-notes\.json[\s\S]*?Upload to Google Play[\s\S]*?--release-notes-json/,
   );
+  assert.doesNotMatch(workflow, /gh release download|Download localized release notes[\s\S]*?\|\| true/);
   assert.match(workflow, /gcloud config set billing\/quota_project seorilabs-ci/);
   assert.match(workflow, /gcloud builds submit/);
   assert.match(workflow, /if: \$\{\{ inputs\.upload \}\}/);

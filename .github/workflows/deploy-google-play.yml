@@ -215,10 +215,13 @@ jobs:
           RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
         shell: bash
         run: |
-          mkdir -p dist/release-notes
-          gh release download "$RELEASE_TAG" \
-            --pattern release-notes.json \
-            --dir dist/release-notes || true
+          set -euo pipefail
+          node scripts/download-github-release-asset.mjs \
+            --repo "$GITHUB_REPOSITORY" \
+            --tag "$RELEASE_TAG" \
+            --asset release-notes.json \
+            --output dist/release-notes/release-notes.json
+          test -s dist/release-notes/release-notes.json
 
       - name: Upload to Google Play
         env:
@@ -236,9 +239,7 @@ jobs:
             --track "$TRACK"
             --release-status "$RELEASE_STATUS"
           )
-          if [ -f dist/release-notes/release-notes.json ]; then
-            args+=(--release-notes-json dist/release-notes/release-notes.json)
-          fi
+          args+=(--release-notes-json dist/release-notes/release-notes.json)
           python3 scripts/upload-google-play-internal.py "${args[@]}"
 
       - name: Upload summary
