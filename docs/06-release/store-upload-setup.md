@@ -1,7 +1,7 @@
 # 스토어 업로드 자동화 세팅 (백오피스 구동)
 
-> **상태: `v1.1.3` Google Play·App Store 심사 제출 완료.** 사용자가
-> Android/iOS 실기기 QA 통과와 빠른 공개를 승인했다. 양쪽 모두 승인 후 자동 공개되며 현재는 심사 중이다. `main` push 는
+> **상태: `v1.1.3` Google Play·App Store 공개 완료.** 사용자가
+> Android/iOS 실기기 QA 통과와 빠른 공개를 승인했고, 2026-08-21 양쪽 공개 listing에서 `1.1.3`을 readback했다. `main` push 는
 > 정적 게이트(static-checks)만 돌고 업로드하지 않는다.
 
 ## 운영 진입점 = 백오피스/Telegram
@@ -20,7 +20,10 @@ flowchart TD
   SEL -->|"Google Play"| GP["createWorkflowDispatch<br/>deploy-google-play.yml"]
   SEL -->|"App Store"| XC["ASC POST /v1/ciBuildRuns<br/>Xcode Cloud"]
   SEL -->|"AppsInToss"| AIT["createWorkflowDispatch<br/>deploy-apps-in-toss.yml"]
-  GP -->|"uses"| ORGGP["seorilabs/.github<br/>rn-deploy-google-play.yml (ubuntu, WIF)"]
+  GP --> RPI["RPI ARC caller<br/>WIF + gcloud submit"]
+  RPI --> CB["seorilabs-ci Cloud Build<br/>x64 JDK 21 + Android 36"]
+  CB --> AAB["upload-key signed AAB<br/>GCS + GitHub artifact"]
+  AAB -->|"upload true only"| PLAY["Google Play Publisher API"]
   XC --> ACLOUD["Xcode Cloud workflow<br/>apps/mobile/ios/ci_scripts"]
   GP --> WH["workflow_run webhook"]
   WH --> MIR["Backoffice ReleaseRecord 미러 + Telegram 알림"]
@@ -30,7 +33,9 @@ flowchart TD
   대상이라 macOS 러너 archive 실패 위험이 있어 org 이관 방향(Xcode Cloud)을 따른다.
   백오피스는 repo 가 `XCODE_CLOUD_APP_STORE_REPOS` allowlist 에 있으면 GH workflow_dispatch
   대신 ASC `ciBuildRuns` 로 트리거한다. GH `deploy-app-store.yml` 은 fallback 으로만 남긴다.
-- **Google Play** 는 GH Actions(ubuntu, WIF) 경로. `deploy-google-play.yml` → org 재사용.
+- **Google Play** 는 GH Actions의 RPI ARC caller가 WIF로 `seorilabs-ci` Cloud Build에
+  제출하는 경로다. x64 빌더가 signed AAB를 만들고, `upload=true`일 때만 별도 ARC job이
+  Google Play Publisher API를 호출한다.
 - 업로드는 명시적 dispatch/ciBuildRuns 에서만. `deploy-*` 의 `upload` 입력이 `false` 면 아티팩트만.
 
 ## 리포 contract (준비 완료)
@@ -44,6 +49,7 @@ flowchart TD
 | `apps/mobile/ios/Podfile` static framework + RNFB 혼합 링키지 | ✅ (Xcode 26 archive 전제) |
 | `apps/mobile/ios/GoogleService-Info.plist` pbxproj 참조 + Xcode Cloud secret 복원 | ✅ (파일은 커밋하지 않고 누락 시 fail-closed) |
 | `apps/mobile/ios/ci_scripts/` (ci_post_clone / ci_pre_xcodebuild) | ✅ 추가됨 |
+| Cloud Build 계약 (`build.env`, `cloudbuild-android.yaml`, `scripts/build-android.sh`) | ✅ |
 | 워크플로우 caller (deploy-all/google-play/app-store/apps-in-toss, release-tag) | ✅ |
 
 버전 규칙: SemVer 태그 → Google Play `versionCode = major*1_000_000 + minor*1_000 + patch`
@@ -52,13 +58,27 @@ flowchart TD
 
 ## GitHub secrets / variables / environments
 
-`secrets: inherit` 로 org+repo+environment 전달. **repo-level 값이 org-level 값을 override** 한다.
+로컬 자격증명 catalog를 원본으로 유지한다. GitHub Actions는 WIF 공개 identity만 전달하고,
+  Android release 비밀값은 `seorilabs-ci` Secret Manager 실행 복제본을 Cloud Build step에만
+  주입한다.
 
-### org 레벨 (이미 존재, 공용)
+Cloud Build 산출물과 로그는 BabyCare 전용
+`gs://seorilabs-ci-babycare-build-artifacts`에 저장하고 3일 뒤 자동 삭제한다. 런타임 SA는
+이 버킷에서 새 오브젝트 생성만 가능하며 삭제·덮어쓰기 권한은 없다.
 
-- secrets: `APPS_IN_TOSS_API_KEY`, `APPLE_DISTRIBUTION_CERTIFICATE_BASE64/_PASSWORD`,
-  `APPLE_KEYCHAIN_PASSWORD`, `APP_STORE_CONNECT_API_KEY_ID/_ISSUER_ID/_PRIVATE_KEY_BASE64`,
-  `GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64/_PASSWORD`, `GOOGLE_PLAY_UPLOAD_KEY_PASSWORD` (private 가시성 → private repo babycare 접근 가능)
+### Cloud Build Secret Manager 복제본
+
+| 이름 | 용도 |
+| --- | --- |
+| `babycare-firebase-google-services` | Firebase Android runtime config base64 |
+| `babycare-play-keystore` | BabyCare 전용 upload keystore base64 |
+| `babycare-play-keystore-password` | keystore password |
+| `babycare-play-key-password` | key password |
+
+### GitHub org/repo 레벨
+
+- secrets: AppsInToss/App Store 전용 값과 기존 Google Play 복제본은 각 기존 workflow 범위에
+  유지한다. 새 Android Cloud Build는 GitHub signing secret을 읽지 않는다.
 - vars: `GOOGLE_WORKLOAD_IDENTITY_PROVIDER`(ALL), `APPLE_TEAM_ID`·`GOOGLE_PLAY_UPLOAD_KEY_ALIAS`(SELECTED — babycare 미포함, 아래 repo-level 로 대체)
 
 ### repo 레벨 (babycare — per-app override)
@@ -89,18 +109,18 @@ flowchart TD
 
 - 2026-08-07 초기 설정 11개와 앱 콘텐츠를 입력·readback했다. Data Safety에는 건강 정보를 추가했고 IARC 한국 `12세 이상`, 타깃 만 18세 이상, `출산/육아`, 광고·광고 ID·정부·금융 해당 없음, 건강 기능 `영양 및 체중 관리`·`수면 관리`로 확정했다.
 - 2026-08-10 체온·복약 리스팅과 비의료 도구 면책을 ko-KR·en-US에 반영했다. Google Play 건강 기능 `약물 및 치료 관리`, Apple App Privacy 12개 유형·Tracking `No`, DSA trader와 비규제 의료기기 선언을 Console에서 저장·readback했다. 체온·복약은 기존 Data Safety 건강 정보 범주에 포함돼 CSV 행 변경은 없었다.
-- internal `1001003`을 production draft로 재빌드 없이 승격하고 최초 전체 출시·176개 국가/지역·변경사항 12개를 검토에 전송했다. 제출 ID `1`은 2026-08-10 기준 `검토 중`이며 아직 공개 상태는 아니다.
+- internal `1001003`을 production draft로 재빌드 없이 승격하고 최초 전체 출시·176개 국가/지역·변경사항 12개를 검토에 전송했다. 제출 ID `1`은 2026-08-10 기준 `검토 중`이었고, 2026-08-21 한국 공개 listing HTTP 200과 version `1.1.3`을 확인했다.
 
 ## 남은 blocker
 
 1. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
-2. **공개 gate** — Google Play 제출 ID `1`은 `검토 중`, App Store review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d`는 `WAITING_FOR_REVIEW`다. 승인 후 자동 공개와 공개 listing `1.1.3` readback이 남았다.
+2. **다음 스토어 릴리스** — 현재 공개본은 `1.1.3`이고, 온보딩·첫 기록 가이드와 초대 설치 링크·`bc_invite_shared` 계측은 이후 `main`에만 있다. 새 후보의 실기기 QA 뒤 별도 deployment 승인이 필요하다.
 3. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
 
 ## 완료된 후보 readback
 
-- **Google Play (`v1.1.3`, 심사 중)** — source `8ea2ceb`, AAB `1.1.3`/`1001003`, SHA-256 `6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb`. Workflow run `31390061940`에서 생성·서명은 성공했지만 기존 60초 Publisher read timeout이 발생해, 동일 태그 소스를 로컬에서 재현 빌드하고 600초 timeout·3회 재시도 업로더로 internal commit했다. Android Publisher API 독립 readback은 `name=1.1.3`, `status=completed`, `versionCodes=['1001003']`이다. 같은 versionCode를 production draft로 승격하고 Console에서 전체 출시·176개 국가/지역·변경사항 12개를 제출했으며 제출 ID `1`은 `검토 중`이다.
-- **App Store (`v1.1.3`, 심사 중)** — source `8ea2ceb`, Xcode Cloud run `0abb7047-2126-44f7-979b-d5388314fabb` 성공. ASC build `f9a718d7-829d-4838-8b61-e5d9a968fe6f`에서 `1.1.3`/`61`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`를 확인했다. 사용자의 실기기 QA 통과 보고 뒤 review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d`로 제출했고 `WAITING_FOR_REVIEW`, `AFTER_APPROVAL`을 readback했다.
+- **Google Play (`v1.1.3`, 공개)** — source `8ea2ceb`, AAB `1.1.3`/`1001003`, SHA-256 `6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb`. Workflow run `31390061940`에서 생성·서명은 성공했지만 기존 60초 Publisher read timeout이 발생해, 동일 태그 소스를 로컬에서 재현 빌드하고 600초 timeout·3회 재시도 업로더로 internal commit했다. Android Publisher API 독립 readback은 `name=1.1.3`, `status=completed`, `versionCodes=['1001003']`이다. 2026-08-21 한국 공개 listing에서 동일 version을 확인했다.
+- **App Store (`v1.1.3`, 공개)** — source `8ea2ceb`, Xcode Cloud run `0abb7047-2126-44f7-979b-d5388314fabb` 성공. ASC build `f9a718d7-829d-4838-8b61-e5d9a968fe6f`에서 `1.1.3`/`61`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`를 확인했다. Apple public lookup의 `currentVersionReleaseDate`는 `2026-08-14T05:35:05Z`다.
 - **Google Play** — `v1.0.8` / `c66f7e7` AAB를 x64/JDK 21 build run `31116493641`에서 생성·서명·브랜드 icon 검증하고 internal `1.0.8`/`1000008`, `completed` 업로드를 완료했다. WIF 복구 뒤 run `31132461743`에서 동일 versionCode를 `internal → internal`로 재배포해 GitHub OIDC·Android Publisher 권한과 `v1.0.8`/`1000008`, `completed` API readback을 확인했다. production 승격은 하지 않음.
 - **App Store (`v1.0.9`, 이전)** — Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430` 성공. ASC build `95e65693-70a5-42cf-9590-d63e385a9951`에서 `1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false` 확인. 버전 레코드 `1.0.9`·build 57 관계·내부 그룹 연결까지 반영해 `IN_BETA_TESTING` readback 완료.
 - **Google Play (`v1.0.9`, 이전)** — workflow run `31243326802`에서 AAB `1.0.9`/`1000009` 생성·서명·업로드. Android Publisher API 독립 readback에서 `internal` 트랙 `name=1.0.9`, `status=completed`, `versionCodes=['1000009']` 확인.

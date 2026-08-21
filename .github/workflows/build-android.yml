@@ -4,13 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "빌드할 SemVer 태그. 비우면 최신 vX.Y.Z"
+        description: "빌드할 SemVer 태그. 비우면 현재 ref를 최신 태그 버전으로 빌드"
         type: string
         required: false
         default: ""
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: babycare-android-build-${{ inputs.release_tag || github.ref }}
@@ -18,12 +19,10 @@ concurrency:
 
 jobs:
   candidate:
-    uses: seorilabs/.github/.github/workflows/rn-build-android.yml@bf14204ee13dba657e31dcf1a71a64c0dc526ae3
+    uses: ./.github/workflows/deploy-google-play.yml
     secrets: inherit
     with:
       release_tag: ${{ inputs.release_tag }}
-      package_manager: pnpm
-      pnpm_version: 11.14.0
-      node_version: 24.16.0
-      java_version: "21"
-      android_dir: apps/mobile/android
+      upload: false
+      track: internal
+      release_status: completed

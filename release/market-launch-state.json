@@ -68,7 +68,7 @@
   "markets": {
     "google_play": {
       "objective": "public_live",
-      "state": "submission",
+      "state": "live",
       "identity": {
         "applicationId": "com.seorilabs.babycare",
         "version": "1.1.3",
@@ -146,28 +146,32 @@
           "blocker": null
         },
         "approval": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "한국 Google Play 공개 listing HTTP 200 및 제품명 함께봄 readback"
+          ],
+          "checkedAt": "2026-08-21T09:00:35Z",
           "blocker": null
         },
         "release": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "공개 listing에서 version 1.1.3 readback"
+          ],
+          "checkedAt": "2026-08-21T09:00:35Z",
           "blocker": null
         },
         "live_smoke": {
           "status": "pending",
           "evidence": [],
           "checkedAt": null,
-          "blocker": null
+          "blocker": "공개 Google Play listing 설치본의 launch와 핵심 흐름 smoke는 공개 후 별도로 재실행하지 않음"
         }
       }
     },
     "app_store": {
       "objective": "public_live",
-      "state": "submission",
+      "state": "live",
       "identity": {
         "applicationId": "com.seorilabs.babycare",
         "version": "1.1.3",
@@ -245,22 +249,26 @@
           "blocker": null
         },
         "approval": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "Apple public lookup resultCount=1, version=1.1.3"
+          ],
+          "checkedAt": "2026-08-21T09:00:35Z",
           "blocker": null
         },
         "release": {
-          "status": "pending",
-          "evidence": [],
-          "checkedAt": null,
+          "status": "pass",
+          "evidence": [
+            "App Store currentVersionReleaseDate=2026-08-14T05:35:05Z"
+          ],
+          "checkedAt": "2026-08-21T09:00:35Z",
           "blocker": null
         },
         "live_smoke": {
           "status": "pending",
           "evidence": [],
           "checkedAt": null,
-          "blocker": null
+          "blocker": "공개 App Store listing 설치본의 launch와 핵심 흐름 smoke는 공개 후 별도로 재실행하지 않음"
         }
       }
     }

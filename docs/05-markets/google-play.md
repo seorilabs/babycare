@@ -1,6 +1,6 @@
 # Google Play
 
-> 등록·공개 심사 원장. 2026-08-10 사용자 실기기 QA 통과 뒤 `v1.1.3` 전체 출시와 176개 국가·지역을 포함한 변경사항 12개를 제출했다. 2026-08-11 readback에서 Publisher production track은 `completed`지만 제출 ID `1`은 `검토 중`, 한국 공개 listing은 HTTP 404라 아직 공개 상태가 아니다.
+> 등록·공개 원장. 2026-08-10 사용자 실기기 QA 통과 뒤 `v1.1.3` 전체 출시와 176개 국가·지역을 포함한 변경사항 12개를 제출했다. 2026-08-21 한국 공개 listing HTTP 200, 제품명과 version `1.1.3`을 readback해 공개 gate를 닫았다.
 > 기계 판독 source of truth: `play-store/google-play.config.json`
 
 ## App Identity
@@ -34,7 +34,7 @@
 - Device candidate QA: 같은 AAB에서 생성한 upload-signed 기기별 APK를 격리 API 36 AVD에 설치해 `1.0.8`/`1000008`, 함께봄 adaptive icon·label, 잎사귀 splash→온보딩 cold start, no-crash를 확인했다(2026-08-07). 2026-08-10 사용자가 Play Store app-signing `v1.1.3` 실기기 QA 통과를 보고했다.
 - Play App Signing/App Check: Play가 운영하는 app signing SHA-256 `7D:B2:8B:B6:FA:A6:65:16:B8:28:25:A2:7C:F2:C5:E5:E6:1F:B9:3E:0A:FC:7E:9B:97:3C:E9:69:14:4B:EE:07`을 Firebase Android 앱에 등록했고 Play Integrity API를 활성화했다. Platform registry `require_app_check=true`와 `createInvite`·`acceptInvite`·`deleteAccount`의 `ENFORCE_APP_CHECK=true`를 운영에서 readback했고, App Check 없는 Platform custom-token 요청이 `401 app_check_required`로 거부됨을 재확인했다.
 - Production rollout policy: 첫 프로덕션 공개는 Play 제약상 단계적 출시를 사용할 수 없어 선택된 176개 국가·지역 전체 출시로 제출했다. 후속 업데이트부터 crash/ANR·핵심 흐름을 확인하는 staged rollout을 사용한다.
-- Production track readback: 2026-08-11 00:14 KST Android Publisher API에서 `name=1.1.3`, `versionCodes=['1001003']`, `status=completed`를 확인했다. 같은 시각 Console 제출 활동은 `검토 중`, 한국 공개 listing은 HTTP 404이므로 track status만으로 승인·공개 gate를 닫지 않는다.
+- Production track readback: 2026-08-11 00:14 KST Android Publisher API에서 `name=1.1.3`, `versionCodes=['1001003']`, `status=completed`를 확인했다. 2026-08-21 한국 공개 listing HTTP 200과 제품명·version `1.1.3`을 독립 readback해 승인·공개 gate를 닫았다.
 - Release notes: 한국어·영어에 체온·복약 기록 추가 내용을 반영했다. Android Publisher API track readback에서 두 로케일을 확인했다.
 
 ## Policy
@@ -48,4 +48,4 @@
 - Advertising ID / government app: Google Mobile Ads SDK 사용으로 **광고 ID 사용 `yes`**, 목적은 분석·광고/마케팅·사기 방지/보안. 2026-08-09 Console 저장 완료 / 정부 앱 아님
 - Privacy policy URL: `https://www.seorilabs.com/apps/babycare/privacy/` ✅ 체온·복약 항목과 2026-08-10 시행일을 반영한 한국어·영어 방침 live 200 및 Play Console 저장 readback 완료. production 후보와 함께 검토 전송 대기.
 - Account deletion URL: `https://www.seorilabs.com/apps/babycare/account-deletion/` ✅ live 200·Play Console readback
-- Review submission: 내부 `1001003`을 production draft로 승격하고 Console의 미리보기·경고를 확인했다. R8/ProGuard 가독화 파일 부재 경고 1개는 난독화를 사용하지 않는 현재 후보의 비차단 경고다. 2026-08-10 22:57 KST에 전체 출시·176개 국가/지역·스토어 등록정보·앱 콘텐츠·스토어 설정을 제출했다. 2026-08-11 00:14 KST 기준 Publisher production track은 `completed`지만 제출 ID `1`은 `검토 중`이고 공개 listing은 404다.
+- Review submission: 내부 `1001003`을 production draft로 승격하고 Console의 미리보기·경고를 확인했다. R8/ProGuard 가독화 파일 부재 경고 1개는 난독화를 사용하지 않는 현재 후보의 비차단 경고다. 2026-08-10 22:57 KST에 전체 출시·176개 국가/지역·스토어 등록정보·앱 콘텐츠·스토어 설정을 제출했고, 2026-08-21 공개 listing에서 `1.1.3`을 readback했다.
