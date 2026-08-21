@@ -188,36 +188,57 @@ test('AppsInToss upload workflow uses the x64 Hermes path', async () => {
 });
 
 test('Android build workflow creates a signed AAB without Play upload', async () => {
-  const [workflow, gradle] = await Promise.all([
+  const [workflow, deploy, gradle] = await Promise.all([
     read('.github/workflows/build-android.yml'),
+    read('.github/workflows/deploy-google-play.yml'),
     read('apps/mobile/android/app/build.gradle'),
   ]);
 
   assert.match(workflow, /^name: Build Android Candidate$/m);
   assert.match(workflow, /workflow_dispatch:[\s\S]*?release_tag:/);
-  assert.match(
-    workflow,
-    /rn-build-android\.yml@bf14204ee13dba657e31dcf1a71a64c0dc526ae3/,
-  );
-  assert.match(workflow, /android_dir: apps\/mobile\/android/);
-  assert.match(workflow, /java_version: "21"/);
+  assert.match(workflow, /uses: \.\/\.github\/workflows\/deploy-google-play\.yml/);
+  assert.match(workflow, /upload: false/);
+  assert.match(workflow, /id-token: write/);
   assert.match(gradle, /rootProject\.file\('key\.properties'\)/);
-  assert.doesNotMatch(
-    workflow,
-    /rn-deploy-google-play|upload:|track:|release_status:|id-token:|environment:/,
-  );
+  assert.match(deploy, /--config=cloudbuild-android\.yaml/);
+  assert.doesNotMatch(workflow, /upload: true/);
 });
 
-test('Google Play deployment pins the shared publisher toolchain contract', async () => {
-  const [workflow, setup] = await Promise.all([
+test('Google Play deployment uses the RPI caller and x64 Cloud Build contract', async () => {
+  const [workflow, cloudbuild, buildScript, buildEnv, ignore, workspace, gradlePatch, setup] = await Promise.all([
     read('.github/workflows/deploy-google-play.yml'),
+    read('cloudbuild-android.yaml'),
+    read('scripts/build-android.sh'),
+    read('build.env'),
+    read('.gcloudignore'),
+    read('pnpm-workspace.yaml'),
+    read('patches/@react-native__gradle-plugin@0.85.3.patch'),
     read('docs/06-release/store-upload-setup.md'),
   ]);
 
-  assert.match(workflow, /pnpm_version: 11\.14\.0/);
-  assert.match(workflow, /node_version: 24\.16\.0/);
-  assert.match(workflow, /java_version: "21"/);
-  assert.match(workflow, /android_dir: apps\/mobile\/android/);
+  assert.match(workflow, /runs-on: seorilabs-rpi-arm64/);
+  assert.match(workflow, /google-github-actions\/auth@v3/);
+  assert.match(workflow, /gcloud config set billing\/quota_project seorilabs-ci/);
+  assert.match(workflow, /gcloud builds submit/);
+  assert.match(workflow, /if: \$\{\{ inputs\.upload \}\}/);
+  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(cloudbuild, /rn-android-builder:node24-pnpm11\.14-jdk21-rn085/);
+  assert.match(cloudbuild, /babycare-firebase-google-services/);
+  assert.match(cloudbuild, /babycare-play-keystore-password/);
+  assert.match(cloudbuild, /babycare-play-key-password/);
+  assert.match(cloudbuild, /E2_HIGHCPU_8/);
+  assert.match(buildScript, /pnpm install --frozen-lockfile/);
+  assert.match(buildScript, /:app:bundleRelease/);
+  assert.match(buildScript, /jarsigner -verify -strict/);
+  assert.match(buildScript, /기존 로컬 자격증명 파일을 덮어쓰지 않습니다/);
+  assert.match(buildScript, /DF0194ACA157C73C66ACBF0954D785B460412B6B632B5270A53BF10BF87CA860/);
+  assert.match(buildEnv, /PNPM_VERSION=11\.14\.0/);
+  assert.match(buildEnv, /JDK_VERSION=21/);
+  assert.match(buildEnv, /ANDROID_CMAKE=3\.22\.1/);
+  assert.match(ignore, /apps\/mobile\/android\/app\/google-services\.json/);
+  assert.match(ignore, /apps\/mobile\/android\/key\.properties/);
+  assert.match(workspace, /patchedDependencies:[\s\S]*@react-native\/gradle-plugin@0\.85\.3/);
+  assert.match(gradlePatch, /foojay-resolver-convention"\)\.version\("1\.0\.0"\)/);
   assert.match(
     setup,
     /seorilabs-play-publisher@seorilabs-gws\.iam\.gserviceaccount\.com/,

@@ -1,6 +1,6 @@
 # App Store
 
-> 등록·출시 원장. 확정값과 실제 App Store Connect readback을 반영한다. 2026-08-10 사용자가 `v1.1.3` 실기기 QA 통과와 빠른 공개를 승인했고, build 61은 App Review `WAITING_FOR_REVIEW`다. 아직 공개 상태는 아니다.
+> 등록·출시 원장. 확정값과 실제 공개 readback을 반영한다. 2026-08-10 사용자가 `v1.1.3` 실기기 QA 통과와 빠른 공개를 승인했고, Apple public lookup에서 version `1.1.3`, `currentVersionReleaseDate=2026-08-14T05:35:05Z`를 2026-08-21 재확인했다.
 > 기계 판독 source of truth: `app-store/app-store.config.json`
 
 ## App Identity
@@ -50,12 +50,12 @@
 ## Release
 
 - Signing team (Team ID): `HCDUXX4Z3X`. Xcode Cloud Release는 Automatic managed signing을 사용하며, Firebase plist는 redacted Xcode Cloud secret으로 복원한다.
-- **`v1.1.3` App Review 제출 (2026-08-10)** — source `8ea2ceb656c46ecdf3975027f55c5b033e15e3a8`, Xcode Cloud run `0abb7047-2126-44f7-979b-d5388314fabb`(Build 61) 성공. ASC build `f9a718d7-829d-4838-8b61-e5d9a968fe6f`는 `1.1.3`/`61`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. 버전 레코드 `87836510-e716-40cf-b61d-ec87b0181059`와 build 61을 review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d`로 제출했다. readback은 `WAITING_FOR_REVIEW`, release type `AFTER_APPROVAL`이며 승인 뒤 자동 공개된다.
+- **`v1.1.3` 공개 (2026-08-14)** — source `8ea2ceb656c46ecdf3975027f55c5b033e15e3a8`, Xcode Cloud run `0abb7047-2126-44f7-979b-d5388314fabb`(Build 61) 성공. ASC build `f9a718d7-829d-4838-8b61-e5d9a968fe6f`는 `1.1.3`/`61`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d`의 `AFTER_APPROVAL`로 공개됐고, Apple public lookup에서 `currentVersionReleaseDate=2026-08-14T05:35:05Z`를 2026-08-21 재확인했다.
 - **`v1.0.9` i18n 후보 (2026-08-08)** — source `fe2b4b12be75d52e96bb3f0c267881efb8dd9072`, Xcode Cloud run `7faf6504-20e4-4064-a5f8-281dba2ce430` 성공(태그 `GIT_REF_CHANGE` 자동 시작). ASC build `95e65693-70a5-42cf-9590-d63e385a9951`는 실제 `1.0.9`/`57`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. ASC 버전 레코드를 `1.0.9`로 갱신하고 build 57 관계와 내부 그룹 `서리랩스 내부테스터` 연결을 반영했다. readback은 `versionString=1.0.9`, `related build=95e65693`, `internalBuildState=IN_BETA_TESTING`, `appStoreState=PREPARE_FOR_SUBMISSION`, 테스터 2명이다.
 
 > `hasAccessToAllBuilds=true` 그룹에서는 `/v1/builds/{id}/betaGroups`가 항상 빈 값을 반환한다. 직전 후보 build 56도 동일하므로 이 엔드포인트를 연결 확인 오라클로 쓰지 않는다. 유효한 신호는 `internalBuildState`다.
 - 이전 후보: `main@c66f7e7`(`v1.0.8`)의 Xcode Cloud run `a9c4b9b4-7c0e-4592-95ef-22039fa50962`이 성공했다. App Store Connect build `454e15f2-4075-4828-b613-a67085b3e7d4`는 실제 `1.0.8`/`56`, `VALID`, `APP_STORE_ELIGIBLE`, `usesNonExemptEncryption=false`다. Xcode Cloud build를 내부 그룹 `서리랩스 내부테스터`에 명시적으로 연결한 뒤 `IN_BETA_TESTING`을 API로 readback했다(2026-08-06). 실제 테스터 설치·실기기 QA와 App Review 제출은 하지 않았다.
-- App Store version: version string `1.1.3`, Build 61 관계, `AFTER_APPROVAL`, copyright `2026 Seorilabs`, 체온·복약 설명과 review detail을 ASC에 반영·readback했다. App Privacy·DSA·비규제 의료기기·전국가 availability 입력을 완료했고 현재 `WAITING_FOR_REVIEW`다.
+- App Store version: version string `1.1.3`, Build 61 관계, `AFTER_APPROVAL`, copyright `2026 Seorilabs`, 체온·복약 설명과 review detail을 ASC에 반영·readback했다. App Privacy·DSA·비규제 의료기기·전국가 availability 입력을 완료했고 2026-08-14 자동 공개됐다.
 - App Check: Firebase iOS 앱에 Team ID `HCDUXX4Z3X`와 App Store ID `6792193162`를 등록하고 App Attest·DeviceCheck provider를 구성했다. Platform registry `require_app_check=true`, production callable `ENFORCE_APP_CHECK=true`, App Check 없는 custom-token 요청 `401 app_check_required`를 2026-08-10 readback했다.
 - 1.0.2 후보(과거 실패): `main@d11bbfa`(`v1.0.2`)의 device archive는 암호화 선언 키 누락과 strict codesign `CSSMERR_TP_NOT_TRUSTED`로 업로드하지 않았다. 이 실패는 1.0.5 Xcode Cloud 성공으로 빌드 경로 기준 해결됐다.
 - App Store provisioning profile: ✅ App Store profile로 export 완료

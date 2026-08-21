@@ -1,5 +1,17 @@
 # Work Log
 
+## 2026-08-21 — Android Cloud Build 연결과 공개 상태·론칭 지표 재점검
+
+- 공용 RN Android x64 빌더에 Node `24.16.0`, pnpm `11.14.0`, JDK `21`, Android platform `36`, CMake `3.22.1` 계약을 추가하고 `seorilabs/.github` PR #27로 병합했다. BabyCare의 GitHub Actions는 RPI ARC에서 WIF 인증과 `gcloud builds submit`만 수행하고, 실제 release build는 `seorilabs-ci` Cloud Build로 위임한다. Google Play 업로드는 별도 `upload=true` job으로 분리해 build-only 실행이 스토어 상태를 바꾸지 않게 했다.
+- 로컬 자격증명 catalog의 기존 Firebase Android config와 BabyCare upload key를 재사용했다. 새 키를 만들지 않았고 encrypted backup·restore check를 통과한 뒤 Cloud Build용 `babycare-*` Secret Manager 실행 복제본 4개와 3일 lifecycle의 전용 artifact bucket만 구성했다. 소스·로그·문서에는 비밀값을 남기지 않고 빌드 안에서 Firebase project/app/package와 공개 upload 인증서 fingerprint를 fail-closed 검증한다.
+- 직접 제출한 Cloud Build `c3c104ec-e293-43e8-a559-1b6952e283e5`가 8분 29초에 성공했다. 산출물은 `com.seorilabs.babycare`, version `1.1.8`/`1001008`, 53,655,829 bytes, SHA-256 `a0ebd16e2cd6736389cb64edf6f424ade580cf2bc862aa67f01657a4e6b8bc69`이며 `jarsigner` 검증과 upload 인증서 SHA-256 `DF:01:94:AC:A1:57:C7:3C:66:AC:BF:09:54:D7:85:B4:60:41:2B:6B:63:2B:52:70:A5:3B:F1:0B:F8:7C:A8:60` 일치를 확인했다. 이 산출물은 빌드 증거이며 Google Play 업로드·기기 QA·배포에는 사용하지 않았다.
+- GitHub workflow run `32467390739`에서도 RPI ARC의 GitHub OIDC/WIF 인증, Cloud Build `5927a4b6-77b0-4efe-acd1-9f31a5bc4db4` 제출, 전용 GCS 회수, GitHub artifact 업로드가 10분 9초에 모두 성공했다. 내려받은 artifact는 `1.1.8`/`1001008`, 53,655,825 bytes, SHA-256 `f179aada38e3b6e74be066edc580fe1ff97c9b42d93d3f99adbc42239d6ae2ea`이고 package·서명 인증서도 일치했다. `upload=false`라 Google Play upload job은 0초에 skip됐고 외부 스토어 상태는 바뀌지 않았다.
+- React Native `0.85.3`의 내장 Foojay resolver `0.5.0`은 Gradle `9.3.1`에서 제거된 `IBM_SEMERU` enum을 참조해 설정 단계에서 실패했다. pnpm patch로 resolver `1.0.0`만 적용해 우회 계층 없이 Gradle 9 호환성을 복구했고 frozen install과 실 Cloud Build로 검증했다.
+- 한국 Google Play 공개 listing HTTP 200과 version `1.1.3`, Apple public lookup의 version `1.1.3`과 `currentVersionReleaseDate=2026-08-14T05:35:05Z`를 재확인했다. 공개 상태는 확인했지만 공개 listing에서 새로 설치한 빌드의 launch·로그인·기록 smoke는 별도 미실행이므로 live smoke gate는 열어 뒀다.
+- GA4 BigQuery export는 2026-08-18 IAM 보정 뒤에도 `analytics_549232169` dataset과 첫 daily table이 아직 생성되지 않아 최신 지표를 재집계할 수 없었다. 마지막 신뢰 가능한 표본은 90일 사용자 18명·세션 20건, 8월 14~16일 신규 4명 중 온보딩 완료 2명·첫 기록 1명, 28일 초대 생성 3건·합류 0건이다. 표본이 작고 최신 export가 없으므로 0으로 채우거나 새 제품 결론을 만들지 않는다.
+- 검증: `pnpm run test:static`에서 core 49건, mobile 40 suites/331건, AIT 8 suites/25건, Functions 21건과 Firebase config·typecheck·lint·architecture·docs·screenshots·build workflow를 통과했다. `pnpm install --frozen-lockfile`, `shellcheck scripts/build-android.sh`, YAML parse와 `git diff --check`도 통과했다.
+- 남은 것: 현재 공개본 `1.1.3`에는 이후 main의 온보딩·첫 기록 가이드와 초대 설치 링크·`bc_invite_shared` 계측이 없다. Cloud Build 연결을 병합한 뒤 새 태그 후보의 공개 설치 QA와 deployment 승인을 별도로 받아 다음 스토어 릴리스에 포함하고, BigQuery 첫 daily export 생성 후 `onboarding → first_log`, `invite_created → invite_shared → invite_joined`를 다시 본다.
+
 ## 2026-08-18 — 초대 공유 링크와 초대 퍼널 계측, GA4 BigQuery export 복구
 
 - GA4 property `549232169`를 조회해 공개 이후 지표를 확인했다. 90일 누적 사용자 18명·세션 20건이고, 8/14~8/16 신규 4명 중 온보딩 완료 2명·첫 기록 1명이다. 28일 동안 `bc_invite_created`는 3건인데 `bc_invite_joined`는 0건이라, ADR 0004가 성장 엔진으로 지목한 초대 경로가 실제로 한 번도 완결되지 않았다.

@@ -1,12 +1,10 @@
-# Google Play(서명 AAB + 업로드) — ubuntu(x64). org 재사용 워크플로우 호출.
-# contract: scripts/resolve-release-version.mjs, scripts/upload-google-play-internal.py,
-#           apps/mobile/android/gradlew :app:bundleRelease, scripts/restore-mobile-firebase-config.mjs
 name: Deploy Google Play
 
 on:
   workflow_dispatch:
     inputs:
       release_tag:
+        description: "빌드할 SemVer 태그. 비우면 현재 ref를 최신 태그 버전으로 빌드"
         type: string
         required: false
         default: ""
@@ -42,17 +40,209 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: babycare-google-play-${{ inputs.release_tag || github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  google-play:
-    uses: seorilabs/.github/.github/workflows/rn-deploy-google-play.yml@main
-    secrets: inherit
-    with:
-      release_tag: ${{ inputs.release_tag }}
-      upload: ${{ inputs.upload }}
-      track: ${{ inputs.track }}
-      release_status: ${{ inputs.release_status }}
-      package_manager: pnpm
-      pnpm_version: 11.14.0
-      node_version: 24.16.0
-      java_version: "21"
-      android_dir: apps/mobile/android
+  build:
+    name: Cloud Build signed AAB
+    runs-on: seorilabs-rpi-arm64
+    environment: google-play
+    timeout-minutes: 50
+    outputs:
+      artifact_name: ${{ steps.meta.outputs.artifact_name }}
+      release_tag: ${{ steps.meta.outputs.release_tag }}
+      release_name: ${{ steps.version.outputs.release_name }}
+      source_sha: ${{ steps.meta.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.16.0
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.release_tag }}"
+          if [ -z "$tag" ]; then
+            tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)"
+            [ -n "$tag" ] || {
+              echo "release_tag이 비어 있고 vX.Y.Z 태그도 없습니다." >&2
+              exit 1
+            }
+          fi
+          node scripts/resolve-release-version.mjs --tag "$tag" --github-output
+          echo "release_tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve build contract
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC1091
+          source build.env
+          source_sha="$(git rev-parse HEAD)"
+          artifact_name="babycare-android-${source_sha:0:12}-${{ github.run_id }}-${{ github.run_attempt }}"
+          artifact_bucket="gs://seorilabs-ci-babycare-build-artifacts/${{ github.run_id }}-${{ github.run_attempt }}"
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
+          echo "artifact_bucket=$artifact_bucket" >> "$GITHUB_OUTPUT"
+          echo "aab_path=$AAB_PATH" >> "$GITHUB_OUTPUT"
+          echo "builder=$ANDROID_BUILDER_IMAGE:$ANDROID_BUILDER_TAG" >> "$GITHUB_OUTPUT"
+          echo "release_tag=${{ steps.version.outputs.release_tag }}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Workload Identity configuration
+        env:
+          WIF_PROVIDER: ${{ vars.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL }}
+          UPLOAD_ALIAS: ${{ vars.GOOGLE_PLAY_UPLOAD_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ -n "$WIF_PROVIDER" ] || { echo "GOOGLE_WORKLOAD_IDENTITY_PROVIDER var가 없습니다." >&2; exit 1; }
+          [ -n "$SERVICE_ACCOUNT" ] || { echo "GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL var가 없습니다." >&2; exit 1; }
+          [ -n "$UPLOAD_ALIAS" ] || { echo "GOOGLE_PLAY_UPLOAD_KEY_ALIAS var가 없습니다." >&2; exit 1; }
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL }}
+          token_format: access_token
+
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: seorilabs-ci
+
+      - name: Submit x64 Android build
+        env:
+          ARTIFACT_BUCKET: ${{ steps.meta.outputs.artifact_bucket }}
+          UPLOAD_ALIAS: ${{ vars.GOOGLE_PLAY_UPLOAD_KEY_ALIAS }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.android_version_code }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud config set billing/quota_project seorilabs-ci
+          gcloud builds submit . \
+            --project=seorilabs-ci \
+            --region=asia-northeast3 \
+            --config=cloudbuild-android.yaml \
+            --ignore-file=.gcloudignore \
+            --substitutions="_ANDROID_VERSION_NAME=$VERSION_NAME,_ANDROID_VERSION_CODE=$VERSION_CODE,_GOOGLE_PLAY_UPLOAD_KEY_ALIAS=$UPLOAD_ALIAS,_ARTIFACT_BUCKET=$ARTIFACT_BUCKET"
+
+      - name: Download signed AAB
+        env:
+          ARTIFACT_BUCKET: ${{ steps.meta.outputs.artifact_bucket }}
+          AAB_PATH: ${{ steps.meta.outputs.aab_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$AAB_PATH")"
+          gcloud storage cp "$ARTIFACT_BUCKET/$(basename "$AAB_PATH")" "$AAB_PATH"
+          test -s "$AAB_PATH"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.meta.outputs.artifact_name }}
+          path: ${{ steps.meta.outputs.aab_path }}
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Build summary
+        env:
+          AAB_PATH: ${{ steps.meta.outputs.aab_path }}
+        shell: bash
+        run: |
+          {
+            echo "### Google Play Cloud Build 후보"
+            echo "- source: \`${{ steps.meta.outputs.source_sha }}\`"
+            echo "- release: \`${{ steps.version.outputs.release_tag }}\`"
+            echo "- builder: \`${{ steps.meta.outputs.builder }}\`"
+            echo "- artifact: \`${{ steps.meta.outputs.artifact_name }}\`"
+            echo "- bytes: \`$(wc -c <"$AAB_PATH" | tr -d ' ')\`"
+            echo "- Google Play upload: \`${{ inputs.upload }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  upload:
+    name: Upload Google Play
+    needs: build
+    if: ${{ inputs.upload }}
+    runs-on: seorilabs-rpi-arm64
+    environment: google-play
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.16.0
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: dist/android
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Install publisher client
+        shell: bash
+        run: |
+          python3 -m pip install --break-system-packages \
+            google-api-python-client google-auth google-auth-httplib2 httplib2
+
+      - name: Download localized release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+        shell: bash
+        run: |
+          mkdir -p dist/release-notes
+          gh release download "$RELEASE_TAG" \
+            --pattern release-notes.json \
+            --dir dist/release-notes || true
+
+      - name: Upload to Google Play
+        env:
+          RELEASE_NAME: ${{ needs.build.outputs.release_name }}
+          TRACK: ${{ inputs.track }}
+          RELEASE_STATUS: ${{ inputs.release_status }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          aab_path="$(find dist/android -type f -name '*.aab' -print -quit)"
+          [ -n "$aab_path" ] || { echo "다운로드한 AAB가 없습니다." >&2; exit 1; }
+          args=(
+            --aab-path "$aab_path"
+            --release-name "$RELEASE_NAME"
+            --track "$TRACK"
+            --release-status "$RELEASE_STATUS"
+          )
+          if [ -f dist/release-notes/release-notes.json ]; then
+            args+=(--release-notes-json dist/release-notes/release-notes.json)
+          fi
+          python3 scripts/upload-google-play-internal.py "${args[@]}"
+
+      - name: Upload summary
+        shell: bash
+        run: |
+          {
+            echo "### Google Play 업로드"
+            echo "- source: \`${{ needs.build.outputs.source_sha }}\`"
+            echo "- release: \`${{ needs.build.outputs.release_tag }}\`"
+            echo "- track: \`${{ inputs.track }}\`"
+            echo "- status: \`${{ inputs.release_status }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
