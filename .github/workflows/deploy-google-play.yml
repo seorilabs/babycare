@@ -39,6 +39,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 concurrency:
   group: babycare-google-play-${{ inputs.release_tag || github.ref }}
@@ -65,6 +66,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24.16.0
+          registry-url: https://npm.pkg.github.com
+          scope: '@seorilabs'
 
       - name: Resolve release version
         id: version
@@ -110,6 +113,19 @@ jobs:
           [ -n "$WIF_PROVIDER" ] || { echo "GOOGLE_WORKLOAD_IDENTITY_PROVIDER var가 없습니다." >&2; exit 1; }
           [ -n "$SERVICE_ACCOUNT" ] || { echo "GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL var가 없습니다." >&2; exit 1; }
           [ -n "$UPLOAD_ALIAS" ] || { echo "GOOGLE_PLAY_UPLOAD_KEY_ALIAS var가 없습니다." >&2; exit 1; }
+
+      - name: Prepare private package seed store
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          source build.env
+          private_package='@seorilabs/platform-sdk'
+          private_version="$(node -e 'const p=require("./apps/mobile/package.json"); process.stdout.write(p.dependencies[process.argv[1]] ?? "")' "$private_package")"
+          [ -n "$private_version" ] || { echo "$private_package dependency가 없습니다." >&2; exit 1; }
+          pnpm store add "$private_package@$private_version" --store-dir "$CLOUD_BUILD_PNPM_STORE"
+          test -n "$(find "$CLOUD_BUILD_PNPM_STORE" -mindepth 1 -maxdepth 1 -print -quit)"
 
       - uses: google-github-actions/auth@v3
         with:

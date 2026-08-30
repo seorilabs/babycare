@@ -1,6 +1,6 @@
 import {calculateTimeAgo, type CareEvent} from '../../../../packages/product-core/src/index.ts';
 
-import type {Strings} from './strings';
+import type {Strings} from '@babycare/product-ui';
 
 export function formatTimeAgo(
   occurredAt: number,

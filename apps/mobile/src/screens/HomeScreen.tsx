@@ -10,9 +10,9 @@ import {
 } from '@babycare/product-core';
 
 import {eventTitle, formatDuration, formatTimeAgo} from '../app/format';
-import type {Strings} from '../app/i18n';
+import type {Strings} from '@babycare/product-ui';
 import type {LocalSession} from '../app/session';
-import type {AppTheme} from '../app/theme';
+import type {AppTheme} from '@babycare/product-ui';
 
 function startOfToday(now: number): number {
   const date = new Date(now);

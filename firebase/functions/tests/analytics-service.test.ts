@@ -48,7 +48,7 @@ test('rejects unknown events and PII parameter keys', () => {
   assert.throws(
     () =>
       parseAnalyticsEvents([
-        {name: 'bc_first_log', params: {email: 'care@example.com'}},
+        {name: 'bc_log_create', params: {email: 'care@example.com'}},
       ]),
     /not allowed/,
   );
@@ -62,7 +62,12 @@ test('relays the authenticated batch without exposing the secret in the body', a
     apiSecret: 'secret-value',
     clientId: 'client-123',
     userId: 'uid-123',
-    events: [{name: 'bc_first_log', params: {type: 'feeding'}}],
+    events: [
+      {
+        name: 'bc_log_create',
+        params: {type: 'feeding', is_first: 1, group_role: 'owner'},
+      },
+    ],
     fetchImpl: async (input, init) => {
       url = String(input);
       body = String(init?.body);

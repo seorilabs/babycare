@@ -7,31 +7,40 @@ import {
   eventId,
   groupId,
   userId,
+  type AnalyticsPort,
   type CareEvent,
   type Membership,
 } from '../../../../packages/product-core/src/index.ts';
 
 import {HomeScreen} from './HomeScreen';
+import {CloudOnboardingScreen} from './CloudOnboardingScreen';
 import {MoreScreen} from './MoreScreen';
 import {QuickRecordModal} from './QuickRecordModal';
 import type {LocalSession} from './session';
 import {StatsScreen} from './StatsScreen';
-import {createStrings} from './strings';
+import {createStrings} from '@babycare/product-ui';
 import {TabBar} from './TabBar';
-import {createTheme} from './theme';
+import {createTheme} from '@babycare/product-ui';
 import {TimelineScreen} from './TimelineScreen';
 import {aitBottomInset, aitTopInset} from './system-insets';
+import {flushAitAnalyticsOnAppState} from '../services/analytics-lifecycle';
 
 let mockSafeAreaBottom = 34;
 let mockSafeAreaTop = 47;
-jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({
-    bottom: mockSafeAreaBottom,
-    left: 0,
-    right: 0,
-    top: mockSafeAreaTop,
-  }),
-}));
+jest.mock('react-native-safe-area-context', () => {
+  const ReactModule = jest.requireActual<typeof React>('react');
+  const Native = jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    SafeAreaView: ({children, ...props}: React.PropsWithChildren<Record<string, unknown>>) =>
+      ReactModule.createElement(Native.View, props, children),
+    useSafeAreaInsets: () => ({
+      bottom: mockSafeAreaBottom,
+      left: 0,
+      right: 0,
+      top: mockSafeAreaTop,
+    }),
+  };
+});
 
 const now = new Date(2026, 7, 11, 12).getTime();
 const strings = createStrings('ko');
@@ -139,6 +148,106 @@ function textOf(element: React.ReactElement): string {
 }
 
 describe('AppsInToss feature parity contract', () => {
+  it('flushes AIT analytics once on background without surfacing failure', async () => {
+    const flush = jest.fn(async () => {
+      throw new Error('offline');
+    });
+    const analytics = {track: jest.fn(async () => undefined), flush};
+
+    expect(() =>
+      flushAitAnalyticsOnAppState(analytics, 'background'),
+    ).not.toThrow();
+    await Promise.resolve();
+    flushAitAnalyticsOnAppState(analytics, 'active');
+    expect(flush).toHaveBeenCalledTimes(1);
+  });
+
+  it('tracks AIT onboarding views, blocked reasons, and the departing back step', async () => {
+    const track: jest.MockedFunction<AnalyticsPort['track']> = jest.fn(
+      async event => {
+        if (!event.name) throw new Error('Analytics event name is required');
+      },
+    );
+    const onJoin = jest.fn(async () => {
+      throw new Error('network unavailable');
+    });
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <CloudOnboardingScreen
+          analytics={{track}}
+          onCreate={jest.fn(async () => undefined)}
+          onJoin={onJoin}
+          strings={strings}
+          theme={theme}
+        />,
+      );
+      await Promise.resolve();
+    });
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드가 있어요'})
+        .props.onPress();
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '양육자 이름'})
+        .props.onChangeText('아빠');
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root.findByProps({accessibilityLabel: '다음'}).props.onPress();
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드'})
+        .props.onChangeText('ABC23');
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '돌봄 그룹 참여하기'})
+        .props.onPress();
+    });
+    expect(track).toHaveBeenCalledWith({
+      name: 'bc_onboarding_step_blocked',
+      params: {step: 'inviteCode', mode: 'join', reason: 'invalid_input'},
+    });
+    expect(
+      track.mock.calls.filter(
+        ([event]) =>
+          event.name === 'bc_onboarding_step_view' &&
+          event.params.step === 'inviteCode',
+      ),
+    ).toHaveLength(1);
+
+    ReactTestRenderer.act(() => {
+      renderer.root.findByProps({accessibilityLabel: '이전'}).props.onPress();
+    });
+    expect(track).toHaveBeenCalledWith({
+      name: 'bc_onboarding_step_back',
+      params: {step: 'inviteCode', mode: 'join'},
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root.findByProps({accessibilityLabel: '다음'}).props.onPress();
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드'})
+        .props.onChangeText('ABC234');
+    });
+    await ReactTestRenderer.act(async () => {
+      await renderer.root
+        .findByProps({accessibilityLabel: '돌봄 그룹 참여하기'})
+        .props.onPress();
+    });
+    expect(onJoin).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith({
+      name: 'bc_onboarding_step_blocked',
+      params: {step: 'inviteCode', mode: 'join', reason: 'save_failed'},
+    });
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('reserves the Android system navigation area when the host reports zero', () => {
     expect(aitBottomInset(0, 'android')).toBe(32);
     expect(aitBottomInset(34, 'android')).toBe(34);
@@ -221,6 +330,7 @@ describe('AppsInToss feature parity contract', () => {
   it('exposes every detailed record variant, time editing, and notes', () => {
     const commonProps = {
       events,
+      historyStatus: 'complete' as const,
       onClose: jest.fn(),
       onSave: jest.fn(async () => undefined),
       session,
@@ -251,6 +361,126 @@ describe('AppsInToss feature parity contract', () => {
     }
   });
 
+  it('keeps AIT medication confirmation fail-closed only when needed', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(now);
+    const renderMedication = (
+      historyStatus: 'complete' | 'partial',
+      sourceEvents: readonly CareEvent[],
+      onSave: jest.Mock,
+    ) => {
+      let renderer!: ReactTestRenderer.ReactTestRenderer;
+      ReactTestRenderer.act(() => {
+        renderer = ReactTestRenderer.create(
+          <QuickRecordModal
+            events={sourceEvents}
+            historyStatus={historyStatus}
+            kind="medication"
+            onClose={jest.fn()}
+            onSave={onSave}
+            session={session}
+            strings={strings}
+            theme={theme}
+          />,
+        );
+      });
+      ReactTestRenderer.act(() => {
+        renderer.root
+          .findByProps({placeholder: '예: 3.5'})
+          .props.onChangeText('3');
+      });
+      return renderer;
+    };
+
+    try {
+      for (const [historyStatus, sourceEvents] of [
+        ['partial', []],
+        ['complete', [events[0]!]],
+      ] as const) {
+        const onSave = jest.fn(async () => undefined);
+        const renderer = renderMedication(historyStatus, sourceEvents, onSave);
+        await ReactTestRenderer.act(async () => {
+          await renderer.root
+            .findByProps({accessibilityLabel: '경고 확인 후 기록'})
+            .props.onPress();
+        });
+        expect(onSave).not.toHaveBeenCalled();
+        await ReactTestRenderer.act(async () => {
+          await renderer.root
+            .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+            .props.onPress();
+        });
+        expect(onSave).toHaveBeenCalledTimes(1);
+        ReactTestRenderer.act(() => renderer.unmount());
+      }
+
+      const onSave = jest.fn(async () => undefined);
+      const renderer = renderMedication('complete', [], onSave);
+      await ReactTestRenderer.act(async () => {
+        await renderer.root
+          .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+          .props.onPress();
+      });
+      expect(onSave).toHaveBeenCalledTimes(1);
+      ReactTestRenderer.act(() => renderer.unmount());
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('opens an AIT record in edit mode with its original identity', async () => {
+    const original = events.find(item => item.kind === 'diaper')!;
+    const onSave = jest.fn(async () => undefined);
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          events={events}
+          historyStatus="complete"
+          initialEvent={original}
+          kind={original.kind}
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          strings={strings}
+          theme={theme}
+        />,
+      );
+    });
+    expect(textOf(
+      <QuickRecordModal
+        events={events}
+        historyStatus="complete"
+        initialEvent={original}
+        kind={original.kind}
+        onClose={jest.fn()}
+        onSave={onSave}
+        session={session}
+        strings={strings}
+        theme={theme}
+      />,
+    )).toContain('기록 수정');
+    const radios = renderer.root
+      .findAllByProps({accessibilityRole: 'radio'})
+      .filter(node => node.parent?.props.accessibilityRole !== 'radio');
+    ReactTestRenderer.act(() => radios[0]!.props.onPress());
+    await ReactTestRenderer.act(async () => {
+      await renderer.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        babyId: original.babyId,
+        caregiverId: original.caregiverId,
+        diaperType: 'wet',
+        groupId: original.groupId,
+        occurredAt: original.occurredAt,
+      }),
+    );
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('keeps the quick-record title and footer outside Android system areas', () => {
     const originalPlatform = Platform.OS;
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'});
@@ -263,6 +493,7 @@ describe('AppsInToss feature parity contract', () => {
         renderer = ReactTestRenderer.create(
           <QuickRecordModal
             events={events}
+            historyStatus="complete"
             kind="diaper"
             onClose={jest.fn()}
             onSave={jest.fn(async () => undefined)}
@@ -305,6 +536,7 @@ describe('AppsInToss feature parity contract', () => {
         hasMore={false}
         loadingMore={false}
         now={now}
+        onEdit={jest.fn()}
         onDelete={jest.fn()}
         onLoadMore={jest.fn()}
         onRetryLoadMore={jest.fn()}
@@ -317,7 +549,9 @@ describe('AppsInToss feature parity contract', () => {
     expect(text).toContain('오늘');
     expect(text).toContain('엄마');
     expect(text).toContain('복약 메모');
-    expect(text).toContain('내 기록을 길게 누르면 삭제할 수 있어요.');
+    expect(text).toContain(
+      '기록을 누르면 수정하고, 길게 누르면 삭제할 수 있어요.',
+    );
   });
 
   it('provides 12-hour, 7-day, and 30-day stats with charts', () => {

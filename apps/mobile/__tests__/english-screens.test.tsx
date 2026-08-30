@@ -10,9 +10,9 @@ import {
   type CareEvent,
 } from '@babycare/product-core';
 
-import {createStrings} from '../src/app/i18n';
+import {createStrings} from '@babycare/product-ui';
 import type {LocalSession} from '../src/app/session';
-import {createTheme} from '../src/app/theme';
+import {createTheme} from '@babycare/product-ui';
 import {QuickRecordModal} from '../src/components/QuickRecordModal';
 import {SyncStatusBanner} from '../src/components/SyncStatusBanner';
 import {TabBar} from '../src/components/TabBar';
@@ -114,6 +114,7 @@ describe('English rendering leaves no Korean copy on screen', () => {
         hasMore={false}
         loadingMore={false}
         now={now}
+        onEdit={jest.fn()}
         onDelete={jest.fn()}
         onLoadMore={jest.fn()}
         onRetryLoadMore={jest.fn()}
@@ -181,6 +182,8 @@ describe('English rendering leaves no Korean copy on screen', () => {
   it('renders the quick record modal in English', () => {
     const text = textOf(
       <QuickRecordModal
+        events={[]}
+        historyStatus="complete"
         kind="feeding"
         onClose={jest.fn()}
         onSave={jest.fn()}

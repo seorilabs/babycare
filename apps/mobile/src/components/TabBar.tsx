@@ -1,8 +1,8 @@
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import type {Strings} from '../app/i18n';
-import type {AppTheme} from '../app/theme';
+import type {Strings} from '@babycare/product-ui';
+import type {AppTheme} from '@babycare/product-ui';
 
 export type AppTab = 'home' | 'timeline' | 'stats' | 'more';
 

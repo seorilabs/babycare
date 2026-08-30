@@ -15,9 +15,9 @@ import {
 } from '../../../../packages/product-core/src/index.ts';
 
 import {eventIcon, eventTitle, formatTimeAgo} from './format';
-import type {Strings} from './strings';
+import type {Strings} from '@babycare/product-ui';
 import type {LocalSession} from './session';
-import type {AppTheme} from './theme';
+import type {AppTheme} from '@babycare/product-ui';
 
 interface TimelineSectionMetadata {
   readonly key: string;
@@ -83,6 +83,7 @@ export function TimelineScreen(props: {
   readonly loadMoreError?: string;
   readonly onLoadMore: () => Promise<void>;
   readonly onRetryLoadMore: () => void | Promise<void>;
+  readonly onEdit: (event: CareEvent) => void;
   readonly onDelete: (event: CareEvent) => Promise<void>;
 }) {
   const {
@@ -229,31 +230,26 @@ export function TimelineScreen(props: {
       onEndReached={() => runLoadMore(false)}
       onEndReachedThreshold={0.25}
       renderItem={({item: event, index, section}) => {
-        const canDelete = event.caregiverId === props.session.caregiverId;
         const last = index === section.data.length - 1;
         return (
           <Pressable
-            accessibilityActions={
-              canDelete
-                ? [{name: 'activate', label: strings.timeline.deleteActionLabel}]
-                : undefined
-            }
-            accessibilityHint={
-              canDelete ? strings.timeline.deleteAccessibilityHint : undefined
-            }
-            accessibilityRole={canDelete ? 'button' : undefined}
-            onAccessibilityAction={
-              canDelete
-                ? accessibilityEvent => {
-                    if (
-                      accessibilityEvent.nativeEvent.actionName === 'activate'
-                    ) {
-                      confirmDelete(event);
-                    }
-                  }
-                : undefined
-            }
-            onLongPress={canDelete ? () => confirmDelete(event) : undefined}
+            accessibilityActions={[
+              {name: 'activate', label: strings.timeline.editActionLabel},
+              {name: 'longpress', label: strings.timeline.deleteActionLabel},
+            ]}
+            accessibilityHint={strings.timeline.editAccessibilityHint}
+            accessibilityRole="button"
+            onAccessibilityAction={accessibilityEvent => {
+              if (accessibilityEvent.nativeEvent.actionName === 'activate') {
+                props.onEdit(event);
+              } else if (
+                accessibilityEvent.nativeEvent.actionName === 'longpress'
+              ) {
+                confirmDelete(event);
+              }
+            }}
+            onLongPress={() => confirmDelete(event)}
+            onPress={() => props.onEdit(event)}
             style={[
               styles.row,
               {backgroundColor: props.theme.colors.surface},

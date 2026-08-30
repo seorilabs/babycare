@@ -18,6 +18,7 @@ export * from './ports/invite-service.ts';
 export * from './ports/rewarded-ad.ts';
 export * from './ports/string-storage.ts';
 export * from './use_cases/dashboard.ts';
+export * from './use_cases/analytics-classification.ts';
 export * from './use_cases/care-stats.ts';
 export * from './use_cases/end-sleep-session.ts';
 export * from './use_cases/medication-timing.ts';

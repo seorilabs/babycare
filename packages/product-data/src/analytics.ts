@@ -13,7 +13,7 @@ const SDK_VERSION = 'babycare-analytics/1';
 
 type AnalyticsSink = AnalyticsPort & {
   flush?: () => Promise<void>;
-  stop?: () => void;
+  stop?: () => void | Promise<void>;
 };
 
 export class FanOutAnalytics implements AnalyticsPort {
@@ -35,10 +35,11 @@ export class FanOutAnalytics implements AnalyticsPort {
     );
   }
 
-  stop(): void {
-    for (const sink of this.#sinks) {
-      sink.stop?.();
-    }
+  async stop(): Promise<void> {
+    await this.flush();
+    await Promise.all(
+      this.#sinks.map(sink => Promise.resolve(sink.stop?.()).catch(() => undefined)),
+    );
   }
 }
 
@@ -65,6 +66,11 @@ interface BufferedPlatformEvent {
   readonly sessionId: string;
   readonly params: Readonly<Record<string, string | number>>;
   readonly tsUnixMs: number;
+}
+
+interface StoredPlatformEvent {
+  readonly event: BufferedPlatformEvent;
+  readonly retryProtected: boolean;
 }
 
 interface PlatformSession {
@@ -144,10 +150,11 @@ export class PlatformAnalytics implements AnalyticsPort {
   readonly #now: () => number;
   readonly #sessionId = ulid();
   readonly #timer: ReturnType<typeof setInterval> | undefined;
-  #buffer: BufferedPlatformEvent[] = [];
+  #buffer: StoredPlatformEvent[] = [];
   #session: PlatformSession | undefined;
   #sessionRequest: Promise<PlatformSession | undefined> | undefined;
-  #flushing = false;
+  #flushRequest: Promise<void> | undefined;
+  #droppedCount = 0;
 
   constructor(options: PlatformAnalyticsOptions) {
     this.#baseUrl = options.baseUrl.replace(/\/+$/, '');
@@ -174,55 +181,100 @@ export class PlatformAnalytics implements AnalyticsPort {
     }
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     if (this.#timer) {
       clearInterval(this.#timer);
+    }
+    if (this.#flushRequest) {
+      await this.#flushRequest;
+    }
+    while (this.#buffer.length > 0) {
+      const before = this.#buffer.length;
+      await this.flush();
+      if (this.#buffer.length >= before) {
+        break;
+      }
     }
   }
 
   async flush(): Promise<void> {
-    if (this.#flushing || this.#buffer.length === 0) {
+    if (this.#flushRequest) {
+      return this.#flushRequest;
+    }
+    if (this.#buffer.length === 0) {
       return;
     }
-    this.#flushing = true;
-    const batch = this.#buffer.splice(0, MAX_BATCH);
+    this.#flushRequest = this.#flushOnce().finally(() => {
+      this.#flushRequest = undefined;
+    });
+    return this.#flushRequest;
+  }
+
+  async #flushOnce(): Promise<void> {
+    const droppedSnapshot = this.#droppedCount;
+    const retryBatch = this.#buffer[0]?.retryProtected === true;
+    const includeDropped = droppedSnapshot > 0 && !retryBatch;
+    const dataLimit = includeDropped ? MAX_BATCH - 1 : MAX_BATCH;
+    const batch = this.#buffer.splice(0, dataLimit);
     try {
       const token = await this.#platformToken();
       const context =
         typeof this.#context === 'function' ? this.#context() : this.#context;
+      const events = batch.map(item => item.event);
+      if (includeDropped) {
+        events.push(this.#event('seori_analytics_dropped', {count: droppedSnapshot}));
+      }
       const response = await this.#fetch(`${this.#eventsBaseUrl}/v1/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Seori-App': PLATFORM_APP_ID,
-        'X-Seori-Sdk': SDK_VERSION,
+          'X-Seori-Sdk': SDK_VERSION,
           ...(token ? {Authorization: `Bearer ${token}`} : {}),
         },
         body: JSON.stringify({
-          events: batch,
+          events,
           context: {...context, sdkVersion: SDK_VERSION},
         }),
       });
       if (!response.ok) {
         throw new Error(`Platform events failed: ${response.status}`);
       }
+      if (includeDropped) {
+        this.#droppedCount = Math.max(0, this.#droppedCount - droppedSnapshot);
+      }
     } catch {
-      this.#buffer = [...batch, ...this.#buffer].slice(0, MAX_BUFFER);
-    } finally {
-      this.#flushing = false;
+      this.#buffer = [
+        ...batch.map(item => ({...item, retryProtected: true})),
+        ...this.#buffer,
+      ];
+      this.#trimBuffer();
     }
   }
 
   #enqueue(name: string, params: Readonly<Record<string, unknown>>): void {
-    this.#buffer.push({
+    this.#buffer.push({event: this.#event(name, params), retryProtected: false});
+    this.#trimBuffer();
+  }
+
+  #event(
+    name: string,
+    params: Readonly<Record<string, unknown>>,
+  ): BufferedPlatformEvent {
+    return {
       eventId: ulid(this.#now()),
       name,
       sessionId: this.#sessionId,
       params: normalizeParams(params),
       tsUnixMs: this.#now(),
-    });
-    if (this.#buffer.length > MAX_BUFFER) {
-      this.#buffer = this.#buffer.slice(-MAX_BUFFER);
+    };
+  }
+
+  #trimBuffer(): void {
+    while (this.#buffer.length > MAX_BUFFER) {
+      const unprotected = this.#buffer.findIndex(item => !item.retryProtected);
+      this.#buffer.splice(unprotected >= 0 ? unprotected : 0, 1);
+      this.#droppedCount += 1;
     }
   }
 

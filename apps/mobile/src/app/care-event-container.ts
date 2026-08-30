@@ -2,6 +2,7 @@ import {
   createEndSleepSession,
   createRecordCareEvent,
   createSoftDeleteCareEvent,
+  createUpdateCareEvent,
   type AnalyticsPort,
   type AuthPort,
   type CareGroupRepositoryPort,
@@ -193,6 +194,13 @@ export async function createCareEventContainer(
       clock: dependencies.clock,
       analytics: dependencies.analytics,
       idGenerator: dependencies.idGenerator,
+      firstLogStorage: AsyncStorage,
+      groupRole: dependencies.context.membership.membershipRole,
+    }),
+    updateCareEvent: createUpdateCareEvent({
+      repository,
+      clock: dependencies.clock,
+      analytics: dependencies.analytics,
     }),
     endSleepSession: createEndSleepSession({
       repository,

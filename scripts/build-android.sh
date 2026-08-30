@@ -46,6 +46,11 @@ for variable_name in "${required_environment[@]}"; do
   }
 done
 
+[[ -d "$repo_root/$CLOUD_BUILD_PNPM_STORE" ]] || {
+  echo "인증된 Cloud Build pnpm store가 없습니다: $CLOUD_BUILD_PNPM_STORE" >&2
+  exit 1
+}
+
 version_name="${ANDROID_VERSION_NAME#v}"
 version_output="$(node scripts/resolve-release-version.mjs --tag "v$version_name")"
 resolved_version_name="$(printf '%s\n' "$version_output" | sed -n 's/^version_name=//p')"
@@ -130,7 +135,9 @@ keyPassword=$GOOGLE_PLAY_UPLOAD_KEY_PASSWORD
 EOF
 chmod 600 "$key_properties"
 
-pnpm install --frozen-lockfile
+pnpm install \
+  --frozen-lockfile \
+  --store-dir "$repo_root/$CLOUD_BUILD_PNPM_STORE"
 "$repo_root/apps/mobile/android/gradlew" \
   -p "$repo_root/apps/mobile/android" \
   --console=plain \

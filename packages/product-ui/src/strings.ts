@@ -1,4 +1,4 @@
-import type {AppLocale} from './locale';
+import type {AppLocale} from './locale.ts';
 
 type TimeAgoUnit = 'minute' | 'hour' | 'day';
 
@@ -96,6 +96,7 @@ const ko = {
       '공동 기록 화면을 준비하지 못했어요. 다시 시도해 주세요.',
     runtimeLoadRetryLabel: '공동 기록 화면 다시 열기',
     eventSaved: '돌봄 기록을 저장했어요',
+    eventUpdated: '돌봄 기록을 수정했어요',
     eventDeleted: '기록을 삭제했어요',
     sleepRecorded: '수면 시간을 기록했어요',
     membershipRemovedNotice: '돌봄 그룹 접근 권한이 해제됐어요',
@@ -171,10 +172,12 @@ const ko = {
     emptyTitle: '첫 돌봄 기록을 남겨보세요',
     emptyText:
       '홈의 큰 버튼으로 수유·기저귀·수면·체온·복약을 빠르게 기록할 수 있어요.',
-    deleteHint: '내 기록을 길게 누르면 삭제할 수 있어요.',
+    deleteHint: '기록을 누르면 수정하고, 길게 누르면 삭제할 수 있어요.',
     deleteConfirmTitle: '기록을 삭제할까요?',
     deleteActionLabel: '기록 삭제',
     deleteAccessibilityHint: '활성화하면 기록 삭제 확인창이 열립니다',
+    editActionLabel: '기록 수정',
+    editAccessibilityHint: '활성화하면 기록 수정 화면이 열립니다',
     loadingMore: '이전 기록을 불러오는 중…',
     retryLoadMoreLabel: '이전 기록 다시 불러오기',
     cappedEnd: '기기에 보관할 이전 기록 범위까지 확인했어요',
@@ -292,6 +295,7 @@ const ko = {
     sleepTitle: '수면 시작',
     temperatureTitle: '체온 기록',
     medicationTitle: '복약 기록',
+    editTitle: '돌봄 기록 수정',
     typeLabel: '유형',
     feedingBreast: '모유',
     feedingPumped: '유축',
@@ -354,6 +358,8 @@ const ko = {
       `${name}의 확인한 최소 간격 안에 있는 기록입니다. 실제 복약 시각이 맞는지 다시 확인해 주세요.`,
     simultaneousAntipyreticWarning:
       '다른 해열제와 같은 시각으로 기록되어 있습니다. 의료진 안내와 실제 복약 시각을 다시 확인해 주세요.',
+    medicationHistoryIncompleteWarning:
+      '전체 복약 기록을 확인하지 못했습니다. 다른 기기의 기록과 실제 복약 시각을 확인한 뒤 저장해 주세요.',
     acknowledgeAndSave: '경고 확인 후 기록',
     medicationNameRequired: '약 이름을 입력해 주세요.',
     medicationDoseRequired: '실제로 먹인 양을 입력해 주세요.',
@@ -492,6 +498,7 @@ const en: Strings = {
       "Couldn't load the shared log screen. Please try again.",
     runtimeLoadRetryLabel: 'Reopen the shared log screen',
     eventSaved: 'Care log saved',
+    eventUpdated: 'Care log updated',
     eventDeleted: 'Entry deleted',
     sleepRecorded: 'Sleep duration saved',
     membershipRemovedNotice: 'Your access to this care group was removed',
@@ -568,10 +575,12 @@ const en: Strings = {
     emptyTitle: 'Add your first care entry',
     emptyText:
       'Use the big buttons on Home to log feeding, diapers, sleep, temperature, and medication.',
-    deleteHint: 'Press and hold your own entry to delete it.',
+    deleteHint: 'Tap an entry to edit it, or press and hold to delete it.',
     deleteConfirmTitle: 'Delete this entry?',
     deleteActionLabel: 'Delete entry',
     deleteAccessibilityHint: 'Activating opens a delete confirmation',
+    editActionLabel: 'Edit entry',
+    editAccessibilityHint: 'Activating opens the entry editor',
     loadingMore: 'Loading earlier entries…',
     retryLoadMoreLabel: 'Reload earlier entries',
     cappedEnd: "You've reached the earliest entries kept on this device",
@@ -691,6 +700,7 @@ const en: Strings = {
     sleepTitle: 'Start sleep',
     temperatureTitle: 'Log temperature',
     medicationTitle: 'Log medication',
+    editTitle: 'Edit care entry',
     typeLabel: 'Type',
     feedingBreast: 'Breast',
     feedingPumped: 'Pumped',
@@ -753,6 +763,8 @@ const en: Strings = {
       `This entry falls inside the interval you entered for ${name}. Check the actual time again.`,
     simultaneousAntipyreticWarning:
       'Another fever medicine is logged at the same time. Check the clinical instructions and actual time again.',
+    medicationHistoryIncompleteWarning:
+      'The full medication history is unavailable. Check other devices and the actual dose time before saving.',
     acknowledgeAndSave: 'Confirm warning and log',
     medicationNameRequired: 'Enter the medication name.',
     medicationDoseRequired: 'Enter the amount actually given.',

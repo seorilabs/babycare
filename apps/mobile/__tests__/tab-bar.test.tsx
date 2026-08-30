@@ -3,8 +3,8 @@ import {StyleSheet, View} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
 import {TabBar} from '../src/components/TabBar';
-import {createTheme} from '../src/app/theme';
-import { createStrings } from '../src/app/i18n';
+import {createTheme} from '@babycare/product-ui';
+import { createStrings } from '@babycare/product-ui';
 
 let mockBottomInset = 34;
 

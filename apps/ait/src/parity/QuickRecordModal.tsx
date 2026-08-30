@@ -31,12 +31,10 @@ import {
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {formatDuration} from './format';
-import type {Strings} from './strings';
+import type {Strings} from '@babycare/product-ui';
 import {domainContext, type LocalSession} from './session';
 import {aitBottomInset, aitTopInset} from './system-insets';
-import type {AppTheme} from './theme';
-
-const EMPTY_CARE_EVENTS: readonly CareEvent[] = [];
+import type {AppTheme} from '@babycare/product-ui';
 
 function Choice<T extends string>(props: {
   readonly value: T;
@@ -68,7 +66,9 @@ function Choice<T extends string>(props: {
 
 export function QuickRecordModal(props: {
   readonly kind: CareEventKind | undefined;
-  readonly events?: readonly CareEvent[];
+  readonly events: readonly CareEvent[];
+  readonly historyStatus: 'complete' | 'partial';
+  readonly initialEvent?: CareEvent;
   readonly session: LocalSession;
   readonly strings: Strings;
   readonly theme: AppTheme;
@@ -76,7 +76,7 @@ export function QuickRecordModal(props: {
   readonly onSave: (input: CreateCareEventInput) => Promise<void>;
 }) {
   const strings = props.strings;
-  const events = props.events ?? EMPTY_CARE_EVENTS;
+  const events = props.events;
   const insets = useSafeAreaInsets();
   const bottomInset = aitBottomInset(insets.bottom, Platform.OS);
   const topInset = aitTopInset(insets.top, Platform.OS);
@@ -129,14 +129,37 @@ export function QuickRecordModal(props: {
     setRightAccumulatedMs(0);
     setTick(0);
     if (props.kind) {
-      setOccurredAt(Date.now());
-      setTimeEdited(false);
-      setNote('');
+      const initial = props.initialEvent;
+      setOccurredAt(initial?.occurredAt ?? Date.now());
+      setTimeEdited(initial !== undefined);
+      setNote(initial?.note ?? '');
       setSaving(false);
       setErrorMessage(undefined);
       setMedicationWarningConfirmed(false);
+      if (initial?.kind === 'feeding') {
+        setFeedingType(initial.feedingType);
+        setVolumeMl(initial.volumeMl ?? 120);
+        setLeftAccumulatedMs((initial.leftDurationSeconds ?? 0) * 1_000);
+        setRightAccumulatedMs((initial.rightDurationSeconds ?? 0) * 1_000);
+      } else if (initial?.kind === 'diaper') {
+        setDiaperType(initial.diaperType);
+      } else if (initial?.kind === 'sleep') {
+        setSleepType(initial.sleepType);
+        setOccurredAt(initial.startedAt);
+      } else if (initial?.kind === 'temperature') {
+        setTemperatureCelsius(initial.temperatureCelsius);
+        setMeasurementSite(initial.measurementSite);
+      } else if (initial?.kind === 'medication') {
+        setMedicationPreset(initial.activeIngredient);
+        setMedicationName(initial.medicationName);
+        setMedicationCategory(initial.medicationCategory);
+        setActiveIngredient(initial.activeIngredient);
+        setDoseAmountText(String(initial.doseAmount));
+        setDoseUnit(initial.doseUnit);
+        setIntervalHoursText(String(initial.minimumIntervalMinutes / 60));
+      }
     }
-  }, [props.kind]);
+  }, [props.initialEvent, props.kind]);
 
   useEffect(() => {
     setMedicationWarningConfirmed(false);
@@ -184,10 +207,20 @@ export function QuickRecordModal(props: {
     return null;
   }
 
-  const context = domainContext(props.session);
+  const context = props.initialEvent
+    ? {
+        groupId: props.initialEvent.groupId,
+        babyId: props.initialEvent.babyId,
+        caregiverId: props.initialEvent.caregiverId,
+      }
+    : domainContext(props.session);
+  const medicationEvents = props.initialEvent
+    ? events.filter(event => event.id !== props.initialEvent?.id)
+    : events;
   const selectedOccurredAt = timeEdited ? occurredAt : Date.now();
-  const title =
-    props.kind === 'feeding'
+  const title = props.initialEvent
+    ? strings.quickRecord.editTitle
+    : props.kind === 'feeding'
       ? strings.quickRecord.feedingTitle
       : props.kind === 'diaper'
         ? strings.quickRecord.diaperTitle
@@ -206,7 +239,7 @@ export function QuickRecordModal(props: {
     minimumIntervalMinutes >= 15 &&
     minimumIntervalMinutes <= 10_080;
   const medicationAssessment = medicationInputValid
-    ? assessMedicationTiming(events, {
+    ? assessMedicationTiming(medicationEvents, {
         occurredAt: selectedOccurredAt,
         medicationName,
         medicationCategory,
@@ -221,6 +254,12 @@ export function QuickRecordModal(props: {
     : medicationAssessment?.otherAntipyretic
       ? strings.quickRecord.simultaneousAntipyreticWarning
       : undefined;
+  const medicationHistoryWarning =
+    props.kind === 'medication' && props.historyStatus === 'partial'
+      ? strings.quickRecord.medicationHistoryIncompleteWarning
+      : undefined;
+  const medicationNeedsConfirmation =
+    medicationWarning !== undefined || medicationHistoryWarning !== undefined;
   const saveDisabled =
     (props.kind === 'feeding' &&
       feedingType === 'breast' &&
@@ -315,7 +354,17 @@ export function QuickRecordModal(props: {
     } else if (props.kind === 'diaper') {
       input = {...context, kind: 'diaper', diaperType, occurredAt: recordTime, note};
     } else if (props.kind === 'sleep') {
-      input = {...context, kind: 'sleep', sleepType, startedAt: recordTime, note};
+      input = {
+        ...context,
+        kind: 'sleep',
+        sleepType,
+        startedAt: recordTime,
+        ...(props.initialEvent?.kind === 'sleep' &&
+        props.initialEvent.endedAt !== undefined
+          ? {endedAt: props.initialEvent.endedAt}
+          : {}),
+        note,
+      };
     } else if (props.kind === 'temperature') {
       input = {
         ...context,
@@ -326,14 +375,17 @@ export function QuickRecordModal(props: {
         note,
       };
     } else {
-      const assessment = assessMedicationTiming(events, {
+      const assessment = assessMedicationTiming(medicationEvents, {
         occurredAt: recordTime,
         medicationName,
         medicationCategory,
         activeIngredient,
         minimumIntervalMinutes,
       });
-      if (assessment.requiresAcknowledgement && !medicationWarningConfirmed) {
+      if (
+        (assessment.requiresAcknowledgement || props.historyStatus === 'partial') &&
+        !medicationWarningConfirmed
+      ) {
         setMedicationWarningConfirmed(true);
         return;
       }
@@ -744,11 +796,11 @@ export function QuickRecordModal(props: {
                 </Text>
                 <Text style={[styles.scheduleLine, {color: props.theme.colors.textMuted}]}>
                   {strings.quickRecord.medicationAcetaminophen} ·{' '}
-                  {scheduleText(nextMedicationTime(events, 'acetaminophen'))}
+                  {scheduleText(nextMedicationTime(medicationEvents, 'acetaminophen'))}
                 </Text>
                 <Text style={[styles.scheduleLine, {color: props.theme.colors.textMuted}]}>
                   {strings.quickRecord.medicationIbuprofen} ·{' '}
-                  {scheduleText(nextMedicationTime(events, 'ibuprofen'))}
+                  {scheduleText(nextMedicationTime(medicationEvents, 'ibuprofen'))}
                 </Text>
               </View>
               <View style={[styles.safetyCard, {backgroundColor: props.theme.colors.primarySoft}]}>
@@ -759,6 +811,11 @@ export function QuickRecordModal(props: {
               {medicationWarning ? (
                 <Text accessibilityRole="alert" style={[styles.warning, {color: props.theme.colors.danger}]}>
                   {medicationWarning}
+                </Text>
+              ) : null}
+              {medicationHistoryWarning ? (
+                <Text accessibilityRole="alert" style={[styles.warning, {color: props.theme.colors.danger}]}>
+                  {medicationHistoryWarning}
                 </Text>
               ) : null}
             </>
@@ -853,7 +910,7 @@ export function QuickRecordModal(props: {
             accessibilityLabel={
               saving
                 ? strings.quickRecord.savingLabel
-                : medicationWarning && !medicationWarningConfirmed
+                : medicationNeedsConfirmation && !medicationWarningConfirmed
                   ? strings.quickRecord.acknowledgeAndSave
                 : strings.quickRecord.saveLabel
             }
@@ -871,7 +928,7 @@ export function QuickRecordModal(props: {
             <Text style={styles.saveText}>
               {saving
                 ? strings.quickRecord.saving
-                : medicationWarning && !medicationWarningConfirmed
+                : medicationNeedsConfirmation && !medicationWarningConfirmed
                   ? strings.quickRecord.acknowledgeAndSave
                   : strings.quickRecord.save}
             </Text>

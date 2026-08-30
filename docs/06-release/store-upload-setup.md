@@ -98,7 +98,9 @@ Cloud Build 산출물과 로그는 BabyCare 전용
 
 > **App Store(Xcode Cloud)는 매니지드 서명을 사용한다.** 인증서·provisioning secret은
 > 불필요하지만 `FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64`는 Xcode Cloud secret으로
-> 반드시 주입한다. 저장소에는 Firebase plist를 커밋하지 않는다.
+> 반드시 주입한다. `@seorilabs/platform-sdk` 설치용 read-only `GITHUB_PACKAGES_TOKEN`도
+> Xcode Cloud secret으로 주입하며, 둘 중 하나라도 누락되면 `ci_post_clone.sh`가 fail-closed
+> 한다. 저장소에는 Firebase plist나 token을 커밋하지 않는다.
 
 ## Google Play WIF 복구
 

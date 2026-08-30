@@ -2,8 +2,8 @@ import React from 'react';
 import {Alert, Linking, Share, StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
-import {createTheme} from '../src/app/theme';
-import { createStrings } from '../src/app/i18n';
+import {createTheme} from '@babycare/product-ui';
+import { createStrings } from '@babycare/product-ui';
 import {MoreScreen} from '../src/screens/MoreScreen';
 
 describe('MoreScreen', () => {

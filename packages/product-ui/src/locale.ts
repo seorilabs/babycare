@@ -1,5 +1,3 @@
-import {NativeModules, Platform} from 'react-native';
-
 /** Languages the product ships translated copy for. */
 export type AppLocale = 'ko' | 'en';
 
@@ -32,8 +30,18 @@ export function resolveAppLocale(
   return DEFAULT_APP_LOCALE;
 }
 
-function iosLanguageTags(): readonly string[] {
-  const settings = NativeModules.SettingsManager?.settings;
+export interface NativeLocaleModules {
+  readonly SettingsManager?: {
+    readonly settings?: {
+      readonly AppleLanguages?: unknown;
+      readonly AppleLocale?: unknown;
+    };
+  };
+  readonly I18nManager?: {readonly localeIdentifier?: unknown};
+}
+
+function iosLanguageTags(nativeModules: NativeLocaleModules): readonly string[] {
+  const settings = nativeModules.SettingsManager?.settings;
   const languages = settings?.AppleLanguages;
   if (Array.isArray(languages)) {
     const tags = languages.filter(
@@ -48,8 +56,8 @@ function iosLanguageTags(): readonly string[] {
     : [];
 }
 
-function androidLanguageTags(): readonly string[] {
-  const identifier = NativeModules.I18nManager?.localeIdentifier;
+function androidLanguageTags(nativeModules: NativeLocaleModules): readonly string[] {
+  const identifier = nativeModules.I18nManager?.localeIdentifier;
   return typeof identifier === 'string' && identifier.length > 0
     ? [identifier]
     : [];
@@ -60,12 +68,15 @@ function androidLanguageTags(): readonly string[] {
  * locale so Jest and any host without the native modules still report something
  * usable instead of throwing.
  */
-export function deviceLanguageTags(): readonly string[] {
+export function resolveDeviceLanguageTags(
+  platform: string,
+  nativeModules: NativeLocaleModules,
+): readonly string[] {
   const nativeTags =
-    Platform.OS === 'ios'
-      ? iosLanguageTags()
-      : Platform.OS === 'android'
-        ? androidLanguageTags()
+    platform === 'ios'
+      ? iosLanguageTags(nativeModules)
+      : platform === 'android'
+        ? androidLanguageTags(nativeModules)
         : [];
   if (nativeTags.length > 0) {
     return nativeTags;
@@ -75,8 +86,4 @@ export function deviceLanguageTags(): readonly string[] {
   } catch {
     return [];
   }
-}
-
-export function deviceAppLocale(): AppLocale {
-  return resolveAppLocale(deviceLanguageTags());
 }

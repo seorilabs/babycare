@@ -2,6 +2,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -11,7 +12,14 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import type {CareEventKind} from '@babycare/product-core';
+import {
+  classifyInviteJoinFailure,
+  classifyBootFailure,
+  type AnalyticsPort,
+  type BootStage,
+  type CareEvent,
+  type CareEventKind,
+} from '@babycare/product-core';
 import type {
   CareEventOverviewFeedState,
   CareEventSyncState,
@@ -32,9 +40,10 @@ import {HomeScreen} from '../screens/HomeScreen';
 import {MoreScreen} from '../screens/MoreScreen';
 import {StatsScreen} from '../screens/StatsScreen';
 import {TimelineScreen} from '../screens/TimelineScreen';
+import {deviceAppLocale} from '../adapters/local/device-locale';
 import {AccountDeletionIntentStore} from './account-deletion-intent-store';
-import {createStrings, deviceAppLocale, type Strings} from './i18n';
-import {createTheme} from './theme';
+import {flushMobileAnalyticsOnAppState} from './analytics-lifecycle';
+import {createStrings, createTheme, type Strings} from '@babycare/product-ui';
 import {
   createOwnerFirebaseSession,
   firebaseSessionView,
@@ -46,6 +55,11 @@ import {
   bootstrapFirebaseRuntime,
   type FirebaseRuntime,
 } from './firebase-runtime';
+import {
+  handleMobilePresenceAppState,
+  prepareMobilePresenceSession,
+  stopMobilePresence,
+} from './platform-presence';
 
 type CareContainer = Awaited<
   ReturnType<FirebaseRuntime['createCareContainer']>
@@ -113,6 +127,7 @@ export function FirebaseCareDashboard(props: {
   );
   const [tab, setTab] = useState<AppTab>('home');
   const [recording, setRecording] = useState<CareEventKind>();
+  const [editingEvent, setEditingEvent] = useState<CareEvent>();
   const [now, setNow] = useState(Date.now());
   const [savedMessage, setSavedMessage] = useState<string>();
   const session = firebaseSessionView(
@@ -188,6 +203,10 @@ export function FirebaseCareDashboard(props: {
           loadingMore={timeline.loadingMore}
           loadMoreError={timeline.loadMoreError}
           now={now}
+          onEdit={event => {
+            setRecording(undefined);
+            setEditingEvent(event);
+          }}
           onDelete={async event => {
             try {
               await props.container.softDeleteCareEvent({
@@ -350,12 +369,41 @@ export function FirebaseCareDashboard(props: {
       />
       <QuickRecordModal
         events={overview.events}
-        kind={recording}
-        onClose={() => setRecording(undefined)}
+        historyStatus={
+          overview.status === 'server_confirmed' ? 'complete' : 'partial'
+        }
+        initialEvent={editingEvent}
+        kind={editingEvent?.kind ?? recording}
+        onClose={() => {
+          setEditingEvent(undefined);
+          setRecording(undefined);
+        }}
         onSave={async input => {
-          await props.container.recordCareEvent(input);
+          if (editingEvent) {
+            await props.container.updateCareEvent({
+              groupId: props.ready.context.group.id,
+              eventId: editingEvent.id,
+              requestedBy: props.ready.context.identity.userId,
+              update: input,
+            });
+          } else {
+            await props.container.recordCareEvent(input);
+          }
+          if (
+            input.kind === 'medication' &&
+            overview.status !== 'server_confirmed'
+          ) {
+            await props.runtime.analytics
+              ?.track({
+                name: 'bc_medication_history_unconfirmed',
+                params: {},
+              })
+              .catch(() => undefined);
+          }
           setNow(Date.now());
-          setSavedMessage(strings.app.eventSaved);
+          setSavedMessage(
+            editingEvent ? strings.app.eventUpdated : strings.app.eventSaved,
+          );
         }}
         session={session}
         strings={strings}
@@ -393,12 +441,52 @@ export function FirebaseBabyCareApp(
   const [state, setState] = useState<RootState>({kind: 'loading'});
   const [runtimeError, setRuntimeError] = useState<Error>();
   const [retryKey, setRetryKey] = useState(0);
+  const bootStartedAt = useRef(Date.now());
+  const bootStage = useRef<BootStage>('runtime');
+  const bootAnalytics = useRef<AnalyticsPort | undefined>(undefined);
+  const bootScreenSent = useRef(false);
+  const bootTerminalSent = useRef(false);
   const setupAnalytics = state.kind === 'setup' ? state.runtime.analytics : undefined;
+
+  const trackBootScreen = useCallback((analytics: AnalyticsPort) => {
+    bootAnalytics.current = analytics;
+    if (bootScreenSent.current) {
+      return;
+    }
+    bootScreenSent.current = true;
+    analytics
+      .track({
+        name: 'core_screen_view',
+        params: {screen_name: 'boot', screen_class: 'FirebaseBabyCareApp'},
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const trackBootReady = useCallback((analytics: AnalyticsPort) => {
+    trackBootScreen(analytics);
+    if (bootTerminalSent.current) {
+      return;
+    }
+    bootTerminalSent.current = true;
+    analytics
+      .track({
+        name: 'bc_boot_ready',
+        params: {stage_ms: Math.max(0, Date.now() - bootStartedAt.current)},
+      })
+      .catch(() => undefined);
+  }, [trackBootScreen]);
 
   useEffect(() => {
     mounted.current = true;
+    handleMobilePresenceAppState(AppState.currentState);
+    const subscription = AppState.addEventListener('change', nextState => {
+      handleMobilePresenceAppState(nextState);
+      flushMobileAnalyticsOnAppState(bootAnalytics.current, nextState);
+    });
     return () => {
       mounted.current = false;
+      subscription.remove();
+      stopMobilePresence();
     };
   }, []);
 
@@ -476,6 +564,7 @@ export function FirebaseBabyCareApp(
         container,
         sessionToken,
       });
+      trackBootReady(runtime.analytics);
       runtime
         .refreshMemberships(ready)
         .then(async memberships => {
@@ -500,17 +589,25 @@ export function FirebaseBabyCareApp(
           // server observer remains authoritative for revocation.
         });
     },
-    [sessionStore, strings],
+    [sessionStore, strings, trackBootReady],
   );
 
   useEffect(() => {
     let active = true;
     const bootstrap = async () => {
       try {
-        const runtime = await bootstrapFirebaseRuntime();
+        const runtime = await bootstrapFirebaseRuntime({
+          onStage: stage => {
+            bootStage.current = stage;
+          },
+          onAnalyticsReady: trackBootScreen,
+        });
+        trackBootScreen(runtime.analytics);
+        prepareMobilePresenceSession(runtime.firebaseIdToken);
         if (!active) {
           return;
         }
+        bootStage.current = 'auth';
         const pendingDeletion = await accountDeletionIntents.load();
         if (pendingDeletion) {
           const verified = await runtime.sessionServices.auth.verifyCurrentUser();
@@ -536,9 +633,11 @@ export function FirebaseBabyCareApp(
             runtime,
             notice: strings.app.accountDeletedNotice,
           });
+          trackBootReady(runtime.analytics);
           return;
         }
         const identity = await runtime.sessionServices.auth.currentUser();
+        bootStage.current = 'session_restore';
         if (identity) {
           try {
             const cached = await cache.load(identity.userId);
@@ -563,9 +662,31 @@ export function FirebaseBabyCareApp(
           await activateReadySession(runtime, restored, () => active);
         } else {
           setState({kind: 'setup', runtime});
+          trackBootReady(runtime.analytics);
         }
       } catch (error) {
         if (active) {
+          if (!bootTerminalSent.current && bootAnalytics.current) {
+            bootTerminalSent.current = true;
+            bootAnalytics.current
+              .track({
+                name: 'core_screen_view',
+                params: {
+                  screen_name: 'boot_error',
+                  screen_class: 'FirebaseBabyCareApp',
+                },
+              })
+              .catch(() => undefined);
+            bootAnalytics.current
+              .track({
+                name: 'bc_boot_failed',
+                params: {
+                  stage: bootStage.current,
+                  error_code: classifyBootFailure(error),
+                },
+              })
+              .catch(() => undefined);
+          }
           setState({
             kind: 'error',
             error: userFacingError(strings.app.bootstrapFailed, error),
@@ -584,6 +705,8 @@ export function FirebaseBabyCareApp(
     cache,
     retryKey,
     strings,
+    trackBootReady,
+    trackBootScreen,
   ]);
 
   if (state.kind === 'loading') {
@@ -613,6 +736,10 @@ export function FirebaseBabyCareApp(
         <Pressable
           accessibilityRole="button"
           onPress={() => {
+            bootStartedAt.current = Date.now();
+            bootStage.current = 'runtime';
+            bootScreenSent.current = false;
+            bootTerminalSent.current = false;
             setState({kind: 'loading'});
             setRetryKey(value => value + 1);
           }}
@@ -626,6 +753,7 @@ export function FirebaseBabyCareApp(
   if (state.kind === 'setup') {
     return (
       <CloudOnboardingScreen
+        analytics={state.runtime.analytics}
         initialErrorMessage={state.notice}
         onCreate={async input => {
           const ready = await createOwnerFirebaseSession(
@@ -643,18 +771,33 @@ export function FirebaseBabyCareApp(
           await activateReadySession(state.runtime, ready);
         }}
         onJoin={async input => {
-          const ready = await joinFirebaseSession(
-            state.runtime.sessionServices,
-            input,
-          );
-          await state.runtime.analytics?.track({
-            name: 'bc_invite_joined',
-            params: {},
-          });
-          await state.runtime.analytics?.track({
-            name: 'bc_onboarding_complete',
-            params: {mode: 'join'},
-          });
+          await state.runtime.analytics
+            ?.track({name: 'bc_invite_join_attempt', params: {}})
+            .catch(() => undefined);
+          let ready: ReadyFirebaseSession;
+          try {
+            ready = await joinFirebaseSession(
+              state.runtime.sessionServices,
+              input,
+            );
+          } catch (error) {
+            await state.runtime.analytics
+              ?.track({
+                name: 'bc_invite_join_failed',
+                params: {reason_code: classifyInviteJoinFailure(error)},
+              })
+              .catch(() => undefined);
+            throw error;
+          }
+          await state.runtime.analytics
+            ?.track({name: 'bc_invite_joined', params: {}})
+            .catch(() => undefined);
+          await state.runtime.analytics
+            ?.track({
+              name: 'bc_onboarding_complete',
+              params: {mode: 'join'},
+            })
+            .catch(() => undefined);
           await activateReadySession(state.runtime, ready);
         }}
         strings={strings}

@@ -9,6 +9,7 @@ import {
   groupId,
   userId,
   type AuthIdentity,
+  type AnalyticsPort,
   type Baby,
   type CareGroup,
   type Membership,
@@ -21,7 +22,7 @@ import {
 } from '../src/app/firebase-runtime';
 import type {ReadyFirebaseSession} from '../src/app/firebase-session';
 import {CloudCareContextHydrationError} from '../src/adapters/local/cloud-care-context-cache';
-import { createStrings } from '../src/app/i18n';
+import { createStrings } from '@babycare/product-ui';
 import {
   FirebaseBabyCareApp,
   FirebaseCareDashboard,
@@ -51,6 +52,11 @@ jest.mock('react-native-safe-area-context', () => {
 
 jest.mock('../src/app/firebase-runtime', () => ({
   bootstrapFirebaseRuntime: jest.fn(),
+}));
+jest.mock('../src/app/platform-presence', () => ({
+  handleMobilePresenceAppState: jest.fn(),
+  prepareMobilePresenceSession: jest.fn(),
+  stopMobilePresence: jest.fn(),
 }));
 
 const bootstrap = jest.mocked(bootstrapFirebaseRuntime);
@@ -179,7 +185,11 @@ describe('FirebaseBabyCareApp product copy', () => {
   it(
     'measures onboarding entry with the existing screen-view contract',
     async () => {
-      const track = jest.fn(async () => undefined);
+      const track: jest.MockedFunction<AnalyticsPort['track']> = jest.fn(
+        async event => {
+          if (!event.name) throw new Error('Analytics event name is required');
+        },
+      );
       jest.mocked(AsyncStorage.getItem).mockReset().mockResolvedValue(null);
       bootstrap.mockResolvedValue({
         analytics: {track},
@@ -204,9 +214,65 @@ describe('FirebaseBabyCareApp product copy', () => {
           screen_class: 'CloudOnboardingScreen',
         },
       });
+      expect(track).toHaveBeenCalledWith({
+        name: 'core_screen_view',
+        params: {
+          screen_name: 'boot',
+          screen_class: 'FirebaseBabyCareApp',
+        },
+      });
+      expect(track).toHaveBeenCalledWith({
+        name: 'bc_boot_ready',
+        params: {stage_ms: expect.any(Number)},
+      });
+      expect(
+        track.mock.calls.filter(
+          ([event]) =>
+            event.name === 'core_screen_view' &&
+            event.params.screen_name === 'boot',
+        ),
+      ).toHaveLength(1);
     },
     15_000,
   );
+
+  it('classifies boot failures without sending raw error text', async () => {
+    const track: jest.MockedFunction<AnalyticsPort['track']> = jest.fn(
+      async event => {
+        if (!event.name) throw new Error('Analytics event name is required');
+      },
+    );
+    bootstrap.mockImplementation(async options => {
+      options?.onAnalyticsReady?.({track});
+      options?.onStage?.('app_check');
+      throw Object.assign(new Error('secret permission message'), {
+        code: 'permission-denied',
+      });
+    });
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <FirebaseBabyCareApp strings={createStrings('ko')} />,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(track).toHaveBeenCalledWith({
+      name: 'core_screen_view',
+      params: {
+        screen_name: 'boot_error',
+        screen_class: 'FirebaseBabyCareApp',
+      },
+    });
+    expect(track).toHaveBeenCalledWith({
+      name: 'bc_boot_failed',
+      params: {stage: 'app_check', error_code: 'permission'},
+    });
+    expect(JSON.stringify(track.mock.calls)).not.toContain(
+      'secret permission message',
+    );
+  });
 
   it('hides technical details when startup fails', async () => {
     bootstrap.mockRejectedValue(
@@ -237,6 +303,8 @@ describe('FirebaseBabyCareApp product copy', () => {
       .mockResolvedValueOnce(JSON.stringify({userId: 'user-1'}));
     jest.mocked(AsyncStorage.clear).mockClear();
     bootstrap.mockResolvedValue({
+      analytics: {track: jest.fn(async () => undefined)},
+      firebaseIdToken: jest.fn(async () => undefined),
       sessionServices: {
         auth: {
           verifyCurrentUser: jest.fn(async () => undefined),
@@ -271,19 +339,23 @@ describe('FirebaseBabyCareApp product copy', () => {
       const container = emptyCareContainer();
       jest
         .mocked(AsyncStorage.getItem)
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(
-          JSON.stringify({
-            version: 1,
-            context: 'internal-context-schema',
-            memberships: [],
-          }),
+        .mockReset()
+        .mockImplementation(async key =>
+          key === '@babycare/cloud-care-context/v1'
+            ? JSON.stringify({
+                version: 1,
+                context: 'internal-context-schema',
+                memberships: [],
+              })
+            : null,
         );
       const runtime = {
         kind: 'firebase',
         mode: 'cloud',
         label: 'Firebase Cloud',
         source: 'native',
+        analytics: {track: jest.fn(async () => undefined)},
+        firebaseIdToken: jest.fn(async () => undefined),
         sessionServices: {
           auth: {currentUser: jest.fn(async () => identity)},
           groups: {
@@ -332,6 +404,8 @@ describe('FirebaseBabyCareApp product copy', () => {
       mode: 'cloud',
       label: 'Firebase Cloud',
       source: 'native',
+      analytics: {track: jest.fn(async () => undefined)},
+      firebaseIdToken: jest.fn(async () => undefined),
       sessionServices: {
         auth: {currentUser: jest.fn(async () => identity)},
         groups: {

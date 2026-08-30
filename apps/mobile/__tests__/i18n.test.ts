@@ -4,10 +4,12 @@ import {
   APP_LOCALES,
   DEFAULT_APP_LOCALE,
   createStrings,
+  resolveAppLocale,
+} from '@babycare/product-ui';
+import {
   deviceAppLocale,
   deviceLanguageTags,
-  resolveAppLocale,
-} from '../src/app/i18n';
+} from '../src/adapters/local/device-locale';
 import {eventTitle, formatDuration, formatTimeAgo} from '../src/app/format';
 import {
   babyId,

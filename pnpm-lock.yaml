@@ -32,12 +32,18 @@ importers:
       '@apps-in-toss/framework':
         specifier: 2.10.8
         version: 2.10.8(b78b0ef1a6852688fccae5dc6362f67d)
+      '@babycare/product-ui':
+        specifier: workspace:*
+        version: link:../../packages/product-ui
       '@granite-js/native':
         specifier: 1.0.38
         version: 1.0.38(@babel/runtime@7.28.4)(react-native@0.84.0(@babel/core@7.28.5)(@react-native-community/cli@20.1.0(typescript@5.9.3))(@react-native/metro-config@0.86.0(@babel/core@7.28.5))(@types/react@19.2.0)(react@19.2.3))(react@19.2.3)
       '@granite-js/react-native':
         specifier: 1.0.38
         version: 1.0.38(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(@granite-js/native@1.0.38(@babel/runtime@7.28.4)(react-native@0.84.0(@babel/core@7.28.5)(@react-native-community/cli@20.1.0(typescript@5.9.3))(@react-native/metro-config@0.86.0(@babel/core@7.28.5))(@types/react@19.2.0)(react@19.2.3))(react@19.2.3))(@swc/helpers@0.5.17)(@types/node@22.20.1)(@types/react@19.2.0)(brick-module@0.5.1(react-native@0.84.0(@babel/core@7.28.5)(@react-native-community/cli@20.1.0(typescript@5.9.3))(@react-native/metro-config@0.86.0(@babel/core@7.28.5))(@types/react@19.2.0)(react@19.2.3))(react@19.2.3))(jiti@2.7.0)(react-native@0.84.0(@babel/core@7.28.5)(@react-native-community/cli@20.1.0(typescript@5.9.3))(@react-native/metro-config@0.86.0(@babel/core@7.28.5))(@types/react@19.2.0)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(yaml@2.9.0)
+      '@seorilabs/platform-sdk':
+        specifier: 0.4.0
+        version: 0.4.0
       '@toss/tds-react-native':
         specifier: 2.0.4
         version: 2.0.4(52658c2906750b8db23771f5658d58aa)
@@ -123,6 +129,9 @@ importers:
       '@babycare/product-data':
         specifier: workspace:*
         version: link:../../packages/product-data
+      '@babycare/product-ui':
+        specifier: workspace:*
+        version: link:../../packages/product-ui
       '@react-native-async-storage/async-storage':
         specifier: 3.1.1
         version: 3.1.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native-community/cli@20.0.2(typescript@6.0.3))(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -147,6 +156,9 @@ importers:
       '@react-native-firebase/functions':
         specifier: 25.1.0
         version: 25.1.0(@react-native-firebase/app@25.1.0(@react-native-async-storage/async-storage@3.1.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native-community/cli@20.0.2(typescript@6.0.3))(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native-community/cli@20.0.2(typescript@6.0.3))(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
+      '@seorilabs/platform-sdk':
+        specifier: 0.4.0
+        version: 0.4.0
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -250,6 +262,12 @@ importers:
       '@babycare/product-core':
         specifier: workspace:*
         version: link:../product-core
+
+  packages/product-ui:
+    devDependencies:
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
 
 packages:
 
@@ -3566,6 +3584,10 @@ packages:
     engines: {node: '>= 10'}
     hasBin: true
 
+  '@seorilabs/platform-sdk@0.4.0':
+    resolution: {integrity: sha512-sfsv34SAcI7bXL/AW1RhuaOa0E2dkpIW1ALoIzUtmvJxSalq8a/c2d4QgYWL+0w+ns+/ORjSfBA7BI4Vg02Rkw==, tarball: https://npm.pkg.github.com/download/@seorilabs/platform-sdk/0.4.0/0e2ef6f2a7f64b050efc88df0a68911bd72855ef}
+    engines: {node: '>=20'}
+
   '@shopify/flash-list@1.6.2':
     resolution: {integrity: sha512-8wcri0z/6Skv9y0bDOOVERMEoi+51saNSAMMRXmImJKgWb/jSI1FJeUSlzrw+RLUlgKndwcwVlqFvPuX5xpq8g==}
     peerDependencies:
@@ -4020,6 +4042,7 @@ packages:
   '@xmldom/xmldom@0.9.10':
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
+    deprecated: this version has critical issues, please update to the latest version
 
   abbrev@5.0.0:
     resolution: {integrity: sha512-/XrFJgzQQQHpti1raDJC6m4ws6aNktmjBlhk8Fdlk7LwCEuDoieEJJY9OFHjfiFJFFRM2tK+Ky/IsfbbmlMu1w==}
@@ -5347,6 +5370,7 @@ packages:
   eslint@9.39.5:
     resolution: {integrity: sha512-DgZS62aPLXKlnxILS/AYCoRvHaZeXceIzlXPkkGGzJWSow1aEk0lbTlxUSlyjC8jcaKxAdOnTDz+o1JFSBsyjw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -13580,7 +13604,7 @@ snapshots:
 
   '@jest/transform@29.7.0':
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.28.5
       '@jest/types': 29.6.3
       '@jridgewell/trace-mapping': 0.3.31
       babel-plugin-istanbul: 6.1.1
@@ -15194,6 +15218,8 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+
+  '@seorilabs/platform-sdk@0.4.0': {}
 
   '@shopify/flash-list@1.6.2(@babel/runtime@7.28.4)(react-native@0.72.6(@babel/core@7.28.5)(@babel/preset-env@7.29.7(@babel/core@7.28.5))(react@18.2.0))(react@18.2.0)':
     dependencies:
@@ -19009,7 +19035,7 @@ snapshots:
 
   istanbul-lib-instrument@5.2.1:
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.28.5
       '@babel/parser': 7.29.7
       '@istanbuljs/schema': 0.1.6
       istanbul-lib-coverage: 3.2.2
@@ -19910,7 +19936,7 @@ snapshots:
 
   metro-babel-transformer@0.84.4:
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.28.5
       flow-enums-runtime: 0.0.6
       hermes-parser: 0.35.0
       metro-cache-key: 0.84.4
@@ -20312,7 +20338,7 @@ snapshots:
 
   metro-runtime@0.84.4:
     dependencies:
-      '@babel/runtime': 7.29.7
+      '@babel/runtime': 7.28.4
       flow-enums-runtime: 0.0.6
 
   metro-source-map@0.72.3:
@@ -20446,7 +20472,7 @@ snapshots:
 
   metro-transform-plugins@0.84.4:
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.28.5
       '@babel/generator': 7.29.7
       '@babel/template': 7.29.7
       '@babel/traverse': 7.29.7
@@ -20497,7 +20523,7 @@ snapshots:
 
   metro-transform-worker@0.84.4:
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.28.5
       '@babel/generator': 7.29.7
       '@babel/parser': 7.29.7
       '@babel/types': 7.29.7
@@ -20620,7 +20646,7 @@ snapshots:
   metro@0.84.4:
     dependencies:
       '@babel/code-frame': 7.29.7
-      '@babel/core': 7.29.7
+      '@babel/core': 7.28.5
       '@babel/generator': 7.29.7
       '@babel/parser': 7.29.7
       '@babel/template': 7.29.7

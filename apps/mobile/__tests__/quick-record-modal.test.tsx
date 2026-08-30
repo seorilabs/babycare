@@ -10,8 +10,8 @@ import {
 } from '@babycare/product-core';
 
 import type {LocalSession} from '../src/app/session';
-import {createTheme} from '../src/app/theme';
-import { createStrings } from '../src/app/i18n';
+import {createTheme} from '@babycare/product-ui';
+import { createStrings } from '@babycare/product-ui';
 import {QuickRecordModal} from '../src/components/QuickRecordModal';
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -68,6 +68,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="diaper"
           onClose={onClose}
           onSave={onSave}
@@ -112,6 +114,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="diaper"
           onClose={jest.fn()}
           onSave={jest.fn(async () => {
@@ -145,6 +149,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="diaper"
           onClose={jest.fn()}
           onSave={onSave}
@@ -192,6 +198,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="feeding"
           onClose={jest.fn()}
           onSave={onSave}
@@ -244,6 +252,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="feeding"
           onClose={jest.fn()}
           onSave={onSave}
@@ -303,6 +313,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="feeding"
           onClose={jest.fn()}
           onSave={jest.fn(async () => undefined)}
@@ -358,6 +370,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="diaper"
           onClose={jest.fn()}
           onSave={onSave}
@@ -398,6 +412,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="diaper"
           onClose={jest.fn()}
           onSave={jest.fn(async () => undefined)}
@@ -447,6 +463,8 @@ describe('QuickRecordModal', () => {
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
+          events={[]}
+          historyStatus="complete"
           kind="temperature"
           onClose={jest.fn()}
           onSave={onSave}
@@ -488,6 +506,68 @@ describe('QuickRecordModal', () => {
     );
   });
 
+  it('edits a record while preserving its original identity and occurrence time', async () => {
+    const now = new Date('2026-08-10T10:00:00+09:00').getTime();
+    jest.setSystemTime(now);
+    const original = createCareEvent(
+      {
+        groupId: groupId('group-1'),
+        babyId: babyId('baby-1'),
+        caregiverId: userId('caregiver-other'),
+        kind: 'diaper',
+        diaperType: 'wet',
+        occurredAt: now - 60_000,
+        note: '기존 메모',
+      },
+      {id: eventId('event-edit'), now: now - 60_000},
+    );
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          events={[original]}
+          historyStatus="complete"
+          initialEvent={original}
+          kind="diaper"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    if (!renderer) {
+      throw new Error('기록 편집 모달을 렌더링하지 못했어요');
+    }
+    expect(visibleText(renderer)).toContain('기록 수정');
+    const radios = renderer.root
+      .findAllByProps({accessibilityRole: 'radio'})
+      .filter(node => node.parent?.props.accessibilityRole !== 'radio');
+    expect(radios.map(node => node.props.accessibilityState)).toEqual([
+      {selected: true},
+      {selected: false},
+      {selected: false},
+    ]);
+    ReactTestRenderer.act(() => radios[2]!.props.onPress());
+
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        babyId: original.babyId,
+        caregiverId: original.caregiverId,
+        diaperType: 'mixed',
+        groupId: original.groupId,
+        kind: 'diaper',
+        occurredAt: original.occurredAt,
+      }),
+    );
+  });
+
   it('requires a second confirmation for a medication inside the saved interval', async () => {
     const now = new Date('2026-08-10T10:00:00+09:00').getTime();
     jest.setSystemTime(now);
@@ -512,6 +592,7 @@ describe('QuickRecordModal', () => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
           events={[prior]}
+          historyStatus="complete"
           kind="medication"
           onClose={jest.fn()}
           onSave={onSave}
@@ -553,6 +634,48 @@ describe('QuickRecordModal', () => {
     );
   });
 
+  it('requires confirmation when medication history is not server-confirmed', async () => {
+    jest.setSystemTime(new Date('2026-08-10T10:00:00+09:00'));
+    const onSave = jest.fn(async () => undefined);
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <QuickRecordModal
+          events={[]}
+          historyStatus="partial"
+          kind="medication"
+          onClose={jest.fn()}
+          onSave={onSave}
+          session={session}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    ReactTestRenderer.act(() => {
+      renderer?.root.findByProps({placeholder: '예: 3.5'}).props.onChangeText('3');
+    });
+    expect(
+      renderer?.root
+        .findAllByType(Text)
+        .map(node => String(node.props.children))
+        .join(' '),
+    ).toContain('전체 복약 기록을 확인하지 못했습니다');
+
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '경고 확인 후 기록'})
+        .props.onPress();
+    });
+    expect(onSave).not.toHaveBeenCalled();
+
+    await ReactTestRenderer.act(async () => {
+      await renderer?.root
+        .findByProps({accessibilityLabel: '돌봄 기록 저장'})
+        .props.onPress();
+    });
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
   it('reuses a recent user-defined medication as a synced preset', async () => {
     const now = new Date('2026-08-10T10:00:00+09:00').getTime();
     jest.setSystemTime(now);
@@ -577,6 +700,7 @@ describe('QuickRecordModal', () => {
       renderer = ReactTestRenderer.create(
         <QuickRecordModal
           events={[recent]}
+          historyStatus="complete"
           kind="medication"
           onClose={jest.fn()}
           onSave={onSave}

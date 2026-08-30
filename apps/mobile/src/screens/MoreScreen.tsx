@@ -2,9 +2,9 @@ import {useRef, useState} from 'react';
 import {Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View} from 'react-native';
 import type {Membership} from '@babycare/product-core';
 
-import type {Strings} from '../app/i18n';
+import type {Strings} from '@babycare/product-ui';
 import type {LocalSession} from '../app/session';
-import type {AppTheme} from '../app/theme';
+import type {AppTheme} from '@babycare/product-ui';
 
 const privacyPolicyUrl = 'https://www.seorilabs.com/apps/babycare/privacy/';
 

@@ -24,6 +24,7 @@ import {getVersion} from 'react-native-device-info';
 import type {
   AccountDeletionPort,
   AnalyticsPort,
+  BootStage,
   CareGroupInvite,
   ClockPort,
   IdGeneratorPort,
@@ -124,6 +125,12 @@ export interface FirebaseRuntimeOptions {
   readonly authBridge?: FirebaseCustomTokenBridge;
   readonly accountDeletion?: AccountDeletionPort;
   readonly appCheck?: FirebaseAppCheckInitializer;
+  readonly bootObserver?: FirebaseBootObserver;
+}
+
+export interface FirebaseBootObserver {
+  readonly onStage?: (stage: BootStage) => void;
+  readonly onAnalyticsReady?: (analytics: AnalyticsPort) => void;
 }
 
 export interface FirebaseCareEventRuntimeCallbacks {
@@ -146,6 +153,7 @@ export interface FirebaseRuntime {
   readonly openAdPrivacyOptions: () => Promise<boolean>;
   readonly emulatorHost?: string;
   readonly sessionServices: FirebaseSessionServices;
+  readonly firebaseIdToken: () => Promise<string | undefined>;
   createCareContainer(
     session: ReadyFirebaseSession,
     callbacks: FirebaseCareEventRuntimeCallbacks,
@@ -250,8 +258,10 @@ function emulatorAppOptions(
   };
 }
 
-export function bootstrapFirebaseRuntime(): Promise<FirebaseRuntime> {
-  defaultRuntimePromise ??= createFirebaseRuntime().catch(error => {
+export function bootstrapFirebaseRuntime(
+  observer?: FirebaseBootObserver,
+): Promise<FirebaseRuntime> {
+  defaultRuntimePromise ??= createFirebaseRuntime({bootObserver: observer}).catch(error => {
     defaultRuntimePromise = undefined;
     throw error;
   });
@@ -290,6 +300,7 @@ async function resolveApp(input: {
 export async function createFirebaseRuntime(
   options: FirebaseRuntimeOptions = {},
 ): Promise<FirebaseRuntime> {
+  options.bootObserver?.onStage?.('runtime');
   const dev = options.dev ?? __DEV__;
   const platform = options.platform ?? Platform.OS;
   const emulatorProjectId =
@@ -312,6 +323,29 @@ export async function createFirebaseRuntime(
     );
   }
 
+  const auth = getAuth(resolved.app);
+  const analytics =
+    options.analytics ??
+    (resolved.source === 'native'
+      ? new FanOutAnalytics([
+          new FirebaseAnalyticsAdapter(resolved.app),
+          new PlatformAnalytics({
+            baseUrl: PLATFORM_FIREBASE_AUTH_CONFIG.baseUrl,
+            eventsBaseUrl: PLATFORM_EVENTS_URL,
+            firebaseIdToken: async () => {
+              const user = auth.currentUser;
+              return user ? getIdToken(user) : undefined;
+            },
+            context: resolvePlatformAnalyticsContext({
+              platform,
+              appVersion: getVersion(),
+              locale: Intl.DateTimeFormat().resolvedOptions().locale,
+            }),
+          }),
+        ])
+      : {track: async () => undefined});
+  options.bootObserver?.onAnalyticsReady?.(analytics);
+  options.bootObserver?.onStage?.('app_check');
   const appCheck = await (options.appCheck ?? initializeFirebaseAppCheck)({
     app: resolved.app,
     dev,
@@ -319,7 +353,7 @@ export async function createFirebaseRuntime(
     source: resolved.source,
   });
 
-  const auth = getAuth(resolved.app);
+  options.bootObserver?.onStage?.('auth');
   // The durable BabyCare outbox is the only disk-backed event queue. Configure
   // Firestore before any repository can issue a read or write.
   const firestore = await initializeFirestore(resolved.app, {
@@ -386,26 +420,6 @@ export async function createFirebaseRuntime(
   const clock = options.clock ?? {now: () => Date.now()};
   const documentIds = options.documentIds ?? new RandomCareDocumentIdFactory();
   const eventIds = options.eventIds ?? new NativeIdGenerator();
-  const analytics =
-    options.analytics ??
-    (resolved.source === 'native'
-      ? new FanOutAnalytics([
-          new FirebaseAnalyticsAdapter(resolved.app),
-          new PlatformAnalytics({
-            baseUrl: PLATFORM_FIREBASE_AUTH_CONFIG.baseUrl,
-            eventsBaseUrl: PLATFORM_EVENTS_URL,
-            firebaseIdToken: async () => {
-              const user = auth.currentUser;
-              return user ? getIdToken(user) : undefined;
-            },
-            context: resolvePlatformAnalyticsContext({
-              platform,
-              appVersion: getVersion(),
-              locale: Intl.DateTimeFormat().resolvedOptions().locale,
-            }),
-          }),
-        ])
-      : {track: async () => undefined});
   const rewardedAd =
     options.rewardedAd ??
     (resolved.source === 'native'
@@ -471,6 +485,10 @@ export async function createFirebaseRuntime(
     openAdPrivacyOptions,
     ...(emulatorHost ? {emulatorHost} : {}),
     sessionServices,
+    firebaseIdToken: async () => {
+      const user = auth.currentUser;
+      return user ? getIdToken(user) : undefined;
+    },
     createCareContainer,
     createInvite(session) {
       return invites.createInvite({

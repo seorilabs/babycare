@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,10 +11,16 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type {
+  AnalyticsPort,
+  BabyCareAnalyticsEvent,
+  OnboardingMode,
+  OnboardingStep,
+} from '@babycare/product-core';
 
-import type { Strings } from '../app/i18n';
+import type { Strings } from '@babycare/product-ui';
 import { isValidBirthDate } from '../app/session';
-import type { AppTheme } from '../app/theme';
+import type { AppTheme } from '@babycare/product-ui';
 
 type SetupMode = 'create' | 'join';
 type Step = 'choose' | 'caregiver' | 'babyName' | 'birthDate' | 'inviteCode';
@@ -38,6 +44,7 @@ export function CloudOnboardingScreen(props: {
   readonly strings: Strings;
   readonly theme: AppTheme;
   readonly initialErrorMessage?: string;
+  readonly analytics?: AnalyticsPort;
   readonly onCreate: (input: {
     caregiverName: string;
     babyName: string;
@@ -61,6 +68,26 @@ export function CloudOnboardingScreen(props: {
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     props.initialErrorMessage,
   );
+  const lastTrackedStep = useRef<string | undefined>(undefined);
+  const analyticsMode: OnboardingMode = mode ?? 'none';
+  const track = useCallback(
+    (event: BabyCareAnalyticsEvent) => {
+      props.analytics?.track(event).catch(() => undefined);
+    },
+    [props.analytics],
+  );
+
+  useEffect(() => {
+    const key = `${step}:${analyticsMode}`;
+    if (lastTrackedStep.current === key) {
+      return;
+    }
+    lastTrackedStep.current = key;
+    track({
+      name: 'bc_onboarding_step_view',
+      params: {step: step as OnboardingStep, mode: analyticsMode},
+    });
+  }, [analyticsMode, step, track]);
 
   const caregiverValid =
     caregiverName.trim().length > 0 && caregiverName.trim().length <= 80;
@@ -111,6 +138,10 @@ export function CloudOnboardingScreen(props: {
       try {
         await props.onCreate({ caregiverName, babyName, birthDate });
       } catch {
+        track({
+          name: 'bc_onboarding_step_blocked',
+          params: {step, mode: analyticsMode, reason: 'save_failed'},
+        });
         setErrorMessage(strings.onboarding.createFailed);
       } finally {
         submissionInFlight.current = false;
@@ -124,15 +155,32 @@ export function CloudOnboardingScreen(props: {
       try {
         await props.onJoin({ caregiverName, code });
       } catch {
+        track({
+          name: 'bc_onboarding_step_blocked',
+          params: {step, mode: analyticsMode, reason: 'save_failed'},
+        });
         setErrorMessage(strings.onboarding.joinFailed);
       } finally {
         submissionInFlight.current = false;
         setSaving(false);
       }
+      return;
     }
+    track({
+      name: 'bc_onboarding_step_blocked',
+      params: {
+        step: step as OnboardingStep,
+        mode: analyticsMode,
+        reason: 'invalid_input',
+      },
+    });
   };
 
   const back = () => {
+    track({
+      name: 'bc_onboarding_step_back',
+      params: {step: step as OnboardingStep, mode: analyticsMode},
+    });
     setErrorMessage(undefined);
     setShowDatePicker(false);
     if (step === 'caregiver') {
@@ -420,9 +468,9 @@ export function CloudOnboardingScreen(props: {
                 accessibilityRole="button"
                 accessibilityState={{
                   busy: saving,
-                  disabled: !actionEnabled || saving,
+                  disabled: saving,
                 }}
-                disabled={!actionEnabled || saving}
+                disabled={saving}
                 onPress={next}
                 style={({ pressed }) => [
                   styles.nextButton,

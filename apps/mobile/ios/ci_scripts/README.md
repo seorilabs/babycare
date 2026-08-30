@@ -44,7 +44,10 @@ repo 파일만으로는 완결되지 않는다. App Store Connect / Xcode 에서
    버전의 "빌드 추가"에서 회색·선택 불가).
 4. secret 환경 변수 `FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64`에 prod
    `GoogleService-Info.plist`의 base64를 저장한다. 누락·오염 시 `ci_post_clone.sh`가 실패한다.
-5. ASC API 키(팀 공용 `APP_STORE_CONNECT_*`)로 백오피스가 `ciBuildRuns` 를 트리거하도록
+5. `@seorilabs/platform-sdk` 설치를 위해 read-only GitHub Packages 권한을 가진
+   `GITHUB_PACKAGES_TOKEN` secret을 저장한다. 누락 시 `ci_post_clone.sh`가 의존성 설치 전에
+   fail-closed 한다. 토큰 값은 저장소나 로그에 남기지 않는다.
+6. ASC API 키(팀 공용 `APP_STORE_CONNECT_*`)로 백오피스가 `ciBuildRuns` 를 트리거하도록
    `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가.
 
 ## 로컬 검증 (dry-run)

@@ -4,14 +4,22 @@ const ALLOWED_EVENT_NAMES = new Set([
   'core_ad_impression',
   'core_ad_reward',
   'bc_onboarding_complete',
+  'bc_onboarding_step_view',
+  'bc_onboarding_step_back',
+  'bc_onboarding_step_blocked',
   'bc_group_created',
   'bc_invite_created',
   'bc_invite_shared',
+  'bc_invite_join_attempt',
+  'bc_invite_join_failed',
   'bc_invite_joined',
-  'bc_first_log',
+  'bc_boot_failed',
+  'bc_boot_ready',
+  'bc_medication_history_unconfirmed',
   'bc_log_create',
   'bc_log_update',
   'bc_log_delete',
+  'seori_analytics_dropped',
 ]);
 
 const PII_KEYS = /^(e_?mail|mail|phone|phone_number|tel|mobile|name|full_name|first_name|last_name|real_name|address|addr|zipcode|postal_code|birth|birthday|birthdate|ssn|passport|card_number|credit_card|ip|ip_address)$/i;

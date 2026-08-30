@@ -618,6 +618,10 @@ service cloud.firestore {
 
     function isNormalEventUpdate() {
       return !('deletedAt' in request.resource.data)
+        // Closing an active sleep remains a dedicated close-only transition.
+        && !(resource.data.kind == 'sleep'
+          && !('endedAt' in resource.data)
+          && 'endedAt' in request.resource.data)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'occurredAt',
           'updatedAt',
@@ -811,6 +815,11 @@ service cloud.firestore {
           && eventIdentityIsImmutable()
           && request.resource.data.updatedAt >= resource.data.updatedAt
           && request.resource.data.revision == resource.data.revision + 1
+          && (
+            isMemberClosingActiveSleep()
+            || isSoftDeleteEventUpdate()
+            || isNormalEventUpdate()
+          )
           && validActiveSleepUpdate(groupId, eventId)
           && hasMatchingMutationReceiptAfter(
             request.resource.data,
@@ -818,12 +827,7 @@ service cloud.firestore {
             eventId,
             eventUpdateMutationKind()
           )
-          && validEvent(request.resource.data, groupId, eventId)
-          && (
-            (resource.data.caregiverId == request.auth.uid
-              && (isNormalEventUpdate() || isSoftDeleteEventUpdate()))
-            || isMemberClosingActiveSleep()
-          );
+          && validEvent(request.resource.data, groupId, eventId);
         allow delete: if false;
       }
     }

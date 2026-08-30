@@ -9,8 +9,8 @@ import {
   userId,
 } from '@babycare/product-core';
 
-import { createTheme } from '../src/app/theme';
-import { createStrings } from '../src/app/i18n';
+import { createTheme } from '@babycare/product-ui';
+import { createStrings } from '@babycare/product-ui';
 import { buildStatsBuckets, StatsScreen } from '../src/screens/StatsScreen';
 
 describe('buildStatsBuckets', () => {
@@ -53,6 +53,42 @@ describe('buildStatsBuckets', () => {
 });
 
 describe('StatsScreen', () => {
+  it('loads access and preloads the rewarded ad once while now changes', async () => {
+    const storage = {
+      getItem: jest.fn(async () => null),
+      setItem: jest.fn(async () => undefined),
+      removeItem: jest.fn(async () => undefined),
+    };
+    const rewardedAd = {
+      preload: jest.fn(async () => undefined),
+      show: jest.fn(async () => ({status: 'unavailable' as const})),
+    };
+    const shared = {
+      events: [],
+      strings: createStrings('ko'),
+      theme: createTheme(false),
+      rewardedAd,
+      storage,
+    };
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        React.createElement(StatsScreen, {...shared, now: 1_000}),
+      );
+      await Promise.resolve();
+    });
+    await ReactTestRenderer.act(async () => {
+      renderer.update(React.createElement(StatsScreen, {...shared, now: 31_000}));
+      renderer.update(React.createElement(StatsScreen, {...shared, now: 61_000}));
+      await Promise.resolve();
+    });
+
+    expect(rewardedAd.preload).toHaveBeenCalledTimes(1);
+    expect(storage.getItem).toHaveBeenCalledTimes(1);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('exposes the period selector and its current selection to accessibility', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
