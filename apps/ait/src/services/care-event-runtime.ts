@@ -3,6 +3,7 @@ import {
   createEndSleepSession,
   createRecordCareEvent,
   createSoftDeleteCareEvent,
+  createUpdateCareEvent,
   eventId,
   type CareEvent,
   type CreateCareEventInput,
@@ -27,6 +28,7 @@ export interface AitCareEventRuntime {
   readonly observeOverview: (listener: (state: CareEventOverviewFeedState) => void) => () => void;
   readonly observeSyncState: (listener: (states: readonly CareEventSyncState[]) => void) => () => void;
   readonly record: (input: CreateCareEventInput) => Promise<CareEvent>;
+  readonly update: (event: CareEvent, input: CreateCareEventInput) => Promise<CareEvent>;
   readonly endSleep: (event: CareEvent) => Promise<CareEvent>;
   readonly softDelete: (event: CareEvent) => Promise<CareEvent>;
   readonly syncNow: () => Promise<void>;
@@ -67,6 +69,13 @@ export async function createAitCareEventRuntime(
     repository,
     clock: { now: () => Date.now() },
     idGenerator: { nextEventId },
+    analytics: babycareAnalytics,
+    firstLogStorage: Storage,
+    groupRole: ready.membership.membershipRole,
+  });
+  const update = createUpdateCareEvent({
+    repository,
+    clock: {now: () => Date.now()},
     analytics: babycareAnalytics,
   });
   const endSleep = createEndSleepSession({
@@ -111,6 +120,13 @@ export async function createAitCareEventRuntime(
     observeOverview: (listener) => overviewFeed.start(listener),
     observeSyncState: (listener) => repository.observeSyncState(listener),
     record,
+    update: (event, input) =>
+      update({
+        groupId: ready.group.id,
+        eventId: event.id,
+        requestedBy: ready.membership.userId,
+        update: input,
+      }),
     endSleep: (event) => endSleep({ groupId: ready.group.id, eventId: event.id }),
     softDelete: (event) =>
       softDelete({

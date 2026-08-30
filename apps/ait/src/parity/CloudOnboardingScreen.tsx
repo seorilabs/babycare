@@ -1,4 +1,4 @@
-import React, {useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,10 +10,16 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import type {
+  AnalyticsPort,
+  BabyCareAnalyticsEvent,
+  OnboardingMode,
+  OnboardingStep,
+} from '../../../../packages/product-core/src/index.ts';
 
 import {BirthDatePicker, isSelectableBirthDate} from '../components/birth-date-picker';
-import type {Strings} from './strings';
-import type {AppTheme} from './theme';
+import type {Strings} from '@babycare/product-ui';
+import type {AppTheme} from '@babycare/product-ui';
 
 type SetupMode = 'create' | 'join';
 type Step = 'choose' | 'caregiver' | 'babyName' | 'birthDate' | 'inviteCode';
@@ -22,6 +28,7 @@ export function CloudOnboardingScreen(props: {
   readonly strings: Strings;
   readonly theme: AppTheme;
   readonly initialErrorMessage?: string;
+  readonly analytics?: AnalyticsPort;
   readonly onCreate: (input: {caregiverName: string; babyName: string; birthDate: string}) => Promise<void>;
   readonly onJoin: (input: {caregiverName: string; code: string}) => Promise<void>;
 }) {
@@ -35,6 +42,17 @@ export function CloudOnboardingScreen(props: {
   const [saving, setSaving] = useState(false);
   const submissionInFlight = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(props.initialErrorMessage);
+  const lastTrackedStep = useRef<string | undefined>(undefined);
+  const analyticsMode: OnboardingMode = mode ?? 'none';
+  const track = useCallback((event: BabyCareAnalyticsEvent) => {
+    props.analytics?.track(event).catch(() => undefined);
+  }, [props.analytics]);
+  useEffect(() => {
+    const key = `${step}:${analyticsMode}`;
+    if (lastTrackedStep.current === key) return;
+    lastTrackedStep.current = key;
+    track({name: 'bc_onboarding_step_view', params: {step: step as OnboardingStep, mode: analyticsMode}});
+  }, [analyticsMode, step, track]);
   const caregiverValid = caregiverName.trim().length > 0 && caregiverName.trim().length <= 80;
   const babyNameValid = babyName.trim().length > 0 && babyName.trim().length <= 80;
   const codeValid = /^[A-HJ-NP-Z2-9]{6}$/.test(code);
@@ -60,14 +78,18 @@ export function CloudOnboardingScreen(props: {
         if (step === 'birthDate') await props.onCreate({caregiverName, babyName, birthDate});
         else await props.onJoin({caregiverName, code});
       } catch {
+        track({name: 'bc_onboarding_step_blocked', params: {step, mode: analyticsMode, reason: 'save_failed'}});
         setErrorMessage(step === 'birthDate' ? strings.onboarding.createFailed : strings.onboarding.joinFailed);
       } finally {
         submissionInFlight.current = false;
         setSaving(false);
       }
+      return;
     }
+    track({name: 'bc_onboarding_step_blocked', params: {step: step as OnboardingStep, mode: analyticsMode, reason: 'invalid_input'}});
   };
   const back = () => {
+    track({name: 'bc_onboarding_step_back', params: {step: step as OnboardingStep, mode: analyticsMode}});
     setErrorMessage(undefined);
     if (step === 'caregiver') { setMode(undefined); setStep('choose'); }
     else if (step === 'babyName' || step === 'inviteCode') setStep('caregiver');
@@ -118,7 +140,7 @@ export function CloudOnboardingScreen(props: {
               </View>
               <View style={styles.actions}>
                 <Pressable accessibilityLabel={strings.common.back} accessibilityRole="button" onPress={back} style={[styles.backButton, {borderColor: props.theme.colors.border}]}><Text style={[styles.backText, {color: props.theme.colors.text}]}>{strings.common.back}</Text></Pressable>
-                <Pressable accessibilityLabel={actionLabel} accessibilityRole="button" accessibilityState={{busy: saving, disabled: !actionEnabled || saving}} disabled={!actionEnabled || saving} onPress={() => void next()} style={({pressed}) => [styles.nextButton, {backgroundColor: actionEnabled ? props.theme.colors.primary : props.theme.colors.border, opacity: pressed ? 0.82 : 1}]}><Text style={styles.buttonText}>{actionLabel}</Text></Pressable>
+                <Pressable accessibilityLabel={actionLabel} accessibilityRole="button" accessibilityState={{busy: saving, disabled: saving}} disabled={saving} onPress={() => void next()} style={({pressed}) => [styles.nextButton, {backgroundColor: actionEnabled ? props.theme.colors.primary : props.theme.colors.border, opacity: pressed ? 0.82 : 1}]}><Text style={styles.buttonText}>{actionLabel}</Text></Pressable>
               </View>
             </>
           )}

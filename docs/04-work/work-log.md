@@ -1,5 +1,16 @@
 # Work Log
 
+## 2026-08-30 — 공개 이슈 일괄 처리와 Platform Presence 비활성 탑재
+
+- 공개 이슈 #66, #67, #73~#81의 재현 경로와 기존 계약을 확인하고 mobile·AppsInToss 양쪽에 최소 범위로 반영했다. 초대 합류·온보딩 단계·부팅 실패 계측은 고정 allowlist와 분류값만 전송하며 원문 오류·초대 코드·건강정보는 보내지 않는다. 첫 기록은 양육자별 durable marker 기반 `bc_log_create.is_first`로 바꿨다.
+- 기록 수정 use case와 UI 진입점을 추가했다. 식별자·그룹·아기·작성자·생성 시각은 보존하고 `revision`만 증가시키며, Firestore Rules는 활성 구성원의 정상 수정·soft delete를 허용하되 영수증·identity·revision 검증은 유지한다.
+- 복약 기록은 server-confirmed history가 아닐 때 별도 불완전 이력 경고를 한 번 확인해야 저장할 수 있게 fail-closed로 바꿨다. 통계 상세 해제는 JSON 만료 계약, 24시간 상한, 미래 시각·시계 역행·legacy 값 거부를 적용했고 화면 시계 갱신이 광고 preload를 반복하지 않게 했다.
+- 분석 버퍼는 재시도 batch를 먼저 보호하고 overflow drop 수를 다음 성공 시 `seori_analytics_dropped`로 한 번 보고한다. mobile·AIT는 root AppState 구독 한 곳에서 background/inactive flush하고, `stop()`은 진행 중 flush를 기다린 뒤 가능한 범위까지 drain한다.
+- 동일한 strings·theme·locale 계산은 `packages/product-ui`로 승격하고 target별 device locale 읽기만 얇은 adapter로 남겼다. source parity 검사는 문자열 리터럴의 공백을 훼손하지 않는 scanner로 변경했다.
+- #82는 `@seorilabs/platform-sdk@0.4.0`을 mobile·AIT에 연결하되 `presenceEnabled=false`로 고정했다. 이 상태에서는 auth·heartbeat network가 0회이며, 네트워크 실패와 기본 2초 timeout도 앱 동작을 막지 않는다. GitHub Actions의 private package 인증과 Android Cloud Build용 사전 pnpm store 계약도 추가했다.
+- 검증: core 61건, mobile 41 suites/343건, AIT 10 suites/42건, Functions 21건, Firebase Rules 24건, Functions emulator 7건, 두 사용자 mobile shared flow 1건과 Firebase config·typecheck·lint·architecture·docs·screenshots·workflow 검사를 통과했다. 공용 UI package가 package metadata export를 제공하도록 Granite 최종 패키징 호환성도 고쳤고, RN 0.84/0.72.6 Android·iOS 번들 4개가 0 errors/0 warnings인 `.ait` 후보를 생성했다. 로컬 후보는 4,152,764 bytes, SHA-256 `9277d18cebec706ac1b4025be29d10e2e9a1181ba7a941442de8dad9138779d1`이며 검증 후 삭제했다.
+- 남은 gate: Platform 중앙 registry/canary 승인, `presence=true` 고정 릴리스, 실기기 heartbeat·운영 readback은 수행하지 않았으므로 #82는 닫지 않는다. Xcode Cloud에는 새 private package 설치용 `GITHUB_PACKAGES_TOKEN` secret이 아직 확인되지 않아 다음 iOS archive 전에 등록·readback이 필요하다. 배포·스토어 제출·공개 상태 변경은 하지 않았다.
+
 ## 2026-08-21 — Android Cloud Build 연결과 공개 상태·론칭 지표 재점검
 
 - 공용 RN Android x64 빌더에 Node `24.16.0`, pnpm `11.14.0`, JDK `21`, Android platform `36`, CMake `3.22.1` 계약을 추가하고 `seorilabs/.github` PR #27로 병합했다. BabyCare의 GitHub Actions는 RPI ARC에서 WIF 인증과 `gcloud builds submit`만 수행하고, 실제 release build는 `seorilabs-ci` Cloud Build로 위임한다. Google Play 업로드는 별도 `upload=true` job으로 분리해 build-only 실행이 스토어 상태를 바꾸지 않게 했다.

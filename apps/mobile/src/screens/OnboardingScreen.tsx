@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import type {AppTheme} from '../app/theme';
+import type {AppTheme} from '@babycare/product-ui';
 import {isValidBirthDate} from '../app/session';
 
 export function OnboardingScreen(props: {

@@ -677,7 +677,7 @@ test('아기 hard delete와 tombstoned baby ID 재사용은 owner에게도 금�
   await assertFails(setDoc(babyRef, babyFixture()));
 });
 
-test('이벤트 작성자만 수정할 수 있고 identity 필드는 바꿀 수 없다', async () => {
+test('활성 그룹 멤버는 수정할 수 있고 identity 필드는 바꿀 수 없다', async () => {
   await seedBase({ includeEvent: true });
 
   const memberDb = firestoreFor(MEMBER_ID);
@@ -690,9 +690,9 @@ test('이벤트 작성자만 수정할 수 있고 identity 필드는 바꿀 수 
     'event-diaper-1',
   );
 
-  const unauthorizedBatch = writeBatch(ownerDb);
+  const caregiverUpdateBatch = writeBatch(ownerDb);
   addEventMutation(
-    unauthorizedBatch,
+    caregiverUpdateBatch,
     ownerDb,
     diaperEventFixture({
       note: '작성자가 아닌 수정',
@@ -702,22 +702,13 @@ test('이벤트 작성자만 수정할 수 있고 identity 필드는 바꿀 수 
     'update',
     OWNER_ID,
   );
-  await assertFails(unauthorizedBatch.commit());
+  await assertSucceeds(caregiverUpdateBatch.commit());
 
   const updatedEvent = diaperEventFixture({
     note: '기저귀 교체 완료',
-    revision: 2,
-    updatedAt: NOW + 1,
+    revision: 3,
+    updatedAt: NOW + 2,
   });
-  const updateBatch = writeBatch(memberDb);
-  addEventMutation(
-    updateBatch,
-    memberDb,
-    updatedEvent,
-    'update',
-  );
-  await assertSucceeds(updateBatch.commit());
-
   const caregiverBatch = writeBatch(memberDb);
   addEventMutation(
     caregiverBatch,
@@ -770,7 +761,7 @@ test('이벤트 작성자만 수정할 수 있고 identity 필드는 바꿀 수 
   assert.equal(persisted.data().kind, 'diaper');
 });
 
-test('다른 그룹 멤버는 active sleep을 close-only transition으로 종료할 수 있다', async () => {
+test('다른 그룹 멤버는 active sleep을 close-only로 종료하고 완료 기록을 수정할 수 있다', async () => {
   await seedBase();
 
   const activeSleepWithEnd = {
@@ -875,23 +866,7 @@ test('다른 그룹 멤버는 active sleep을 close-only transition으로 종료
     'update',
     MEMBER_ID,
   );
-  await assertFails(recloseBatch.commit());
-
-  const otherMemberDeleteBatch = writeBatch(memberDb);
-  addEventMutation(
-    otherMemberDeleteBatch,
-    memberDb,
-    {
-      ...closedSleep,
-      deletedAt: closedAt + 1,
-      isDeleted: true,
-      updatedAt: closedAt + 1,
-      revision: 3,
-    },
-    'soft_delete',
-    MEMBER_ID,
-  );
-  await assertFails(otherMemberDeleteBatch.commit());
+  await assertSucceeds(recloseBatch.commit());
 
   const staleStartedAt = NOW - 49 * 60 * 60 * 1_000;
   const staleSleep = {
@@ -1307,7 +1282,7 @@ test('event mutation receipt는 event/revision/hash/payload에 결합된 원자 
   );
 });
 
-test('이벤트는 hard delete·undelete를 막고 작성자의 단일 soft delete만 허용한다', async () => {
+test('이벤트는 hard delete·undelete를 막고 활성 멤버의 단일 soft delete만 허용한다', async () => {
   await seedBase({ includeEvent: true });
 
   const memberDb = firestoreFor(MEMBER_ID);
@@ -1328,15 +1303,15 @@ test('이벤트는 hard delete·undelete를 막고 작성자의 단일 soft dele
     revision: 2,
   });
 
-  const unauthorizedDeleteBatch = writeBatch(ownerDb);
+  const deleteBatch = writeBatch(ownerDb);
   addEventMutation(
-    unauthorizedDeleteBatch,
+    deleteBatch,
     ownerDb,
     deletedEvent,
     'soft_delete',
     OWNER_ID,
   );
-  await assertFails(unauthorizedDeleteBatch.commit());
+  await assertSucceeds(deleteBatch.commit());
 
   const mixedDeleteBatch = writeBatch(memberDb);
   addEventMutation(
@@ -1349,15 +1324,6 @@ test('이벤트는 hard delete·undelete를 막고 작성자의 단일 soft dele
     'update',
   );
   await assertFails(mixedDeleteBatch.commit());
-
-  const deleteBatch = writeBatch(memberDb);
-  addEventMutation(
-    deleteBatch,
-    memberDb,
-    deletedEvent,
-    'soft_delete',
-  );
-  await assertSucceeds(deleteBatch.commit());
 
   const undeleteBatch = writeBatch(memberDb);
   addEventMutation(

@@ -1,5 +1,40 @@
 import type {BabyCareAnalyticsEvent} from '@babycare/product-core';
-import {PlatformAnalytics} from '@babycare/product-data';
+import {FanOutAnalytics, PlatformAnalytics} from '@babycare/product-data';
+import {flushMobileAnalyticsOnAppState} from '../src/app/analytics-lifecycle';
+
+describe('analytics lifecycle', () => {
+  it('flushes every fan-out sink before stopping them', async () => {
+    const order: string[] = [];
+    const sink = (name: string) => ({
+      track: jest.fn(async () => undefined),
+      flush: jest.fn(async () => {
+        order.push(`flush-${name}`);
+      }),
+      stop: jest.fn(async () => {
+        order.push(`stop-${name}`);
+      }),
+    });
+    const analytics = new FanOutAnalytics([sink('ga4'), sink('platform')]);
+
+    await analytics.stop();
+    expect(order.slice(0, 2)).toEqual(['flush-ga4', 'flush-platform']);
+    expect(order.slice(2).sort()).toEqual(['stop-ga4', 'stop-platform']);
+  });
+
+  it('flushes once on mobile background and swallows a sink failure', async () => {
+    const flush = jest.fn(async () => {
+      throw new Error('offline');
+    });
+    const analytics = {track: jest.fn(async () => undefined), flush};
+
+    expect(() =>
+      flushMobileAnalyticsOnAppState(analytics, 'background'),
+    ).not.toThrow();
+    await Promise.resolve();
+    flushMobileAnalyticsOnAppState(analytics, 'active');
+    expect(flush).toHaveBeenCalledTimes(1);
+  });
+});
 
 function response(input: {
   readonly ok: boolean;
@@ -113,5 +148,97 @@ describe('PlatformAnalytics', () => {
     const first = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body));
     const second = JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body));
     expect(second.events).toEqual(first.events);
+  });
+
+  it('protects a failed retry batch while 20 new events arrive', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce(response({ok: false, status: 503}))
+      .mockResolvedValue(response({ok: true, status: 200})) as jest.MockedFunction<
+      typeof fetch
+    >;
+    const analytics = new PlatformAnalytics({
+      baseUrl: 'https://platform.example.com',
+      context: {platform: 'ait'},
+      fetchImpl,
+      flushIntervalMs: 0,
+      now: () => 1_700_000_000_000,
+    });
+
+    await analytics.flush();
+    const failed = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body)).events[0];
+    for (let index = 0; index < 20; index += 1) {
+      await analytics.track({
+        name: 'core_screen_view',
+        params: {screen_name: `new-${index}`},
+      });
+    }
+    await analytics.flush();
+
+    const retried = JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body)).events;
+    expect(retried).toContainEqual(failed);
+  });
+
+  it('drops the oldest unprotected events and reports the count once', async () => {
+    let release!: () => void;
+    const firstRequest = new Promise<Response>(resolve => {
+      release = () => resolve(response({ok: true, status: 200}));
+    });
+    const fetchImpl = jest
+      .fn()
+      .mockImplementationOnce(() => firstRequest)
+      .mockResolvedValue(response({ok: true, status: 200})) as jest.MockedFunction<
+      typeof fetch
+    >;
+    const analytics = new PlatformAnalytics({
+      baseUrl: 'https://platform.example.com',
+      context: {platform: 'android'},
+      fetchImpl,
+      flushIntervalMs: 0,
+      now: () => 1_700_000_000_000,
+    });
+
+    for (let index = 0; index < 229; index += 1) {
+      await analytics.track({
+        name: 'core_screen_view',
+        params: {screen_name: `screen-${index}`},
+      });
+    }
+    const activeFlush = analytics.flush();
+    release();
+    await activeFlush;
+    await analytics.flush();
+    const reported = JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body)).events;
+    expect(reported).toContainEqual(
+      expect.objectContaining({
+        name: 'seori_analytics_dropped',
+        params: {count: 10},
+      }),
+    );
+    expect(reported[0].params.screen_name).toBe('screen-29');
+
+    await analytics.flush();
+    const next = JSON.parse(String(fetchImpl.mock.calls[2]?.[1]?.body)).events;
+    expect(next.some((event: {name: string}) => event.name === 'seori_analytics_dropped')).toBe(false);
+  });
+
+  it('flushes buffered events before stop resolves', async () => {
+    const fetchImpl = jest.fn(async () => response({ok: true, status: 200})) as unknown as jest.MockedFunction<
+      typeof fetch
+    >;
+    const analytics = new PlatformAnalytics({
+      baseUrl: 'https://platform.example.com',
+      context: {platform: 'ios'},
+      fetchImpl,
+      flushIntervalMs: 0,
+    });
+    await analytics.track({
+      name: 'core_screen_view',
+      params: {screen_name: 'background'},
+    });
+
+    await analytics.stop();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body)).events).toHaveLength(2);
   });
 });

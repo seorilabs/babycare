@@ -2,9 +2,10 @@ import React from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ScrollView, Text } from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
+import type {AnalyticsPort} from '@babycare/product-core';
 
-import { createTheme } from '../src/app/theme';
-import { createStrings } from '../src/app/i18n';
+import { createTheme } from '@babycare/product-ui';
+import { createStrings } from '@babycare/product-ui';
 import { CloudOnboardingScreen } from '../src/screens/CloudOnboardingScreen';
 
 jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
@@ -27,13 +28,16 @@ const theme = createTheme(false);
 function setup(input: {
   onCreate?: () => Promise<void>;
   onJoin?: () => Promise<void>;
+  track?: AnalyticsPort['track'];
 } = {}) {
   const onCreate = jest.fn(input.onCreate ?? (async () => undefined));
   const onJoin = jest.fn(input.onJoin ?? (async () => undefined));
+  const track = jest.fn(input.track ?? (async () => undefined));
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   ReactTestRenderer.act(() => {
     renderer = ReactTestRenderer.create(
       <CloudOnboardingScreen
+        analytics={{track}}
         onCreate={onCreate}
         onJoin={onJoin}
         strings={createStrings('ko')}
@@ -41,7 +45,7 @@ function setup(input: {
       />,
     );
   });
-  return { onCreate, onJoin, renderer };
+  return { onCreate, onJoin, renderer, track };
 }
 
 function press(renderer: ReactTestRenderer.ReactTestRenderer, label: string) {
@@ -63,6 +67,39 @@ function changeText(
 }
 
 describe('CloudOnboardingScreen', () => {
+  it('tracks distinct step views, invalid attempts, and the departing back step', async () => {
+    const state = setup();
+    await ReactTestRenderer.act(async () => Promise.resolve());
+    expect(state.track).toHaveBeenCalledWith({
+      name: 'bc_onboarding_step_view',
+      params: {step: 'choose', mode: 'none'},
+    });
+
+    press(state.renderer, '내 아기로 시작');
+    await ReactTestRenderer.act(async () => Promise.resolve());
+    changeText(state.renderer, '양육자 이름', '엄마');
+    changeText(state.renderer, '양육자 이름', '');
+    press(state.renderer, '다음');
+    expect(state.track).toHaveBeenCalledWith({
+      name: 'bc_onboarding_step_blocked',
+      params: {step: 'caregiver', mode: 'create', reason: 'invalid_input'},
+    });
+    expect(
+      state.track.mock.calls.filter(
+        ([event]) =>
+          event.name === 'bc_onboarding_step_view' &&
+          event.params.step === 'caregiver',
+      ),
+    ).toHaveLength(1);
+
+    press(state.renderer, '이전');
+    expect(state.track).toHaveBeenCalledWith({
+      name: 'bc_onboarding_step_back',
+      params: {step: 'caregiver', mode: 'create'},
+    });
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
   it('keeps content scrollable inside the safe area', () => {
     const state = setup();
 
@@ -260,6 +297,10 @@ describe('CloudOnboardingScreen', () => {
     );
     expect(visibleText).not.toContain('firestore');
     expect(visibleText).not.toContain('unavailable');
+    expect(state.track).toHaveBeenCalledWith({
+      name: 'bc_onboarding_step_blocked',
+      params: {step: 'birthDate', mode: 'create', reason: 'save_failed'},
+    });
     ReactTestRenderer.act(() => state.renderer.unmount());
   });
 
@@ -274,7 +315,13 @@ describe('CloudOnboardingScreen', () => {
       state.renderer.root.findByProps({
         accessibilityLabel: '돌봄 그룹 참여하기',
       }).props.disabled,
-    ).toBe(true);
+    ).toBe(false);
+    await ReactTestRenderer.act(async () => {
+      await state.renderer.root
+        .findByProps({accessibilityLabel: '돌봄 그룹 참여하기'})
+        .props.onPress();
+    });
+    expect(state.onJoin).not.toHaveBeenCalled();
 
     changeText(state.renderer, '초대 코드', 'abc2i34');
     const codeInput = state.renderer.root.findByProps({

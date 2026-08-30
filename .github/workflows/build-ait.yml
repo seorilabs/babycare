@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: babycare-mini-app-build-${{ inputs.release_tag || github.ref }}
@@ -18,15 +19,62 @@ concurrency:
 
 jobs:
   candidate:
-    uses: seorilabs/.github/.github/workflows/rn-build-ait.yml@73972d2b34e92145e61e3409c91085c40da10c54
-    with:
-      release_tag: ${{ inputs.release_tag }}
-      ait_dir: apps/ait
-      package_manager: pnpm
-      pnpm_version: 11.14.0
-      node_version: 24.16.0
-      install_command: "pnpm install --frozen-lockfile"
-      build_command: "pnpm --dir apps/ait build"
-      artifact_path: "apps/ait/*.ait"
-      # AppsInToss SDK의 Linux Hermes compiler가 x86-64 바이너리다.
-      runs_on: ubuntu-latest
+    name: Build .ait artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.16.0
+          check-latest: false
+          registry-url: https://npm.pkg.github.com
+          scope: '@seorilabs'
+
+      - name: Enable pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.14.0 --activate
+
+      - name: Install dependencies
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Build .ait bundle
+        shell: bash
+        env:
+          APP_VERSION: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          pnpm --dir apps/ait build
+          test -f apps/ait/babynest.ait
+
+      - name: Upload .ait artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: mini-app-candidate-babycare-${{ inputs.release_tag || github.ref_name }}-${{ github.sha }}
+          path: apps/ait/babynest.ait
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Summary
+        shell: bash
+        run: |
+          {
+            echo "### AppsInToss candidate"
+            echo "- source: $GITHUB_SHA"
+            echo "- artifact: apps/ait/babynest.ait"
+            echo "- deployment: not requested"
+          } >> "$GITHUB_STEP_SUMMARY"

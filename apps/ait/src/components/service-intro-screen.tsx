@@ -10,8 +10,8 @@ import {
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {aitBottomInset, aitTopInset} from '../parity/system-insets';
-import type {Strings} from '../parity/strings';
-import type {AppTheme} from '../parity/theme';
+import type {Strings} from '@babycare/product-ui';
+import type {AppTheme} from '@babycare/product-ui';
 
 const introCopy = {
   ko: {

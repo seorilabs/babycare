@@ -11,8 +11,8 @@ import {
 } from '@babycare/product-core';
 
 import type {LocalSession} from '../src/app/session';
-import {createTheme} from '../src/app/theme';
-import { createStrings } from '../src/app/i18n';
+import {createTheme} from '@babycare/product-ui';
+import { createStrings } from '@babycare/product-ui';
 import {HomeScreen} from '../src/screens/HomeScreen';
 
 const session: LocalSession = {

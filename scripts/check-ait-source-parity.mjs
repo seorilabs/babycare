@@ -9,9 +9,6 @@ const pairs = [
   ['apps/mobile/src/components/QuickRecordModal.tsx', 'apps/ait/src/parity/QuickRecordModal.tsx'],
   ['apps/mobile/src/components/SyncStatusBanner.tsx', 'apps/ait/src/parity/SyncStatusBanner.tsx'],
   ['apps/mobile/src/app/format.ts', 'apps/ait/src/parity/format.ts'],
-  ['apps/mobile/src/app/i18n/locale.ts', 'apps/ait/src/parity/locale.ts'],
-  ['apps/mobile/src/app/i18n/strings.ts', 'apps/ait/src/parity/strings.ts'],
-  ['apps/mobile/src/app/theme.ts', 'apps/ait/src/parity/theme.ts'],
   ['apps/mobile/src/app/stats-ranges.ts', 'apps/ait/src/parity/stats-ranges.ts'],
   ['apps/mobile/src/app/session.ts', 'apps/ait/src/parity/session.ts'],
 ];
@@ -21,8 +18,32 @@ const tabBarPair = [
   'apps/ait/src/parity/TabBar.tsx',
 ];
 
+function stripFormattingWhitespace(source) {
+  let result = '';
+  let quote;
+  let escaped = false;
+  for (const character of source) {
+    if (quote) {
+      result += character;
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === quote) {
+        quote = undefined;
+      }
+    } else if (character === "'" || character === '"' || character === '`') {
+      quote = character;
+      result += character;
+    } else if (!/\s/.test(character)) {
+      result += character;
+    }
+  }
+  return result;
+}
+
 function normalize(source) {
-  return source
+  const rewritten = source
     .replace(/Platform,\s*/g, '')
     .replace(/import React(?:, \{([^}]*)\})? from 'react';/g, (_match, names) =>
       names ? `import {${names}} from 'react';` : '',
@@ -39,8 +60,10 @@ function normalize(source) {
       '',
     )
     .replace(/\/\/ eslint-disable-next-line react-hooks\/exhaustive-deps/g, '')
-    .replace(/^\s*\/\/[^\n]*(?:\n|$)/gm, '')
-    .replace(/\s+/g, '')
+    .replace(/^\s*\/\/[^\n]*(?:\n|$)/gm, '');
+  // Keep string and template literal whitespace intact because it can be
+  // user-visible copy. Only formatting whitespace outside literals is ignored.
+  return stripFormattingWhitespace(rewritten)
     .replace(/constbottomInset=aitBottomInset\(insets\.bottom,Platform\.OS\);/g, '')
     .replace(/consttopInset=aitTopInset\(insets\.top,Platform\.OS\);/g, '')
     .replace(/Platform\.OS==='ios'\?'padding':'height'/g, "Platform.OS==='ios'?'padding':undefined")

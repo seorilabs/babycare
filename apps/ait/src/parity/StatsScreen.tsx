@@ -12,9 +12,9 @@ import {
 } from '../../../../packages/product-core/src/index.ts';
 
 import {formatDuration} from './format';
-import type {Strings} from './strings';
+import type {Strings} from '@babycare/product-ui';
 import {buildStatsRanges, type StatsPeriod} from './stats-ranges';
-import type {AppTheme} from './theme';
+import type {AppTheme} from '@babycare/product-ui';
 
 export type Period = StatsPeriod;
 export {buildStatsRanges};
@@ -102,6 +102,7 @@ export function StatsScreen(props: {
   const strings = props.strings;
   const storage = props.storage;
   const [period, setPeriod] = useState<Period>('7d');
+  const [accessCheckNow] = useState(() => props.now);
   const [unlockedUntil, setUnlockedUntil] = useState<number>();
   const [accessLoaded, setAccessLoaded] = useState(!props.rewardedAd);
   const [adBusy, setAdBusy] = useState(false);
@@ -128,7 +129,7 @@ export function StatsScreen(props: {
       return undefined;
     }
     let active = true;
-    statsDetailUnlockedUntil(storage, props.now)
+    statsDetailUnlockedUntil(storage, accessCheckNow)
       .then(expiry => {
         if (active) {
           setUnlockedUntil(expiry);
@@ -144,7 +145,7 @@ export function StatsScreen(props: {
     return () => {
       active = false;
     };
-  }, [props.now, props.rewardedAd, storage]);
+  }, [accessCheckNow, props.rewardedAd, storage]);
 
   const unlockDetail = useCallback(async () => {
     if (!props.rewardedAd || !storage || adBusy) {

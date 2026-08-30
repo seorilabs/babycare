@@ -14,10 +14,9 @@ import type {
   CareEventSyncState,
   CareEventTimelineFeedState,
 } from '../../../../packages/product-data/src/index.ts';
-import {deviceAppLocale} from '../parity/locale';
-import {createStrings} from '../parity/strings';
+import {deviceAppLocale} from '../services/device-locale';
+import {createStrings, createTheme} from '@babycare/product-ui';
 import type {LocalSession} from '../parity/session';
-import {createTheme} from '../parity/theme';
 import {QuickRecordModal} from '../parity/QuickRecordModal';
 import {SyncStatusBanner} from '../parity/SyncStatusBanner';
 import {TabBar, type AppTab} from '../parity/TabBar';
@@ -70,6 +69,7 @@ export function ParityDashboard({
   });
   const [tab, setTab] = useState<AppTab>('home');
   const [recording, setRecording] = useState<CareEventKind>();
+  const [editingEvent, setEditingEvent] = useState<CareEvent>();
   const [syncStates, setSyncStates] = useState<readonly CareEventSyncState[]>([]);
   const [runtimeError, setRuntimeError] = useState<string>();
   const [savedMessage, setSavedMessage] = useState<string>();
@@ -203,6 +203,10 @@ export function ParityDashboard({
           loadingMore={timeline.loadingMore}
           loadMoreError={timeline.loadMoreError}
           now={now}
+          onEdit={event => {
+            setRecording(undefined);
+            setEditingEvent(event);
+          }}
           onDelete={async event => {
             if (!runtime) {
               throw new Error('동기화를 준비하고 있어요.');
@@ -347,15 +351,36 @@ export function ParityDashboard({
       <TabBar active={tab} onChange={setTab} strings={strings} theme={theme} />
       <QuickRecordModal
         events={overview.events}
-        kind={recording}
-        onClose={() => setRecording(undefined)}
+        historyStatus={
+          overview.status === 'server_confirmed' ? 'complete' : 'partial'
+        }
+        initialEvent={editingEvent}
+        kind={editingEvent?.kind ?? recording}
+        onClose={() => {
+          setEditingEvent(undefined);
+          setRecording(undefined);
+        }}
         onSave={async input => {
           if (!runtime) {
             throw new Error('동기화를 준비하고 있어요.');
           }
-          await runtime.record(input);
+          if (editingEvent) {
+            await runtime.update(editingEvent, input);
+          } else {
+            await runtime.record(input);
+          }
+          if (
+            input.kind === 'medication' &&
+            overview.status !== 'server_confirmed'
+          ) {
+            await babycareAnalytics
+              .track({name: 'bc_medication_history_unconfirmed', params: {}})
+              .catch(() => undefined);
+          }
           setNow(Date.now());
-          setSavedMessage(strings.app.eventSaved);
+          setSavedMessage(
+            editingEvent ? strings.app.eventUpdated : strings.app.eventSaved,
+          );
         }}
         session={session}
         strings={strings}

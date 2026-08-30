@@ -13,7 +13,7 @@ App Store Connect와 Google Play 등록정보를 `ko`와 `en-US` 두 로케일�
 ## Decision
 
 - 지원 로케일은 `ko`와 `en` 두 개다. 스토어 등록정보 로케일과 앱 번들 로케일을 일치시킨다.
-- 번역은 의존성 없는 자체 타입 사전으로 관리한다. `apps/mobile/src/app/i18n/strings.ts`의 한국어 객체가 원본 shape이고 `Strings = typeof ko`에서 타입을 파생한다. `en: Strings` 선언이 키 누락을 typecheck 단계에서 실패시킨다.
+- 번역은 `packages/product-ui/src/strings.ts`의 공유 타입 사전으로 관리한다. 한국어 객체가 원본 shape이고 `Strings = typeof ko`에서 타입을 파생하며, `en: Strings` 선언이 키 누락을 typecheck 단계에서 실패시킨다. 모바일과 AppsInToss는 같은 패키지를 사용한다.
 - i18n 라이브러리(`react-i18next` 등)를 추가하지 않는다. 이 앱 규모에서 런타임 복수형/보간 엔진의 이득보다 타입 검증 상실이 크다.
 - 언어는 기기 로케일에서 자동 결정한다. 앱 내 언어 선택 UI는 두지 않는다. 기본값은 `en`이고, 기기 선호 언어 목록에서 primary subtag가 `ko`인 항목을 먼저 만나면 `ko`를 쓴다. 지역(`ko-KR`/`ko-KP`)은 구분하지 않는다.
 - `strings`는 `theme`과 동일하게 props로 내려보낸다. 별도 React Context를 만들지 않아 기존 화면 계약과 테스트 방식이 유지된다.

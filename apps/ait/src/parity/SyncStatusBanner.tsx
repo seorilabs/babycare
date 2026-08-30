@@ -2,8 +2,8 @@ import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 
 import type {CareEventSyncState} from '../../../../packages/product-data/src/index.ts';
-import type {Strings} from './strings';
-import type {AppTheme} from './theme';
+import type {Strings} from '@babycare/product-ui';
+import type {AppTheme} from '@babycare/product-ui';
 
 export function SyncStatusBanner(props: {
   readonly states: readonly CareEventSyncState[];

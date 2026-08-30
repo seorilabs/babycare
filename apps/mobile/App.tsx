@@ -1,17 +1,17 @@
 import {useEffect, useMemo, useRef, useState, type ComponentType} from 'react';
 import {Alert, Pressable, StatusBar, StyleSheet, Text, useColorScheme, View} from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
-import {type CareEventKind} from '@babycare/product-core';
+import {type CareEvent, type CareEventKind} from '@babycare/product-core';
+import {createStrings, createTheme, type Strings} from '@babycare/product-ui';
 
+import {deviceAppLocale} from './src/adapters/local/device-locale';
 import {LocalSessionHydrationError} from './src/adapters/local/local-session-repository';
 import {
   appContainer,
   selectVisibleCareEventOverview,
   type CareEventOverviewSnapshot,
 } from './src/app/container';
-import {createStrings, deviceAppLocale, type Strings} from './src/app/i18n';
 import {createLocalSession, domainContext, type LocalSession} from './src/app/session';
-import {createTheme} from './src/app/theme';
 import {useLocalTimelinePagination} from './src/app/use-local-timeline-pagination';
 import {QuickRecordModal} from './src/components/QuickRecordModal';
 import {TabBar, type AppTab} from './src/components/TabBar';
@@ -61,6 +61,7 @@ function BabyCareApp(props: {readonly strings?: Strings} = {}) {
   const events = overview.events;
   const [tab, setTab] = useState<AppTab>('home');
   const [recording, setRecording] = useState<CareEventKind>();
+  const [editingEvent, setEditingEvent] = useState<CareEvent>();
   const [now, setNow] = useState(Date.now());
   const [savedMessage, setSavedMessage] = useState<string>();
   const locallyDeletedEventIds = useRef(new Set<string>());
@@ -159,6 +160,10 @@ function BabyCareApp(props: {readonly strings?: Strings} = {}) {
           loadingMore={localTimeline.loadingMore}
           loadMoreError={localTimeline.loadMoreError}
           now={now}
+          onEdit={event => {
+            setRecording(undefined);
+            setEditingEvent(event);
+          }}
           onDelete={async event => {
             try {
               const deleted = await appContainer.softDeleteCareEvent({
@@ -256,12 +261,29 @@ function BabyCareApp(props: {readonly strings?: Strings} = {}) {
       ) : null}
       <TabBar active={tab} onChange={setTab} strings={strings} theme={theme} />
       <QuickRecordModal
-        kind={recording}
-        onClose={() => setRecording(undefined)}
+        events={events}
+        historyStatus="complete"
+        initialEvent={editingEvent}
+        kind={editingEvent?.kind ?? recording}
+        onClose={() => {
+          setEditingEvent(undefined);
+          setRecording(undefined);
+        }}
         onSave={async input => {
-          await appContainer.recordCareEvent(input);
+          if (editingEvent) {
+            await appContainer.updateCareEvent({
+              groupId: context.groupId,
+              eventId: editingEvent.id,
+              requestedBy: context.caregiverId,
+              update: input,
+            });
+          } else {
+            await appContainer.recordCareEvent(input);
+          }
           setNow(Date.now());
-          setSavedMessage(strings.app.eventSaved);
+          setSavedMessage(
+            editingEvent ? strings.app.eventUpdated : strings.app.eventSaved,
+          );
         }}
         session={session}
         strings={strings}

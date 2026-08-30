@@ -10,9 +10,9 @@ import {
 } from '../../../../packages/product-core/src/index.ts';
 
 import {eventTitle, formatDuration, formatTimeAgo} from './format';
-import type {Strings} from './strings';
+import type {Strings} from '@babycare/product-ui';
 import type {LocalSession} from './session';
-import type {AppTheme} from './theme';
+import type {AppTheme} from '@babycare/product-ui';
 
 function startOfToday(now: number): number {
   const date = new Date(now);

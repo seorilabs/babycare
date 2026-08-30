@@ -80,13 +80,14 @@ test('AIT build workflow creates only a candidate artifact', async () => {
 
   assert.match(workflow, /^name: Build Mini-app Candidate$/m);
   assert.match(workflow, /workflow_dispatch:[\s\S]*?release_tag:/);
-  assert.match(
-    workflow,
-    /rn-build-ait\.yml@73972d2b34e92145e61e3409c91085c40da10c54/,
-  );
-  assert.match(workflow, /build_command: "pnpm --dir apps\/ait build"/);
-  assert.match(workflow, /artifact_path: "apps\/ait\/\*\.ait"/);
-  assert.match(workflow, /runs_on: ubuntu-latest/);
+  assert.match(workflow, /packages: read/);
+  assert.match(workflow, /runs-on: ubuntu-latest/);
+  assert.match(workflow, /registry-url: https:\/\/npm\.pkg\.github\.com/);
+  assert.match(workflow, /scope: '@seorilabs'/);
+  assert.match(workflow, /NODE_AUTH_TOKEN: \$\{\{ github\.token \}\}/);
+  assert.match(workflow, /pnpm install --frozen-lockfile/);
+  assert.match(workflow, /pnpm --dir apps\/ait build/);
+  assert.match(workflow, /path: apps\/ait\/babynest\.ait/);
   assert.doesNotMatch(workflow, /APPS_IN_TOSS_API_KEY|ait deploy|run deploy/i);
 });
 
@@ -239,7 +240,13 @@ test('Google Play deployment uses the RPI caller and x64 Cloud Build contract', 
   assert.match(cloudbuild, /babycare-play-keystore-password/);
   assert.match(cloudbuild, /babycare-play-key-password/);
   assert.match(cloudbuild, /E2_HIGHCPU_8/);
-  assert.match(buildScript, /pnpm install --frozen-lockfile/);
+  assert.match(buildScript, /pnpm install[\s\\]*--frozen-lockfile[\s\\]*--store-dir/);
+  assert.match(workflow, /packages: read/);
+  assert.match(workflow, /Prepare private package seed store/);
+  assert.match(workflow, /NODE_AUTH_TOKEN: \$\{\{ github\.token \}\}/);
+  assert.match(workflow, /pnpm store add "\$private_package@\$private_version"/);
+  assert.match(buildScript, /CLOUD_BUILD_PNPM_STORE/);
+  assert.match(buildEnv, /CLOUD_BUILD_PNPM_STORE=\.cloudbuild-private-pnpm-store/);
   assert.match(buildScript, /:app:bundleRelease/);
   assert.match(buildScript, /jarsigner -verify -strict/);
   assert.match(buildScript, /기존 로컬 자격증명 파일을 덮어쓰지 않습니다/);

@@ -2,12 +2,14 @@ import {
   createEndSleepSession,
   createRecordCareEvent,
   createSoftDeleteCareEvent,
+  createUpdateCareEvent,
   isActiveSleep,
   type AnalyticsPort,
   type CareEvent,
   type CareEventQuery,
   type SleepEvent,
 } from '@babycare/product-core';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {PersistentCareEventRepository} from '../adapters/local/persistent-care-event-repository';
 import {LocalSessionRepository} from '../adapters/local/local-session-repository';
@@ -87,7 +89,10 @@ export const appContainer = {
     clock,
     analytics,
     idGenerator: new NativeIdGenerator(),
+    firstLogStorage: AsyncStorage,
+    groupRole: 'owner',
   }),
+  updateCareEvent: createUpdateCareEvent({repository, clock, analytics}),
   endSleepSession: createEndSleepSession({repository, clock, analytics}),
   softDeleteCareEvent: createSoftDeleteCareEvent({repository, clock, analytics}),
 };

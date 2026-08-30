@@ -16,7 +16,7 @@ import {
 } from '@babycare/product-core';
 
 import App, {RuntimeApp} from '../App';
-import {createStrings} from '../src/app/i18n';
+import {createStrings} from '@babycare/product-ui';
 import {
   appContainer,
   selectVisibleCareEventOverview,

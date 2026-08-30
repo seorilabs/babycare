@@ -30,6 +30,13 @@ echo "▸ pnpm 설치 (저장소 핀 버전)"
 # 버전은 package.json 의 packageManager 핀(pnpm@11.14.0)과 일치시킨다.
 npm install -g pnpm@11.14.0
 
+echo "▸ GitHub Packages 인증 (@seorilabs 비공개 패키지)"
+if [ -z "${GITHUB_PACKAGES_TOKEN:-}" ]; then
+  echo "GITHUB_PACKAGES_TOKEN secret이 없어 private package를 설치할 수 없음" >&2
+  exit 1
+fi
+printf '//npm.pkg.github.com/:_authToken=%s\n' "${GITHUB_PACKAGES_TOKEN}" >> "${HOME}/.npmrc"
+
 echo "▸ JS 의존성 설치 (pnpm workspace — 저장소 루트)"
 cd "${REPO}"
 pnpm install --frozen-lockfile

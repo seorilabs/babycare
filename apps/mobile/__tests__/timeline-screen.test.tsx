@@ -11,8 +11,8 @@ import {
 } from '@babycare/product-core';
 
 import type {LocalSession} from '../src/app/session';
-import {createTheme} from '../src/app/theme';
-import { createStrings } from '../src/app/i18n';
+import {createTheme} from '@babycare/product-ui';
+import { createStrings } from '@babycare/product-ui';
 import {TimelineScreen} from '../src/screens/TimelineScreen';
 
 const now = new Date(2026, 6, 13, 12).getTime();
@@ -57,6 +57,7 @@ function screen(overrides: Partial<React.ComponentProps<typeof TimelineScreen>> 
       hasMore
       loadingMore={false}
       now={now}
+      onEdit={() => undefined}
       onDelete={async () => undefined}
       onLoadMore={async () => undefined}
       onRetryLoadMore={() => undefined}
@@ -150,7 +151,7 @@ describe('TimelineScreen bounded feed', () => {
     await ReactTestRenderer.act(async () => renderer.unmount());
   });
 
-  it('builds stable day sections and keeps author-only accessible deletion', async () => {
+  it('builds stable day sections and lets an active caregiver edit or delete', async () => {
     const ownerLatest = careEvent('event-b', 'owner-1', now - 60_000);
     const ownerEarlier = careEvent('event-a', 'owner-1', now - 120_000);
     const memberYesterday = careEvent(
@@ -159,6 +160,7 @@ describe('TimelineScreen bounded feed', () => {
       now - 24 * 60 * 60 * 1_000,
     );
     const onDelete = jest.fn(async () => undefined);
+    const onEdit = jest.fn();
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
@@ -166,6 +168,7 @@ describe('TimelineScreen bounded feed', () => {
         screen({
           events: [memberYesterday, ownerEarlier, ownerLatest],
           hasMore: false,
+          onEdit,
           onDelete,
         }),
       );
@@ -195,21 +198,24 @@ describe('TimelineScreen bounded feed', () => {
       section: sections[1],
     });
     expect(ownerRow.props.accessibilityHint).toBe(
-      '활성화하면 기록 삭제 확인창이 열립니다',
+      '활성화하면 기록 수정 화면이 열립니다',
     );
     expect(ownerRow.props.accessibilityRole).toBe('button');
     expect(ownerRow.props.accessibilityActions).toEqual([
-      {name: 'activate', label: '기록 삭제'},
+      {name: 'activate', label: '기록 수정'},
+      {name: 'longpress', label: '기록 삭제'},
     ]);
     expect(ownerRow.props.onAccessibilityAction).toEqual(expect.any(Function));
-    expect(memberRow.props.accessibilityHint).toBeUndefined();
-    expect(memberRow.props.accessibilityRole).toBeUndefined();
-    expect(memberRow.props.accessibilityActions).toBeUndefined();
-    expect(memberRow.props.onAccessibilityAction).toBeUndefined();
-    expect(memberRow.props.onLongPress).toBeUndefined();
+    expect(memberRow.props.accessibilityRole).toBe('button');
+    expect(memberRow.props.onLongPress).toEqual(expect.any(Function));
 
     ownerRow.props.onAccessibilityAction({
       nativeEvent: {actionName: 'activate'},
+    });
+    expect(onEdit).toHaveBeenCalledWith(ownerLatest);
+
+    ownerRow.props.onAccessibilityAction({
+      nativeEvent: {actionName: 'longpress'},
     });
     expect(alert).toHaveBeenCalledWith(
       '기록을 삭제할까요?',

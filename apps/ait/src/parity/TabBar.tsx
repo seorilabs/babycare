@@ -2,9 +2,9 @@ import React from 'react';
 import {Platform, Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import type {Strings} from './strings';
+import type {Strings} from '@babycare/product-ui';
 import {aitBottomInset} from './system-insets';
-import type {AppTheme} from './theme';
+import type {AppTheme} from '@babycare/product-ui';
 
 export type AppTab = 'home' | 'timeline' | 'stats' | 'more';
 

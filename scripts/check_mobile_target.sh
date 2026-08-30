@@ -41,7 +41,7 @@ android_sources='apps/mobile/android/app/src/main/java/com/seorilabs/babycare'
 ios_project='apps/mobile/ios/BabyCare.xcodeproj/project.pbxproj'
 android_strings='apps/mobile/android/app/src/main/res/values/strings.xml'
 android_strings_ko='apps/mobile/android/app/src/main/res/values-ko/strings.xml'
-app_strings='apps/mobile/src/app/i18n/strings.ts'
+app_strings='packages/product-ui/src/strings.ts'
 info_plist_static='apps/mobile/ios/BabyCare/Info.plist'
 app_json='apps/mobile/app.json'
 
