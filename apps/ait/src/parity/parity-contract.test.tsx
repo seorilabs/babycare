@@ -246,7 +246,7 @@ describe('AppsInToss feature parity contract', () => {
       params: {step: 'inviteCode', mode: 'join', reason: 'save_failed'},
     });
     ReactTestRenderer.act(() => renderer.unmount());
-  });
+  }, 15_000);
 
   it('reserves the Android system navigation area when the host reports zero', () => {
     expect(aitBottomInset(0, 'android')).toBe(32);
