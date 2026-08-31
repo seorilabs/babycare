@@ -213,6 +213,42 @@ test('stable tag creates a signed Android artifact without Play upload', async (
   assert.doesNotMatch(workflow, /upload: true/);
 });
 
+test('Cloud Build build-only uses ephemeral signing and central tag-derived versions', async () => {
+  const [script, buildEnv] = await Promise.all([
+    read('scripts/build-android.sh'),
+    read('build.env'),
+  ]);
+
+  assert.match(script, /SEORI_BUILD_MODE:-market-upload/);
+  assert.match(script, /SEORI_ANDROID_AAB_OUTPUT.*repo_root\/app-release\.aab/s);
+  assert.match(script, /pnpm_config_store_dir/);
+  assert.match(script, /\.seorilabs-pnpm-store/);
+  assert.match(script, /SEORI_RELEASE_TAG/);
+  assert.match(script, /SEORI_RELEASE_VERSION_NAME/);
+  assert.match(script, /SEORI_RELEASE_VERSION_CODE/);
+  assert.match(script, /keytool -genkeypair -noprompt/);
+  assert.match(script, /build-only\.p12/);
+  assert.match(script, /pnpm install --frozen-lockfile --offline/);
+  assert.match(script, /--no-daemon/);
+  assert.match(script, /--max-workers="\$GRADLE_MAX_WORKERS"/);
+  assert.match(buildEnv, /^GRADLE_MAX_WORKERS=2$/m);
+
+  const buildOnlyStart = script.indexOf('run_build_only()');
+  const marketStart = script.indexOf('run_market_upload()');
+  const buildOnly = script.slice(buildOnlyStart, marketStart);
+  for (const name of [
+    'FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64',
+    'GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64',
+    'GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD',
+    'GOOGLE_PLAY_UPLOAD_KEY_PASSWORD',
+    'GOOGLE_PLAY_UPLOAD_KEY_ALIAS',
+  ]) {
+    assert.match(buildOnly, new RegExp(`\\b${name}\\b`));
+  }
+  assert.match(buildOnly, /reject_env "\$name"/);
+  assert.doesNotMatch(buildOnly, /google-services\.json.*writeFileSync/s);
+});
+
 test('Google Play deployment is a thin exact-SHA central caller', async () => {
   const [workflow, workspace, setup, promotion, uploader] = await Promise.all([
     read('.github/workflows/deploy-google-play.yml'),
