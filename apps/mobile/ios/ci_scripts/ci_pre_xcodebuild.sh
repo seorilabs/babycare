@@ -10,18 +10,16 @@
 # 버전 소스:
 #   CI_TAG(vX.Y.Z) 트리거 빌드만 허용한다. 브랜치 push나 태그가 아닌 API 호출은
 #   비-제로 종료해 기본 프로젝트 버전의 archive를 차단한다.
-# marketing version은 scripts/resolve-release-version.mjs 로 계산하고, build number는
-# Xcode Cloud가 단조 증가시키는 CI_BUILD_NUMBER를 사용한다. node 는 ci_post_clone 에서 설치됨.
+# marketing version은 exact tag 자체의 X.Y.Z이며, build number는 Xcode Cloud가
+# 단조 증가시키는 CI_BUILD_NUMBER를 사용한다.
 #
 # 검증: CI_PRE_XCODEBUILD_DRY_RUN=1 로 실행하면 agvtool 없이 산출 버전만 출력한다.
 
 set -e
 
-# resolver 스크립트는 이 스크립트 위치 기준으로 찾는다(ci_scripts 는 항상
-# <repo>/apps/mobile/ios/ci_scripts 에 있으므로 4단계 상위가 저장소 루트).
+# ci_scripts 는 항상 <repo>/apps/mobile/ios/ci_scripts 에 있으므로 4단계 상위가 저장소 루트다.
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 REPO_ROOT="$(CDPATH= cd -- "${SCRIPT_DIR}/../../../.." && pwd)"
-RESOLVER="${REPO_ROOT}/scripts/resolve-release-version.mjs"
 # agvtool 대상은 Xcode Cloud 체크아웃 루트. 로컬/테스트에서는 저장소 루트.
 REPO="${CI_PRIMARY_REPOSITORY_PATH:-${REPO_ROOT}}"
 
@@ -31,13 +29,22 @@ if [ -z "${RELEASE_TAG}" ]; then
   exit 1
 fi
 
-echo "▸ 릴리즈 버전 산출 (tag=${RELEASE_TAG})"
-OUTFILE="$(mktemp)"
-trap 'rm -f "${OUTFILE}"' EXIT
-# babycare 의 resolver 는 --tag 를 요구한다(RELEASE_TAG env 는 읽지 않음).
-GITHUB_OUTPUT="${OUTFILE}" node "${RESOLVER}" --tag "${RELEASE_TAG}" --github-output >/dev/null
+if ! printf '%s\n' "${RELEASE_TAG}" | grep -Eq '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
+  echo "stable SemVer 태그 vX.Y.Z만 허용함: ${RELEASE_TAG}" >&2
+  exit 1
+fi
 
-MARKETING="$(grep '^apple_marketing_version=' "${OUTFILE}" | cut -d= -f2)"
+TAG_COMMIT="$(git -C "${REPO}" rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}")" || {
+  echo "체크아웃에서 exact tag commit을 확인할 수 없음: ${RELEASE_TAG}" >&2
+  exit 1
+}
+HEAD_COMMIT="$(git -C "${REPO}" rev-parse --verify 'HEAD^{commit}')"
+if [ "${TAG_COMMIT}" != "${HEAD_COMMIT}" ]; then
+  echo "Xcode Cloud HEAD가 exact tag commit과 다름: tag=${TAG_COMMIT} HEAD=${HEAD_COMMIT}" >&2
+  exit 1
+fi
+
+MARKETING="${RELEASE_TAG#v}"
 BUILD="${CI_BUILD_NUMBER:-}"
 
 if [ -z "${MARKETING}" ] || [ -z "${BUILD}" ]; then

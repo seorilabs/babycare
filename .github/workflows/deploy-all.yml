@@ -62,32 +62,18 @@ concurrency:
 jobs:
   resolve:
     name: Resolve release tag
-    runs-on: ${{ github.event.repository.private && 'seorilabs-rpi-arm64' || 'ubuntu-latest' }}
-    timeout-minutes: 10
-    outputs:
-      tag: ${{ steps.t.outputs.tag }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-      - id: t
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="${{ inputs.release_tag }}"
-          if [ -z "$tag" ]; then
-            tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)"
-            [ -n "$tag" ] || { echo "release_tag 비어있고 vX.Y.Z 태그 없음. 먼저 Release Tag 실행." >&2; exit 1; }
-          fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+    uses: seorilabs/.github/.github/workflows/resolve-release-version.yml@c8db7834f6b72198a898f699b6f91e3a185fc7f5
+    with:
+      release_tag: ${{ inputs.release_tag }}
 
   ait:
     name: Deploy AIT
     needs: resolve
     if: ${{ inputs.deploy_ait }}
     uses: ./.github/workflows/deploy-apps-in-toss.yml
-    secrets: inherit
+    secrets:
+      APPS_IN_TOSS_API_KEY: ${{ secrets.APPS_IN_TOSS_API_KEY }}
+      FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
     with:
       release_tag: ${{ needs.resolve.outputs.tag }}
       memo: ${{ inputs.memo }}
@@ -97,7 +83,11 @@ jobs:
     needs: resolve
     if: ${{ inputs.deploy_google_play }}
     uses: ./.github/workflows/deploy-google-play.yml
-    secrets: inherit
+    secrets:
+      FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
+      GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64 }}
+      GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD }}
+      GOOGLE_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.GOOGLE_PLAY_UPLOAD_KEY_PASSWORD }}
     with:
       release_tag: ${{ needs.resolve.outputs.tag }}
       upload: true
@@ -109,7 +99,15 @@ jobs:
     needs: resolve
     if: ${{ inputs.deploy_app_store }}
     uses: ./.github/workflows/deploy-app-store.yml
-    secrets: inherit
+    secrets:
+      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
+      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+      APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
     with:
       release_tag: ${{ needs.resolve.outputs.tag }}
       upload: true

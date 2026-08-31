@@ -7,6 +7,7 @@ Contract (seorilabs/.github rn-deploy-google-play / promote-google-play):
         [--release-notes TEXT --release-notes-language LANG]
         [--release-notes-json PATH]   # 전체 언어 노트(env RELEASE_NOTES_JSON)
     upload-google-play-internal.py --promote --release-name N --release-status S
+        --promote-version-code N
         [--promote-from-track internal --promote-to-track production] [--rollout F]
 
 Auth: Application Default Credentials, provided by google-github-actions/auth
@@ -18,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -71,6 +73,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--promote", action="store_true")
     parser.add_argument("--promote-from-track", default="internal")
     parser.add_argument("--promote-to-track", default="production")
+    parser.add_argument("--promote-version-code")
     parser.add_argument(
         "--rollout",
         type=unit_fraction,
@@ -121,8 +124,20 @@ def build_release_notes(edits, package_name: str, edit_id: str, args) -> list[di
 
 
 def promote_release(edits, package_name: str, args) -> None:
-    """from-track 최신 versionCode 를 재빌드 없이 to-track 으로 승격 + 언어별 노트 반영
-    + commit(=심사 제출). rollout 지정 시 단계적 출시."""
+    """중앙 태그 정본이 지정한 exact versionCode를 to-track으로 승격한다."""
+    expected = os.environ.get("SEORI_EXPECTED_ANDROID_VERSION_CODE", "")
+    if not re.fullmatch(r"[1-9][0-9]*", expected):
+        sys.exit("SEORI_EXPECTED_ANDROID_VERSION_CODE is required for promotion.")
+    if not args.promote_version_code or not re.fullmatch(
+        r"[1-9][0-9]*", args.promote_version_code
+    ):
+        sys.exit("--promote-version-code must be a positive integer.")
+    if args.promote_version_code != expected:
+        sys.exit(
+            "--promote-version-code does not match "
+            "SEORI_EXPECTED_ANDROID_VERSION_CODE."
+        )
+
     edit_id = edits.insert(packageName=package_name, body={}).execute()["id"]
     try:
         source = edits.tracks().get(
@@ -133,11 +148,16 @@ def promote_release(edits, package_name: str, args) -> None:
             version_codes.extend(int(v) for v in release.get("versionCodes", []) or [])
         if not version_codes:
             sys.exit(f"No versionCode on '{args.promote_from_track}' track to promote.")
-        latest = str(max(version_codes))
+        selected = args.promote_version_code
+        if int(selected) not in version_codes:
+            sys.exit(
+                f"versionCode={selected} is absent from "
+                f"'{args.promote_from_track}' track."
+            )
 
         release = {
             "name": args.release_name,
-            "versionCodes": [latest],
+            "versionCodes": [selected],
             "status": args.release_status,
         }
         notes = build_release_notes(edits, package_name, edit_id, args)
@@ -156,7 +176,7 @@ def promote_release(edits, package_name: str, args) -> None:
         edits.commit(packageName=package_name, editId=edit_id).execute()
         print(
             f"Promoted {args.promote_from_track}->{args.promote_to_track}: "
-            f"versionCode={latest} status={release['status']}"
+            f"versionCode={selected} status={release['status']}"
         )
     except Exception:
         try:

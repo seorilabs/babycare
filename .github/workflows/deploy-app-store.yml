@@ -50,14 +50,39 @@ on:
       ios_bundle_id:
         type: string
         default: "com.seorilabs.babycare"
+    secrets:
+      APPLE_DISTRIBUTION_CERTIFICATE_BASE64:
+        required: true
+      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD:
+        required: true
+      APPLE_PROVISIONING_PROFILE_BASE64:
+        required: true
+      APPLE_KEYCHAIN_PASSWORD:
+        required: true
+      APP_STORE_CONNECT_API_KEY_ID:
+        required: true
+      APP_STORE_CONNECT_ISSUER_ID:
+        required: true
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64:
+        required: true
+      FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:
+        required: true
 
 permissions:
   contents: read
 
 jobs:
   app-store:
-    uses: seorilabs/.github/.github/workflows/rn-deploy-app-store.yml@main
-    secrets: inherit
+    uses: seorilabs/.github/.github/workflows/rn-deploy-app-store.yml@c8db7834f6b72198a898f699b6f91e3a185fc7f5
+    secrets:
+      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
+      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+      APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
     with:
       release_tag: ${{ inputs.release_tag }}
       upload: ${{ inputs.upload }}
