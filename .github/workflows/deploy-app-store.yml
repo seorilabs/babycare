@@ -73,7 +73,7 @@ permissions:
 
 jobs:
   app-store:
-    uses: seorilabs/.github/.github/workflows/rn-deploy-app-store.yml@c8db7834f6b72198a898f699b6f91e3a185fc7f5
+    uses: seorilabs/.github/.github/workflows/rn-deploy-app-store.yml@8a11a145fed35479a4a89ebc7ca97edd0a0f05fd
     secrets:
       APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
       APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}

@@ -207,7 +207,7 @@ test('stable tag creates a signed Android artifact without Play upload', async (
   assert.match(gradle, /findProperty\('versionCodeOverride'\)/);
   assert.match(
     deploy,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@c8db7834f6b72198a898f699b6f91e3a185fc7f5/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@8a11a145fed35479a4a89ebc7ca97edd0a0f05fd/,
   );
   assert.match(deploy, /package_name: com\.seorilabs\.babycare/);
   assert.doesNotMatch(workflow, /upload: true/);
@@ -240,7 +240,7 @@ test('Google Play deployment is a thin exact-SHA central caller', async () => {
   assert.doesNotMatch(workflow, /secrets:\s*inherit|scripts\/resolve-release-version|upload_script|gcloud builds submit/);
   assert.match(
     promotion,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@c8db7834f6b72198a898f699b6f91e3a185fc7f5/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@8a11a145fed35479a4a89ebc7ca97edd0a0f05fd/,
   );
   assert.match(uploader, /--promote-version-code/);
   assert.match(uploader, /SEORI_EXPECTED_ANDROID_VERSION_CODE/);
