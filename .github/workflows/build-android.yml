@@ -1,10 +1,13 @@
 name: Build Android Candidate
 
 on:
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "빌드할 SemVer 태그. 비우면 현재 ref를 최신 태그 버전으로 빌드"
+        description: "빌드할 exact stable SemVer 태그. 비우면 최신 vX.Y.Z"
         type: string
         required: false
         default: ""
@@ -12,6 +15,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 concurrency:
   group: babycare-android-build-${{ inputs.release_tag || github.ref }}
@@ -20,7 +24,11 @@ concurrency:
 jobs:
   candidate:
     uses: ./.github/workflows/deploy-google-play.yml
-    secrets: inherit
+    secrets:
+      FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
+      GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64 }}
+      GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD }}
+      GOOGLE_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.GOOGLE_PLAY_UPLOAD_KEY_PASSWORD }}
     with:
       release_tag: ${{ inputs.release_tag }}
       upload: false

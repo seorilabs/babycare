@@ -188,7 +188,7 @@ test('AppsInToss upload workflow uses the x64 Hermes path', async () => {
   assert.doesNotMatch(workflow, /seorilabs-rpi-arm64|rn-deploy-ait\.yml/);
 });
 
-test('Android build workflow creates a signed AAB without Play upload', async () => {
+test('stable tag creates a signed Android artifact without Play upload', async () => {
   const [workflow, deploy, gradle] = await Promise.all([
     read('.github/workflows/build-android.yml'),
     read('.github/workflows/deploy-google-play.yml'),
@@ -196,73 +196,54 @@ test('Android build workflow creates a signed AAB without Play upload', async ()
   ]);
 
   assert.match(workflow, /^name: Build Android Candidate$/m);
+  assert.match(workflow, /push:[\s\S]*?tags:[\s\S]*?'v\*\.\*\.\*'/);
   assert.match(workflow, /workflow_dispatch:[\s\S]*?release_tag:/);
   assert.match(workflow, /uses: \.\/\.github\/workflows\/deploy-google-play\.yml/);
   assert.match(workflow, /upload: false/);
   assert.match(workflow, /id-token: write/);
+  assert.doesNotMatch(workflow, /secrets:\s*inherit/);
   assert.match(gradle, /rootProject\.file\('key\.properties'\)/);
-  assert.match(deploy, /--config=cloudbuild-android\.yaml/);
+  assert.match(gradle, /findProperty\('versionNameOverride'\)/);
+  assert.match(gradle, /findProperty\('versionCodeOverride'\)/);
+  assert.match(
+    deploy,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@c8db7834f6b72198a898f699b6f91e3a185fc7f5/,
+  );
+  assert.match(deploy, /package_name: com\.seorilabs\.babycare/);
   assert.doesNotMatch(workflow, /upload: true/);
 });
 
-test('Google Play deployment uses the RPI caller and x64 Cloud Build contract', async () => {
-  const [workflow, cloudbuild, buildScript, buildEnv, ignore, workspace, gradlePatch, setup] = await Promise.all([
+test('Google Play deployment is a thin exact-SHA central caller', async () => {
+  const [workflow, workspace, setup, promotion, uploader] = await Promise.all([
     read('.github/workflows/deploy-google-play.yml'),
-    read('cloudbuild-android.yaml'),
-    read('scripts/build-android.sh'),
-    read('build.env'),
-    read('.gcloudignore'),
     read('pnpm-workspace.yaml'),
-    read('patches/@react-native__gradle-plugin@0.85.3.patch'),
     read('docs/06-release/store-upload-setup.md'),
+    read('.github/workflows/promote-google-play.yml'),
+    read('scripts/upload-google-play-internal.py'),
   ]);
 
-  assert.match(workflow, /runs-on: seorilabs-rpi-arm64/);
-  assert.match(workflow, /google-github-actions\/auth@v3/);
-  assert.match(workflow, /actions\/setup-python@v7/);
-  assert.match(workflow, /python-version: "3\.13"/);
-  assert.match(workflow, /architecture: arm64/);
-  assert.match(
-    workflow,
-    /actions\/setup-python@v7[\s\S]*?Install publisher client[\s\S]*?python3 -m pip install --disable-pip-version-check[\s\S]*?google-api-python-client/,
-  );
-  assert.match(
-    workflow,
-    /Install publisher client[\s\S]*?Download localized release notes[\s\S]*?download-github-release-asset\.mjs[\s\S]*?--asset release-notes\.json[\s\S]*?Upload to Google Play[\s\S]*?--release-notes-json/,
-  );
-  assert.doesNotMatch(workflow, /gh release download|Download localized release notes[\s\S]*?\|\| true/);
-  assert.match(workflow, /gcloud config set billing\/quota_project seorilabs-ci/);
-  assert.match(workflow, /gcloud builds submit/);
-  assert.match(workflow, /if: \$\{\{ inputs\.upload \}\}/);
-  assert.match(workflow, /actions\/upload-artifact@v7/);
-  assert.match(cloudbuild, /rn-android-builder:node24-pnpm11\.14-jdk21-rn085/);
-  assert.match(cloudbuild, /babycare-firebase-google-services/);
-  assert.match(cloudbuild, /babycare-play-keystore-password/);
-  assert.match(cloudbuild, /babycare-play-key-password/);
-  assert.match(cloudbuild, /E2_HIGHCPU_8/);
-  assert.match(buildScript, /pnpm install[\s\\]*--frozen-lockfile[\s\\]*--store-dir/);
+  assert.match(workflow, /release_tag: \$\{\{ inputs\.release_tag \}\}/);
+  assert.match(workflow, /upload: \$\{\{ inputs\.upload \}\}/);
+  assert.match(workflow, /package_name: com\.seorilabs\.babycare/);
+  assert.match(workflow, /package_manager: pnpm/);
+  assert.match(workflow, /pnpm_version: 11\.14\.0/);
+  assert.match(workflow, /node_version: 24\.16\.0/);
+  assert.match(workflow, /java_version: 21/);
+  assert.match(workflow, /android_dir: apps\/mobile\/android/);
   assert.match(workflow, /packages: read/);
-  assert.match(workflow, /Prepare private package seed store/);
-  assert.match(workflow, /NODE_AUTH_TOKEN: \$\{\{ github\.token \}\}/);
-  assert.match(workflow, /pnpm store add "\$private_package@\$private_version"/);
-  assert.match(buildScript, /CLOUD_BUILD_PNPM_STORE/);
-  assert.match(buildEnv, /CLOUD_BUILD_PNPM_STORE=\.cloudbuild-private-pnpm-store/);
-  assert.match(buildScript, /:app:bundleRelease/);
-  assert.match(buildScript, /jarsigner -verify -strict/);
-  assert.match(buildScript, /기존 로컬 자격증명 파일을 덮어쓰지 않습니다/);
-  assert.match(buildScript, /DF0194ACA157C73C66ACBF0954D785B460412B6B632B5270A53BF10BF87CA860/);
-  assert.match(buildEnv, /PNPM_VERSION=11\.14\.0/);
-  assert.match(buildEnv, /JDK_VERSION=21/);
-  assert.match(buildEnv, /ANDROID_CMAKE=3\.22\.1/);
-  assert.match(ignore, /apps\/mobile\/android\/app\/google-services\.json/);
-  assert.match(ignore, /apps\/mobile\/android\/key\.properties/);
   assert.match(workspace, /patchedDependencies:[\s\S]*@react-native\/gradle-plugin@0\.85\.3/);
-  assert.match(gradlePatch, /foojay-resolver-convention"\)\.version\("1\.0\.0"\)/);
   assert.match(
     setup,
     /seorilabs-play-publisher@seorilabs-gws\.iam\.gserviceaccount\.com/,
   );
   assert.doesNotMatch(setup, /babycare-play-publisher@/);
+  assert.doesNotMatch(workflow, /secrets:\s*inherit|scripts\/resolve-release-version|upload_script|gcloud builds submit/);
+  assert.match(
+    promotion,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@c8db7834f6b72198a898f699b6f91e3a185fc7f5/,
+  );
+  assert.match(uploader, /--promote-version-code/);
+  assert.match(uploader, /SEORI_EXPECTED_ANDROID_VERSION_CODE/);
 });
 
 test('Google Play upload tolerates slow resumable responses', async () => {
@@ -287,7 +268,12 @@ test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', 
 
   assert.match(prebuild, /RELEASE_TAG="\$\{CI_TAG:-\}"/);
   assert.match(prebuild, /BUILD="\$\{CI_BUILD_NUMBER:-\}"/);
+  assert.match(prebuild, /refs\/tags\/\$\{RELEASE_TAG\}\^\{commit\}/);
+  assert.match(prebuild, /TAG_COMMIT/);
+  assert.match(prebuild, /HEAD_COMMIT/);
+  assert.match(prebuild, /MARKETING="\$\{RELEASE_TAG#v\}"/);
   assert.doesNotMatch(prebuild, /git[^\n]*describe/);
+  assert.doesNotMatch(prebuild, /scripts\/resolve-release-version/);
   assert.match(postClone, /brew install node@24 cocoapods/);
   assert.match(postClone, /FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:-/);
   assert.match(postClone, /FIREBASE_BUNDLE_ID/);

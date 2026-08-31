@@ -23,9 +23,9 @@ GH workflow_dispatch 가 아니라 App Store Connect `POST /v1/ciBuildRuns` 로 
 `project.pbxproj` 의 `MARKETING_VERSION` 기본값이 그대로 아카이브되어 **구버전 표기 빌드가
 스토어로 나가는 것을 원천 차단**한다. `ci_pre_xcodebuild.sh` 는 다음 계약만 허용한다.
 
-1. **`CI_TAG`(vX.Y.Z) 트리거 빌드** → 그 태그로 `scripts/resolve-release-version.mjs`가
-   `CFBundleShortVersionString`을 산출하고, Xcode Cloud의 `CI_BUILD_NUMBER`를
-   `CFBundleVersion`으로 `agvtool`에 주입한다.
+1. **`CI_TAG`(exact stable vX.Y.Z) 트리거 빌드** → 해당 태그의 peeled commit과 checkout
+   `HEAD`가 같은지 검증한 뒤 태그의 `X.Y.Z`를 `CFBundleShortVersionString`으로,
+   Xcode Cloud의 `CI_BUILD_NUMBER`를 `CFBundleVersion`으로 `agvtool`에 주입한다.
 2. **`CI_TAG` 또는 `CI_BUILD_NUMBER` 부재(브랜치/잘못된 API 호출)** → **비-제로 종료**로
    archive를 실패시킨다.
 

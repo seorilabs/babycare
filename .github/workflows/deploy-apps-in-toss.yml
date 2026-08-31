@@ -25,6 +25,11 @@ on:
         type: string
         required: false
         default: ""
+    secrets:
+      APPS_IN_TOSS_API_KEY:
+        required: true
+      FIREBASE_WEB_API_KEY:
+        required: true
 
 permissions:
   contents: read
