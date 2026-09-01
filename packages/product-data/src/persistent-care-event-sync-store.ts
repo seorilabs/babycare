@@ -57,6 +57,15 @@ export interface CareEventSyncScope {
   readonly babyId: BabyId;
 }
 
+export function careEventSyncStorageKey(scope: CareEventSyncScope): string {
+  return [
+    STORAGE_KEY_PREFIX,
+    encodeURIComponent(scope.userId),
+    encodeURIComponent(scope.groupId),
+    encodeURIComponent(scope.babyId),
+  ].join('/');
+}
+
 export type CareEventSyncFailureKind =
   | 'retryable'
   | 'conflict'
@@ -675,12 +684,7 @@ export class PersistentCareEventSyncStore
   constructor(scope: CareEventSyncScope, storage: StringStoragePort) {
     this.#scope = scope;
     this.#storage = storage;
-    this.#storageKey = [
-      STORAGE_KEY_PREFIX,
-      encodeURIComponent(scope.userId),
-      encodeURIComponent(scope.groupId),
-      encodeURIComponent(scope.babyId),
-    ].join('/');
+    this.#storageKey = careEventSyncStorageKey(scope);
     this.#releaseStorageKey = claimStorageKey(storage, this.#storageKey);
     this.#ready = this.#hydrate().catch(error => {
       this.#hydrationFailed = true;
