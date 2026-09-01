@@ -42,6 +42,7 @@ firebase/functions/.secret.local
 firebase/functions/.secret.*
 google-services.json
 GoogleService-Info.plist
+apps/mobile/ios/.seori-release-binding.json
 *.p8
 *.p12
 *.mobileprovision

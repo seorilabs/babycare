@@ -42,7 +42,7 @@ flowchart TD
 
 | 자산 | 상태 |
 | --- | --- |
-| `scripts/resolve-release-version.mjs` (`--tag vX.Y.Z --github-output`) | ✅ |
+| exact SHA 중앙 release version authority | ✅ |
 | `scripts/upload-google-play-internal.py` | ✅ |
 | `scripts/restore-mobile-firebase-config.mjs` (`--android`/`--ios --require`) | ✅ |
 | Android gradle `-PversionNameOverride`/`-PversionCodeOverride` | ✅ |
@@ -52,9 +52,10 @@ flowchart TD
 | Cloud Build 계약 (`build.env`, `cloudbuild-android.yaml`, `scripts/build-android.sh`) | ✅ |
 | 워크플로우 caller (deploy-all/google-play/app-store/apps-in-toss, release-tag) | ✅ |
 
-버전 규칙: SemVer 태그 → Google Play `versionCode = major*1_000_000 + minor*1_000 + patch`
-(예: v1.0.0 → `1000000`). Xcode Cloud는 같은 resolver로 marketing version을 주입하고,
-`CI_BUILD_NUMBER`를 `CFBundleVersion`으로 사용한다. App Store Connect의 실제 build number를 원장에 기록한다.
+버전 규칙은 exact stable SemVer 태그와 SHA
+`9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5`의 중앙 `release-version-authority-v1`이 정한다.
+Google Play `versionCode`와 Xcode Cloud의 marketing/build version은 모두 같은 태그에서
+결정적으로 파생하며, workflow 실행 번호나 저장소 설정은 릴리즈 버전 권한이 아니다.
 
 ## GitHub secrets / variables / environments
 

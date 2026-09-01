@@ -52,7 +52,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - ~~IARC/GRAC, target audience, 광고/결제 여부와 Families 적용 범위 확인~~ 완료.
 - internal → closed test, crash/ANR, 오프라인 복귀와 계정 삭제 검증.
 - ~~`play-store/google-play.config.json`, listing text, icon/feature graphic/screenshots, release note와 privacy URL~~ 완료(아이콘 512·피처 1024×500·phone 9:16 3컷).
-- 업로드 자동화: `deploy-google-play.yml` + `scripts/{resolve-release-version.mjs,upload-google-play-internal.py,restore-mobile-firebase-config.mjs}` 준비 완료. Publisher resumable upload는 600초 timeout·3회 재시도로 보강했다. 시크릿·WIF·keystore는 `docs/06-release/store-upload-setup.md` 참고.
+- 업로드 자동화: exact SHA의 중앙 `deploy-google-play.yml`과 `scripts/restore-mobile-firebase-config.mjs` 준비 완료. 버전과 AAB 업로드는 중앙 release authority가 소유하고, 저장소 로컬 업로더는 기존 상태 조회·승격 보조만 담당한다. 시크릿·WIF·keystore는 `docs/06-release/store-upload-setup.md` 참고.
 
 ## App Store Blocker
 
