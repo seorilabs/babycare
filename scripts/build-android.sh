@@ -194,11 +194,13 @@ run_market_upload() {
   local name
   for name in \
     SEORI_SOURCE_SHA SEORI_ANDROID_AAB_OUTPUT \
-    SEORI_RELEASE_TAG SEORI_RELEASE_VERSION_NAME SEORI_RELEASE_VERSION_CODE; do
+    ANDROID_VERSION_NAME ANDROID_VERSION_CODE; do
     reject_env "$name"
   done
   local required_environment=(
-    ANDROID_VERSION_NAME
+    SEORI_RELEASE_TAG
+    SEORI_RELEASE_VERSION_NAME
+    SEORI_RELEASE_VERSION_CODE
     FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64
     GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64
     GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD
@@ -212,19 +214,16 @@ run_market_upload() {
     fail "인증된 Cloud Build pnpm store가 없습니다: $CLOUD_BUILD_PNPM_STORE"
   }
 
-  local version_name="${ANDROID_VERSION_NAME#v}"
-  local version_output
-  local resolved_version_name
-  local resolved_version_code
-  version_output="$(node scripts/resolve-release-version.mjs --tag "v$version_name")"
-  resolved_version_name="$(printf '%s\n' "$version_output" | sed -n 's/^version_name=//p')"
-  resolved_version_code="$(printf '%s\n' "$version_output" | sed -n 's/^android_version_code=//p')"
-  [[ "$resolved_version_name" == "$version_name" ]] || {
-    fail "Android versionName 해석에 실패했습니다."
+  [[ "$SEORI_RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+    fail "중앙 release tag 형식이 올바르지 않습니다."
   }
-  local version_code="${ANDROID_VERSION_CODE:-$resolved_version_code}"
+  local version_name="$SEORI_RELEASE_VERSION_NAME"
+  local version_code="$SEORI_RELEASE_VERSION_CODE"
+  [[ "$version_name" == "${SEORI_RELEASE_TAG#v}" ]] || {
+    fail "중앙 release versionName이 tag와 다릅니다."
+  }
   [[ "$version_code" =~ ^[1-9][0-9]*$ ]] || {
-    fail "Android versionCode는 양의 정수여야 합니다."
+    fail "중앙 release versionCode는 양의 정수여야 합니다."
   }
 
   require_clean_credential_files

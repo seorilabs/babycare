@@ -24,13 +24,13 @@ GH workflow_dispatch 가 아니라 App Store Connect `POST /v1/ciBuildRuns` 로 
 스토어로 나가는 것을 원천 차단**한다. `ci_pre_xcodebuild.sh` 는 다음 계약만 허용한다.
 
 1. **`CI_TAG`(exact stable vX.Y.Z) 트리거 빌드** → 해당 태그의 peeled commit과 checkout
-   `HEAD`가 같은지 검증한 뒤 태그의 `X.Y.Z`를 `CFBundleShortVersionString`으로,
-   Xcode Cloud의 `CI_BUILD_NUMBER`를 `CFBundleVersion`으로 `agvtool`에 주입한다.
-2. **`CI_TAG` 또는 `CI_BUILD_NUMBER` 부재(브랜치/잘못된 API 호출)** → **비-제로 종료**로
+   `HEAD`가 같은지 중앙 정본이 검증한 뒤 태그의 `X.Y.Z`와 결정적 Apple build number를
+   `agvtool`과 Info.plist에 주입한다.
+2. **`CI_TAG` 부재(브랜치/잘못된 API 호출)** → **비-제로 종료**로
    archive를 실패시킨다.
 
-> 마케팅 버전의 정본은 릴리즈 태그이고, build number의 정본은 Xcode Cloud의 monotonic
-> `CI_BUILD_NUMBER`다. `v1.0.5` 실제 App Store Connect readback은 `1.0.5`/`52`였다.
+> 마케팅 버전과 build number의 유일한 정본은 exact stable SemVer 태그 commit이다.
+> 중앙 `release-version-authority-v1` 구현을 정본 full SHA에서 checksum 검증해 실행한다.
 
 ## App Store Connect 쪽 수동 설정(1회)
 
@@ -56,7 +56,7 @@ repo 파일만으로는 완결되지 않는다. App Store Connect / Xcode 에서
 
 ```sh
 # CI_TAG 경로
-CI_TAG=v1.0.0 CI_BUILD_NUMBER=52 CI_PRE_XCODEBUILD_DRY_RUN=1 sh apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh
-# 실패 경로 (CI_TAG 또는 CI_BUILD_NUMBER 없음 — 항상 실패가 정상)
+CI_TAG=v1.0.0 CI_PRE_XCODEBUILD_DRY_RUN=1 sh apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh
+# 실패 경로 (CI_TAG 없음 — 항상 실패가 정상)
 CI_PRE_XCODEBUILD_DRY_RUN=1 sh apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh
 ```

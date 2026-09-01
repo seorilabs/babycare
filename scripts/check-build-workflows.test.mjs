@@ -207,7 +207,7 @@ test('stable tag creates a signed Android artifact without Play upload', async (
   assert.match(gradle, /findProperty\('versionCodeOverride'\)/);
   assert.match(
     deploy,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@8a11a145fed35479a4a89ebc7ca97edd0a0f05fd/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5/,
   );
   assert.match(deploy, /package_name: com\.seorilabs\.babycare/);
   assert.doesNotMatch(workflow, /upload: true/);
@@ -276,7 +276,7 @@ test('Google Play deployment is a thin exact-SHA central caller', async () => {
   assert.doesNotMatch(workflow, /secrets:\s*inherit|scripts\/resolve-release-version|upload_script|gcloud builds submit/);
   assert.match(
     promotion,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@8a11a145fed35479a4a89ebc7ca97edd0a0f05fd/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5/,
   );
   assert.match(uploader, /--promote-version-code/);
   assert.match(uploader, /SEORI_EXPECTED_ANDROID_VERSION_CODE/);
@@ -303,13 +303,14 @@ test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', 
   ]);
 
   assert.match(prebuild, /RELEASE_TAG="\$\{CI_TAG:-\}"/);
-  assert.match(prebuild, /BUILD="\$\{CI_BUILD_NUMBER:-\}"/);
-  assert.match(prebuild, /refs\/tags\/\$\{RELEASE_TAG\}\^\{commit\}/);
-  assert.match(prebuild, /TAG_COMMIT/);
-  assert.match(prebuild, /HEAD_COMMIT/);
-  assert.match(prebuild, /MARKETING="\$\{RELEASE_TAG#v\}"/);
+  assert.match(prebuild, /AUTHORITY_SHA="9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5"/);
+  assert.match(prebuild, /xcode-cloud-apply-tag-version\.mjs/);
+  assert.match(prebuild, /shasum -a 256 -c/);
+  assert.match(prebuild, /appleMarketingVersion/);
+  assert.match(prebuild, /appleBuildNumber/);
+  assert.doesNotMatch(prebuild, /CI_BUILD_NUMBER/);
   assert.doesNotMatch(prebuild, /git[^\n]*describe/);
-  assert.doesNotMatch(prebuild, /scripts\/resolve-release-version/);
+  assert.doesNotMatch(prebuild, /scripts\/resolve-release-version|github\.run_number/);
   assert.match(postClone, /brew install node@24 cocoapods/);
   assert.match(postClone, /FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:-/);
   assert.match(postClone, /FIREBASE_BUNDLE_ID/);
