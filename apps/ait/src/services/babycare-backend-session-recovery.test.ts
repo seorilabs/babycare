@@ -17,6 +17,12 @@ jest.mock('@apps-in-toss/framework', () => ({
 }));
 
 import {bootstrapCareSession} from './babycare-backend';
+import {
+  babyId,
+  groupId,
+  userId,
+} from '../../../../packages/product-core/src/index.ts';
+import {careEventSyncStorageKey} from '../../../../packages/product-data/src/index.ts';
 
 const SESSION_KEY = 'babynest.firebase-session.v1';
 const DOCUMENT_ROOT =
@@ -178,6 +184,16 @@ describe('AppsInToss 세션 복원의 그룹 접근 상실 처리', () => {
       expect(session.uid).toBe('user-1');
     },
   );
+
+  it('구현이 쓰는 저장 키 헬퍼는 인수조건의 저장 키 형식과 일치한다', () => {
+    expect(
+      careEventSyncStorageKey({
+        userId: userId('user-1'),
+        groupId: groupId('group-a'),
+        babyId: babyId('baby-a'),
+      }),
+    ).toBe(SYNC_KEY);
+  });
 
   it('접근 상실이 확정되면 해당 scope의 로컬 돌봄 기록만 purge한다', async () => {
     installFetch({
