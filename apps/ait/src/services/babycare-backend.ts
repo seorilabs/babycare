@@ -50,6 +50,7 @@ import {
   careEventPayloadHash,
   careEventsEqual,
 } from '../../../../packages/product-data/src/care-event-revision.ts';
+import {careEventSyncStorageKey} from '../../../../packages/product-data/src/persistent-care-event-sync-store.ts';
 import {currentAitAppCheckToken} from './ait-app-check';
 
 const PROJECT_ID = 'seorilabs-babycare';
@@ -68,6 +69,7 @@ interface StoredSession {
   readonly refreshToken: string;
   readonly uid: string;
   readonly groupId?: string;
+  readonly babyId?: string;
 }
 
 interface AccessSession extends StoredSession {
@@ -266,6 +268,9 @@ async function loadStoredSession(): Promise<StoredSession | undefined> {
       ...(typeof value.groupId === 'string' && value.groupId
         ? {groupId: value.groupId}
         : {}),
+      ...(typeof value.babyId === 'string' && value.babyId
+        ? {babyId: value.babyId}
+        : {}),
     };
   } catch {
     await Storage.removeItem(SESSION_KEY);
@@ -292,6 +297,7 @@ async function refreshAccessSession(
     refreshToken: text(body.refresh_token, 'refresh token'),
     uid: text(body.user_id, '사용자'),
     ...(stored.groupId ? {groupId: stored.groupId} : {}),
+    ...(stored.babyId ? {babyId: stored.babyId} : {}),
   };
   if (session.uid !== stored.uid) {
     throw new Error('저장된 사용자와 인증 사용자가 일치하지 않아요.');
@@ -669,16 +675,31 @@ async function loadMemberships(
     .sort((left, right) => left.joinedAt - right.joinedAt);
 }
 
-async function readySession(
+function isGroupAccessLostError(error: unknown): boolean {
+  const status =
+    error && typeof error === 'object' && 'status' in error
+      ? Number((error as {status?: unknown}).status)
+      : undefined;
+  return status === 403 || status === 404;
+}
+
+async function purgeRevokedCareRecords(session: StoredSession): Promise<void> {
+  if (!session.groupId || !session.babyId) {
+    return;
+  }
+  await Storage.removeItem(
+    careEventSyncStorageKey({
+      userId: userId(session.uid),
+      groupId: groupId(session.groupId),
+      babyId: babyId(session.babyId),
+    }),
+  );
+}
+
+async function loadGroupSession(
   session: AccessSession,
-): Promise<ReadyCareSession | undefined> {
-  const foundGroupId = session.groupId ?? (await discoverGroupId(session));
-  if (!foundGroupId) {
-    return undefined;
-  }
-  if (foundGroupId !== session.groupId) {
-    await saveStoredSession({...session, groupId: foundGroupId});
-  }
+  foundGroupId: string,
+): Promise<ReadyCareSession> {
   const groupDocument = await getDocument(session, `groups/${foundGroupId}`);
   const group = decodeGroup(fromFirestoreDocument(groupDocument));
   const [membershipDocument, babyDocument, memberships] = await Promise.all([
@@ -690,10 +711,53 @@ async function readySession(
     fromFirestoreDocument(membershipDocument),
   );
   const baby = decodeBaby(fromFirestoreDocument(babyDocument));
+  if (session.groupId !== group.id || session.babyId !== baby.id) {
+    await saveStoredSession({...session, groupId: group.id, babyId: baby.id});
+  }
   const events = (await loadAllEvents(session, group.id, baby.id)).filter(
     event => event.deletedAt === undefined,
   );
   return {uid: session.uid, group, baby, membership, memberships, events};
+}
+
+async function readySession(
+  session: AccessSession,
+): Promise<ReadyCareSession | undefined> {
+  const cachedGroupId = session.groupId;
+  if (!cachedGroupId) {
+    const foundGroupId = await discoverGroupId(session);
+    return foundGroupId ? loadGroupSession(session, foundGroupId) : undefined;
+  }
+  try {
+    return await loadGroupSession(session, cachedGroupId);
+  } catch (error) {
+    if (!isGroupAccessLostError(error)) {
+      throw error;
+    }
+    // 그룹이 삭제됐거나 멤버십이 사라진 경우에만 404/403이 확정된다. 남은
+    // 멤버십을 서버에서 재판정하고, 이 재판정이 일시 오류로 실패하면 캐시를
+    // 보존한 채 부팅 실패로 되돌린다.
+    const rediscoveredGroupId = await discoverGroupId(session);
+    if (rediscoveredGroupId === cachedGroupId) {
+      throw error;
+    }
+    await purgeRevokedCareRecords(session);
+    if (rediscoveredGroupId) {
+      return loadGroupSession(
+        {
+          idToken: session.idToken,
+          refreshToken: session.refreshToken,
+          uid: session.uid,
+        },
+        rediscoveredGroupId,
+      );
+    }
+    await saveStoredSession({
+      refreshToken: session.refreshToken,
+      uid: session.uid,
+    });
+    return undefined;
+  }
 }
 
 export async function bootstrapCareSession(): Promise<ReadyCareSession | undefined> {
@@ -761,7 +825,7 @@ export async function createCareGroup(input: {
       ],
     }),
   });
-  await saveStoredSession({...session, groupId: group.id});
+  await saveStoredSession({...session, groupId: group.id, babyId: baby.id});
   return {
     uid: session.uid,
     group,

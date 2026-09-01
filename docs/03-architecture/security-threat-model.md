@@ -55,7 +55,7 @@ flowchart LR
 | 미래 event/update timestamp로 타임라인·revision 오염 | server Rules 평가 시각 +5분 상한 | future create/update/sleep-end deny 테스트 | device clock 오류 UX와 server timestamp 전략 |
 | 복약 기록의 누락·동일 성분 중복·해열제 동시 기록 | 주성분과 사용자 확인 최소 간격을 event에 저장하고 이전·이후 동일 약 간격과 같은 분의 다른 해열제를 두 단계 경고 | core 간격 테스트, mobile UI 이중 확인, Rules schema/range 테스트 | Store/AIT 설치본 두 기기·과거 시각·offline 회귀. 앱 경고는 의료진 지시를 대체하지 않음 |
 | listener error를 빈 server snapshot으로 오인해 로컬 기록 소실 | cache/pending snapshot은 무시하고 server-confirmed snapshot과 typed error를 분리 | adapter metadata/error Jest, local error snapshot 보존 테스트 | 실제 permission revoke 재현 |
-| 로그아웃·멤버 제거 뒤 내려받은 아동 데이터 잔존 | Auth/membership/event observer 중단→in-flight sync generation 무효화→scoped envelope purge→revoked 상태 순서. concurrent close보다 purge가 우선되고 replacement writer는 보호한다 | sign-out, identity 변경, server-only membership 재확인, in-flight push·observer·close/purge race Jest | native Firestore disk persistence OFF와 실제 기기 purge 확인 |
+| 로그아웃·멤버 제거 뒤 내려받은 아동 데이터 잔존 | Auth/membership/event observer 중단→in-flight sync generation 무효화→scoped envelope purge→revoked 상태 순서. concurrent close보다 purge가 우선되고 replacement writer는 보호한다. AIT는 부팅 세션 복원에서 404/permission-denied와 서버 멤버십 재판정으로 접근 상실을 확정한 뒤 scoped envelope purge→온보딩 전환 순서를 지킨다 | sign-out, identity 변경, server-only membership 재확인, in-flight push·observer·close/purge race Jest, AIT 부팅 접근 상실 purge·일시 오류 보존 Jest | native Firestore disk persistence OFF와 실제 기기 purge 확인 |
 | disabled/deleted/revoked-token 계정의 local Auth identity 잔존 | Auth observer와 remote unauthenticated 오류를 함께 처리하고 `reload`+강제 ID-token refresh로 서버 identity를 검증한다 | revoked error mapping, identity 변경, 반복 401·teardown recovery 차단 Jest | 실제 production provider에서 disabled/deleted/revoked-token별 purge smoke |
 | custom token 전환 중 기존 UID 단절 | 기존 Firebase ID token을 platform이 검증해 같은 uid로 서명하고 client가 bridge·Firebase credential uid를 이중 대조 | legacy uid 보존, mismatch fail-closed Jest와 platform service 테스트, 합성 legacy UID live 교환 | 실제 기존 사용자·실기기 migration |
 | 공개 custom token bootstrap 남용 | feature allowlist, uid 서버 생성, App Check 필수, private key 없는 resource-level IAM 원격 서명 | 임의 uid 주입·App Check 누락 live 거부, 앱 SA resource-level Token Creator, 신규 custom token live 교환 | AIT 실기기 attestation과 비용 alert |
@@ -87,7 +87,7 @@ flowchart LR
 - AIT mTLS 인증서·개인 키의 app별 catalog 등록·복구 검증·Secret Manager 최소권한 연결
 - `mintAitAppCheckToken` production 배포·Invoker 계약·오류 로그 비밀값 비노출 readback
 - 계정/그룹 완전 삭제, 데이터 export, owner 이전의 재인증·권한 설계
-- 멤버 제거/로그아웃 시 mobile·AIT 로컬 캐시 purge 검증
+- 멤버 제거/로그아웃 시 mobile·AIT 로컬 캐시 purge 검증 — mobile lifecycle purge와 AIT 부팅 시 그룹 접근 상실 purge는 Jest로 검증됨. 실기기 Storage 잔존 확인 잔여
 - custom token 계정 복구·탈퇴 정책
 - production Auth provider에서 remote unauthenticated 후 disabled/deleted/revoked-token 분류와 실제 cache purge 검증
 - 새 AIT 비공개 번들의 실제 Toss `appLogin`·App Check token·초대·기록·재실행 검증
