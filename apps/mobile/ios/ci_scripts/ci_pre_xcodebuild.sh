@@ -15,13 +15,14 @@ fail() {
 printf '%s\n' "$RELEASE_TAG" | grep -Eq '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' \
   || fail "stable SemVer 태그 vX.Y.Z만 허용함: ${RELEASE_TAG:-missing}"
 command -v node >/dev/null 2>&1 || fail "중앙 release authority를 실행할 Node.js가 없다"
+[ -f "$INFO_PLIST" ] || fail "Info.plist를 찾지 못함: $INFO_PLIST"
 
 AUTHORITY_SHA="9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5"
 APPLIER_SHA256="b399afde0016e23947e173437e266aa83071079d1345b41ff580ebfe63357d6f"
 AUTHORITY_SHA256="ca9ef5b4fe326323840b171f9e6ed069cb182d2aee8e88b72e352c57514d466b"
 AUTHORITY_DIR="$(mktemp -d)"
 trap 'rm -rf -- "$AUTHORITY_DIR"' EXIT INT TERM
-git -C "$REPO" fetch --force --tags origin >/dev/null 2>&1
+git -C "$REPO" fetch --force --tags origin >/dev/null
 BASE_URL="https://raw.githubusercontent.com/seorilabs/.github/${AUTHORITY_SHA}/scripts/release"
 curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
   "${BASE_URL}/xcode-cloud-apply-tag-version.mjs" -o "${AUTHORITY_DIR}/xcode-cloud-apply-tag-version.mjs"

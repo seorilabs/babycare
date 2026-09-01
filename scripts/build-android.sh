@@ -222,8 +222,8 @@ run_market_upload() {
   [[ "$version_name" == "${SEORI_RELEASE_TAG#v}" ]] || {
     fail "중앙 release versionName이 tag와 다릅니다."
   }
-  [[ "$version_code" =~ ^[1-9][0-9]*$ ]] || {
-    fail "중앙 release versionCode는 양의 정수여야 합니다."
+  [[ "$version_code" =~ ^[1-9][0-9]*$ ]] && (( version_code <= 2100000000 )) || {
+    fail "중앙 release versionCode는 1..2100000000 정수여야 합니다."
   }
 
   require_clean_credential_files

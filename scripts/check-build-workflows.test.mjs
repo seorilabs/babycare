@@ -226,6 +226,7 @@ test('Cloud Build build-only uses ephemeral signing and central tag-derived vers
   assert.match(script, /SEORI_RELEASE_TAG/);
   assert.match(script, /SEORI_RELEASE_VERSION_NAME/);
   assert.match(script, /SEORI_RELEASE_VERSION_CODE/);
+  assert.match(script, /version_code <= 2100000000/);
   assert.match(script, /keytool -genkeypair -noprompt/);
   assert.match(script, /build-only\.p12/);
   assert.match(script, /pnpm install --frozen-lockfile --offline/);
@@ -308,6 +309,7 @@ test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', 
   assert.match(prebuild, /shasum -a 256 -c/);
   assert.match(prebuild, /appleMarketingVersion/);
   assert.match(prebuild, /appleBuildNumber/);
+  assert.match(prebuild, /Info\.plist를 찾지 못함/);
   assert.doesNotMatch(prebuild, /CI_BUILD_NUMBER/);
   assert.doesNotMatch(prebuild, /git[^\n]*describe/);
   assert.doesNotMatch(prebuild, /scripts\/resolve-release-version|github\.run_number/);
