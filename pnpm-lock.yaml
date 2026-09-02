@@ -3585,7 +3585,7 @@ packages:
     hasBin: true
 
   '@seorilabs/platform-sdk@0.4.0':
-    resolution: {integrity: sha512-sfsv34SAcI7bXL/AW1RhuaOa0E2dkpIW1ALoIzUtmvJxSalq8a/c2d4QgYWL+0w+ns+/ORjSfBA7BI4Vg02Rkw==, tarball: https://npm.pkg.github.com/download/@seorilabs/platform-sdk/0.4.0/0e2ef6f2a7f64b050efc88df0a68911bd72855ef}
+    resolution: {integrity: sha512-uaHhbisMKGd6sf8ScgCebOevMe/DAb5YPdqFE9oeDWvXx/ZvGMoqvFJrM8DwqoIheNNzDrnENREnPvSzzRmyTQ==}
     engines: {node: '>=20'}
 
   '@shopify/flash-list@1.6.2':
