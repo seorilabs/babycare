@@ -96,8 +96,6 @@ jobs:
         with:
           node-version: 24.16.0
           check-latest: false
-          registry-url: https://npm.pkg.github.com
-          scope: '@seorilabs'
 
       - name: Enable pnpm
         shell: bash
@@ -108,8 +106,6 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        env:
-          NODE_AUTH_TOKEN: ${{ github.token }}
         run: pnpm install --frozen-lockfile
 
       - name: Build .ait bundle

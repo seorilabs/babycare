@@ -23,8 +23,6 @@ jobs:
     with:
       runs_on: ${{ github.event.repository.private && 'seorilabs-rpi-arm64' || 'ubuntu-latest' }}
       package_manager: pnpm
-      npm_registry_url: https://npm.pkg.github.com
-      npm_scope: '@seorilabs'
       install_command: "pnpm install --ignore-scripts --frozen-lockfile=false"
       check_command: |
         pnpm run test:static
@@ -42,8 +40,6 @@ jobs:
         with:
           node-version: "24"
           check-latest: false
-          registry-url: https://npm.pkg.github.com
-          scope: '@seorilabs'
 
       - name: Setup Java
         uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
@@ -60,8 +56,6 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        env:
-          NODE_AUTH_TOKEN: ${{ github.token }}
         run: pnpm install --ignore-scripts --frozen-lockfile=false
 
       - name: Run Firebase emulator tests
