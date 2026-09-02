@@ -82,9 +82,9 @@ test('AIT build workflow creates only a candidate artifact', async () => {
   assert.match(workflow, /workflow_dispatch:[\s\S]*?release_tag:/);
   assert.match(workflow, /packages: read/);
   assert.match(workflow, /runs-on: ubuntu-latest/);
-  assert.match(workflow, /registry-url: https:\/\/npm\.pkg\.github\.com/);
-  assert.match(workflow, /scope: '@seorilabs'/);
-  assert.match(workflow, /NODE_AUTH_TOKEN: \$\{\{ github\.token \}\}/);
+  // platform-sdk는 npm 공개 레지스트리에서 받으므로 registry 라우팅과 토큰이 없어야 한다.
+  assert.doesNotMatch(workflow, /npm\.pkg\.github\.com/);
+  assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN/);
   assert.match(workflow, /pnpm install --frozen-lockfile/);
   assert.match(workflow, /pnpm --dir apps\/ait build/);
   assert.match(workflow, /path: apps\/ait\/babynest\.ait/);
