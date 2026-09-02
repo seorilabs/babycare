@@ -24,4 +24,6 @@ export interface CareGroupRepositoryPort {
     listener: (observation: MembershipObservation) => void,
   ): () => void;
   listMemberships(groupId: GroupId): Promise<readonly Membership[]>;
+  /** Owner-only removal is enforced by the remove-group-member use case and server rules. */
+  removeMembership(groupId: GroupId, userId: UserId): Promise<void>;
 }

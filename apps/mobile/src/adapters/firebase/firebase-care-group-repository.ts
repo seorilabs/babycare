@@ -2,6 +2,7 @@ import {
   default as firebaseFirestore,
   collection,
   collectionGroup,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -121,6 +122,10 @@ export class FirebaseCareGroupRepository implements CareGroupRepositoryPort {
       },
       error => listener({kind: 'error', error}),
     );
+  }
+
+  async removeMembership(group: GroupId, user: UserId): Promise<void> {
+    await deleteDoc(doc(this.#firestore, 'groups', group, 'members', user));
   }
 
   async listMemberships(group: GroupId): Promise<readonly Membership[]> {

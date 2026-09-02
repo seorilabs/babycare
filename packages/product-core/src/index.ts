@@ -23,6 +23,7 @@ export * from './use_cases/care-stats.ts';
 export * from './use_cases/end-sleep-session.ts';
 export * from './use_cases/medication-timing.ts';
 export * from './use_cases/record-care-event.ts';
+export * from './use_cases/remove-group-member.ts';
 export * from './use_cases/stats-detail-access.ts';
 export * from './use_cases/update-care-event.ts';
 export * from './value_objects/time.ts';

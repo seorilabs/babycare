@@ -29,6 +29,7 @@ import {
   createInviteCode,
   deleteCareAccount,
   reloadCareSession,
+  removeCareMember,
   type ReadyCareSession,
 } from '../services/babycare-backend';
 import {
@@ -265,6 +266,11 @@ export function ParityDashboard({
             const latest = await reloadCareSession(ready);
             setReady(current => ({...latest, events: current.events}));
             await runtime?.syncNow();
+          }}
+          onRemoveMember={async member => {
+            await removeCareMember(ready, member);
+            const latest = await reloadCareSession(ready);
+            setReady(current => ({...latest, events: current.events}));
           }}
           onReset={async () => undefined}
           session={session}

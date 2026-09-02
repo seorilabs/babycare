@@ -87,6 +87,7 @@ function setup(overrides: {
     findMembership,
     observeMembership: jest.fn(() => () => undefined),
     listMemberships,
+    removeMembership: jest.fn(async () => undefined),
   };
 
   const listBabies = jest.fn(async () => overrides.babies ?? [baby]);

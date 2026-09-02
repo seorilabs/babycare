@@ -32,6 +32,7 @@ import type {
   RewardedAdPort,
   UserId,
 } from '@babycare/product-core';
+import {createRemoveGroupMember} from '@babycare/product-core';
 import {
   FanOutAnalytics,
   PlatformAnalytics,
@@ -163,6 +164,7 @@ export interface FirebaseRuntime {
   refreshMemberships(
     session: ReadyFirebaseSession,
   ): Promise<readonly Membership[]>;
+  removeMember(session: ReadyFirebaseSession, targetId: UserId): Promise<void>;
   /** @deprecated Prefer createCareContainer. */
   createCareEventRuntime(
     session: ReadyFirebaseSession,
@@ -444,6 +446,8 @@ export async function createFirebaseRuntime(
     documentIds,
   };
 
+  const removeGroupMember = createRemoveGroupMember(groups);
+
   const createCareContainer = (
     session: ReadyFirebaseSession,
     callbacks: FirebaseCareEventRuntimeCallbacks,
@@ -504,6 +508,13 @@ export async function createFirebaseRuntime(
     },
     refreshMemberships(session) {
       return groups.listMemberships(session.context.group.id);
+    },
+    removeMember(session, targetId) {
+      return removeGroupMember({
+        groupId: session.context.group.id,
+        actorId: session.context.identity.userId,
+        targetId,
+      });
     },
     createCareEventRuntime: createCareContainer,
   };

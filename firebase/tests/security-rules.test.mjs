@@ -503,6 +503,9 @@ test('멤버십 생성·수정·삭제는 owner만 가능하고 owner 역할은 
   await assertSucceeds(updateDoc(guestRefForOwner, { displayName: '할머니' }));
   await assertFails(updateDoc(guestRefForOwner, { membershipRole: 'owner' }));
   await assertFails(
+    deleteDoc(doc(memberDb, 'groups', GROUP_ID, 'members', guestId)),
+  );
+  await assertFails(
     deleteDoc(doc(ownerDb, 'groups', GROUP_ID, 'members', OWNER_ID)),
   );
   await assertSucceeds(deleteDoc(guestRefForOwner));
