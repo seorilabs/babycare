@@ -2,6 +2,7 @@ import React from 'react';
 import {Alert, Linking, Share, StyleSheet, Text} from 'react-native';
 import ReactTestRenderer from 'react-test-renderer';
 
+import {groupId, userId, type Membership} from '@babycare/product-core';
 import {createTheme} from '@babycare/product-ui';
 import { createStrings } from '@babycare/product-ui';
 import {MoreScreen} from '../src/screens/MoreScreen';
@@ -680,6 +681,159 @@ describe('MoreScreen', () => {
     expect(alert).toHaveBeenCalledWith(
       '계정을 삭제하지 못했어요',
       '연결을 확인하고 잠시 후 다시 시도해 주세요.',
+    );
+    expect(JSON.stringify(alert.mock.calls)).not.toContain(technicalMessage);
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  const ownerMembership: Membership = {
+    userId: userId('owner-1'),
+    groupId: groupId('group-1'),
+    caregiverRole: 'parent',
+    membershipRole: 'owner',
+    displayName: '엄마',
+    color: '#5FB49C',
+    joinedAt: 1,
+  };
+  const otherMembership: Membership = {
+    userId: userId('member-2'),
+    groupId: groupId('group-1'),
+    caregiverRole: 'grandparent',
+    membershipRole: 'member',
+    displayName: '할머니',
+    color: '#397CB3',
+    joinedAt: 2,
+  };
+  const ownerSession = {
+    groupId: 'group-1',
+    babyId: 'baby-1',
+    caregiverId: 'owner-1',
+    caregiverName: '엄마',
+    babyName: '하루',
+    birthDate: '2026-01-01',
+    inviteCode: '',
+    runtimeMode: 'firebase',
+    membershipRole: 'owner',
+  } as const;
+
+  it('lets the owner remove another member only through an irreversible-warning confirmation', () => {
+    const removeMember = jest.fn(async () => undefined);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          memberships={[ownerMembership, otherMembership]}
+          onRemoveMember={removeMember}
+          onReset={async () => undefined}
+          session={ownerSession}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    expect(
+      renderer.root.findAll(
+        node => node.props.accessibilityLabel === '엄마 내보내기',
+      ),
+    ).toHaveLength(0);
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '할머니 내보내기'})
+        .props.onPress();
+    });
+    expect(removeMember).not.toHaveBeenCalled();
+
+    const confirmation = alert.mock.calls.find(
+      ([title]) => title === '할머니님을 그룹에서 내보낼까요?',
+    );
+    expect(confirmation?.[1]).toContain('되돌릴 수 없');
+    expect(confirmation?.[1]).toContain('더 이상 접근할 수 없');
+    const destructive = confirmation?.[2]?.find(
+      action => action.style === 'destructive',
+    );
+    ReactTestRenderer.act(() => {
+      destructive?.onPress?.();
+      destructive?.onPress?.();
+    });
+    expect(removeMember).toHaveBeenCalledTimes(1);
+    expect(removeMember).toHaveBeenCalledWith(
+      expect.objectContaining({userId: 'member-2', displayName: '할머니'}),
+    );
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('hides the remove entry from non-owner members', () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          memberships={[ownerMembership, otherMembership]}
+          onRemoveMember={jest.fn()}
+          onReset={async () => undefined}
+          session={{
+            ...ownerSession,
+            caregiverId: 'member-2',
+            caregiverName: '할머니',
+            membershipRole: 'member',
+          }}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    expect(
+      renderer.root.findAll(node =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        node.props.accessibilityLabel.endsWith(' 내보내기'),
+      ),
+    ).toHaveLength(0);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('does not expose technical details when member removal fails', async () => {
+    const technicalMessage = '[firestore/permission-denied] delete rejected';
+    const removeMember = jest.fn(async () => {
+      throw new Error(technicalMessage);
+    });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          memberships={[ownerMembership, otherMembership]}
+          onRemoveMember={removeMember}
+          onReset={async () => undefined}
+          session={ownerSession}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '할머니 내보내기'})
+        .props.onPress();
+    });
+    const confirmation = alert.mock.calls.find(
+      ([title]) => title === '할머니님을 그룹에서 내보낼까요?',
+    );
+    await ReactTestRenderer.act(async () => {
+      confirmation?.[2]?.find(action => action.style === 'destructive')?.onPress?.();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(alert).toHaveBeenCalledWith(
+      '구성원을 내보내지 못했어요',
+      '연결을 확인하고 다시 시도해 주세요.',
     );
     expect(JSON.stringify(alert.mock.calls)).not.toContain(technicalMessage);
     alert.mockRestore();

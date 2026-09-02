@@ -45,6 +45,7 @@ import {
   type EventId,
   type GroupId,
 } from '../../../../packages/product-core/src/domain/ids.ts';
+import {createRemoveGroupMember} from '../../../../packages/product-core/src/use_cases/remove-group-member.ts';
 import {
   careEventMutationId,
   careEventPayloadHash,
@@ -1436,6 +1437,42 @@ export async function reloadCareSession(
     throw new Error('돌봄 그룹을 다시 불러오지 못했어요.');
   }
   return latest;
+}
+
+export async function removeCareMember(
+  ready: ReadyCareSession,
+  target: {readonly userId: string},
+): Promise<void> {
+  const session = await accessSession();
+  if (session.uid !== ready.uid) {
+    throw new Error('현재 사용자를 다시 확인해 주세요.');
+  }
+  // 권한 판정은 product-core use case(canPerformGroupAction)가 담당하고,
+  // 이 함수는 Firestore REST 어댑터만 제공한다.
+  const removeGroupMember = createRemoveGroupMember({
+    findMembership: async (group, member) => {
+      const document = await getOptionalDocument(
+        session,
+        `groups/${group}/members/${member}`,
+      );
+      return document
+        ? decodeMembership(fromFirestoreDocument(document))
+        : undefined;
+    },
+    removeMembership: async (group, member) => {
+      const response = await firestoreRawRequest(
+        session,
+        `/groups/${group}/members/${member}`,
+        {method: 'DELETE'},
+      );
+      await jsonResponse(response);
+    },
+  });
+  await removeGroupMember({
+    groupId: ready.group.id,
+    actorId: userId(session.uid),
+    targetId: userId(target.userId),
+  });
 }
 
 export async function deleteCareAccount(ready: ReadyCareSession): Promise<void> {

@@ -599,6 +599,7 @@ describe('AppsInToss feature parity contract', () => {
         onCreateInvite={jest.fn()}
         onDeleteAccount={jest.fn()}
         onRefreshMembers={jest.fn()}
+        onRemoveMember={jest.fn()}
         onReset={jest.fn()}
         session={session}
         strings={strings}
@@ -611,6 +612,7 @@ describe('AppsInToss feature parity contract', () => {
     expect(text).toContain('공유');
     expect(text).not.toContain('초대 코드가 만료됐어요');
     expect(text).toContain('구성원 목록 새로고침');
+    expect(text).toContain('내보내기');
     expect(text).toContain('언어');
     expect(text).toContain('개인정보 처리방침');
     expect(text).toContain('계정 삭제');

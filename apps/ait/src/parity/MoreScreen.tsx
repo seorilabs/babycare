@@ -46,6 +46,10 @@ export function MoreScreen(props: {
   readonly onCreateInvite?: () => Promise<void>;
   readonly onInviteShared?: () => void;
   readonly onRefreshMembers?: () => Promise<void>;
+  readonly onRemoveMember?: (member: {
+    readonly userId: string;
+    readonly displayName: string;
+  }) => Promise<void>;
   readonly onDeleteAccount?: () => Promise<void>;
   readonly onOpenAdPrivacyOptions?: () => Promise<boolean>;
 }) {
@@ -64,6 +68,8 @@ export function MoreScreen(props: {
   const [inviteCreationPending, setInviteCreationPending] = useState(false);
   const accountDeletionInFlight = useRef(false);
   const [accountDeletionPending, setAccountDeletionPending] = useState(false);
+  const memberRemovalInFlight = useRef(false);
+  const [memberRemovalPendingId, setMemberRemovalPendingId] = useState<string>();
 
   const createInvite = () => {
     if (inviteCreationInFlight.current || !props.onCreateInvite) {
@@ -104,6 +110,51 @@ export function MoreScreen(props: {
           strings.more.shareFailedTitle,
           strings.more.shareFailedMessage,
         ),
+    );
+  };
+
+  const removeMember = (member: {
+    readonly userId: string;
+    readonly displayName: string;
+  }) => {
+    const handler = props.onRemoveMember;
+    if (!handler || memberRemovalInFlight.current) {
+      return;
+    }
+    Alert.alert(
+      strings.more.removeMemberConfirmTitle(member.displayName),
+      strings.more.removeMemberConfirmMessage,
+      [
+        {text: strings.common.cancel, style: 'cancel'},
+        {
+          text: strings.more.removeMemberConfirmAction,
+          style: 'destructive',
+          onPress: () => {
+            if (memberRemovalInFlight.current) {
+              return;
+            }
+            memberRemovalInFlight.current = true;
+            setMemberRemovalPendingId(member.userId);
+            let request: Promise<void>;
+            try {
+              request = handler(member);
+            } catch (error) {
+              request = Promise.reject(error);
+            }
+            request
+              .catch(() =>
+                Alert.alert(
+                  strings.more.removeMemberFailedTitle,
+                  strings.more.removeMemberFailedMessage,
+                ),
+              )
+              .finally(() => {
+                memberRemovalInFlight.current = false;
+                setMemberRemovalPendingId(undefined);
+              });
+          },
+        },
+      ],
     );
   };
 
@@ -254,6 +305,33 @@ export function MoreScreen(props: {
                   : strings.more.roleMember}
               </Text>
             </View>
+            {firebase &&
+            owner &&
+            props.onRemoveMember &&
+            membership.userId !== props.session.caregiverId ? (
+              <Pressable
+                accessibilityLabel={strings.more.removeMemberLabel(
+                  membership.displayName,
+                )}
+                accessibilityRole="button"
+                accessibilityState={{
+                  disabled: memberRemovalPendingId !== undefined,
+                }}
+                disabled={memberRemovalPendingId !== undefined}
+                onPress={() => removeMember(membership)}
+                style={[
+                  styles.removeMember,
+                  {borderColor: props.theme.colors.danger},
+                ]}>
+                <Text
+                  style={[
+                    styles.removeMemberText,
+                    {color: props.theme.colors.danger},
+                  ]}>
+                  {strings.more.removeMemberConfirmAction}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         ))}
         <View style={[styles.invite, {backgroundColor: props.theme.colors.primarySoft}]}>
@@ -461,6 +539,8 @@ const styles = StyleSheet.create({
   avatar: {alignItems: 'center', borderRadius: 20, height: 40, justifyContent: 'center', width: 40},
   avatarText: {color: '#FFFFFF', fontSize: 15, fontWeight: '900'},
   memberCopy: {flex: 1, marginLeft: 11},
+  removeMember: {borderRadius: 999, borderWidth: 1, marginLeft: 10, paddingHorizontal: 12, paddingVertical: 6},
+  removeMemberText: {fontSize: 11, fontWeight: '800'},
   memberName: {fontSize: 14, fontWeight: '800'},
   memberRole: {fontSize: 10, marginTop: 3},
   invite: {alignItems: 'center', borderRadius: 15, flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, padding: 14},

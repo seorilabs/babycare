@@ -15,6 +15,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   classifyInviteJoinFailure,
   classifyBootFailure,
+  userId,
   type AnalyticsPort,
   type BootStage,
   type CareEvent,
@@ -109,6 +110,10 @@ export function FirebaseCareDashboard(props: {
   readonly invite?: {readonly code: string; readonly expiresAt: number};
   readonly onInvite: () => Promise<void>;
   readonly onRefreshMembers: () => Promise<void>;
+  readonly onRemoveMember: (member: {
+    readonly userId: string;
+    readonly displayName: string;
+  }) => Promise<void>;
   readonly onDeleteAccount: () => Promise<void>;
   readonly onRuntimeError: (error: Error | undefined) => void;
   readonly runtimeError?: Error;
@@ -258,6 +263,7 @@ export function FirebaseCareDashboard(props: {
           }}
           onOpenAdPrivacyOptions={props.runtime.openAdPrivacyOptions}
           onRefreshMembers={props.onRefreshMembers}
+          onRemoveMember={props.onRemoveMember}
           onReset={async () => undefined}
           session={session}
           strings={strings}
@@ -849,6 +855,22 @@ export function FirebaseBabyCareApp(
         });
       }}
       onRefreshMembers={async () => {
+        const memberships = await state.runtime.refreshMemberships(state.ready);
+        const ready = {...state.ready, memberships};
+        const saved = await sessionStore.save(state.sessionToken, ready);
+        if (!saved) {
+          return;
+        }
+        setState(current =>
+          current.kind === 'active' &&
+          current.container === state.container &&
+          current.sessionToken === state.sessionToken
+            ? {...current, ready}
+            : current,
+        );
+      }}
+      onRemoveMember={async member => {
+        await state.runtime.removeMember(state.ready, userId(member.userId));
         const memberships = await state.runtime.refreshMemberships(state.ready);
         const ready = {...state.ready, memberships};
         const saved = await sessionStore.save(state.sessionToken, ready);
