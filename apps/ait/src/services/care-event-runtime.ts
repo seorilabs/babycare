@@ -32,6 +32,8 @@ export interface AitCareEventRuntime {
   readonly endSleep: (event: CareEvent) => Promise<CareEvent>;
   readonly softDelete: (event: CareEvent) => Promise<CareEvent>;
   readonly syncNow: () => Promise<void>;
+  readonly reapplyConflicts: () => Promise<void>;
+  readonly discardConflicts: () => Promise<void>;
   readonly purge: () => Promise<void>;
   readonly close: () => Promise<void>;
 }
@@ -135,6 +137,8 @@ export async function createAitCareEventRuntime(
         requestedBy: ready.membership.userId,
       }),
     syncNow: () => repository.syncNow({ retryFailed: true }),
+    reapplyConflicts: () => repository.reapplyConflicts(),
+    discardConflicts: () => repository.discardConflicts(),
     purge: () => repository.clear(),
     close: async () => {
       stopTimelineOwner();

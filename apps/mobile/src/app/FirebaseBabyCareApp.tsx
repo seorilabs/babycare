@@ -348,6 +348,20 @@ export function FirebaseCareDashboard(props: {
         </View>
       ) : null}
       <SyncStatusBanner
+        onDiscardConflicts={() => {
+          props.container.repository.discardConflicts().catch(error =>
+            props.onRuntimeError(
+              userFacingError(strings.app.syncRetryFailed, error),
+            ),
+          );
+        }}
+        onReapplyConflicts={() => {
+          props.container.repository.reapplyConflicts().catch(error =>
+            props.onRuntimeError(
+              userFacingError(strings.app.syncRetryFailed, error),
+            ),
+          );
+        }}
         onRetry={() => {
           props.container.syncNow({retryFailed: true}).catch(error =>
             props.onRuntimeError(

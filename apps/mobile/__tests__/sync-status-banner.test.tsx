@@ -14,6 +14,8 @@ describe('SyncStatusBanner', () => {
     await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(
         <SyncStatusBanner
+          onDiscardConflicts={jest.fn()}
+          onReapplyConflicts={jest.fn()}
           onRetry={jest.fn()}
           states={[
             {
@@ -37,6 +39,8 @@ describe('SyncStatusBanner', () => {
     await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(
         <SyncStatusBanner
+          onDiscardConflicts={jest.fn()}
+          onReapplyConflicts={jest.fn()}
           onRetry={onRetry}
           states={[
             {
@@ -57,13 +61,21 @@ describe('SyncStatusBanner', () => {
     });
     button.props.onPress();
     expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(
+      renderer.root.findAllByProps({accessibilityLabel: '내 수정 다시 반영'}),
+    ).toHaveLength(0);
   });
 
-  it('explains a conflict without offering a blind retry', async () => {
+  // #100: 충돌만 있는 상태는 예전에 재시도 버튼조차 없어 손댈 방법이 없었다.
+  it('offers reapply and discard actions for a conflict instead of a blind retry', async () => {
+    const onReapplyConflicts = jest.fn();
+    const onDiscardConflicts = jest.fn();
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(
         <SyncStatusBanner
+          onDiscardConflicts={onDiscardConflicts}
+          onReapplyConflicts={onReapplyConflicts}
           onRetry={jest.fn()}
           states={[
             {
@@ -83,5 +95,16 @@ describe('SyncStatusBanner', () => {
     expect(
       renderer.root.findAllByProps({accessibilityLabel: '동기화 다시 시도'}),
     ).toHaveLength(0);
+
+    renderer.root
+      .findByProps({accessibilityLabel: '내 수정 다시 반영'})
+      .props.onPress();
+    expect(onReapplyConflicts).toHaveBeenCalledTimes(1);
+    expect(onDiscardConflicts).not.toHaveBeenCalled();
+
+    renderer.root
+      .findByProps({accessibilityLabel: '서버 기록 그대로 두기'})
+      .props.onPress();
+    expect(onDiscardConflicts).toHaveBeenCalledTimes(1);
   });
 });

@@ -570,6 +570,68 @@ describe('local-first care event synchronization', () => {
     });
   });
 
+  // #100: 충돌 → 해소 선택("다시 반영") → outbox 비움.
+  it('reapplies a conflicting local change on top of the server revision', async () => {
+    const local = new PersistentCareEventSyncStore(scope, storagePort);
+    const remote = new ScriptedRemoteStore();
+    const event = diaper('event-reapply', 'wet');
+    const server = diaper('event-reapply', 'dirty');
+    remote.pushHandler = async () => ({
+      kind: 'revision_conflict',
+      remote: server,
+    });
+    const repository = new LocalFirstCareEventRepository(local, remote);
+
+    await repository.save(event);
+    await repository.syncNow();
+    expect(await repository.getSyncState(event.id)).toMatchObject({
+      status: 'failed',
+      failureKind: 'conflict',
+    });
+
+    remote.pushHandler = async mutation => ({
+      kind: 'applied',
+      remote: mutation.event,
+    });
+    await repository.reapplyConflicts();
+
+    expect(await repository.getSyncState(event.id)).toMatchObject({
+      status: 'synced',
+      pendingRevisions: [],
+    });
+    const resolved = await repository.findById(scope.groupId, event.id);
+    expect(resolved).toMatchObject({diaperType: 'wet'});
+  });
+
+  // #100: 충돌 → 해소 선택("그대로 두기") → outbox 비움.
+  it('discards a conflicting local change and keeps the server revision', async () => {
+    const local = new PersistentCareEventSyncStore(scope, storagePort);
+    const remote = new ScriptedRemoteStore();
+    const event = diaper('event-discard', 'wet');
+    const server = diaper('event-discard', 'dirty');
+    remote.pushHandler = async () => ({
+      kind: 'revision_conflict',
+      remote: server,
+    });
+    const repository = new LocalFirstCareEventRepository(local, remote);
+
+    await repository.save(event);
+    await repository.syncNow();
+    expect(await repository.getSyncState(event.id)).toMatchObject({
+      status: 'failed',
+      failureKind: 'conflict',
+    });
+
+    await repository.discardConflicts();
+
+    expect(await repository.getSyncState(event.id)).toMatchObject({
+      status: 'synced',
+      pendingRevisions: [],
+    });
+    expect(await repository.findById(scope.groupId, event.id)).toEqual(server);
+    expect(remote.pushes).toHaveLength(1);
+  });
+
   it('removes the losing local sleep projection and persists its conflict issue', async () => {
     const localStore = new PersistentCareEventSyncStore(scope, storagePort);
     const remote = new ScriptedRemoteStore();

@@ -206,6 +206,8 @@ describe('English rendering leaves no Korean copy on screen', () => {
 
     const banner = textOf(
       <SyncStatusBanner
+        onDiscardConflicts={jest.fn()}
+        onReapplyConflicts={jest.fn()}
         onRetry={jest.fn()}
         states={[
           {

@@ -337,6 +337,16 @@ export function ParityDashboard({
         </View>
       ) : null}
       <SyncStatusBanner
+        onDiscardConflicts={() =>
+          runtime
+            ?.discardConflicts()
+            .catch(error => reportError(error, strings.app.syncRetryFailed))
+        }
+        onReapplyConflicts={() =>
+          runtime
+            ?.reapplyConflicts()
+            .catch(error => reportError(error, strings.app.syncRetryFailed))
+        }
         onRetry={() =>
           runtime
             ?.syncNow()

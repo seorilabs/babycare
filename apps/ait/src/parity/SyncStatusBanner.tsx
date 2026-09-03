@@ -8,6 +8,8 @@ import type {AppTheme} from '@babycare/product-ui';
 export function SyncStatusBanner(props: {
   readonly states: readonly CareEventSyncState[];
   readonly onRetry: () => void;
+  readonly onReapplyConflicts: () => void;
+  readonly onDiscardConflicts: () => void;
   readonly strings: Strings;
   readonly theme: AppTheme;
 }) {
@@ -74,6 +76,28 @@ export function SyncStatusBanner(props: {
           </Text>
         </Pressable>
       ) : null}
+      {conflicts > 0 ? (
+        <View style={styles.conflictActions}>
+          <Pressable
+            accessibilityLabel={props.strings.sync.reapplyLabel}
+            accessibilityRole="button"
+            onPress={props.onReapplyConflicts}
+            style={styles.retry}>
+            <Text style={[styles.retryText, {color: props.theme.colors.primary}]}>
+              {props.strings.sync.reapplyAction}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel={props.strings.sync.discardLabel}
+            accessibilityRole="button"
+            onPress={props.onDiscardConflicts}
+            style={styles.retry}>
+            <Text style={[styles.retryText, {color: props.theme.colors.danger}]}>
+              {props.strings.sync.discardAction}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -104,5 +128,8 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 12,
     fontWeight: '800',
+  },
+  conflictActions: {
+    flexDirection: 'row',
   },
 });
