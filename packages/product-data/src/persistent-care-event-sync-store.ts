@@ -166,6 +166,8 @@ export interface CareEventSyncLocalStorePort {
   markFailed(id: string, kind: CareEventSyncFailureKind): Promise<void>;
   markSynced(id: string): Promise<void>;
   resolveActiveSleepConflict(id: string, remote: CareEvent): Promise<void>;
+  reapplyConflicts(): Promise<void>;
+  discardConflicts(): Promise<void>;
   requeueFailed(
     failureKinds?: readonly CareEventSyncFailureKind[],
   ): Promise<void>;
@@ -1547,6 +1549,54 @@ export class PersistentCareEventSyncStore
         remote,
       };
       this.#issues.set(issue.id, issue);
+    });
+  }
+
+  /**
+   * "내 수정 다시 반영": 충돌로 실패한 항목을 현재 로컬 revision(=충돌 시 덮어써진
+   * 서버 revision) 위에 다시 얹어 새 mutation으로 큐에 넣는다.
+   *
+   * 저장된 outbox 항목은 여전히 옛 revision 을 기준으로 하므로 상태만 되돌리면
+   * (`requeueFailed`) 같은 충돌이 즉시 반복된다. 그래서 매 항목마다 새 mutation id로
+   * 다시 만든다 — `saveAndEnqueue` 와 같은 결의 계약이다.
+   */
+  async reapplyConflicts(): Promise<void> {
+    await this.#commit(() => {
+      for (const [id, entry] of [...this.#outbox]) {
+        if (entry.status !== 'failed' || entry.failureKind !== 'conflict') {
+          continue;
+        }
+        const current = this.#events.get(entry.event.id);
+        if (!current) {
+          // 그 사이 다른 곳에서 지워졌다 — 다시 얹을 자리가 없으니 버린다.
+          this.#outbox.delete(id);
+          continue;
+        }
+        const rebased: CareEvent = {...entry.event, revision: current.revision + 1};
+        this.#outbox.delete(id);
+        this.#applyLocalEvent(rebased);
+        const nextId = careEventMutationId(rebased);
+        this.#outbox.set(nextId, {
+          id: nextId,
+          kind: entry.kind,
+          event: rebased,
+          baseRevision: current.revision,
+          payloadHash: careEventPayloadHash(rebased),
+          attempts: 0,
+          status: 'pending',
+        });
+      }
+    });
+  }
+
+  /** "서버 기록 그대로 두기": 로컬 변경을 버리고 충돌 항목을 outbox에서 지운다. */
+  async discardConflicts(): Promise<void> {
+    await this.#commit(() => {
+      for (const [id, entry] of this.#outbox) {
+        if (entry.status === 'failed' && entry.failureKind === 'conflict') {
+          this.#outbox.delete(id);
+        }
+      }
     });
   }
 

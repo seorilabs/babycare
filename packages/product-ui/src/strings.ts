@@ -123,6 +123,10 @@ const ko = {
     failed: (count: number) => `동기화 실패 ${count}건`,
     pending: (count: number) => `동기화 대기 ${count}건`,
     retryLabel: '동기화 다시 시도',
+    reapplyLabel: '내 수정 다시 반영',
+    reapplyAction: '다시 반영',
+    discardLabel: '서버 기록 그대로 두기',
+    discardAction: '그대로 두기',
   },
 
   home: {
@@ -534,6 +538,10 @@ const en: Strings = {
     pending: (count: number) =>
       `${count} ${count === 1 ? 'entry' : 'entries'} waiting to sync`,
     retryLabel: 'Retry syncing',
+    reapplyLabel: 'Reapply my changes',
+    reapplyAction: 'Reapply',
+    discardLabel: 'Keep the server entry',
+    discardAction: 'Keep server',
   },
 
   home: {

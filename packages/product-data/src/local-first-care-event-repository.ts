@@ -214,6 +214,21 @@ export class LocalFirstCareEventRepository
     }
   }
 
+  /** "내 수정 다시 반영": 충돌한 항목을 현재 서버 revision 위에 다시 얹어 재전송한다. */
+  async reapplyConflicts(): Promise<void> {
+    const generation = this.#activeGeneration();
+    await this.#local.reapplyConflicts();
+    if (this.#isActive(generation)) {
+      await this.#requestFlush();
+    }
+  }
+
+  /** "서버 기록 그대로 두기": 충돌한 로컬 변경을 버리고 outbox에서 지운다. */
+  async discardConflicts(): Promise<void> {
+    this.#activeGeneration();
+    await this.#local.discardConflicts();
+  }
+
   clear(): Promise<void> {
     if (this.#clearPromise) {
       return this.#clearPromise;
