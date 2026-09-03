@@ -342,6 +342,90 @@ describe('CloudOnboardingScreen', () => {
     ReactTestRenderer.act(() => state.renderer.unmount());
   });
 
+  it('#99: pulls the invite code out of a pasted invite message instead of dropping it', async () => {
+    const state = setup();
+    press(state.renderer, '초대 코드가 있어요');
+    changeText(state.renderer, '양육자 이름', '아빠');
+    press(state.renderer, '다음');
+
+    const shareMessage = [
+      '함께봄 돌봄 그룹에 초대했어요.',
+      '초대 코드: ABC234',
+      '',
+      '앱을 설치한 뒤 "초대 코드가 있어요"에서 이 코드를 입력하면 함께 기록할 수 있어요.',
+      'Android: https://play.google.com/store/apps/details?id=com.seorilabs.babycare',
+      'iPhone: https://apps.apple.com/app/id0000000000',
+    ].join('\n');
+    changeText(state.renderer, '초대 코드', shareMessage);
+    expect(
+      state.renderer.root.findByProps({ accessibilityLabel: '초대 코드' })
+        .props.value,
+    ).toBe('ABC234');
+    expect(
+      state.renderer.root.findByProps({
+        accessibilityLabel: '돌봄 그룹 참여하기',
+      }).props.disabled,
+    ).toBe(false);
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
+  it('#99: pulls the invite code out of a single pasted line, and normalizes lowercase/hyphen input', async () => {
+    const state = setup();
+    press(state.renderer, '초대 코드가 있어요');
+    changeText(state.renderer, '양육자 이름', '아빠');
+    press(state.renderer, '다음');
+
+    changeText(state.renderer, '초대 코드', '초대 코드: ABC234');
+    expect(
+      state.renderer.root.findByProps({ accessibilityLabel: '초대 코드' })
+        .props.value,
+    ).toBe('ABC234');
+
+    changeText(state.renderer, '초대 코드', 'abc-234');
+    expect(
+      state.renderer.root.findByProps({ accessibilityLabel: '초대 코드' })
+        .props.value,
+    ).toBe('ABC234');
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
+  it('#99: clears the field and explains why when a pasted string has no code, but leaves normal typing alone', async () => {
+    const state = setup();
+    press(state.renderer, '초대 코드가 있어요');
+    changeText(state.renderer, '양육자 이름', '아빠');
+    press(state.renderer, '다음');
+
+    changeText(state.renderer, '초대 코드', '함께봄 돌봄 그룹에 초대했어요.');
+    expect(
+      state.renderer.root.findByProps({ accessibilityLabel: '초대 코드' })
+        .props.value,
+    ).toBe('');
+    const visibleText = state.renderer.root
+      .findAllByType(Text)
+      .flatMap(node => node.props.children)
+      .filter(value => typeof value === 'string')
+      .join(' ');
+    expect(visibleText).toContain(
+      '붙여넣은 내용에서 6자리 코드를 찾지 못했어요. 코드를 확인해 주세요.',
+    );
+
+    // Normal one-character-at-a-time typing still fills the field and is
+    // never treated as a failed paste, and the six-character cap still
+    // holds once enough valid characters have been typed.
+    changeText(state.renderer, '초대 코드', 'A');
+    expect(
+      state.renderer.root.findByProps({ accessibilityLabel: '초대 코드' })
+        .props.value,
+    ).toBe('A');
+    changeText(state.renderer, '초대 코드', 'ABC234');
+    changeText(state.renderer, '초대 코드', 'ABC2345');
+    expect(
+      state.renderer.root.findByProps({ accessibilityLabel: '초대 코드' })
+        .props.value,
+    ).toBe('ABC234');
+    ReactTestRenderer.act(() => state.renderer.unmount());
+  });
+
   it('does not expose technical errors when joining an invite fails', async () => {
     const state = setup({
       onJoin: async () => {

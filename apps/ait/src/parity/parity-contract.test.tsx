@@ -248,6 +248,74 @@ describe('AppsInToss feature parity contract', () => {
     ReactTestRenderer.act(() => renderer.unmount());
   }, 15_000);
 
+  it('#99: pulls the invite code out of pasted text instead of dropping it', async () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <CloudOnboardingScreen
+          onCreate={jest.fn(async () => undefined)}
+          onJoin={jest.fn(async () => undefined)}
+          strings={strings}
+          theme={theme}
+        />,
+      );
+      await Promise.resolve();
+    });
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드가 있어요'})
+        .props.onPress();
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '양육자 이름'})
+        .props.onChangeText('아빠');
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root.findByProps({accessibilityLabel: '다음'}).props.onPress();
+    });
+
+    const shareMessage = [
+      '함께봄 돌봄 그룹에 초대했어요.',
+      '초대 코드: ABC234',
+      '',
+      '앱을 설치한 뒤 "초대 코드가 있어요"에서 이 코드를 입력하면 함께 기록할 수 있어요.',
+      'Android: https://play.google.com/store/apps/details?id=com.seorilabs.babycare',
+      'iPhone: https://apps.apple.com/app/id0000000000',
+    ].join('\n');
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드'})
+        .props.onChangeText(shareMessage);
+    });
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '초대 코드'}).props.value,
+    ).toBe('ABC234');
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '돌봄 그룹 참여하기'})
+        .props.disabled,
+    ).toBe(false);
+
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '초대 코드'})
+        .props.onChangeText('함께봄 돌봄 그룹에 초대했어요.');
+    });
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '초대 코드'}).props.value,
+    ).toBe('');
+    const visibleText = renderer.root
+      .findAllByType(Text)
+      .flatMap(node => node.props.children)
+      .filter(value => typeof value === 'string')
+      .join(' ');
+    expect(visibleText).toContain(
+      '붙여넣은 내용에서 6자리 코드를 찾지 못했어요. 코드를 확인해 주세요.',
+    );
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
   it('reserves the Android system navigation area when the host reports zero', () => {
     expect(aitBottomInset(0, 'android')).toBe(32);
     expect(aitBottomInset(34, 'android')).toBe(34);

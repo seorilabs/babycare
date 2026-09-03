@@ -11,11 +11,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type {
-  AnalyticsPort,
-  BabyCareAnalyticsEvent,
-  OnboardingMode,
-  OnboardingStep,
+import {
+  looksLikeInviteCodePaste,
+  sanitizeInviteCodeInput,
+  type AnalyticsPort,
+  type BabyCareAnalyticsEvent,
+  type OnboardingMode,
+  type OnboardingStep,
 } from '@babycare/product-core';
 
 import type { Strings } from '@babycare/product-ui';
@@ -436,10 +438,16 @@ export function CloudOnboardingScreen(props: {
                   autoCapitalize="characters"
                   autoCorrect={false}
                   autoFocus
-                  maxLength={6}
-                  onChangeText={value =>
-                    setCode(value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, ''))
-                  }
+                  onChangeText={value => {
+                    setErrorMessage(undefined);
+                    const sanitized = sanitizeInviteCodeInput(value);
+                    if (looksLikeInviteCodePaste(value) && sanitized.length < 6) {
+                      setCode('');
+                      setErrorMessage(strings.onboarding.inviteCodeNotFound);
+                      return;
+                    }
+                    setCode(sanitized);
+                  }}
                   placeholder="ABC234"
                   placeholderTextColor={props.theme.colors.textMuted}
                   style={[fieldStyle, styles.codeInput]}

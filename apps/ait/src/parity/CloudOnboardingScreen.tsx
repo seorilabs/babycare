@@ -10,11 +10,13 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import type {
-  AnalyticsPort,
-  BabyCareAnalyticsEvent,
-  OnboardingMode,
-  OnboardingStep,
+import {
+  looksLikeInviteCodePaste,
+  sanitizeInviteCodeInput,
+  type AnalyticsPort,
+  type BabyCareAnalyticsEvent,
+  type OnboardingMode,
+  type OnboardingStep,
 } from '../../../../packages/product-core/src/index.ts';
 
 import {BirthDatePicker, isSelectableBirthDate} from '../components/birth-date-picker';
@@ -136,7 +138,16 @@ export function CloudOnboardingScreen(props: {
                 {step === 'caregiver' ? <TextInput accessibilityLabel={strings.onboarding.caregiverLabel} autoCapitalize="words" autoFocus maxLength={80} onChangeText={setCaregiverName} placeholder={strings.onboarding.caregiverPlaceholder} placeholderTextColor={props.theme.colors.textMuted} style={fieldStyle} value={caregiverName} /> : null}
                 {step === 'babyName' ? <TextInput accessibilityLabel={strings.onboarding.babyNameLabel} autoFocus maxLength={80} onChangeText={setBabyName} placeholder={strings.onboarding.babyNamePlaceholder} placeholderTextColor={props.theme.colors.textMuted} style={fieldStyle} value={babyName} /> : null}
                 {step === 'birthDate' ? <BirthDatePicker onChange={setBirthDate} value={birthDate} /> : null}
-                {step === 'inviteCode' ? <TextInput accessibilityLabel={strings.onboarding.inviteCodeLabel} autoCapitalize="characters" autoCorrect={false} autoFocus maxLength={6} onChangeText={value => setCode(value.toUpperCase().replace(/[^A-HJ-NP-Z2-9]/g, ''))} placeholder="ABC234" placeholderTextColor={props.theme.colors.textMuted} style={[fieldStyle, styles.codeInput]} value={code} /> : null}
+                {step === 'inviteCode' ? <TextInput accessibilityLabel={strings.onboarding.inviteCodeLabel} autoCapitalize="characters" autoCorrect={false} autoFocus onChangeText={value => {
+                  setErrorMessage(undefined);
+                  const sanitized = sanitizeInviteCodeInput(value);
+                  if (looksLikeInviteCodePaste(value) && sanitized.length < 6) {
+                    setCode('');
+                    setErrorMessage(strings.onboarding.inviteCodeNotFound);
+                    return;
+                  }
+                  setCode(sanitized);
+                }} placeholder="ABC234" placeholderTextColor={props.theme.colors.textMuted} style={[fieldStyle, styles.codeInput]} value={code} /> : null}
               </View>
               <View style={styles.actions}>
                 <Pressable accessibilityLabel={strings.common.back} accessibilityRole="button" onPress={back} style={[styles.backButton, {borderColor: props.theme.colors.border}]}><Text style={[styles.backText, {color: props.theme.colors.text}]}>{strings.common.back}</Text></Pressable>
