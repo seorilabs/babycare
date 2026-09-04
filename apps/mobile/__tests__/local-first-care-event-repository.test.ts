@@ -671,6 +671,100 @@ describe('local-first care event synchronization', () => {
     });
   });
 
+  // #104: 수면 겹침 충돌("내 수정 다시 반영") → issue 가 사라지고 새 mutation 으로 재전송된다.
+  it('reapplies a sleep-conflict local sleep on top of the server active-sleep record', async () => {
+    const localStore = new PersistentCareEventSyncStore(scope, storagePort);
+    const remote = new ScriptedRemoteStore();
+    const local = activeSleep();
+    const server = createCareEvent(
+      {
+        groupId: scope.groupId,
+        babyId: scope.babyId,
+        caregiverId: userId('user-2'),
+        kind: 'sleep',
+        sleepType: 'night',
+        startedAt: 1_500,
+      },
+      {id: eventId('sleep-server'), now: 2_500},
+    ) as Extract<CareEvent, {kind: 'sleep'}>;
+    remote.pushHandler = async () => ({
+      kind: 'active_sleep_conflict',
+      remoteActiveSleep: server,
+    });
+    const repository = new LocalFirstCareEventRepository(localStore, remote);
+
+    await repository.save(local);
+    await repository.syncNow();
+    expect(await repository.getSyncState(local.id)).toMatchObject({
+      status: 'failed',
+      failureKind: 'conflict',
+    });
+
+    remote.pushHandler = async mutation => ({
+      kind: 'applied',
+      remote: mutation.event,
+    });
+    await repository.reapplyConflicts();
+
+    expect(await repository.getSyncState(local.id)).toMatchObject({
+      status: 'synced',
+      pendingRevisions: [],
+    });
+
+    await localStore.close();
+    const restarted = new PersistentCareEventSyncStore(scope, storagePort);
+    expect(await restarted.getSyncState(local.id)).toMatchObject({
+      status: 'synced',
+      pendingRevisions: [],
+    });
+  });
+
+  // #104: 수면 겹침 충돌("서버 기록 그대로 두기") → issue 가 사라지고 재전송하지 않는다.
+  it('discards a sleep-conflict local sleep and keeps the server active-sleep record', async () => {
+    const localStore = new PersistentCareEventSyncStore(scope, storagePort);
+    const remote = new ScriptedRemoteStore();
+    const local = activeSleep();
+    const server = createCareEvent(
+      {
+        groupId: scope.groupId,
+        babyId: scope.babyId,
+        caregiverId: userId('user-2'),
+        kind: 'sleep',
+        sleepType: 'night',
+        startedAt: 1_500,
+      },
+      {id: eventId('sleep-server'), now: 2_500},
+    ) as Extract<CareEvent, {kind: 'sleep'}>;
+    remote.pushHandler = async () => ({
+      kind: 'active_sleep_conflict',
+      remoteActiveSleep: server,
+    });
+    const repository = new LocalFirstCareEventRepository(localStore, remote);
+
+    await repository.save(local);
+    await repository.syncNow();
+    expect(await repository.getSyncState(local.id)).toMatchObject({
+      status: 'failed',
+      failureKind: 'conflict',
+    });
+
+    await repository.discardConflicts();
+
+    expect(await repository.getSyncState(local.id)).toMatchObject({
+      status: 'synced',
+      pendingRevisions: [],
+    });
+    expect(await repository.list(scope)).toEqual([server]);
+    expect(remote.pushes).toHaveLength(1);
+
+    await localStore.close();
+    const restarted = new PersistentCareEventSyncStore(scope, storagePort);
+    expect(await restarted.getSyncState(local.id)).toMatchObject({
+      status: 'synced',
+      pendingRevisions: [],
+    });
+  });
+
   it('does not treat an observation error as an empty remote snapshot', async () => {
     const local = new PersistentCareEventSyncStore(scope, storagePort);
     const remote = new ScriptedRemoteStore();
