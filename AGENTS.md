@@ -76,7 +76,7 @@ flowchart LR
 ## 의존성과 lockfile
 
 - 이 저장소는 pnpm 하나로 설치한다. 루트 `packageManager` 필드와 `pnpm-lock.yaml`만 package manager 신호로 남기고 `package-lock.json`, `yarn.lock`, `bun.lock*`을 커밋하지 않는다. lockfile이 두 벌이면 Seorilabs Platform discovery의 package manager 감지가 AMBIGUOUS로 빠진다.
-- `@seorilabs/platform-sdk`는 `apps/mobile`과 `apps/ait` 양쪽에서 캐럿·틸드 없이 exact 버전으로 선언하고, 두 target이 같은 버전을 쓴다. SDK 버전 변경은 Platform 승인 artifact 버전을 따른다.
+- `@seorilabs/platform-sdk`는 `apps/mobile`과 `apps/ait` 양쪽에서 캐럿·틸드 없이 exact 버전으로 선언하고, 두 target이 같은 버전을 쓴다. 기준값은 `scripts/check-platform-sdk-lock.mjs`의 `APPROVED_SDK_VERSION`이며, Platform release가 새 artifact를 승인할 때만 lockfile과 함께 옮긴다.
 - Platform discovery는 선언이 exact이고 lockfile이 **같은 exact 버전**으로 해석될 때만 `integration=SDK`로 분류한다. 둘 중 하나라도 어긋나면 `CUSTOM_HTTP`가 된다. 이름과 달리 `CUSTOM_HTTP`는 raw HTTP 호출을 뜻하지 않고 의존성이 고정·해석되지 않았다는 뜻이다.
 - SDK는 npm 공개 레지스트리에서 받는다. lockfile resolution에 사설 레지스트리 tarball을 되살리지 않는다. 되살리면 토큰 없는 CI와 자율 실행이 다시 설치에 실패한다.
 - CI와 로컬 설치는 모두 `pnpm install --frozen-lockfile`을 쓴다. 워크플로우가 활성화하는 pnpm 버전은 루트 `packageManager`와 같게 유지한다.

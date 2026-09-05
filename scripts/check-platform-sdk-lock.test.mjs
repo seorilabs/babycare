@@ -4,7 +4,7 @@ import {tmpdir} from 'node:os';
 import {dirname, join} from 'node:path';
 import test from 'node:test';
 
-import {checkPlatformSdkLock} from './check-platform-sdk-lock.mjs';
+import {APPROVED_SDK_VERSION, checkPlatformSdkLock} from './check-platform-sdk-lock.mjs';
 
 const INTEGRITY = 'sha512-uaHhbisMKGd6sf8ScgCebOevMe/DAb5YPdqFE9oeDWvXx/ZvGMoqvFJrM8DwqoIheNNzDrnENREnPvSzzRmyTQ==';
 
@@ -130,4 +130,26 @@ test('SDK 선언이 없으면 실패한다', () => {
   const result = checkPlatformSdkLock(fixture({mobilePackage: {name: 'mobile'}}));
   assert.equal(result.problems.length, 1);
   assert.match(result.problems[0], /선언한 workspace package\.json이 없다/);
+});
+
+test('승인 artifact 버전은 Platform 0.6.8 매니페스트의 TYPESCRIPT 0.4.0이다', () => {
+  assert.equal(APPROVED_SDK_VERSION, '0.4.0');
+});
+
+test('exact지만 승인 artifact와 다른 버전을 거부한다', () => {
+  const result = checkPlatformSdkLock(fixture({
+    mobilePackage: {name: 'mobile', dependencies: {'@seorilabs/platform-sdk': '0.5.0'}},
+    lock: lockfile({version: '0.5.0'}),
+  }));
+  assert.equal(result.problems.length, 1);
+  assert.match(result.problems[0], /Platform 승인 artifact 0\.4\.0을 탑재해야 한다/);
+});
+
+test('이 저장소의 실제 선언과 lockfile이 승인 artifact 버전으로 해석된다', () => {
+  const result = checkPlatformSdkLock(new URL('..', import.meta.url).pathname);
+  assert.deepEqual(result.problems, []);
+  assert.deepEqual(
+    result.resolved.map((entry) => `${entry.directory}@${entry.version}`).sort(),
+    [`apps/ait@${APPROVED_SDK_VERSION}`, `apps/mobile@${APPROVED_SDK_VERSION}`],
+  );
 });

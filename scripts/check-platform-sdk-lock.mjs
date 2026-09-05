@@ -4,17 +4,21 @@
 // 선언이 floating이거나 lock이 다른 버전·부재이거나 lockfile이 두 벌 커밋돼
 // package manager 신호가 갈리면 CUSTOM_HTTP로 떨어진다.
 //
-// 이 검사는 그 세 조건을 저장소 안에서 재현해 회귀를 막는다.
+// 이 검사는 그 조건들을 저장소 안에서 재현해 회귀를 막는다.
 //   1. 커밋되는 JS lockfile은 루트 pnpm-lock.yaml 하나뿐이다.
-//   2. SDK를 선언한 모든 workspace package.json이 같은 exact 버전을 쓴다.
+//   2. SDK를 선언한 모든 workspace package.json이 Platform 승인 artifact 버전을
+//      캐럿·틸드 없이 같은 값으로 쓴다.
 //   3. lockfile의 해당 importer가 같은 exact 버전으로 해석되고 npm 공개
 //      레지스트리 integrity를 가진다.
 
-import {readFileSync, readdirSync, statSync} from 'node:fs';
+import {readFileSync, readdirSync} from 'node:fs';
 import {basename, join, relative, sep} from 'node:path';
 import process from 'node:process';
 
 const PACKAGE_NAME = '@seorilabs/platform-sdk';
+// Platform이 승인한 SDK artifact 버전. Platform release가 새 artifact를 승인할 때만
+// 바꾸고, 그때 pnpm-lock.yaml 해석도 같이 옮긴다. 임의 상향·하향을 막는 기준값이다.
+export const APPROVED_SDK_VERSION = '0.4.0';
 const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
 // Backoffice repository-discovery가 lock integrity를 받아들이는 것과 같은 경계다.
 const INTEGRITY = /^(?:sha256-[A-Za-z0-9+/]{43}=|sha512-[A-Za-z0-9+/]{86}==)$/;
@@ -125,7 +129,7 @@ function readPnpmLock(text) {
   return {importers, packages};
 }
 
-export function checkPlatformSdkLock(root) {
+export function checkPlatformSdkLock(root, approvedVersion = APPROVED_SDK_VERSION) {
   const problems = [];
   const paths = collectPaths(root);
 
@@ -178,6 +182,9 @@ export function checkPlatformSdkLock(root) {
   const versions = [...new Set(declarations.map((entry) => entry.version))];
   if (versions.length > 1) {
     problems.push(`${PACKAGE_NAME} 선언 버전이 target마다 다르다: ${versions.join(', ')}`);
+  }
+  for (const declaration of declarations.filter((entry) => entry.version !== approvedVersion)) {
+    problems.push(`${declaration.path}: ${PACKAGE_NAME}는 Platform 승인 artifact ${approvedVersion}을 탑재해야 한다. 현재 값: ${declaration.version}`);
   }
 
   let lock = null;
