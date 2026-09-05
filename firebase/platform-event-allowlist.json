@@ -1,0 +1,33 @@
+{
+  "note": "Platform 수집(seorilabs/platform registry/apps/babycare.json 의 platform_event_allowlist)에 등록된 앱 이벤트와 아직 등록되지 않은 앱 이벤트. 서버는 allowlist 밖 이름을 오류가 아니라 200 OK 안의 dropped 로 조용히 버리므로, 어긋남은 배포 뒤가 아니라 이 목록으로 잡는다.",
+  "contract": "packages/product-core/src/ports/analytics.ts",
+  "gate": "scripts/check-analytics-event-allowlist.test.mjs (pnpm run test:firebase-config)",
+  "registryEntryCount": 14,
+  "registryEntryCountNote": "registry 의 14개 중 11개가 현재 앱 계약과 같은 이름이고, 나머지 3개는 계약 밖 레거시 이름이다. 레거시 이름은 앱이 더는 보내지 않으므로 이 파일의 두 목록에 넣지 않는다 — 넣으면 계약 대조가 어긋난 것으로 판정된다.",
+  "registered": [
+    "bc_group_created",
+    "bc_invite_created",
+    "bc_invite_joined",
+    "bc_log_create",
+    "bc_log_delete",
+    "bc_log_update",
+    "bc_onboarding_complete",
+    "core_ad_impression",
+    "core_ad_request",
+    "core_ad_reward",
+    "core_screen_view"
+  ],
+  "pendingRegistration": [
+    "bc_boot_failed",
+    "bc_boot_ready",
+    "bc_invite_join_attempt",
+    "bc_invite_join_failed",
+    "bc_invite_shared",
+    "bc_medication_history_unconfirmed",
+    "bc_onboarding_step_back",
+    "bc_onboarding_step_blocked",
+    "bc_onboarding_step_view",
+    "seori_analytics_dropped"
+  ],
+  "pendingRegistrationNote": "등록은 seorilabs/platform 의 registry 갱신과 운영 regsync 로만 끝난다. 이 저장소에서는 목록만 들고 있고, 비어 있지 않으면 check:release 가 blocker 로 보고한다."
+}
