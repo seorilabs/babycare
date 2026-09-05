@@ -9,9 +9,11 @@
     "pnpm": ">=11 <12"
   },
   "scripts": {
-    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:ait && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run test:firebase:mobile-flow && pnpm run test:firebase-config && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run check:screenshots && pnpm run test:build-workflows",
-    "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:ait && pnpm run test:functions && pnpm run test:firebase-config && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run check:screenshots && pnpm run test:build-workflows",
+    "test": "pnpm run test:core && pnpm run test:mobile && pnpm run test:ait && pnpm run test:firebase && pnpm run test:functions && pnpm run test:functions:emulator && pnpm run test:firebase:mobile-flow && pnpm run test:firebase-config && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run check:screenshots && pnpm run test:build-workflows && pnpm run test:platform-sdk && pnpm run check:platform-sdk",
+    "test:static": "pnpm run test:core && pnpm run test:mobile && pnpm run test:ait && pnpm run test:functions && pnpm run test:firebase-config && pnpm run typecheck && pnpm run lint && pnpm run check:architecture && pnpm run check:docs && pnpm run check:screenshots && pnpm run test:build-workflows && pnpm run test:platform-sdk && pnpm run check:platform-sdk",
     "test:build-workflows": "node --test scripts/check-build-workflows.test.mjs scripts/check-google-play-data-safety.test.mjs scripts/download-github-release-asset.test.mjs",
+    "test:platform-sdk": "node --test scripts/check-platform-sdk-lock.test.mjs",
+    "check:platform-sdk": "node scripts/check-platform-sdk-lock.mjs",
     "test:core": "bash scripts/test_core.sh",
     "test:mobile": "pnpm --dir apps/mobile test",
     "test:ait": "pnpm --dir apps/ait test --runInBand",

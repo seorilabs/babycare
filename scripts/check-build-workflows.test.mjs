@@ -386,3 +386,29 @@ test('candidate workflow names are not market deployment workflows', async () =>
 
   for (const workflow of workflows) assert.doesNotMatch(workflow, marketName);
 });
+
+// lockfile을 강제하지 않는 설치는 CI가 커밋된 pnpm-lock.yaml 대신 새로 해석한 트리로
+// 통과할 수 있다. 그러면 @seorilabs/platform-sdk exact 해석이 깨져도 PR gate가 잡지
+// 못하고 Platform discovery만 뒤늦게 CUSTOM_HTTP로 떨어진다.
+test('every workflow installs with the committed pnpm lockfile', async () => {
+  const [rootPackage, ...workflows] = await Promise.all([
+    json('package.json'),
+    read('.github/workflows/static-checks.yml'),
+    read('.github/workflows/build-ait.yml'),
+    read('.github/workflows/deploy-apps-in-toss.yml'),
+  ]);
+
+  const pnpmVersion = rootPackage.packageManager.replace(/^pnpm@/, '');
+  assert.match(rootPackage.packageManager, /^pnpm@\d+\.\d+\.\d+$/);
+
+  for (const workflow of workflows) {
+    assert.doesNotMatch(workflow, /--frozen-lockfile=false/);
+    assert.match(workflow, /pnpm install [^\n]*--frozen-lockfile\b/);
+    for (const pinned of workflow.match(/pnpm@\d+\.\d+\.\d+/g) ?? []) {
+      assert.equal(pinned, `pnpm@${pnpmVersion}`);
+    }
+    for (const pinned of workflow.match(/pnpm_version: "(\d+\.\d+\.\d+)"/g) ?? []) {
+      assert.equal(pinned, `pnpm_version: "${pnpmVersion}"`);
+    }
+  }
+});

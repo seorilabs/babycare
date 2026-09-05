@@ -23,7 +23,8 @@ jobs:
     with:
       runs_on: ${{ github.event.repository.private && 'seorilabs-rpi-arm64' || 'ubuntu-latest' }}
       package_manager: pnpm
-      install_command: "pnpm install --ignore-scripts --frozen-lockfile=false"
+      pnpm_version: "11.14.0"
+      install_command: "pnpm install --ignore-scripts --frozen-lockfile"
       check_command: |
         pnpm run test:static
 
@@ -52,11 +53,11 @@ jobs:
         run: |
           set -euo pipefail
           corepack enable
-          corepack prepare pnpm@11.12.0 --activate
+          corepack prepare pnpm@11.14.0 --activate
 
       - name: Install dependencies
         shell: bash
-        run: pnpm install --ignore-scripts --frozen-lockfile=false
+        run: pnpm install --ignore-scripts --frozen-lockfile
 
       - name: Run Firebase emulator tests
         shell: bash
