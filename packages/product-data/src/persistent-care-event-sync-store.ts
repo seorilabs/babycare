@@ -1559,6 +1559,11 @@ export class PersistentCareEventSyncStore
    * 저장된 outbox 항목은 여전히 옛 revision 을 기준으로 하므로 상태만 되돌리면
    * (`requeueFailed`) 같은 충돌이 즉시 반복된다. 그래서 매 항목마다 새 mutation id로
    * 다시 만든다 — `saveAndEnqueue` 와 같은 결의 계약이다.
+   *
+   * `#issues`(수면 겹침 충돌)도 같은 방식으로 처리한다(#104). `issue.local`은
+   * 대개 로컬 전용 생성이라 `#events`에 남아 있지 않으므로(`resolveActiveSleepConflict`
+   * 가 remoteEventIds 밖이면 지운다) 그 경우 revision 1 그대로 재적용하고, 남아
+   * 있는 경우(수정류 충돌)에만 현재 revision 위에 얹는다.
    */
   async reapplyConflicts(): Promise<void> {
     await this.#commit(() => {
@@ -1586,15 +1591,56 @@ export class PersistentCareEventSyncStore
           status: 'pending',
         });
       }
+      for (const [issueId, issue] of [...this.#issues]) {
+        if (issue.kind !== 'active_sleep_conflict') {
+          continue;
+        }
+        const current = this.#events.get(issue.local.id);
+        const rebased: CareEvent = current
+          ? {...issue.local, revision: current.revision + 1}
+          : issue.local;
+        const kind: CareEventMutationKind = !current
+          ? 'create'
+          : rebased.deletedAt !== undefined && current.deletedAt === undefined
+          ? 'soft_delete'
+          : rebased.kind === 'sleep' &&
+            current.kind === 'sleep' &&
+            rebased.endedAt !== undefined &&
+            current.endedAt === undefined
+          ? 'end_sleep'
+          : 'update';
+        this.#issues.delete(issueId);
+        this.#applyLocalEvent(rebased);
+        const nextId = careEventMutationId(rebased);
+        this.#outbox.set(nextId, {
+          id: nextId,
+          kind,
+          event: rebased,
+          baseRevision: rebased.revision - 1,
+          payloadHash: careEventPayloadHash(rebased),
+          attempts: 0,
+          status: 'pending',
+        });
+      }
     });
   }
 
-  /** "서버 기록 그대로 두기": 로컬 변경을 버리고 충돌 항목을 outbox에서 지운다. */
+  /**
+   * "서버 기록 그대로 두기": 로컬 변경을 버리고 충돌 항목을 지운다. outbox
+   * 충돌뿐 아니라 `#issues`의 수면 겹침 충돌(#104)도 지운다 — 서버 기록은 이미
+   * `resolveActiveSleepConflict`에서 `#events`에 반영돼 있으므로 issue 항목만
+   * 없애면 충돌 상태가 사라진다.
+   */
   async discardConflicts(): Promise<void> {
     await this.#commit(() => {
       for (const [id, entry] of this.#outbox) {
         if (entry.status === 'failed' && entry.failureKind === 'conflict') {
           this.#outbox.delete(id);
+        }
+      }
+      for (const [issueId, issue] of this.#issues) {
+        if (issue.kind === 'active_sleep_conflict') {
+          this.#issues.delete(issueId);
         }
       }
     });
