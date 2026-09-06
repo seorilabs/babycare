@@ -5,10 +5,12 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   classifyBootFailure,
   classifyInviteJoinFailure,
+  type UpdateGateState,
 } from '../../../../packages/product-core/src/index.ts';
 
 import {ParityDashboard} from '../components/parity-dashboard';
 import {ServiceIntroScreen} from '../components/service-intro-screen';
+import {UpdateGateOverlay} from '../components/update-gate-overlay';
 import {CloudOnboardingScreen} from '../parity/CloudOnboardingScreen';
 import {deviceAppLocale} from '../services/device-locale';
 import {createStrings, createTheme} from '@babycare/product-ui';
@@ -25,6 +27,7 @@ import {
   prepareAitPresenceSession,
   stopAitPresence,
 } from '../services/platform-presence';
+import {checkAitUpdateGate} from '../services/platform-update-gate';
 
 export const Route = createRoute('/', {component: BabyNestHome});
 
@@ -42,6 +45,7 @@ export function BabyNestHome() {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState<ReadyCareSession>();
   const [error, setError] = useState('');
+  const [updateGate, setUpdateGate] = useState<UpdateGateState | null>(null);
   const bootStartedAt = useRef(Date.now());
   const bootScreenSent = useRef(false);
   const bootTerminalSent = useRef(false);
@@ -76,6 +80,7 @@ export function BabyNestHome() {
     try {
       setReady(await bootstrapCareSession());
       prepareAitPresenceSession();
+      void checkAitUpdateGate().then(setUpdateGate);
       if (!bootTerminalSent.current) {
         bootTerminalSent.current = true;
         await babycareAnalytics
@@ -110,8 +115,10 @@ export function BabyNestHome() {
     }
   }, [trackBootScreen]);
 
+  let content: React.ReactNode;
+
   if (!started) {
-    return (
+    content = (
       <ServiceIntroScreen
         onStart={() => {
           bootStartedAt.current = Date.now();
@@ -122,10 +129,8 @@ export function BabyNestHome() {
         theme={theme}
       />
     );
-  }
-
-  if (loading) {
-    return (
+  } else if (loading) {
+    content = (
       <SafeAreaView style={[styles.centered, {backgroundColor: theme.colors.background}]} edges={['bottom']}>
         <ActivityIndicator color={theme.colors.primary} size="large" />
         <Text style={[styles.loadingText, {color: theme.colors.textMuted}]}>
@@ -133,55 +138,63 @@ export function BabyNestHome() {
         </Text>
       </SafeAreaView>
     );
-  }
-
-  if (ready) {
-    return (
+  } else if (ready) {
+    content = (
       <View
         testID="active-dashboard-frame"
         style={[styles.safeArea, {backgroundColor: theme.colors.background}]}>
         <ParityDashboard initialReady={ready} onDeleted={() => setReady(undefined)} />
       </View>
     );
+  } else {
+    content = (
+      <CloudOnboardingScreen
+        analytics={babycareAnalytics}
+        initialErrorMessage={error || undefined}
+        onCreate={async input => {
+          const created = await createCareGroup(input);
+          await babycareAnalytics.track({name: 'bc_group_created', params: {}});
+          await babycareAnalytics.track({name: 'bc_onboarding_complete', params: {mode: 'create'}});
+          setReady(created);
+        }}
+        onJoin={async input => {
+          await babycareAnalytics
+            .track({name: 'bc_invite_join_attempt', params: {}})
+            .catch(() => undefined);
+          let joined: ReadyCareSession;
+          try {
+            joined = await joinCareGroup(input);
+          } catch (caught) {
+            await babycareAnalytics
+              .track({
+                name: 'bc_invite_join_failed',
+                params: {reason_code: classifyInviteJoinFailure(caught)},
+              })
+              .catch(() => undefined);
+            throw caught;
+          }
+          await babycareAnalytics
+            .track({name: 'bc_invite_joined', params: {}})
+            .catch(() => undefined);
+          await babycareAnalytics
+            .track({name: 'bc_onboarding_complete', params: {mode: 'join'}})
+            .catch(() => undefined);
+          setReady(joined);
+        }}
+        strings={strings}
+        theme={theme}
+      />
+    );
   }
 
   return (
-    <CloudOnboardingScreen
-      analytics={babycareAnalytics}
-      initialErrorMessage={error || undefined}
-      onCreate={async input => {
-        const created = await createCareGroup(input);
-        await babycareAnalytics.track({name: 'bc_group_created', params: {}});
-        await babycareAnalytics.track({name: 'bc_onboarding_complete', params: {mode: 'create'}});
-        setReady(created);
-      }}
-      onJoin={async input => {
-        await babycareAnalytics
-          .track({name: 'bc_invite_join_attempt', params: {}})
-          .catch(() => undefined);
-        let joined: ReadyCareSession;
-        try {
-          joined = await joinCareGroup(input);
-        } catch (caught) {
-          await babycareAnalytics
-            .track({
-              name: 'bc_invite_join_failed',
-              params: {reason_code: classifyInviteJoinFailure(caught)},
-            })
-            .catch(() => undefined);
-          throw caught;
-        }
-        await babycareAnalytics
-          .track({name: 'bc_invite_joined', params: {}})
-          .catch(() => undefined);
-        await babycareAnalytics
-          .track({name: 'bc_onboarding_complete', params: {mode: 'join'}})
-          .catch(() => undefined);
-        setReady(joined);
-      }}
-      strings={strings}
-      theme={theme}
-    />
+    <>
+      {content}
+      <UpdateGateOverlay
+        state={updateGate}
+        onDismiss={() => setUpdateGate(null)}
+      />
+    </>
   );
 }
 

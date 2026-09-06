@@ -14,6 +14,12 @@ jest.mock('@seorilabs/platform-sdk', () => ({
 jest.mock('./babycare-backend', () => ({
   currentFirebaseIdToken: jest.fn(async () => 'firebase-token'),
 }));
+jest.mock('@apps-in-toss/framework', () => ({
+  Storage: {
+    getItem: jest.fn(async () => null),
+    setItem: jest.fn(async () => undefined),
+  },
+}));
 
 import {createPlatform} from '@seorilabs/platform-sdk';
 import {currentFirebaseIdToken} from './babycare-backend';

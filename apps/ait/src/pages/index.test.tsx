@@ -56,6 +56,10 @@ jest.mock('../services/rewarded-ad', () => ({
   },
 }));
 
+jest.mock('../services/platform-update-gate', () => ({
+  checkAitUpdateGate: jest.fn(async () => null),
+}));
+
 jest.mock('../components/parity-dashboard', () => {
   const ReactModule = jest.requireActual<typeof React>('react');
   const Native = jest.requireActual<typeof import('react-native')>('react-native');

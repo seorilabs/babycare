@@ -2,6 +2,8 @@ import {createPlatform} from '@seorilabs/platform-sdk';
 import {Platform, type AppStateStatus} from 'react-native';
 import {getVersion} from 'react-native-device-info';
 
+import {createMobileGateStore} from './platform-update-gate-store';
+
 const PLATFORM_API_URL =
   'https://platform-api-306278488979.asia-northeast3.run.app';
 const PLATFORM_INGEST_URL =
@@ -9,7 +11,7 @@ const PLATFORM_INGEST_URL =
 
 export const BABYCARE_PRESENCE_ENABLED = false;
 
-const mobilePresencePlatform = createPlatform({
+export const mobilePresencePlatform = createPlatform({
   appId: 'babycare',
   baseUrl: PLATFORM_API_URL,
   ingestBaseUrl: PLATFORM_INGEST_URL,
@@ -24,6 +26,7 @@ const mobilePresencePlatform = createPlatform({
     platform: Platform.OS === 'ios' ? 'ios' : 'android',
     appVersion: getVersion(),
   }),
+  gateStore: createMobileGateStore(),
 });
 
 export function prepareMobilePresenceSession(
