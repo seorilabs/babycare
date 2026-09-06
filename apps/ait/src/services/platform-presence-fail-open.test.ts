@@ -9,8 +9,8 @@ const bootstrap = {
   heartbeatIntervalSeconds: 60,
 };
 
-it('SDK 0.4.0 disabled Presence opens no token or edge request', async () => {
-  expect(SDK_VERSION).toBe('0.4.0');
+it('SDK 0.5.0 disabled Presence opens no token or edge request', async () => {
+  expect(SDK_VERSION).toBe('0.5.0');
   const tokenRequest = jest.fn();
   const fetchImpl = jest.fn(async () => new Response(null, {status: 204}));
   const presence = new Presence({

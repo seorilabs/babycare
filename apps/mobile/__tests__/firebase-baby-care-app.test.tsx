@@ -58,6 +58,9 @@ jest.mock('../src/app/platform-presence', () => ({
   prepareMobilePresenceSession: jest.fn(),
   stopMobilePresence: jest.fn(),
 }));
+jest.mock('../src/app/platform-update-gate', () => ({
+  checkMobileUpdateGate: jest.fn(async () => null),
+}));
 
 const bootstrap = jest.mocked(bootstrapFirebaseRuntime);
 type DashboardContainer = React.ComponentProps<

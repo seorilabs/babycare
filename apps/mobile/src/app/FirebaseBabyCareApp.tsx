@@ -36,6 +36,7 @@ import {
 import {SyncStatusBanner} from '../components/SyncStatusBanner';
 import {QuickRecordModal} from '../components/QuickRecordModal';
 import {TabBar, type AppTab} from '../components/TabBar';
+import {UpdateGateOverlay} from '../components/UpdateGateOverlay';
 import {CloudOnboardingScreen} from '../screens/CloudOnboardingScreen';
 import {HomeScreen} from '../screens/HomeScreen';
 import {MoreScreen} from '../screens/MoreScreen';
@@ -61,6 +62,8 @@ import {
   prepareMobilePresenceSession,
   stopMobilePresence,
 } from './platform-presence';
+import {checkMobileUpdateGate} from './platform-update-gate';
+import type {UpdateGateState} from '../../../../packages/product-core/src/index.ts';
 
 type CareContainer = Awaited<
   ReturnType<FirebaseRuntime['createCareContainer']>
@@ -461,6 +464,7 @@ export function FirebaseBabyCareApp(
   const [state, setState] = useState<RootState>({kind: 'loading'});
   const [runtimeError, setRuntimeError] = useState<Error>();
   const [retryKey, setRetryKey] = useState(0);
+  const [updateGate, setUpdateGate] = useState<UpdateGateState | null>(null);
   const bootStartedAt = useRef(Date.now());
   const bootStage = useRef<BootStage>('runtime');
   const bootAnalytics = useRef<AnalyticsPort | undefined>(undefined);
@@ -624,6 +628,11 @@ export function FirebaseBabyCareApp(
         });
         trackBootScreen(runtime.analytics);
         prepareMobilePresenceSession(runtime.firebaseIdToken);
+        void checkMobileUpdateGate().then(gate => {
+          if (active) {
+            setUpdateGate(gate);
+          }
+        });
         if (!active) {
           return;
         }
@@ -772,6 +781,7 @@ export function FirebaseBabyCareApp(
 
   if (state.kind === 'setup') {
     return (
+      <>
       <CloudOnboardingScreen
         analytics={state.runtime.analytics}
         initialErrorMessage={state.notice}
@@ -823,10 +833,16 @@ export function FirebaseBabyCareApp(
         strings={strings}
         theme={theme}
       />
+      <UpdateGateOverlay
+        state={updateGate}
+        onDismiss={() => setUpdateGate(null)}
+      />
+      </>
     );
   }
 
   return (
+    <>
     <FirebaseCareDashboard
       container={state.container}
       invite={state.invite}
@@ -905,6 +921,11 @@ export function FirebaseBabyCareApp(
       runtimeError={runtimeError}
       strings={strings}
     />
+    <UpdateGateOverlay
+      state={updateGate}
+      onDismiss={() => setUpdateGate(null)}
+    />
+    </>
   );
 }
 

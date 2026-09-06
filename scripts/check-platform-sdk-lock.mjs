@@ -18,7 +18,7 @@ import process from 'node:process';
 const PACKAGE_NAME = '@seorilabs/platform-sdk';
 // Platform이 승인한 SDK artifact 버전. Platform release가 새 artifact를 승인할 때만
 // 바꾸고, 그때 pnpm-lock.yaml 해석도 같이 옮긴다. 임의 상향·하향을 막는 기준값이다.
-export const APPROVED_SDK_VERSION = '0.4.0';
+export const APPROVED_SDK_VERSION = '0.5.0';
 const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
 // Backoffice repository-discovery가 lock integrity를 받아들이는 것과 같은 경계다.
 const INTEGRITY = /^(?:sha256-[A-Za-z0-9+/]{43}=|sha512-[A-Za-z0-9+/]{86}==)$/;
