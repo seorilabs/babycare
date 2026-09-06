@@ -58,6 +58,31 @@ test('ok면 아무것도 렌더링하지 않는다', () => {
   expect(renderer.toJSON()).toBeNull();
 });
 
+test('recommended로 떠 있다가 ok로 바뀌면 내려간다', () => {
+  let renderer!: ReactTestRenderer.ReactTestRenderer;
+  act(() => {
+    renderer = ReactTestRenderer.create(
+      <UpdateGateOverlay
+        state={{
+          kind: 'recommended',
+          message: 'm',
+          updateUrl: 'https://play.google.com/x',
+        }}
+        onDismiss={() => {}}
+      />,
+    );
+  });
+  expect(renderer.toJSON()).not.toBeNull();
+
+  act(() => {
+    renderer.update(
+      <UpdateGateOverlay state={{kind: 'ok'}} onDismiss={() => {}} />,
+    );
+  });
+
+  expect(renderer.toJSON()).toBeNull();
+});
+
 test('recommended면 업데이트·나중에 버튼을 모두 그린다', () => {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   act(() => {
