@@ -836,6 +836,7 @@ export function FirebaseBabyCareApp(
       <UpdateGateOverlay
         state={updateGate}
         onDismiss={() => setUpdateGate(null)}
+        strings={strings}
       />
       </>
     );
@@ -924,6 +925,7 @@ export function FirebaseBabyCareApp(
     <UpdateGateOverlay
       state={updateGate}
       onDismiss={() => setUpdateGate(null)}
+      strings={strings}
     />
     </>
   );
