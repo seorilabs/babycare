@@ -428,6 +428,11 @@ const ko = {
     notice:
       '앱을 삭제하거나 기기를 바꾸면 현재 계정과 기록에 다시 접근하지 못할 수 있어요.',
   },
+
+  updateGate: {
+    update: '업데이트하기',
+    later: '나중에',
+  },
 };
 
 export type Strings = typeof ko;
@@ -845,6 +850,11 @@ const en: Strings = {
       "Couldn't join the care group. Check the code or ask for a new one.",
     notice:
       'If you delete the app or switch devices, you may lose access to this account and its entries.',
+  },
+
+  updateGate: {
+    update: 'Update',
+    later: 'Later',
   },
 };
 

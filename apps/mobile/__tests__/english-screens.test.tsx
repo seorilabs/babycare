@@ -16,6 +16,7 @@ import {createTheme} from '@babycare/product-ui';
 import {QuickRecordModal} from '../src/components/QuickRecordModal';
 import {SyncStatusBanner} from '../src/components/SyncStatusBanner';
 import {TabBar} from '../src/components/TabBar';
+import {UpdateGateOverlay} from '../src/components/UpdateGateOverlay';
 import {CloudOnboardingScreen} from '../src/screens/CloudOnboardingScreen';
 import {HomeScreen} from '../src/screens/HomeScreen';
 import {MoreScreen} from '../src/screens/MoreScreen';
@@ -223,5 +224,23 @@ describe('English rendering leaves no Korean copy on screen', () => {
     );
     expect(banner).toContain('1 entry waiting to sync');
     expect(banner).not.toMatch(HANGUL);
+  });
+
+  it('renders the update gate overlay in English', () => {
+    const text = textOf(
+      <UpdateGateOverlay
+        state={{
+          kind: 'recommended',
+          message: 'A new version is available.',
+          updateUrl: 'https://play.google.com/store/apps/details?id=com.seorilabs.babycare',
+        }}
+        onDismiss={jest.fn()}
+        strings={en}
+      />,
+    );
+
+    expect(text).toContain('Update');
+    expect(text).toContain('Later');
+    expect(text).not.toMatch(HANGUL);
   });
 });

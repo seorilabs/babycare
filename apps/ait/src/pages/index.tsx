@@ -193,6 +193,7 @@ export function BabyNestHome() {
       <UpdateGateOverlay
         state={updateGate}
         onDismiss={() => setUpdateGate(null)}
+        strings={strings}
       />
     </>
   );

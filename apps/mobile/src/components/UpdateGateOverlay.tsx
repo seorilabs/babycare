@@ -2,6 +2,7 @@ import React from 'react';
 import {Linking, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
 
 import type {UpdateGateState} from '../../../../packages/product-core/src/index.ts';
+import type {Strings} from '@babycare/product-ui';
 
 type GateView = {
   message: string;
@@ -35,11 +36,13 @@ function toGateView(state: UpdateGateState): GateView | null {
 export interface UpdateGateOverlayProps {
   state: UpdateGateState | null;
   onDismiss: () => void;
+  strings: Strings;
 }
 
 export function UpdateGateOverlay({
   state,
   onDismiss,
+  strings,
 }: UpdateGateOverlayProps): React.JSX.Element | null {
   if (state == null) {
     return null;
@@ -73,7 +76,7 @@ export function UpdateGateOverlay({
               accessibilityRole="button"
               style={styles.updateButton}
               onPress={handleUpdate}>
-              <Text style={styles.updateButtonText}>업데이트하기</Text>
+              <Text style={styles.updateButtonText}>{strings.updateGate.update}</Text>
             </Pressable>
           ) : null}
           {view.dismissible ? (
@@ -82,7 +85,7 @@ export function UpdateGateOverlay({
               accessibilityRole="button"
               style={styles.laterButton}
               onPress={onDismiss}>
-              <Text style={styles.laterButtonText}>나중에</Text>
+              <Text style={styles.laterButtonText}>{strings.updateGate.later}</Text>
             </Pressable>
           ) : null}
         </View>

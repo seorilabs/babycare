@@ -11,6 +11,10 @@ const pairs = [
   ['apps/mobile/src/app/format.ts', 'apps/ait/src/parity/format.ts'],
   ['apps/mobile/src/app/stats-ranges.ts', 'apps/ait/src/parity/stats-ranges.ts'],
   ['apps/mobile/src/app/session.ts', 'apps/ait/src/parity/session.ts'],
+  [
+    'apps/mobile/src/components/UpdateGateOverlay.tsx',
+    'apps/ait/src/components/update-gate-overlay.tsx',
+  ],
 ];
 
 const tabBarPair = [
