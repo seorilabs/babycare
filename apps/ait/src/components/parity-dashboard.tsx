@@ -55,7 +55,7 @@ export function ParityDashboard({
     events: initialReady.events,
     hasMore: true,
     loadingMore: false,
-    loadMoreError: undefined,
+    loadMoreError: false,
     capped: false,
   });
   const [overview, setOverview] = useState<CareEventOverviewFeedState>({

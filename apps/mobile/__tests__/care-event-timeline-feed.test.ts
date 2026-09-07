@@ -580,14 +580,14 @@ describe('CareEventTimelineFeed', () => {
     await expect(feed.loadMore()).rejects.toBe(failure);
     expect(harness.latest()).toMatchObject({
       loadingMore: false,
-      loadMoreError: '이전 기록을 불러오지 못했어요.',
+      loadMoreError: true,
     });
     expect(remoteErrors).toHaveBeenCalledWith(
       expect.objectContaining({code: 'retryable'}),
     );
 
     await feed.retryLoadMore();
-    expect(harness.latest().loadMoreError).toBeUndefined();
+    expect(harness.latest().loadMoreError).toBe(false);
     expect(ids(harness.latest().events)).toHaveLength(4);
   });
 
@@ -845,9 +845,7 @@ describe('CareEventTimelineFeed', () => {
     expect(remoteErrors).toHaveBeenCalledWith(
       expect.objectContaining({code: 'invalid'}),
     );
-    expect(harness.latest().loadMoreError).toBe(
-      '이전 기록을 불러오지 못했어요.',
-    );
+    expect(harness.latest().loadMoreError).toBe(true);
     expect((await harness.local.getTimelineCoverage()).loadedRawCount).toBe(2);
   });
 
@@ -931,8 +929,7 @@ describe('CareEventTimelineFeed', () => {
 
     await waitUntil(
       () =>
-        harness.latest().loadMoreError ===
-          '이전 기록을 불러오지 못했어요.' &&
+        harness.latest().loadMoreError === true &&
         remote.observerCount === 1,
       'offline startup recovery observer',
     );
@@ -951,7 +948,7 @@ describe('CareEventTimelineFeed', () => {
     await waitUntil(
       () =>
         remote.fetchRequests.length > failedFetchCount &&
-        harness.latest().loadMoreError === undefined &&
+        harness.latest().loadMoreError === false &&
         ids(harness.latest().events).join(',') === ids(initial).join(',') &&
         onServerConfirmed.mock.calls.length === 1,
       'automatic HEAD recovery',
@@ -1001,8 +998,7 @@ describe('CareEventTimelineFeed', () => {
 
     await waitUntil(
       () =>
-        harness.latest().loadMoreError ===
-          '이전 기록을 불러오지 못했어요.' &&
+        harness.latest().loadMoreError === true &&
         remote.observerCount === 1,
       'bounded offline v2 restart',
     );

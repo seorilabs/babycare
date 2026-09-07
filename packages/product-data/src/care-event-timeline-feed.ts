@@ -41,7 +41,8 @@ export interface CareEventTimelineFeedState {
   readonly events: readonly CareEvent[];
   readonly hasMore: boolean;
   readonly loadingMore: boolean;
-  readonly loadMoreError: string | undefined;
+  /** UI 계층이 로케일 문구를 고르도록 메시지 대신 실패 여부만 올린다. */
+  readonly loadMoreError: boolean;
   /** More server rows exist, but the configured local cache bound was hit. */
   readonly capped: boolean;
 }
@@ -67,7 +68,6 @@ interface PreparedPageObservers {
   pendingMismatch: boolean;
 }
 
-const LOAD_MORE_ERROR_MESSAGE = '이전 기록을 불러오지 못했어요.';
 const RECOVERY_RETRY_DELAY_MS = 1_000;
 const MAX_RECOVERY_RETRY_DELAY_MS = 30_000;
 
@@ -206,7 +206,7 @@ export class CareEventTimelineFeed {
     events: [],
     hasMore: true,
     loadingMore: false,
-    loadMoreError: undefined,
+    loadMoreError: false,
     capped: false,
   };
   #allLocalEvents: readonly CareEvent[] = [];
@@ -381,7 +381,7 @@ export class CareEventTimelineFeed {
     }
 
     const generation = this.#lifecycleGeneration;
-    this.#setState({loadingMore: true, loadMoreError: undefined});
+    this.#setState({loadingMore: true, loadMoreError: false});
     const operation = this.#enqueue(async () => {
       const oldCoverage = await this.#local.getTimelineCoverage();
       if (!this.#isActive(generation)) {
@@ -416,7 +416,7 @@ export class CareEventTimelineFeed {
           this.#reportRemoteError(error);
           this.#setState({
             loadingMore: false,
-            loadMoreError: LOAD_MORE_ERROR_MESSAGE,
+            loadMoreError: true,
           });
         }
         throw error;
@@ -474,7 +474,7 @@ export class CareEventTimelineFeed {
       if (this.#isActive(generation)) {
         const remoteError = normalizeRemoteError(error);
         this.#deliverRemoteError(remoteError);
-        this.#setState({loadMoreError: LOAD_MORE_ERROR_MESSAGE});
+        this.#setState({loadMoreError: true});
         if (shouldAutoRecover(remoteError)) {
           this.#installHeadRecoveryObserver(generation);
         }
@@ -865,7 +865,7 @@ export class CareEventTimelineFeed {
         if (this.#isActive(generation)) {
           const remoteError = normalizeRemoteError(error);
           this.#deliverRemoteError(remoteError);
-          this.#setState({loadMoreError: LOAD_MORE_ERROR_MESSAGE});
+          this.#setState({loadMoreError: true});
           if (shouldAutoRecover(remoteError)) {
             this.#installHeadRecoveryObserver(generation);
           }
@@ -965,7 +965,7 @@ export class CareEventTimelineFeed {
       events: this.#visibleEvents(),
       hasMore: coverage.hasMore && !capped,
       capped,
-      loadMoreError: undefined,
+      loadMoreError: false,
     });
   }
 

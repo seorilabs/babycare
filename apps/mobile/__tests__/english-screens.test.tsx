@@ -130,6 +130,30 @@ describe('English rendering leaves no Korean copy on screen', () => {
     expect(text).not.toMatch(HANGUL);
   });
 
+  it('renders the timeline load-more error in English', () => {
+    const text = textOf(
+      <TimelineScreen
+        capped={false}
+        caregiverNames={new Map([[session.caregiverId, 'Mom']])}
+        events={[feedingEvent()]}
+        hasMore={true}
+        loadingMore={false}
+        loadMoreError={true}
+        now={now}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+        onLoadMore={jest.fn()}
+        onRetryLoadMore={jest.fn()}
+        session={session}
+        strings={en}
+        theme={theme}
+      />,
+    );
+
+    expect(text).toContain("Couldn't load earlier entries.");
+    expect(text).not.toMatch(HANGUL);
+  });
+
   it('renders the stats screen in English', () => {
     const text = textOf(
       <StatsScreen
