@@ -565,6 +565,7 @@ describe('FirebaseBabyCareApp product copy', () => {
           onInvite={async () => undefined}
           onDeleteAccount={async () => undefined}
           onRefreshMembers={async () => undefined}
+          onUpdateBabyProfile={async () => undefined}
           onRemoveMember={async () => undefined}
           onRuntimeError={onRuntimeError}
           ready={ready}
@@ -690,6 +691,7 @@ describe('FirebaseBabyCareApp product copy', () => {
           onInvite={async () => undefined}
           onDeleteAccount={async () => undefined}
           onRefreshMembers={async () => undefined}
+          onUpdateBabyProfile={async () => undefined}
           onRemoveMember={async () => undefined}
           onRuntimeError={onRuntimeError}
           ready={ready}

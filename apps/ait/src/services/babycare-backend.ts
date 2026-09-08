@@ -46,6 +46,7 @@ import {
   type GroupId,
 } from '../../../../packages/product-core/src/domain/ids.ts';
 import {createRemoveGroupMember} from '../../../../packages/product-core/src/use_cases/remove-group-member.ts';
+import {createUpdateBabyProfile} from '../../../../packages/product-core/src/use_cases/update-baby-profile.ts';
 import {
   careEventMutationId,
   careEventPayloadHash,
@@ -458,6 +459,10 @@ function decodeBaby(data: Record<string, unknown>): Baby {
     name: text(data.name, '아기 이름'),
     birthDate: text(data.birthDate, '생년월일'),
     sex: data.sex === 'female' || data.sex === 'male' ? data.sex : 'unspecified',
+    ...(typeof data.dueDate === 'string' ? {dueDate: data.dueDate} : {}),
+    ...(typeof data.avatarStoragePath === 'string'
+      ? {avatarStoragePath: data.avatarStoragePath}
+      : {}),
     createdAt: Number(data.createdAt),
     updatedAt: Number(data.updatedAt),
   };
@@ -1437,6 +1442,65 @@ export async function reloadCareSession(
     throw new Error('돌봄 그룹을 다시 불러오지 못했어요.');
   }
   return latest;
+}
+
+export async function updateCareBaby(
+  ready: ReadyCareSession,
+  input: {readonly name: string; readonly birthDate: string},
+): Promise<Baby> {
+  const session = await accessSession();
+  if (session.uid !== ready.uid) {
+    throw new Error('현재 사용자를 다시 확인해 주세요.');
+  }
+  const updateBabyProfile = createUpdateBabyProfile({
+    groups: {
+      findMembership: async (group, member) => {
+        const document = await getOptionalDocument(
+          session,
+          `groups/${group}/members/${member}`,
+        );
+        return document
+          ? decodeMembership(fromFirestoreDocument(document))
+          : undefined;
+      },
+    },
+    babies: {
+      findById: async (group, baby) => {
+        const document = await getOptionalDocument(
+          session,
+          `groups/${group}/babies/${baby}`,
+        );
+        return document ? decodeBaby(fromFirestoreDocument(document)) : undefined;
+      },
+      save: async baby => {
+        const query = new URLSearchParams();
+        for (const field of ['name', 'birthDate', 'updatedAt']) {
+          query.append('updateMask.fieldPaths', field);
+        }
+        await firestoreRequest(
+          session,
+          `/groups/${baby.groupId}/babies/${baby.id}?${query.toString()}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({
+              fields: toFirestoreFields({
+                name: baby.name,
+                birthDate: baby.birthDate,
+                updatedAt: baby.updatedAt,
+              }),
+            }),
+          },
+        );
+      },
+    },
+    clock: {now: () => Date.now()},
+  });
+  return updateBabyProfile({
+    groupId: ready.group.id,
+    babyId: ready.baby.id,
+    actorId: userId(session.uid),
+    ...input,
+  });
 }
 
 export async function removeCareMember(

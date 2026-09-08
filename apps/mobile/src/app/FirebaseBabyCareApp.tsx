@@ -113,6 +113,10 @@ export function FirebaseCareDashboard(props: {
   readonly invite?: {readonly code: string; readonly expiresAt: number};
   readonly onInvite: () => Promise<void>;
   readonly onRefreshMembers: () => Promise<void>;
+  readonly onUpdateBabyProfile: (input: {
+    readonly name: string;
+    readonly birthDate: string;
+  }) => Promise<void>;
   readonly onRemoveMember: (member: {
     readonly userId: string;
     readonly displayName: string;
@@ -266,6 +270,7 @@ export function FirebaseCareDashboard(props: {
           }}
           onOpenAdPrivacyOptions={props.runtime.openAdPrivacyOptions}
           onRefreshMembers={props.onRefreshMembers}
+          onUpdateBabyProfile={props.onUpdateBabyProfile}
           onRemoveMember={props.onRemoveMember}
           onReset={async () => undefined}
           session={session}
@@ -888,6 +893,24 @@ export function FirebaseBabyCareApp(
       onRefreshMembers={async () => {
         const memberships = await state.runtime.refreshMemberships(state.ready);
         const ready = {...state.ready, memberships};
+        const saved = await sessionStore.save(state.sessionToken, ready);
+        if (!saved) {
+          return;
+        }
+        setState(current =>
+          current.kind === 'active' &&
+          current.container === state.container &&
+          current.sessionToken === state.sessionToken
+            ? {...current, ready}
+            : current,
+        );
+      }}
+      onUpdateBabyProfile={async input => {
+        const baby = await state.runtime.updateBabyProfile(state.ready, input);
+        const ready = {
+          ...state.ready,
+          context: {...state.ready.context, baby},
+        };
         const saved = await sessionStore.save(state.sessionToken, ready);
         if (!saved) {
           return;

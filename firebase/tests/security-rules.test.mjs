@@ -581,6 +581,42 @@ test('아기 날짜는 실제 ISO calendar date만 허용한다', async () => {
   );
 });
 
+test('아기 프로필 수정은 owner의 허용 필드에만 제한된다', async () => {
+  await seedBase();
+
+  const ownerBabyRef = doc(
+    firestoreFor(OWNER_ID),
+    'groups',
+    GROUP_ID,
+    'babies',
+    BABY_ID,
+  );
+  const memberBabyRef = doc(
+    firestoreFor(MEMBER_ID),
+    'groups',
+    GROUP_ID,
+    'babies',
+    BABY_ID,
+  );
+
+  await assertSucceeds(
+    updateDoc(ownerBabyRef, {
+      name: '새봄',
+      birthDate: '2024-02-29',
+      updatedAt: NOW + 1,
+    }),
+  );
+  await assertFails(
+    updateDoc(memberBabyRef, {name: '우회 변경', updatedAt: NOW + 2}),
+  );
+  await assertFails(
+    updateDoc(ownerBabyRef, {
+      privateNote: '규칙 밖 필드',
+      updatedAt: NOW + 2,
+    }),
+  );
+});
+
 test('그룹·최초 owner membership·아기를 client batch로 원자 생성할 수 있다', async () => {
   const ownerDb = firestoreFor(OWNER_ID);
   const commitSetup = (group) => {

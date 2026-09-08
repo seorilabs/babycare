@@ -24,6 +24,7 @@ import {getVersion} from 'react-native-device-info';
 import type {
   AccountDeletionPort,
   AnalyticsPort,
+  Baby,
   BootStage,
   CareGroupInvite,
   ClockPort,
@@ -32,7 +33,10 @@ import type {
   RewardedAdPort,
   UserId,
 } from '@babycare/product-core';
-import {createRemoveGroupMember} from '@babycare/product-core';
+import {
+  createRemoveGroupMember,
+  createUpdateBabyProfile,
+} from '@babycare/product-core';
 import {
   FanOutAnalytics,
   PlatformAnalytics,
@@ -164,6 +168,10 @@ export interface FirebaseRuntime {
   refreshMemberships(
     session: ReadyFirebaseSession,
   ): Promise<readonly Membership[]>;
+  updateBabyProfile(
+    session: ReadyFirebaseSession,
+    input: {readonly name: string; readonly birthDate: string},
+  ): Promise<Baby>;
   removeMember(session: ReadyFirebaseSession, targetId: UserId): Promise<void>;
   /** @deprecated Prefer createCareContainer. */
   createCareEventRuntime(
@@ -447,6 +455,7 @@ export async function createFirebaseRuntime(
   };
 
   const removeGroupMember = createRemoveGroupMember(groups);
+  const updateBabyProfile = createUpdateBabyProfile({groups, babies, clock});
 
   const createCareContainer = (
     session: ReadyFirebaseSession,
@@ -508,6 +517,14 @@ export async function createFirebaseRuntime(
     },
     refreshMemberships(session) {
       return groups.listMemberships(session.context.group.id);
+    },
+    updateBabyProfile(session, input) {
+      return updateBabyProfile({
+        groupId: session.context.group.id,
+        babyId: session.context.baby.id,
+        actorId: session.context.identity.userId,
+        ...input,
+      });
     },
     removeMember(session, targetId) {
       return removeGroupMember({

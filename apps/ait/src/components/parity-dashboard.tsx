@@ -30,6 +30,7 @@ import {
   deleteCareAccount,
   reloadCareSession,
   removeCareMember,
+  updateCareBaby,
   type ReadyCareSession,
 } from '../services/babycare-backend';
 import {
@@ -266,6 +267,10 @@ export function ParityDashboard({
             const latest = await reloadCareSession(ready);
             setReady(current => ({...latest, events: current.events}));
             await runtime?.syncNow();
+          }}
+          onUpdateBabyProfile={async input => {
+            const baby = await updateCareBaby(ready, input);
+            setReady(current => ({...current, baby}));
           }}
           onRemoveMember={async member => {
             await removeCareMember(ready, member);

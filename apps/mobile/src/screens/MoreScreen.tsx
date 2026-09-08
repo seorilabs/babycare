@@ -1,5 +1,15 @@
 import {useRef, useState} from 'react';
-import {Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View} from 'react-native';
+import {
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import type {Membership} from '@babycare/product-core';
 
 import type {Strings} from '@babycare/product-ui';
@@ -46,6 +56,10 @@ export function MoreScreen(props: {
   readonly onCreateInvite?: () => Promise<void>;
   readonly onInviteShared?: () => void;
   readonly onRefreshMembers?: () => Promise<void>;
+  readonly onUpdateBabyProfile?: (input: {
+    readonly name: string;
+    readonly birthDate: string;
+  }) => Promise<void>;
   readonly onRemoveMember?: (member: {
     readonly userId: string;
     readonly displayName: string;
@@ -70,6 +84,64 @@ export function MoreScreen(props: {
   const [accountDeletionPending, setAccountDeletionPending] = useState(false);
   const memberRemovalInFlight = useRef(false);
   const [memberRemovalPendingId, setMemberRemovalPendingId] = useState<string>();
+  const babyProfileUpdateInFlight = useRef(false);
+  const [babyProfileEditorOpen, setBabyProfileEditorOpen] = useState(false);
+  const [babyProfileUpdatePending, setBabyProfileUpdatePending] = useState(false);
+  const [babyName, setBabyName] = useState(props.session.babyName);
+  const [birthDate, setBirthDate] = useState(props.session.birthDate);
+
+  const openBabyProfileEditor = () => {
+    setBabyName(props.session.babyName);
+    setBirthDate(props.session.birthDate);
+    setBabyProfileEditorOpen(true);
+  };
+
+  const babyProfileErrorMessage = (error: unknown): string => {
+    const reason =
+      error && typeof error === 'object' && 'reason' in error
+        ? String(error.reason)
+        : undefined;
+    if (reason === 'name_invalid') {
+      return strings.more.babyProfileNameInvalid;
+    }
+    if (reason === 'birth_date_invalid') {
+      return strings.more.babyProfileBirthDateInvalid;
+    }
+    if (reason === 'birth_date_future') {
+      return strings.more.babyProfileBirthDateFuture;
+    }
+    if (reason === 'not_owner') {
+      return strings.more.babyProfileNotOwner;
+    }
+    return strings.more.babyProfileSaveFailed;
+  };
+
+  const updateBabyProfile = () => {
+    const handler = props.onUpdateBabyProfile;
+    if (!handler || babyProfileUpdateInFlight.current) {
+      return;
+    }
+    babyProfileUpdateInFlight.current = true;
+    setBabyProfileUpdatePending(true);
+    let request: Promise<void>;
+    try {
+      request = handler({name: babyName, birthDate});
+    } catch (error) {
+      request = Promise.reject(error);
+    }
+    request
+      .then(() => setBabyProfileEditorOpen(false))
+      .catch(error =>
+        Alert.alert(
+          strings.more.babyProfileFailedTitle,
+          babyProfileErrorMessage(error),
+        ),
+      )
+      .finally(() => {
+        babyProfileUpdateInFlight.current = false;
+        setBabyProfileUpdatePending(false);
+      });
+  };
 
   const createInvite = () => {
     if (inviteCreationInFlight.current || !props.onCreateInvite) {
@@ -414,6 +486,99 @@ export function MoreScreen(props: {
         {strings.more.settingsSection}
       </Text>
       <View style={[styles.settings, {backgroundColor: props.theme.colors.surface}]}>
+        {firebase && owner && props.onUpdateBabyProfile ? (
+          <>
+            <SettingRow
+              detail={strings.more.babyProfileEditDetail}
+              icon="🍼"
+              onPress={openBabyProfileEditor}
+              theme={props.theme}
+              title={strings.more.babyProfileEditTitle}
+            />
+            {babyProfileEditorOpen ? (
+              <View
+                style={[
+                  styles.babyProfileEditor,
+                  {borderBottomColor: props.theme.colors.border},
+                ]}>
+                <Text style={[styles.inputLabel, {color: props.theme.colors.text}]}>
+                  {strings.more.babyProfileNameLabel}
+                </Text>
+                <TextInput
+                  accessibilityLabel={strings.more.babyProfileNameLabel}
+                  autoCapitalize="none"
+                  editable={!babyProfileUpdatePending}
+                  maxLength={80}
+                  onChangeText={setBabyName}
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: props.theme.colors.border,
+                      color: props.theme.colors.text,
+                    },
+                  ]}
+                  value={babyName}
+                />
+                <Text style={[styles.inputLabel, {color: props.theme.colors.text}]}>
+                  {strings.more.babyProfileBirthDateLabel}
+                </Text>
+                <TextInput
+                  accessibilityLabel={strings.more.babyProfileBirthDateLabel}
+                  autoCapitalize="none"
+                  editable={!babyProfileUpdatePending}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={10}
+                  onChangeText={setBirthDate}
+                  placeholder={strings.more.babyProfileBirthDatePlaceholder}
+                  placeholderTextColor={props.theme.colors.textMuted}
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: props.theme.colors.border,
+                      color: props.theme.colors.text,
+                    },
+                  ]}
+                  value={birthDate}
+                />
+                <View style={styles.babyProfileActions}>
+                  <Pressable
+                    accessibilityLabel={strings.common.cancel}
+                    accessibilityRole="button"
+                    disabled={babyProfileUpdatePending}
+                    onPress={() => setBabyProfileEditorOpen(false)}
+                    style={styles.babyProfileAction}>
+                    <Text style={{color: props.theme.colors.textMuted}}>
+                      {strings.common.cancel}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel={
+                      babyProfileUpdatePending
+                        ? strings.more.babyProfileSaving
+                        : strings.more.babyProfileSave
+                    }
+                    accessibilityRole="button"
+                    accessibilityState={{
+                      busy: babyProfileUpdatePending,
+                      disabled: babyProfileUpdatePending,
+                    }}
+                    disabled={babyProfileUpdatePending}
+                    onPress={updateBabyProfile}
+                    style={[
+                      styles.babyProfileAction,
+                      {backgroundColor: props.theme.colors.primary},
+                    ]}>
+                    <Text style={styles.babyProfileSaveText}>
+                      {babyProfileUpdatePending
+                        ? strings.more.babyProfileSaving
+                        : strings.more.babyProfileSave}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+          </>
+        ) : null}
         <SettingRow
           detail={strings.more.unitDetail}
           icon="⚖️"
@@ -553,6 +718,12 @@ const styles = StyleSheet.create({
   inviteActionText: {fontSize: 10, fontWeight: '900'},
   sectionLabel: {fontSize: 11, fontWeight: '800', marginBottom: 8, marginLeft: 4, marginTop: 24},
   settings: {borderRadius: 18, overflow: 'hidden'},
+  babyProfileEditor: {borderBottomWidth: StyleSheet.hairlineWidth, padding: 14},
+  inputLabel: {fontSize: 11, fontWeight: '800', marginBottom: 6, marginTop: 8},
+  input: {borderRadius: 10, borderWidth: 1, fontSize: 14, minHeight: 44, paddingHorizontal: 12},
+  babyProfileActions: {flexDirection: 'row', justifyContent: 'flex-end', marginTop: 14},
+  babyProfileAction: {borderRadius: 10, marginLeft: 8, minWidth: 72, paddingHorizontal: 14, paddingVertical: 10},
+  babyProfileSaveText: {color: '#FFFFFF', fontWeight: '800', textAlign: 'center'},
   settingRow: {alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 68, paddingHorizontal: 14},
   settingIcon: {alignItems: 'center', borderRadius: 11, height: 38, justifyContent: 'center', width: 38},
   settingEmoji: {fontSize: 18},
