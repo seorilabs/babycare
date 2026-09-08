@@ -90,7 +90,7 @@ const EMPTY_TIMELINE: CareEventTimelineFeedState = {
   events: [],
   hasMore: true,
   loadingMore: false,
-  loadMoreError: undefined,
+  loadMoreError: false,
   capped: false,
 };
 

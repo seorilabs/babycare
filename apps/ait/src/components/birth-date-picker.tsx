@@ -1,5 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import {Keyboard, Pressable, StyleSheet, Text, View} from 'react-native';
+import type {Strings} from '@babycare/product-ui';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const CALENDAR_CELL_COUNT = 42;
@@ -69,10 +70,12 @@ export function buildBirthDateCalendar(
 export function BirthDatePicker({
   value,
   onChange,
+  strings,
   maximumDate = new Date(),
 }: {
   readonly value: string;
   readonly onChange: (value: string) => void;
+  readonly strings: Strings;
   readonly maximumDate?: Date;
 }) {
   const selectedParts = calendarDateParts(value);
@@ -119,30 +122,30 @@ export function BirthDatePicker({
   return (
     <>
       <Pressable
-        accessibilityLabel="아기 생년월일 선택"
+        accessibilityLabel={strings.onboarding.birthDateSelectAccessibilityLabel}
         accessibilityRole="button"
         accessibilityState={{expanded: open}}
         onPress={openPicker}
         style={({pressed}) => [styles.dateButton, pressed && styles.pressed]}>
         <Text style={value ? styles.dateValue : styles.datePlaceholder}>
-          {value || '날짜 선택'}
+          {value || strings.onboarding.birthDatePlaceholder}
         </Text>
-        <Text style={styles.dateHint}>{open ? '닫기' : '선택'}</Text>
+        <Text style={styles.dateHint}>{open ? strings.common.close : strings.onboarding.birthDatePick}</Text>
       </Pressable>
       {open ? (
-        <View accessibilityLabel="아기 생년월일 달력" style={styles.calendar}>
+        <View accessibilityLabel={strings.onboarding.birthDateCalendarAccessibilityLabel} style={styles.calendar}>
           <View style={styles.calendarHeader}>
-            <Pressable accessibilityLabel="이전 해" accessibilityRole="button" onPress={() => moveMonth(-12)} style={styles.monthButton}>
+            <Pressable accessibilityLabel={strings.onboarding.birthDatePreviousYearLabel} accessibilityRole="button" onPress={() => moveMonth(-12)} style={styles.monthButton}>
               <Text style={styles.monthButtonText}>≪</Text>
             </Pressable>
-            <Pressable accessibilityLabel="이전 달" accessibilityRole="button" onPress={() => moveMonth(-1)} style={styles.monthButton}>
+            <Pressable accessibilityLabel={strings.onboarding.birthDatePreviousMonthLabel} accessibilityRole="button" onPress={() => moveMonth(-1)} style={styles.monthButton}>
               <Text style={styles.monthButtonText}>‹</Text>
             </Pressable>
             <Text style={styles.monthTitle}>
               {visibleMonth.getFullYear()}년 {visibleMonth.getMonth() + 1}월
             </Text>
             <Pressable
-              accessibilityLabel="다음 달"
+              accessibilityLabel={strings.onboarding.birthDateNextMonthLabel}
               accessibilityRole="button"
               accessibilityState={{disabled: visibleMonthIndex >= maximumMonthIndex}}
               disabled={visibleMonthIndex >= maximumMonthIndex}
@@ -151,7 +154,7 @@ export function BirthDatePicker({
               <Text style={[styles.monthButtonText, visibleMonthIndex >= maximumMonthIndex && styles.disabledText]}>›</Text>
             </Pressable>
             <Pressable
-              accessibilityLabel="다음 해"
+              accessibilityLabel={strings.onboarding.birthDateNextYearLabel}
               accessibilityRole="button"
               accessibilityState={{disabled: visibleMonthIndex + 12 > maximumMonthIndex}}
               disabled={visibleMonthIndex + 12 > maximumMonthIndex}

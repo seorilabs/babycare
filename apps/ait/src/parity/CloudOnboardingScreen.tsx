@@ -137,7 +137,7 @@ export function CloudOnboardingScreen(props: {
               <View style={styles.fieldArea}>
                 {step === 'caregiver' ? <TextInput accessibilityLabel={strings.onboarding.caregiverLabel} autoCapitalize="words" autoFocus maxLength={80} onChangeText={setCaregiverName} placeholder={strings.onboarding.caregiverPlaceholder} placeholderTextColor={props.theme.colors.textMuted} style={fieldStyle} value={caregiverName} /> : null}
                 {step === 'babyName' ? <TextInput accessibilityLabel={strings.onboarding.babyNameLabel} autoFocus maxLength={80} onChangeText={setBabyName} placeholder={strings.onboarding.babyNamePlaceholder} placeholderTextColor={props.theme.colors.textMuted} style={fieldStyle} value={babyName} /> : null}
-                {step === 'birthDate' ? <BirthDatePicker onChange={setBirthDate} value={birthDate} /> : null}
+                {step === 'birthDate' ? <BirthDatePicker onChange={setBirthDate} strings={strings} value={birthDate} /> : null}
                 {step === 'inviteCode' ? <TextInput accessibilityLabel={strings.onboarding.inviteCodeLabel} autoCapitalize="characters" autoCorrect={false} autoFocus onChangeText={value => {
                   setErrorMessage(undefined);
                   const sanitized = sanitizeInviteCodeInput(value);

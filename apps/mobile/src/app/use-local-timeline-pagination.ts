@@ -12,7 +12,7 @@ export interface LocalTimelinePaginationState {
   readonly hasMore: boolean;
   readonly capped: boolean;
   readonly loadingMore: boolean;
-  readonly loadMoreError: string | undefined;
+  readonly loadMoreError: boolean;
   loadMore(): Promise<void>;
   retryLoadMore(): Promise<void>;
 }
@@ -89,7 +89,7 @@ export function useLocalTimelinePagination(
     hasMore,
     capped,
     loadingMore,
-    loadMoreError: undefined,
+    loadMoreError: false,
     loadMore,
     retryLoadMore: loadMore,
   };

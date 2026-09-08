@@ -121,11 +121,11 @@ describe('TimelineScreen bounded feed', () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     ReactTestRenderer.act(() => {
       renderer = ReactTestRenderer.create(
-        screen({loadMoreError: '이전 기록을 불러오지 못했어요', onRetryLoadMore}),
+        screen({loadMoreError: true, onRetryLoadMore}),
       );
     });
 
-    expect(renderedText(renderer)).toContain('이전 기록을 불러오지 못했어요');
+    expect(renderedText(renderer)).toContain(createStrings('ko').timeline.loadMoreError);
     const retry = renderer.root.findByProps({
       accessibilityLabel: '이전 기록 다시 불러오기',
     });
