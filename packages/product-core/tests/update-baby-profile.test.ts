@@ -8,6 +8,7 @@ import {
   UpdateBabyProfileError,
   userId,
   type Baby,
+  type BabyProfileUpdate,
   type Membership,
 } from '../src/index.ts';
 
@@ -48,7 +49,7 @@ function dependencies(options: {
   readonly failSave?: boolean;
 } = {}) {
   let persisted = options.baby ?? existing;
-  const saves: Baby[] = [];
+  const saves: BabyProfileUpdate[] = [];
   return {
     get persisted() {
       return persisted;
@@ -59,12 +60,12 @@ function dependencies(options: {
     },
     babies: {
       findById: async () => options.baby ?? existing,
-      save: async (baby: Baby) => {
-        saves.push(baby);
+      updateProfile: async (profile: BabyProfileUpdate) => {
+        saves.push(profile);
         if (options.failSave) {
           throw new Error('persistence unavailable');
         }
-        persisted = baby;
+        persisted = {...persisted, ...profile};
       },
     },
     clock: {now: () => NOW},
@@ -86,7 +87,14 @@ describe('updateBabyProfile', () => {
 
     assert.equal(updated.name, '새봄');
     assert.equal(updated.birthDate, '2024-02-29');
-    assert.equal(deps.persisted, updated);
+    assert.deepEqual(deps.persisted, updated);
+    assert.deepEqual(deps.saves[0], {
+      id: updated.id,
+      groupId: updated.groupId,
+      name: '새봄',
+      birthDate: '2024-02-29',
+      updatedAt: NOW,
+    });
   });
 
   it('비소유자는 직접 호출해도 저장할 수 없다', async () => {

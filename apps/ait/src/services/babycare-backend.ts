@@ -1472,7 +1472,7 @@ export async function updateCareBaby(
         );
         return document ? decodeBaby(fromFirestoreDocument(document)) : undefined;
       },
-      save: async baby => {
+      updateProfile: async baby => {
         const query = new URLSearchParams();
         for (const field of ['name', 'birthDate', 'updatedAt']) {
           query.append('updateMask.fieldPaths', field);

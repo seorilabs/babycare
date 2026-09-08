@@ -29,7 +29,7 @@ export class UpdateBabyProfileError extends Error {
 
 export interface UpdateBabyProfileDependencies {
   readonly groups: Pick<CareGroupRepositoryPort, 'findMembership'>;
-  readonly babies: Pick<BabyRepositoryPort, 'findById' | 'save'>;
+  readonly babies: Pick<BabyRepositoryPort, 'findById' | 'updateProfile'>;
   readonly clock: ClockPort;
 }
 
@@ -82,7 +82,13 @@ export function createUpdateBabyProfile(deps: UpdateBabyProfileDependencies) {
       birthDate: input.birthDate,
       updatedAt: Math.max(now, baby.updatedAt),
     });
-    await deps.babies.save(updated);
+    await deps.babies.updateProfile({
+      id: updated.id,
+      groupId: updated.groupId,
+      name: updated.name,
+      birthDate: updated.birthDate,
+      updatedAt: updated.updatedAt,
+    });
     return updated;
   };
 }
