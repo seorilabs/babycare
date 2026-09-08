@@ -147,4 +147,23 @@ describe('updateBabyProfile', () => {
     );
     assert.equal(deps.persisted, existing);
   });
+
+  it('저장 전에 전체 아기 도메인 불변식을 다시 검증한다', async () => {
+    const deps = dependencies({
+      baby: {...existing, dueDate: '2026-02-29'},
+    });
+    const updateBabyProfile = createUpdateBabyProfile(deps);
+
+    await assert.rejects(
+      updateBabyProfile({
+        groupId: GROUP,
+        babyId: BABY,
+        actorId: OWNER,
+        name: '새봄',
+        birthDate: '2024-02-29',
+      }),
+      /Baby dueDate must be a real YYYY-MM-DD calendar date/,
+    );
+    assert.deepEqual(deps.saves, []);
+  });
 });

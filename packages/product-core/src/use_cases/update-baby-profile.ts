@@ -1,5 +1,6 @@
 import {
   parseIsoCalendarDate,
+  validateBaby,
   type Baby,
 } from '../domain/baby.ts';
 import {canPerformGroupAction} from '../domain/care-group.ts';
@@ -75,12 +76,12 @@ export function createUpdateBabyProfile(deps: UpdateBabyProfileDependencies) {
       throw new UpdateBabyProfileError('birth_date_future');
     }
 
-    const updated: Baby = {
+    const updated = validateBaby({
       ...baby,
       name,
       birthDate: input.birthDate,
       updatedAt: Math.max(now, baby.updatedAt),
-    };
+    });
     await deps.babies.save(updated);
     return updated;
   };
