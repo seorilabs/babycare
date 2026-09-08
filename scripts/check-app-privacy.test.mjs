@@ -69,3 +69,15 @@ test('필수 iOS pod 이 하나라도 빠지면 실패한다', () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Expected iOS dependency missing/);
 });
+
+test('package.json 의 test·test:static 스크립트가 check:app-privacy 를 실행한다', () => {
+  const pkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
+  assert.match(pkg.scripts.test, /pnpm run check:app-privacy\b/);
+  assert.match(pkg.scripts['test:static'], /pnpm run check:app-privacy\b/);
+  assert.equal(pkg.scripts['check:app-privacy'], 'node scripts/check-app-privacy.mjs');
+});
+
+test('docs/07-qa/test-strategy.md 게이트 표에 check:app-privacy 항목이 등재돼 있다', () => {
+  const doc = readFileSync(join(repoRoot, 'docs', '07-qa', 'test-strategy.md'), 'utf8');
+  assert.match(doc, /pnpm run check:app-privacy/);
+});
