@@ -80,7 +80,7 @@ export function TimelineScreen(props: {
   readonly hasMore: boolean;
   readonly capped: boolean;
   readonly loadingMore: boolean;
-  readonly loadMoreError?: string;
+  readonly loadMoreError?: boolean;
   readonly onLoadMore: () => Promise<void>;
   readonly onRetryLoadMore: () => void | Promise<void>;
   readonly onEdit: (event: CareEvent) => void;
@@ -163,7 +163,7 @@ export function TimelineScreen(props: {
       <Text
         accessibilityRole="alert"
         style={[styles.pageError, {color: props.theme.colors.danger}]}>
-        {props.loadMoreError}
+        {strings.timeline.loadMoreError}
       </Text>
       <Pressable
         accessibilityLabel={strings.timeline.retryLoadMoreLabel}

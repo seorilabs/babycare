@@ -142,7 +142,7 @@ function emptyCareContainer(): DashboardContainer {
           events: [],
           hasMore: false,
           loadingMore: false,
-          loadMoreError: undefined,
+          loadMoreError: false,
           capped: false,
         });
         return jest.fn();
@@ -537,7 +537,7 @@ describe('FirebaseBabyCareApp product copy', () => {
             events: [event],
             hasMore: false,
             loadingMore: false,
-            loadMoreError: undefined,
+            loadMoreError: false,
             capped: false,
           });
           return jest.fn();

@@ -91,7 +91,7 @@ function normalize(source) {
       "$1{/* BIRTH_DATE_FIELD */}\n",
     )
     .replace(
-      /\{step === 'birthDate' \? <BirthDatePicker onChange=\{setBirthDate\} value=\{birthDate\} \/> : null\}\n(?=\s*\{step === 'inviteCode')/,
+      /\{step === 'birthDate' \? <BirthDatePicker\b[^>]*\/> : null\}\n(?=\s*\{step === 'inviteCode')/,
       '{/* BIRTH_DATE_FIELD */}\n',
     )
     // 위와 같은 이유로, 모바일 전용 날짜 버튼 스타일 3종도 대조에서 뺀다 — 앱인토스는

@@ -299,7 +299,7 @@ export function CloudOnboardingScreen(props: {
                   value={babyName}
                 />
               ) : null}
-              {step === 'birthDate' ? <BirthDatePicker onChange={setBirthDate} value={birthDate} /> : null}
+              {step === 'birthDate' ? <BirthDatePicker onChange={setBirthDate} strings={strings} value={birthDate} /> : null}
               {step === 'inviteCode' ? (
                 <TextInput
                   accessibilityLabel={strings.onboarding.inviteCodeLabel}

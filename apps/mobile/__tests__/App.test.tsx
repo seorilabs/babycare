@@ -236,14 +236,14 @@ test('connects local pagination through App and preserves its scoped tab state',
 test('maps an injected paging error and retry through App to TimelineScreen', async () => {
   const events = careEvents(40);
   const stopObserve = mockLoadedSession(events);
-  const errorMessage = '이전 기록을 불러오지 못했어요';
+  const errorMessage = createStrings('ko').timeline.loadMoreError;
   let page: LocalTimelinePaginationState;
   const retryLoadMore = jest.fn(async () => {
     page = {
       ...page,
       events,
       hasMore: false,
-      loadMoreError: undefined,
+      loadMoreError: false,
     };
   });
   page = {
@@ -251,7 +251,7 @@ test('maps an injected paging error and retry through App to TimelineScreen', as
     hasMore: true,
     capped: false,
     loadingMore: false,
-    loadMoreError: errorMessage,
+    loadMoreError: true,
     loadMore: jest.fn(async () => undefined),
     retryLoadMore,
   };
