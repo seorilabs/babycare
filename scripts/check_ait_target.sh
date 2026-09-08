@@ -18,16 +18,16 @@ for file in "${required_files[@]}"; do
   fi
 done
 
-rg -q '"build": "ait build"' apps/ait/package.json
-rg -q "appName: 'babynest'" apps/ait/granite.config.ts
-rg -q "displayName: '함께봄: 아기돌봄 기록'" apps/ait/granite.config.ts
-rg -q 'TDSProvider' apps/ait/src/_app.tsx
-rg -q 'CloudOnboardingScreen' apps/ait/src/pages/index.tsx
-rg -q 'PersistentCareEventSyncStore' apps/ait/src/services/care-event-runtime.ts
-rg -q 'AitFirestoreCareEventRemoteStore' apps/ait/src/services/babycare-backend.ts
-rg -q 'QuickRecordModal' apps/ait/src/components/parity-dashboard.tsx
+grep -qF '"build": "ait build"' apps/ait/package.json
+grep -qF "appName: 'babynest'" apps/ait/granite.config.ts
+grep -qF "displayName: '함께봄: 아기돌봄 기록'" apps/ait/granite.config.ts
+grep -qF 'TDSProvider' apps/ait/src/_app.tsx
+grep -qF 'CloudOnboardingScreen' apps/ait/src/pages/index.tsx
+grep -qF 'PersistentCareEventSyncStore' apps/ait/src/services/care-event-runtime.ts
+grep -qF 'AitFirestoreCareEventRemoteStore' apps/ait/src/services/babycare-backend.ts
+grep -qF 'QuickRecordModal' apps/ait/src/components/parity-dashboard.tsx
 
-if rg -n "mobile/src|@react-native-async-storage/async-storage|@react-native-firebase" \
+if grep -rnE "mobile/src|@react-native-async-storage/async-storage|@react-native-firebase" \
   apps/ait/src; then
   echo "AIT source must not load the mobile target or mobile-only native modules." >&2
   exit 1
@@ -62,16 +62,16 @@ if (config.release?.sandboxQa !==
 }
 '
 
-if rg -n 'createOneTimePurchaseOrder|getProductItemList|loadBannerAd|TossPay|tossPay|\bIAP\b' \
+if grep -rnE 'createOneTimePurchaseOrder|getProductItemList|loadBannerAd|TossPay|tossPay|\bIAP\b' \
   apps/ait/package.json apps/ait/src; then
   echo "AIT contains an unapproved banner, IAP, or Toss Pay integration." >&2
   exit 1
 fi
 
-rg -q 'loadFullScreenAd' apps/ait/src/services/rewarded-ad.ts
-rg -q 'userEarnedReward' apps/ait/src/services/rewarded-ad.ts
+grep -qF 'loadFullScreenAd' apps/ait/src/services/rewarded-ad.ts
+grep -qF 'userEarnedReward' apps/ait/src/services/rewarded-ad.ts
 
-if rg -n '확정 필요|Welcome|About Granite' \
+if grep -rnE '확정 필요|Welcome|About Granite' \
   apps/ait/granite.config.ts apps/ait/src apps/ait/pages; then
   echo "AIT target still contains placeholder or template UI." >&2
   exit 1
