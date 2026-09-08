@@ -473,6 +473,201 @@ describe('FirebaseBabyCareApp product copy', () => {
     expect(visibleText(renderer)).not.toContain('cloud-care-context');
   });
 
+  it('serializes membership and profile updates against the latest ready session', async () => {
+    const now = new Date('2026-09-08T12:00:00+09:00').getTime();
+    const {baby, group, identity, membership} = readySessionFixture(now);
+    const caregiver: Membership = {
+      userId: userId('caregiver-2'),
+      groupId: group.id,
+      caregiverRole: 'other',
+      membershipRole: 'member',
+      displayName: '아빠',
+      color: '#4B8FCC',
+      joinedAt: now,
+    };
+    const container = emptyCareContainer();
+    let releaseMembershipRefresh:
+      | ((memberships: readonly Membership[]) => void)
+      | undefined;
+    const pendingMembershipRefresh = new Promise<readonly Membership[]>(
+      resolve => {
+        releaseMembershipRefresh = resolve;
+      },
+    );
+    const refreshMemberships: jest.MockedFunction<
+      FirebaseRuntime['refreshMemberships']
+    > = jest
+      .fn()
+      .mockResolvedValueOnce([membership])
+      .mockReturnValueOnce(pendingMembershipRefresh);
+    const updateBabyProfile: jest.MockedFunction<
+      FirebaseRuntime['updateBabyProfile']
+    > = jest.fn(async (session, input) => ({
+      ...session.context.baby,
+      name: input.name,
+      birthDate: input.birthDate,
+      updatedAt: now + 1,
+    }));
+    jest
+      .mocked(AsyncStorage.getItem)
+      .mockReset()
+      .mockResolvedValue(null);
+    jest
+      .mocked(AsyncStorage.setItem)
+      .mockReset()
+      .mockResolvedValue(undefined);
+    bootstrap.mockResolvedValue({
+      kind: 'firebase',
+      mode: 'cloud',
+      label: 'Firebase Cloud',
+      source: 'native',
+      analytics: {track: jest.fn(async () => undefined)},
+      firebaseIdToken: jest.fn(async () => undefined),
+      sessionServices: {
+        auth: {currentUser: jest.fn(async () => identity)},
+        groups: {
+          listForUser: jest.fn(async () => [group]),
+          findMembership: jest.fn(async () => membership),
+          listMemberships: jest.fn(async () => [membership]),
+        },
+        babies: {list: jest.fn(async () => [baby])},
+      },
+      createCareContainer: jest.fn(async () => container),
+      refreshMemberships,
+      updateBabyProfile,
+    } as unknown as FirebaseRuntime);
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <FirebaseBabyCareApp strings={createStrings('ko')} />,
+      );
+      for (let count = 0; count < 12; count += 1) {
+        await Promise.resolve();
+      }
+    });
+    if (!renderer || !releaseMembershipRefresh) {
+      throw new Error('공동 기록 세션 화면을 준비하지 못했어요');
+    }
+
+    const dashboard = renderer.root.findByType(FirebaseCareDashboard);
+    let refreshPromise: Promise<void> | undefined;
+    let profilePromise: Promise<void> | undefined;
+    ReactTestRenderer.act(() => {
+      refreshPromise = dashboard.props.onRefreshMembers();
+      profilePromise = dashboard.props.onUpdateBabyProfile({
+        name: '새 하루',
+        birthDate: '2026-01-02',
+      });
+    });
+    expect(updateBabyProfile).not.toHaveBeenCalled();
+
+    await ReactTestRenderer.act(async () => {
+      releaseMembershipRefresh?.([membership, caregiver]);
+      await refreshPromise;
+      await profilePromise;
+    });
+
+    expect(updateBabyProfile).toHaveBeenCalledWith(
+      expect.objectContaining({memberships: [membership, caregiver]}),
+      {name: '새 하루', birthDate: '2026-01-02'},
+    );
+    const updatedDashboard = renderer.root.findByType(FirebaseCareDashboard);
+    expect(updatedDashboard.props.ready.context.baby).toMatchObject({
+      name: '새 하루',
+      birthDate: '2026-01-02',
+    });
+    expect(updatedDashboard.props.ready.memberships).toEqual([
+      membership,
+      caregiver,
+    ]);
+    const lastCacheWrite = jest.mocked(AsyncStorage.setItem).mock.calls.at(-1);
+    expect(lastCacheWrite?.[0]).toBe('@babycare/cloud-care-context/v1');
+    expect(JSON.parse(lastCacheWrite?.[1] ?? '{}')).toMatchObject({
+      context: {baby: {name: '새 하루', birthDate: '2026-01-02'}},
+      memberships: [
+        {userId: membership.userId},
+        {userId: caregiver.userId},
+      ],
+    });
+  });
+
+  it('keeps the remotely saved profile visible when the local cache write fails', async () => {
+    const now = new Date('2026-09-08T13:00:00+09:00').getTime();
+    const {baby, group, identity, membership} = readySessionFixture(now);
+    const container = emptyCareContainer();
+    const cacheError = new Error('AsyncStorage write failed');
+    const updateBabyProfile: jest.MockedFunction<
+      FirebaseRuntime['updateBabyProfile']
+    > = jest.fn(async (session, input) => ({
+      ...session.context.baby,
+      name: input.name,
+      birthDate: input.birthDate,
+      updatedAt: now + 1,
+    }));
+    jest
+      .mocked(AsyncStorage.getItem)
+      .mockReset()
+      .mockResolvedValue(null);
+    jest
+      .mocked(AsyncStorage.setItem)
+      .mockReset()
+      .mockResolvedValue(undefined);
+    bootstrap.mockResolvedValue({
+      kind: 'firebase',
+      mode: 'cloud',
+      label: 'Firebase Cloud',
+      source: 'native',
+      analytics: {track: jest.fn(async () => undefined)},
+      firebaseIdToken: jest.fn(async () => undefined),
+      sessionServices: {
+        auth: {currentUser: jest.fn(async () => identity)},
+        groups: {
+          listForUser: jest.fn(async () => [group]),
+          findMembership: jest.fn(async () => membership),
+          listMemberships: jest.fn(async () => [membership]),
+        },
+        babies: {list: jest.fn(async () => [baby])},
+      },
+      createCareContainer: jest.fn(async () => container),
+      refreshMemberships: jest.fn(async () => [membership]),
+      updateBabyProfile,
+    } as unknown as FirebaseRuntime);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <FirebaseBabyCareApp strings={createStrings('ko')} />,
+      );
+      for (let count = 0; count < 12; count += 1) {
+        await Promise.resolve();
+      }
+    });
+    if (!renderer) {
+      throw new Error('공동 기록 세션 화면을 준비하지 못했어요');
+    }
+
+    jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(cacheError);
+    const dashboard = renderer.root.findByType(FirebaseCareDashboard);
+    await ReactTestRenderer.act(async () => {
+      await dashboard.props.onUpdateBabyProfile({
+        name: '서버 하루',
+        birthDate: '2026-01-03',
+      });
+    });
+
+    const updatedDashboard = renderer.root.findByType(FirebaseCareDashboard);
+    expect(updatedDashboard.props.ready.context.baby).toMatchObject({
+      name: '서버 하루',
+      birthDate: '2026-01-03',
+    });
+    expect(updatedDashboard.props.runtimeError.cause).toBe(cacheError);
+    expect(alert).toHaveBeenLastCalledWith(
+      '변경 내용은 반영됐어요',
+      '최신 공동 돌봄 정보를 이 기기에 저장하지 못했어요. 저장 공간을 확인한 뒤 다시 실행해 주세요.',
+    );
+    alert.mockRestore();
+  });
+
   it('hides technical details when runtime operations fail', async () => {
     const now = new Date('2026-08-03T16:00:00+09:00').getTime();
     const {baby, group, identity, ready} = readySessionFixture(now);

@@ -107,6 +107,9 @@ const ko = {
     connectionStatusFailed: '공동 기록 연결 상태를 확인하지 못했어요',
     cacheRehydrated: '저장된 공동 돌봄 정보를 새로 불러왔어요',
     clearRevokedFailed: '해제된 공동 돌봄 정보를 기기에서 지우지 못했어요',
+    cacheWriteFailedTitle: '변경 내용은 반영됐어요',
+    cacheWriteFailedMessage:
+      '최신 공동 돌봄 정보를 이 기기에 저장하지 못했어요. 저장 공간을 확인한 뒤 다시 실행해 주세요.',
     syncRetryFailed: '동기화를 다시 시도하지 못했어요',
     deleteEventFailedTitle: '삭제할 수 없어요',
     deleteEventFailedMessage:
@@ -546,6 +549,9 @@ const en: Strings = {
     connectionStatusFailed: "Couldn't check the shared log connection",
     cacheRehydrated: 'Reloaded your saved care group data',
     clearRevokedFailed: "Couldn't clear the revoked care group data from this device",
+    cacheWriteFailedTitle: 'Your changes were saved',
+    cacheWriteFailedMessage:
+      "Couldn't keep the latest shared care data on this device. Check your storage and reopen the app.",
     syncRetryFailed: "Couldn't retry syncing",
     deleteEventFailedTitle: "Can't delete",
     deleteEventFailedMessage:
