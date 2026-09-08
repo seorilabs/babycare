@@ -22,6 +22,7 @@
 | AIT unit/parity | mobile UI 소스 동기, 상세 기록·홈·타임라인·통계·더보기·클라우드 온보딩과 offline outbox | `pnpm run check:ait:parity`(`pnpm run test:static`의 `check:ait`에 포함돼 PR·main마다 실행), `pnpm run test:ait` | 11개 UI/표시 소스와 4개 탭 destination 드리프트, AppsInToss 플로팅 탭바 구조, 로그인 전 서비스 인트로, 5종 기록 variant, 첫 기록 가이드, 20개 단위 타임라인 페이지네이션, 과거 시각·메모, latest 5종, 작성자·삭제, 12h/7d/30d, 구성원·초대·privacy, remote 실패 local 보존 |
 | AIT target | Granite·TDS 구성과 Console 식별자 | `pnpm run check:ait`, `pnpm --dir apps/ait check`, `pnpm --dir apps/ait build` | 패리티 local build 완료, Console 업로드·sandbox 실기기 QA 미검증 |
 | AIT bottom safe area | AppsInToss host 하단 inset과 시스템 내비게이션 겹침 방지 | `pnpm run test:ait` | host inset 우선, Android zero-inset일 때만 24dp fallback, active dashboard의 중복 bottom SafeArea 제거 |
+| App Store privacy | App Privacy 선언과 iOS 광고/분석 SDK 일치 | `pnpm run check:app-privacy`(`pnpm run test:static`에 포함돼 PR·main마다 실행) | `appPrivacy.collected` 12종의 linked·purposes, `Podfile.lock`의 필수/금지 iOS pod, 광고 식별자 미수집 설정 |
 | Release inventory | market/release blocker | `pnpm run check:release` | placeholder와 필수 market config; 현재 실패가 정상 |
 
 전체 개발 게이트:
