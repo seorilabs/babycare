@@ -114,6 +114,11 @@ const ko = {
     stopSleepFailedTitle: '수면을 종료할 수 없어요',
     stopSleepFailedMessage:
       '수면을 종료하지 못했어요. 연결을 확인하고 다시 시도해 주세요.',
+    dashboardPrepareFailed: '공동 기록을 준비하지 못했어요.',
+    runtimeNotReady: '동기화를 준비하고 있어요.',
+    remoteSyncFailed: '공동 기록을 동기화하지 못했어요.',
+    overviewSummaryLoadFailed: '돌봄 요약을 불러오지 못했어요.',
+    genericProcessingFailed: '처리하지 못했어요. 잠시 후 다시 시도해 주세요.',
   },
 
   sync: {
@@ -540,6 +545,11 @@ const en: Strings = {
     stopSleepFailedTitle: "Can't end sleep",
     stopSleepFailedMessage:
       "Couldn't end this sleep session. Check your connection and try again.",
+    dashboardPrepareFailed: "Couldn't prepare your shared log.",
+    runtimeNotReady: 'Getting sync ready.',
+    remoteSyncFailed: "Couldn't sync your shared log.",
+    overviewSummaryLoadFailed: "Couldn't load your care summary.",
+    genericProcessingFailed: "Couldn't process that. Please try again shortly.",
   },
 
   sync: {

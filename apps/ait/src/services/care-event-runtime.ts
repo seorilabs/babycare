@@ -1,4 +1,5 @@
 import { Storage } from '@apps-in-toss/framework';
+import type { Strings } from '@babycare/product-ui';
 import {
   createEndSleepSession,
   createRecordCareEvent,
@@ -48,7 +49,8 @@ function nextEventId() {
  */
 export async function createAitCareEventRuntime(
   ready: ReadyCareSession,
-  onRemoteError: (error: Error) => void
+  onRemoteError: (error: Error) => void,
+  strings: Strings
 ): Promise<AitCareEventRuntime> {
   const local = new PersistentCareEventSyncStore(
     {
@@ -63,7 +65,7 @@ export async function createAitCareEventRuntime(
   const repository = new LocalFirstCareEventRepository(local, remote, {
     onRemoteError: (error) => {
       const cause = error.cause;
-      onRemoteError(cause instanceof Error ? cause : new Error('공동 기록을 동기화하지 못했어요.'));
+      onRemoteError(cause instanceof Error ? cause : new Error(strings.app.remoteSyncFailed));
     },
     remoteObservationMode: 'external_pages',
   });
@@ -98,7 +100,7 @@ export async function createAitCareEventRuntime(
     maxScanPagesPerLoad: 3,
     onRemoteError: (error) => {
       const cause = error.cause;
-      onRemoteError(cause instanceof Error ? cause : new Error('이전 기록을 불러오지 못했어요.'));
+      onRemoteError(cause instanceof Error ? cause : new Error(strings.timeline.loadMoreError));
     },
     onServerConfirmed: () => repository.retryFailures(['retryable', 'unauthenticated']),
   });
@@ -108,7 +110,7 @@ export async function createAitCareEventRuntime(
     clock: { now: () => Date.now() },
     onRemoteError: (error) => {
       const cause = error.cause;
-      onRemoteError(cause instanceof Error ? cause : new Error('돌봄 요약을 불러오지 못했어요.'));
+      onRemoteError(cause instanceof Error ? cause : new Error(strings.app.overviewSummaryLoadFailed));
     },
     onServerConfirmed: () => repository.retryFailures(['retryable', 'unauthenticated']),
   });
