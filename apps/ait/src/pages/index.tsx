@@ -31,10 +31,8 @@ import {checkAitUpdateGate} from '../services/platform-update-gate';
 
 export const Route = createRoute('/', {component: BabyNestHome});
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : '처리하지 못했어요. 잠시 후 다시 시도해 주세요.';
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
 }
 
 export function BabyNestHome() {
@@ -109,7 +107,7 @@ export function BabyNestHome() {
           })
           .catch(() => undefined);
       }
-      setError(errorMessage(caught));
+      setError(errorMessage(caught, strings.app.genericProcessingFailed));
     } finally {
       setLoading(false);
     }

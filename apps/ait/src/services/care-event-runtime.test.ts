@@ -85,6 +85,7 @@ import {
   type CareGroup,
   type Membership,
 } from '../../../../packages/product-core/src/index.ts';
+import { createStrings } from '@babycare/product-ui';
 import { createAitCareEventRuntime } from './care-event-runtime';
 
 describe('AppsInToss local-first care event runtime', () => {
@@ -129,7 +130,8 @@ describe('AppsInToss local-first care event runtime', () => {
         memberships: [membership],
         events: [],
       },
-      jest.fn()
+      jest.fn(),
+      createStrings('ko')
     );
     await runtime.record({
       groupId: group.id,

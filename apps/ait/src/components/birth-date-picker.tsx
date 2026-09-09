@@ -2,8 +2,22 @@ import React, {useMemo, useState} from 'react';
 import {Keyboard, Pressable, StyleSheet, Text, View} from 'react-native';
 import type {Strings} from '@babycare/product-ui';
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const CALENDAR_CELL_COUNT = 42;
+/** 2024-01-07 은 일요일이다. 요일 이름을 뽑기 위한 기준일일 뿐 실제 달과 무관하다. */
+const WEEKDAY_REFERENCE_SUNDAY = new Date(2024, 0, 7);
+
+function weekdayLabels(intlLocale: string): readonly string[] {
+  const formatter = new Intl.DateTimeFormat(intlLocale, {weekday: 'narrow'});
+  return Array.from({length: 7}, (_, index) =>
+    formatter.format(
+      new Date(
+        WEEKDAY_REFERENCE_SUNDAY.getFullYear(),
+        WEEKDAY_REFERENCE_SUNDAY.getMonth(),
+        WEEKDAY_REFERENCE_SUNDAY.getDate() + index,
+      ),
+    ),
+  );
+}
 
 export type BirthDateCalendarDay = {
   readonly day: number;
@@ -101,6 +115,23 @@ export function BirthDatePicker({
       ),
     [maximumDate, visibleMonth],
   );
+  const weekdays = useMemo(
+    () => weekdayLabels(strings.intlLocale),
+    [strings.intlLocale],
+  );
+  const monthTitleFormatter = useMemo(
+    () => new Intl.DateTimeFormat(strings.intlLocale, {year: 'numeric', month: 'long'}),
+    [strings.intlLocale],
+  );
+  const dayLabelFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(strings.intlLocale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+    [strings.intlLocale],
+  );
 
   const moveMonth = (offset: number) => {
     const target = new Date(
@@ -142,7 +173,7 @@ export function BirthDatePicker({
               <Text style={styles.monthButtonText}>‹</Text>
             </Pressable>
             <Text style={styles.monthTitle}>
-              {visibleMonth.getFullYear()}년 {visibleMonth.getMonth() + 1}월
+              {monthTitleFormatter.format(visibleMonth)}
             </Text>
             <Pressable
               accessibilityLabel={strings.onboarding.birthDateNextMonthLabel}
@@ -164,15 +195,17 @@ export function BirthDatePicker({
             </Pressable>
           </View>
           <View style={styles.calendarGrid}>
-            {WEEKDAYS.map(day => (
-              <View key={day} style={styles.dayCell}>
+            {weekdays.map((day, index) => (
+              <View key={`weekday-${index}`} style={styles.dayCell}>
                 <Text style={styles.weekday}>{day}</Text>
               </View>
             ))}
             {days.map((day, index) =>
               day ? (
                 <Pressable
-                  accessibilityLabel={`${visibleMonth.getFullYear()}년 ${visibleMonth.getMonth() + 1}월 ${day.day}일`}
+                  accessibilityLabel={dayLabelFormatter.format(
+                    new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), day.day),
+                  )}
                   accessibilityRole="button"
                   accessibilityState={{disabled: day.disabled, selected: day.isoDate === value}}
                   disabled={day.disabled}

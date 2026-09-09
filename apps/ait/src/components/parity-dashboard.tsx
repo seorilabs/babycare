@@ -90,7 +90,7 @@ export function ParityDashboard({
       if (active) {
         setRuntimeError(error.message);
       }
-    })
+    }, strings)
       .then(value => {
         if (!active) {
           return value.close();
@@ -114,7 +114,7 @@ export function ParityDashboard({
           setRuntimeError(
             error instanceof Error
               ? error.message
-              : '공동 기록을 준비하지 못했어요.',
+              : strings.app.dashboardPrepareFailed,
           );
         }
       });
@@ -210,7 +210,7 @@ export function ParityDashboard({
           }}
           onDelete={async event => {
             if (!runtime) {
-              throw new Error('동기화를 준비하고 있어요.');
+              throw new Error(strings.app.runtimeNotReady);
             }
             await runtime.softDelete(event);
             setSavedMessage(strings.app.eventDeleted);
@@ -293,7 +293,7 @@ export function ParityDashboard({
         }}
         onStopSleep={async event => {
           if (!runtime) {
-            throw new Error('동기화를 준비하고 있어요.');
+            throw new Error(strings.app.runtimeNotReady);
           }
           await runtime.endSleep(event);
           setSavedMessage(strings.app.sleepRecorded);
@@ -378,7 +378,7 @@ export function ParityDashboard({
         }}
         onSave={async input => {
           if (!runtime) {
-            throw new Error('동기화를 준비하고 있어요.');
+            throw new Error(strings.app.runtimeNotReady);
           }
           if (editingEvent) {
             await runtime.update(editingEvent, input);
