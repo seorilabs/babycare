@@ -62,7 +62,7 @@ Android/iOS는 환경 suffix 없이 같은 식별자를 사용하므로 기존 `
 - ~~성인 양육자용·비의료 목적, 초대된 그룹 내 아동 정보 공유 구조를 review note에 설명~~ 완료.
 - 양육자 2인 이상 TestFlight 테스트. 내부 그룹 `서리랩스 내부테스터`는 모든 빌드 접근 활성화. ~~iPhone 6.9" screenshot~~ 완료(실기 시뮬레이터 캡처 5컷). store 아이콘 1024와 Xcode `AppIcon.appiconset` 반영 완료.
 - ~~`app-store/app-store.config.json` 작성~~ 완료(이름·subtitle·설명·키워드·review·export·privacy 초안).
-- 업로드 자동화: `deploy-app-store.yml`(scheme/workspace/bundle 기본값 채움) 준비 완료. signing·ASC 키는 `docs/06-release/store-upload-setup.md` 참고.
+- 업로드 자동화: `deploy-app-store.yml`이 중앙 Xcode Cloud 워크플로를 부른다. ASC API 키는 `docs/06-release/store-upload-setup.md` 참고.
 
 ## AppsInToss Blocker
 

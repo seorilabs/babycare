@@ -30,21 +30,6 @@ on:
         type: choice
         options: [draft, completed]
         default: completed
-      ios_scheme:
-        description: "App Store: Xcode scheme"
-        type: string
-        required: false
-        default: "BabyCare"
-      ios_workspace:
-        description: "App Store: Xcode workspace 경로"
-        type: string
-        required: false
-        default: "apps/mobile/ios/BabyCare.xcworkspace"
-      ios_bundle_id:
-        description: "App Store: iOS bundle id"
-        type: string
-        required: false
-        default: "com.seorilabs.babycare"
       memo:
         description: "AIT 배포 메모(선택)"
         type: string
@@ -100,17 +85,8 @@ jobs:
     if: ${{ inputs.deploy_app_store }}
     uses: ./.github/workflows/deploy-app-store.yml
     secrets:
-      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
-      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
-      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
-      APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
       APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
-      FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
     with:
       release_tag: ${{ needs.resolve.outputs.tag }}
-      upload: true
-      ios_scheme: ${{ inputs.ios_scheme }}
-      ios_workspace: ${{ inputs.ios_workspace }}
-      ios_bundle_id: ${{ inputs.ios_bundle_id }}

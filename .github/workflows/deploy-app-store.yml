@@ -1,93 +1,45 @@
-# App Store(Xcode archive + 업로드) — macos-26. org 재사용 워크플로우 호출.
+# App Store archive·upload은 Xcode Cloud에서만 실행한다. 이 워크플로는 태그를 Xcode Cloud
+# 빌드로 넘기는 조직 재사용 워크플로를 부르기만 한다. 트리거 구현과 테스트는 중앙에 한 벌만
+# 둔다(seorilabs/.github scripts/trigger-xcode-cloud.mjs).
 #
-# ⚠️ babycare App Store 배포 정본은 **Xcode Cloud**다(apps/mobile/ios/ci_scripts/ + backoffice
-#    ciBuildRuns 트리거, XCODE_CLOUD_APP_STORE_REPOS allowlist). babycare 는 RNFirebase 라
-#    Xcode 26.x 정적 링키지 회귀 대상이라 macOS 러너 archive 는 실패 위험이 있다. 이 GH 경로는
-#    fallback 으로만 남긴다(deploy-all 기본 deploy_app_store=false, backoffice ALL 배포도
-#    Xcode Cloud repo 면 deploy_app_store=false 주입). 필요 시 수동 dispatch 로만 사용.
-#
-# ios_scheme/workspace/bundle_id 기본값은 확정된 실제 식별자(2026-07-13). 필요 시 dispatch로 override.
+# scheme·workspace는 Xcode Cloud workflow가 갖고 있고, bundle id는
+# app-store/app-store.config.json에서 읽는다. 여기에 적지 않는다.
 name: Deploy App Store
 
 on:
   workflow_dispatch:
     inputs:
       release_tag:
+        description: "Xcode Cloud에서 빌드할 릴리즈 태그(vX.Y.Z)"
+        required: true
         type: string
-        required: false
-        default: ""
-      upload:
-        description: "true면 App Store Connect 업로드(false면 xcarchive 아티팩트만)"
-        type: boolean
-        default: false
-      ios_scheme:
-        description: "Xcode scheme"
-        type: string
-        default: "BabyCare"
-      ios_workspace:
-        description: "Xcode workspace 경로(.xcworkspace)"
-        type: string
-        default: "apps/mobile/ios/BabyCare.xcworkspace"
-      ios_bundle_id:
-        description: "iOS bundle id"
-        type: string
-        default: "com.seorilabs.babycare"
   workflow_call:
     inputs:
       release_tag:
+        description: "Xcode Cloud에서 빌드할 릴리즈 태그(vX.Y.Z)"
+        required: true
         type: string
-        required: false
-        default: ""
-      upload:
-        type: boolean
-        default: true
-      ios_scheme:
-        type: string
-        default: "BabyCare"
-      ios_workspace:
-        type: string
-        default: "apps/mobile/ios/BabyCare.xcworkspace"
-      ios_bundle_id:
-        type: string
-        default: "com.seorilabs.babycare"
     secrets:
-      APPLE_DISTRIBUTION_CERTIFICATE_BASE64:
-        required: true
-      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD:
-        required: true
-      APPLE_PROVISIONING_PROFILE_BASE64:
-        required: true
-      APPLE_KEYCHAIN_PASSWORD:
-        required: true
       APP_STORE_CONNECT_API_KEY_ID:
         required: true
       APP_STORE_CONNECT_ISSUER_ID:
         required: true
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64:
         required: true
-      FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:
-        required: true
 
 permissions:
   contents: read
 
+concurrency:
+  group: babycare-xcode-cloud-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
 jobs:
   app-store:
-    uses: seorilabs/.github/.github/workflows/rn-deploy-app-store.yml@9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5
+    uses: seorilabs/.github/.github/workflows/app-store-xcode-cloud.yml@9c6f2df3133cbdf97b83792f79d92a920a27380b
+    with:
+      release_tag: ${{ inputs.release_tag }}
     secrets:
-      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
-      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
-      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
-      APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
       APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
-      FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
-    with:
-      release_tag: ${{ inputs.release_tag }}
-      upload: ${{ inputs.upload }}
-      ios_scheme: ${{ inputs.ios_scheme }}
-      ios_workspace: ${{ inputs.ios_workspace }}
-      ios_bundle_id: ${{ inputs.ios_bundle_id }}
-      ios_dir: apps/mobile
-      package_manager: pnpm
