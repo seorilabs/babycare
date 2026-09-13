@@ -14,7 +14,6 @@ Android release build만 GitHub Actions의 RPI caller가 `seorilabs-ci` Cloud Bu
 | `release-tag.yml` | dispatch | 명시적 SemVer 태그 | ARC |
 | `deploy-apps-in-toss.yml` | dispatch, call | `.ait` build + AppsInToss 비공개 업로드 | ubuntu(x64) |
 | `deploy-google-play.yml` | dispatch, call | Cloud Build 서명 AAB + 선택적 Google Play 업로드 | ARC caller → Cloud Build x64 |
-| `deploy-app-store.yml` | dispatch, call | Xcode Cloud 빌드 트리거 | 중앙 재사용 워크플로 |
 | `deploy-all.yml` | dispatch | 태그 1개로 3마켓 한 번에 | — |
 | `cleanup-actions-storage.yml` | dispatch | 아티팩트/캐시 정리 | ARC |
 | `release-inventory.yml` | dispatch | 릴리즈 준비 점검 | — |
@@ -28,7 +27,6 @@ Android release build만 GitHub Actions의 RPI caller가 `seorilabs-ci` Cloud Bu
 1. AppsInToss target은 초기화됐지만 로그인·공동 기록 adapter와 sandbox 실기기 QA가 남아 있다.
 2. Google Play/App Store 식별자는 `com.seorilabs.babycare`로 확정했다. build-only workflow도
    Cloud Build submit용 WIF가 필요하지만 Google Play 업로드는 `upload=false`로 분리한다.
-3. `deploy-app-store.yml`은 `release_tag`만 받는다. bundle id는 `app-store/app-store.config.json`에서 읽고 scheme·workspace는 Xcode Cloud workflow가 갖는다.
 4. repo-local 버전 resolver, Google Play 업로더, Firebase config 복원 스크립트와 Android
    Gradle version/signing override 계약은 구현돼 있다. Cloud Build는 `build.env`,
    `cloudbuild-android.yaml`, `scripts/build-android.sh`를 단일 계약으로 사용한다.

@@ -11,7 +11,6 @@
 | `release-tag.yml` / `Release Tag` | dispatch | 명시적 SemVer tag |
 | `deploy-apps-in-toss.yml` / `Deploy AppsInToss` | dispatch/call | x64 AIT build·비공개 업로드; production release는 Console 정책·QA gate 필요 |
 | `deploy-google-play.yml` / `Deploy Google Play` | dispatch/call | x64 Linux AAB·선택 upload caller; signing/config 미구성 |
-| `deploy-app-store.yml` / `Deploy App Store` | dispatch/call | 중앙 Xcode Cloud 워크플로 caller |
 | `deploy-all.yml` / `Deploy All` | dispatch | tag 기준 마켓 fan-out |
 | `nightly.yml` / `Nightly` | dispatch, schedule 주석 | 새 commit이 있을 때 AIT test build |
 | `cleanup-actions-storage.yml` / `Cleanup Actions Storage` | dispatch | Actions artifact/cache 정리 |
