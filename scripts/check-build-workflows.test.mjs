@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {readFile, readdir} from 'node:fs/promises';
 import test from 'node:test';
 
 async function read(path) {
@@ -109,9 +109,15 @@ test('AppsInToss build and dev paths both inject the Firebase web API key', asyn
   // 환경변수 우선이어야 CI 동작이 로컬 .env에 영향받지 않는다.
   assert.match(babelConfig, /process\.env\[key\] \?\? dotenv\[key\]/);
 
-  // CI는 secret으로 주입하고 값이 없으면 build 전에 실패한다.
-  assert.match(workflow, /FIREBASE_WEB_API_KEY: \$\{\{ secrets\.FIREBASE_WEB_API_KEY \}\}/);
-  assert.match(workflow, /\[ -n "\$FIREBASE_WEB_API_KEY" \] \|\|/);
+  // CI: 중앙 워크플로가 조직 표준 이름 VITE_FIREBASE_API_KEY 로 job env 에 넣어 준다.
+  // caller 의 build_command 가 이 앱이 쓰는 이름으로 이어 주고, 값이 비면 build 전에 멈춘다.
+  assert.match(workflow, /export FIREBASE_WEB_API_KEY="\$VITE_FIREBASE_API_KEY"/);
+  assert.match(workflow, /if \[ -z "\$\{VITE_FIREBASE_API_KEY\/\/\[\[:space:\]\]\/\}" \]; then/);
+  assert.match(workflow, /::error::FIREBASE_API_KEY repository variable is required\./);
+  assert.ok(
+    workflow.indexOf('export FIREBASE_WEB_API_KEY') < workflow.indexOf('pnpm --dir apps/ait build'),
+    '키를 이어 준 뒤에 빌드해야 한다',
+  );
 });
 
 test('AppsInToss production rewarded ad id comes from the environment', async () => {
@@ -144,11 +150,12 @@ test('AppsInToss production rewarded ad id comes from the environment', async ()
     rewardedAd,
     /__DEV__ \? TEST_REWARDED_AD_GROUP_ID : AIT_REWARDED_AD_GROUP_ID/,
   );
-  assert.match(
-    workflow,
-    /AIT_REWARDED_AD_GROUP_ID: \$\{\{ vars\.AIT_REWARDED_AD_GROUP_ID \}\}/,
-  );
-  assert.match(workflow, /\[ -n "\$AIT_REWARDED_AD_GROUP_ID" \] \|\|/);
+  // caller 문맥에서 읽는다. Environment 범위가 아니라 repository variable 이어야
+  // 얇은 caller 가 읽을 수 있다. 값이 비면 build 전에 멈춘다.
+  assert.match(workflow, /ad_group="\$\{\{ vars\.AIT_REWARDED_AD_GROUP_ID \}\}"/);
+  assert.match(workflow, /if \[ -z "\$\{ad_group\/\/\[\[:space:\]\]\/\}" \]; then/);
+  assert.match(workflow, /::error::AIT_REWARDED_AD_GROUP_ID repository variable is required\./);
+  assert.match(workflow, /export AIT_REWARDED_AD_GROUP_ID="\$ad_group"/);
 });
 
 // 등록 자산 목록과 실제 파일이 어긋나면 Console에 빠진 컷을 올리게 된다.
@@ -171,21 +178,33 @@ test('AppsInToss asset manifest matches the screenshot files on disk', async () 
   }
 });
 
-test('AppsInToss upload workflow uses the x64 Hermes path', async () => {
+// 빌드·업로드 본체는 org 중앙 워크플로에 한 벌만 둔다. 러너, 태그 authority, artifact
+// 검증, 배포 memo 는 그쪽 계약이고 그쪽에서 시험한다. 여기서는 caller 가 무엇을 넘기는지만
+// 본다. 예전 이 테스트는 "x64 Hermes 경로"를 전제로 runs-on: ubuntu-latest 와 인라인
+// ait deploy 호출을 요구했다. 같은 Granite/Hermes 스택의 crossword-puzzle 이 ARM64 ARC
+// 러너에서 .ait 빌드·업로드에 성공하면서 그 전제가 깨졌다.
+test('AppsInToss 배포는 중앙 워크플로를 부르고 업로드는 upload 입력이 정한다', async () => {
   const workflow = await read('.github/workflows/deploy-apps-in-toss.yml');
 
   assert.match(workflow, /^name: Deploy AppsInToss$/m);
-  assert.match(workflow, /runs-on: ubuntu-latest/);
-  assert.match(workflow, /environment: apps-in-toss/);
-  assert.match(workflow, /node-version: 24\.16\.0/);
-  assert.match(workflow, /pnpm@11\.14\.0/);
+  assert.match(
+    workflow,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-ait\.yml@[0-9a-f]{40}/,
+  );
+  assert.match(workflow, /^      ait_dir: apps\/ait$/m);
+  assert.match(workflow, /^      artifact_path: apps\/ait\/babynest\.ait$/m);
+  assert.match(workflow, /node_version: "24\.16\.0"/);
+  assert.match(workflow, /pnpm_version: "11\.14\.0"/);
   assert.match(workflow, /pnpm --dir apps\/ait build/);
-  assert.match(workflow, /test -f apps\/ait\/babynest\.ait/);
-  assert.match(workflow, /APPS_IN_TOSS_API_KEY/);
-  assert.match(workflow, /pnpm --dir apps\/ait exec ait deploy/);
-  assert.match(workflow, /--location \.\/babynest\.ait/);
-  assert.match(workflow, /--timeout 300/);
-  assert.doesNotMatch(workflow, /seorilabs-rpi-arm64|rn-deploy-ait\.yml/);
+  assert.match(workflow, /APPS_IN_TOSS_API_KEY: \$\{\{ secrets\.APPS_IN_TOSS_API_KEY \}\}/);
+
+  // 업로드 여부를 caller 가 정하고 그 값이 중앙까지 간다. 기본값이 true 라 기존 동작과 같고,
+  // false 로 부르면 실제 업로드 없이 배포 경로 전체를 확인할 수 있다.
+  assert.match(workflow, /^      upload: \$\{\{ inputs\.upload \}\}$/m);
+  assert.match(workflow, /upload:\n\s+type: boolean\n\s+required: false\n\s+default: true/);
+
+  // 인라인 구현이 되살아나면 중앙에서 고쳐도 이 저장소에는 닿지 않는다.
+  assert.doesNotMatch(workflow, /runs-on:|ait deploy|--location|--timeout/);
 });
 
 test('stable tag creates a signed Android artifact without Play upload', async () => {
@@ -207,7 +226,7 @@ test('stable tag creates a signed Android artifact without Play upload', async (
   assert.match(gradle, /findProperty\('versionCodeOverride'\)/);
   assert.match(
     deploy,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@[0-9a-f]{40}/,
   );
   assert.match(deploy, /package_name: com\.seorilabs\.babycare/);
   assert.doesNotMatch(workflow, /upload: true/);
@@ -277,7 +296,7 @@ test('Google Play deployment is a thin exact-SHA central caller', async () => {
   assert.doesNotMatch(workflow, /secrets:\s*inherit|scripts\/resolve-release-version|upload_script|gcloud builds submit/);
   assert.match(
     promotion,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@[0-9a-f]{40}/,
   );
   assert.match(uploader, /--promote-version-code/);
   assert.match(uploader, /SEORI_EXPECTED_ANDROID_VERSION_CODE/);
@@ -304,7 +323,7 @@ test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', 
   ]);
 
   assert.match(prebuild, /RELEASE_TAG="\$\{CI_TAG:-\}"/);
-  assert.match(prebuild, /AUTHORITY_SHA="9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5"/);
+  assert.match(prebuild, /AUTHORITY_SHA="[0-9a-f]{40}"/);
   assert.match(prebuild, /xcode-cloud-apply-tag-version\.mjs/);
   assert.match(prebuild, /shasum -a 256 -c/);
   assert.match(prebuild, /appleMarketingVersion/);
@@ -411,4 +430,35 @@ test('every workflow installs with the committed pnpm lockfile', async () => {
       assert.equal(pinned, `pnpm_version: "${pnpmVersion}"`);
     }
   }
+});
+
+// 중앙 판본을 올릴 때 워크플로만 고치고 Xcode Cloud 쪽 AUTHORITY_SHA 를 두고 오는 일이
+// 실제로 있었다. 그러면 Actions 는 새 판본, Xcode Cloud 는 옛 판본으로 갈리는데 어느 쪽도
+// 실패하지 않아 드러나지 않는다. 남겨진 pin 은 저장소 안 어디에서도 쓰이지 않는 SHA 가
+// 되므로, 그 조건으로 잡는다.
+test('중앙 참조 pin 은 전부 immutable SHA 이고 뒤처진 것이 없다', async () => {
+  const names = (await readdir('.github/workflows')).filter((name) => name.endsWith('.yml'));
+  const workflows = await Promise.all(names.map((name) => read(`.github/workflows/${name}`)));
+
+  const pins = new Set();
+  for (const [index, text] of workflows.entries()) {
+    for (const line of text.split('\n')) {
+      const ref = line.match(/uses:\s*seorilabs\/\.github\/\.github\/workflows\/[\w.-]+@(\S+)/u);
+      if (ref === null) continue;
+      assert.match(ref[1], /^[0-9a-f]{40}$/u, `${names[index]}: 중앙 참조는 40자 commit SHA 여야 한다`);
+      pins.add(ref[1]);
+    }
+  }
+  assert.ok(pins.size > 0, '중앙 재사용 워크플로 참조를 찾지 못했다');
+
+  // Xcode Cloud 는 워크플로가 아니라 스크립트가 중앙 구현을 SHA 로 받아 온다. 같은 저장소
+  // 안에서 아무 워크플로도 쓰지 않는 SHA 를 가리키고 있으면 갱신을 빠뜨린 것이다.
+  const prebuild = await read('apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh');
+  const authority = prebuild.match(/AUTHORITY_SHA="([0-9a-f]{40})"/u);
+  assert.ok(authority, 'ci_pre_xcodebuild.sh 에 AUTHORITY_SHA 가 없다');
+  assert.ok(
+    pins.has(authority[1]),
+    `ci_pre_xcodebuild.sh 의 AUTHORITY_SHA(${authority[1]}) 를 쓰는 워크플로가 없다. ` +
+      `워크플로 pin: ${[...pins].join(', ')}`,
+  );
 });

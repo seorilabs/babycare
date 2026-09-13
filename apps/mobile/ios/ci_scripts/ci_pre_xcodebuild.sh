@@ -17,9 +17,9 @@ printf '%s\n' "$RELEASE_TAG" | grep -Eq '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|
 command -v node >/dev/null 2>&1 || fail "중앙 release authority를 실행할 Node.js가 없다"
 [ -f "$INFO_PLIST" ] || fail "Info.plist를 찾지 못함: $INFO_PLIST"
 
-AUTHORITY_SHA="9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5"
-APPLIER_SHA256="b399afde0016e23947e173437e266aa83071079d1345b41ff580ebfe63357d6f"
-AUTHORITY_SHA256="ca9ef5b4fe326323840b171f9e6ed069cb182d2aee8e88b72e352c57514d466b"
+AUTHORITY_SHA="565fba53aa5053785c63c9b732b93a3fbd7be847"
+APPLIER_SHA256="1da1dce81a5194a37f7a31475c29d899d95eb6da9ae1460927fe439aa329752c"
+AUTHORITY_SHA256="a8d3a1f6ecd1184cdfe744e930c7ab4b106a2078c9bafb9a7e20d5bcacf99e0a"
 AUTHORITY_DIR="$(mktemp -d)"
 trap 'rm -rf -- "$AUTHORITY_DIR"' EXIT INT TERM
 git -C "$REPO" fetch --force --tags origin >/dev/null
