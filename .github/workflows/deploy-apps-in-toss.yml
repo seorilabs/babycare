@@ -1,5 +1,9 @@
 # AIT(.ait) 빌드 + AppsInToss 비공개 업로드.
-# Granite Linux Hermes compiler가 x86-64 전용이므로 ubuntu x64에서 실행한다.
+#
+# 빌드·업로드 본체는 조직 중앙 워크플로에 한 벌만 둔다. 이 파일은 경로와 명령만 넘긴다.
+# 러너도 중앙이 고른다(seorilabs-rpi-arm64). 이전에는 "Granite Hermes가 x86-64 전용"이라는
+# 전제로 GitHub-hosted ubuntu를 쓰고 있었지만, 같은 Granite/Hermes 스택의 crossword-puzzle이
+# 중앙 워크플로로 ARM64 ARC 러너에서 .ait 빌드·업로드에 성공한다(run 31953915642).
 name: Deploy AppsInToss
 
 on:
@@ -28,8 +32,6 @@ on:
     secrets:
       APPS_IN_TOSS_API_KEY:
         required: true
-      FIREBASE_WEB_API_KEY:
-        required: true
 
 permissions:
   contents: read
@@ -41,120 +43,33 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build and upload .ait
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    environment: apps-in-toss
-
-    env:
+    uses: seorilabs/.github/.github/workflows/rn-deploy-ait.yml@9dad5099e4b0e2a49d41ab0ee388160bfa3bdbf9
+    secrets:
       APPS_IN_TOSS_API_KEY: ${{ secrets.APPS_IN_TOSS_API_KEY }}
-      FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
-      AIT_REWARDED_AD_GROUP_ID: ${{ vars.AIT_REWARDED_AD_GROUP_ID }}
-      RELEASE_REF: ${{ inputs.release_tag }}
-      INPUT_MEMO: ${{ inputs.memo }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.release_tag || github.ref }}
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-
-      - name: Validate AppsInToss and Firebase secrets
-        shell: bash
-        run: |
-          set -euo pipefail
-          [ -n "$APPS_IN_TOSS_API_KEY" ] || {
-            echo "APPS_IN_TOSS_API_KEY secret is required." >&2
-            exit 1
-          }
-          [ -n "$FIREBASE_WEB_API_KEY" ] || {
-            echo "FIREBASE_WEB_API_KEY secret is required." >&2
-            exit 1
-          }
-          [ -n "$AIT_REWARDED_AD_GROUP_ID" ] || {
-            echo "AIT_REWARDED_AD_GROUP_ID variable is required." >&2
-            exit 1
-          }
-
-      - name: Resolve upload ref
-        id: ref
-        shell: bash
-        run: |
-          set -euo pipefail
-          ref="$RELEASE_REF"
-          [ -n "$ref" ] || ref="${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)}"
-          {
-            echo "ref=$ref"
-            echo "short_sha=$(git rev-parse --short HEAD)"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24.16.0
-          check-latest: false
-
-      - name: Enable pnpm
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack prepare pnpm@11.14.0 --activate
-
-      - name: Install dependencies
-        shell: bash
-        run: pnpm install --frozen-lockfile
-
-      - name: Build .ait bundle
-        shell: bash
-        env:
-          APP_VERSION: ${{ steps.ref.outputs.ref }}
-        run: |
-          set -euo pipefail
-          pnpm --dir apps/ait build
-          test -f apps/ait/babynest.ait
-
-      - name: Upload .ait artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ait-babycare-${{ steps.ref.outputs.ref }}-${{ steps.ref.outputs.short_sha }}
-          path: apps/ait/babynest.ait
-          if-no-files-found: error
-          retention-days: 3
-
-      - name: Upload to AppsInToss
-        shell: bash
-        env:
-          DEPLOY_REF: ${{ steps.ref.outputs.ref }}
-          DEPLOY_SHORT_SHA: ${{ steps.ref.outputs.short_sha }}
-        run: |
-          set -euo pipefail
-          memo="$INPUT_MEMO"
-          if [ -z "$memo" ]; then
-            memo="GitHub Actions ${DEPLOY_REF}@${DEPLOY_SHORT_SHA}"
-          else
-            memo="${DEPLOY_REF} · ${memo}"
-          fi
-
-          pnpm --dir apps/ait exec ait deploy \
-            --api-key "$APPS_IN_TOSS_API_KEY" \
-            --location ./babynest.ait \
-            --memo "$memo" \
-            --timeout 300
-
-      - name: Summary
-        shell: bash
-        env:
-          DEPLOY_REF: ${{ steps.ref.outputs.ref }}
-        run: |
-          {
-            echo "### AppsInToss build upload"
-            echo ""
-            echo "- ref: $DEPLOY_REF"
-            echo "- runner: ubuntu-latest x64"
-            echo "- artifact: apps/ait/babynest.ait"
-            echo "- production release: not requested"
-          } >> "$GITHUB_STEP_SUMMARY"
+    with:
+      release_tag: ${{ inputs.release_tag }}
+      memo: ${{ inputs.memo }}
+      ait_dir: apps/ait
+      package_manager: pnpm
+      node_version: "24.16.0"
+      pnpm_version: "11.14.0"
+      install_command: pnpm install --frozen-lockfile
+      # 이 앱은 Firebase 웹 키를 FIREBASE_WEB_API_KEY 이름으로 번들에 인라인한다
+      # (apps/ait/babel.config.js의 INLINED_ENV_KEYS, granite.config.ts의 esbuild define).
+      # 중앙은 조직 표준 이름 VITE_FIREBASE_API_KEY로 job env에 넣어 주므로 여기서 잇는다.
+      # 앱 쪽 이름을 바꾸지 않는 이유는 개발자 로컬 apps/ait/.env가 gitignore라
+      # 이름을 바꾸면 로컬 dev 번들이 빈 키로 조용히 깨지기 때문이다.
+      build_command: |
+        ad_group="${{ vars.AIT_REWARDED_AD_GROUP_ID }}"
+        if [ -z "${ad_group//[[:space:]]/}" ]; then
+          echo "::error::AIT_REWARDED_AD_GROUP_ID repository variable is required."
+          exit 1
+        fi
+        if [ -z "${VITE_FIREBASE_API_KEY//[[:space:]]/}" ]; then
+          echo "::error::FIREBASE_API_KEY repository variable is required."
+          exit 1
+        fi
+        export AIT_REWARDED_AD_GROUP_ID="$ad_group"
+        export FIREBASE_WEB_API_KEY="$VITE_FIREBASE_API_KEY"
+        pnpm --dir apps/ait build
+      artifact_path: apps/ait/babynest.ait
