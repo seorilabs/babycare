@@ -32,7 +32,8 @@ flowchart TD
 - **App Store 정본 = Xcode Cloud.** babycare 는 RNFirebase 라 Xcode 26.x 정적 링키지 회귀
   대상이라 macOS 러너 archive 실패 위험이 있어 org 이관 방향(Xcode Cloud)을 따른다.
   백오피스는 repo 가 `XCODE_CLOUD_APP_STORE_REPOS` allowlist 에 있으면 GH workflow_dispatch
-  대신 ASC `ciBuildRuns` 로 트리거한다. GH `deploy-app-store.yml` 도 같은 ASC 트리거를 부르는 얇은 caller다.
+  대신 ASC `ciBuildRuns` 로 트리거한다. GH Actions 에는 App Store 경로를 두지 않는다.
+  백오피스가 멈추면 App Store Connect 의 Xcode Cloud 에서 해당 태그에 직접 Start Build 한다.
 - **Google Play** 는 GH Actions의 RPI ARC caller가 WIF로 `seorilabs-ci` Cloud Build에
   제출하는 경로다. x64 빌더가 signed AAB를 만들고, `upload=true`일 때만 별도 ARC job이
   Google Play Publisher API를 호출한다.

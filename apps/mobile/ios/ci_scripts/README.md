@@ -14,7 +14,7 @@ babycare iOS(App Store) 배포는 **Xcode Cloud** 경로를 정본으로 한다.
   `$RNFirebaseAsStaticFramework = true` + `pre_install` 에서 RNFB* 브리지 pod 만
   `static_library` 로 강제하는 혼합 링키지여야 archive 가 성공한다(이미 구성됨).
 
-GitHub Actions 경로(`.github/workflows/deploy-app-store.yml`)도 같은 Xcode Cloud 빌드를 트리거하며,
+GitHub Actions 에는 App Store 경로를 두지 않는다.
 백오피스는 이 repo 를 `XCODE_CLOUD_APP_STORE_REPOS` allowlist 에 넣어 App Store 배포를
 GH workflow_dispatch 가 아니라 App Store Connect `POST /v1/ciBuildRuns` 로 트리거한다.
 

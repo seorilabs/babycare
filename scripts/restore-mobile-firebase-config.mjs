@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Restore Firebase mobile config files from base64 env vars into native paths.
 //
-// Contract (seorilabs/.github rn-deploy-google-play / rn-deploy-app-store):
+// Contract (seorilabs/.github rn-deploy-google-play):
 //   node scripts/restore-mobile-firebase-config.mjs --android --require
 //   node scripts/restore-mobile-firebase-config.mjs --ios --require
 //
