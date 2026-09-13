@@ -19,6 +19,11 @@ on:
         type: string
         required: false
         default: ""
+      upload:
+        description: "false면 .ait 만 만들고 AppsInToss 업로드는 하지 않는다"
+        type: boolean
+        required: false
+        default: true
   workflow_call:
     inputs:
       release_tag:
@@ -29,6 +34,10 @@ on:
         type: string
         required: false
         default: ""
+      upload:
+        type: boolean
+        required: false
+        default: true
     secrets:
       APPS_IN_TOSS_API_KEY:
         required: true
@@ -43,12 +52,15 @@ concurrency:
 
 jobs:
   deploy:
-    uses: seorilabs/.github/.github/workflows/rn-deploy-ait.yml@9dad5099e4b0e2a49d41ab0ee388160bfa3bdbf9
+    uses: seorilabs/.github/.github/workflows/rn-deploy-ait.yml@2edc637118d1bfe712b0750870586941ce0916fb
     secrets:
       APPS_IN_TOSS_API_KEY: ${{ secrets.APPS_IN_TOSS_API_KEY }}
     with:
       release_tag: ${{ inputs.release_tag }}
       memo: ${{ inputs.memo }}
+      # 기본값 true 라 기존 동작은 그대로다. false 로 부르면 업로드 없이 빌드와
+      # artifact 검증까지만 해서 전환 결과를 실제로 확인할 수 있다.
+      upload: ${{ inputs.upload }}
       ait_dir: apps/ait
       package_manager: pnpm
       node_version: "24.16.0"
