@@ -16,10 +16,6 @@ on:
       deploy_google_play:
         type: boolean
         default: true
-      deploy_app_store:
-        description: "App Store 포함(ios_* 입력 필요)"
-        type: boolean
-        default: false
       track:
         description: "Google Play track"
         type: choice
@@ -79,14 +75,3 @@ jobs:
       track: ${{ inputs.track }}
       release_status: ${{ inputs.release_status }}
 
-  app-store:
-    name: Deploy App Store
-    needs: resolve
-    if: ${{ inputs.deploy_app_store }}
-    uses: ./.github/workflows/deploy-app-store.yml
-    secrets:
-      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
-    with:
-      release_tag: ${{ needs.resolve.outputs.tag }}
