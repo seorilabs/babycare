@@ -127,4 +127,5 @@ export interface AnalyticsPort {
   track(event: BabyCareAnalyticsEvent): Promise<void>;
   flush?(): Promise<void>;
   stop?(): void | Promise<void>;
+  setForeground?(foreground: boolean): void;
 }

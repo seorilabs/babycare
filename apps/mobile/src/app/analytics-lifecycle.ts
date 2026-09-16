@@ -5,6 +5,7 @@ export function flushMobileAnalyticsOnAppState(
   analytics: AnalyticsPort | undefined,
   state: AppStateStatus,
 ): void {
+  analytics?.setForeground?.(state === 'active');
   if (state !== 'active') {
     analytics?.flush?.().catch(() => undefined);
   }

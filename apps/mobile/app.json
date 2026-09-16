@@ -2,8 +2,8 @@
   "name": "BabyCare",
   "displayName": "함께봄",
   "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-2444587584524186~3494620898",
-    "ios_app_id": "ca-app-pub-2444587584524186~9176644258",
+    "android_app_id": "ca-app-pub-9932778305312246~3839518050",
+    "ios_app_id": "ca-app-pub-9932778305312246~3609252062",
     "delay_app_measurement_init": true
   }
 }

@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-09-16 — AdMob·GA4 표준 차원과 Platform relay 코드 정비
+
+- 중앙 발급 원장 `seorilabs/.github#167`의 유지 Publisher 기준으로 Android/iOS AdMob app ID와 `stats_detail` rewarded unit을 교체했다. 개발 빌드는 계속 공식 `TestIds.REWARDED`를 사용하며, 새 운영 JSON이나 secret은 추가하지 않았다.
+- AppsInToss 신규 클라이언트의 bespoke `logAnalyticsEvents` 호출을 제거하고 기존 Platform `/v1/events` 경로 하나로 통합했다. 배포된 구버전이 계속 호출하는 Firebase Function과 GA4 secret 계약은 제거하지 않았다.
+- mobile Firebase Analytics와 Platform 어댑터가 모든 custom event에 `app_market`, `runtime_platform`, `release_version`을 자동 병합한다. AIT Platform 이벤트에는 숫자형 `session_id`, 최소 1ms `engagement_time_msec`, 같은 전경 구간 세션 유지와 30분 background 뒤 `seori_session_start` 재발행을 추가했다. 호출자가 표준 값을 넘겨도 어댑터 값이 우선한다.
+- AIT release version은 build workflow의 선택 tag/ref에서 Granite·Metro 양쪽으로 주입한다. Platform relay의 GA4 client ID는 기존 비식별 Storage 키를 재사용하며, 제품 분석 동의가 없으므로 `analyticsConsent=false`를 유지해 IP 위치 파생을 요청하지 않는다.
+- mobile·AIT Presence lifecycle은 유지했고 두 target의 `presenceEnabled=false`도 바꾸지 않았다. Platform 배포·registry regsync·ConfigRevision·Firebase/GA4/AdMob Console 변경·앱 빌드/업로드/공개는 수행하지 않았다.
+- 검증: core 78건, mobile 45 suites/380건, AIT 15 suites/71건, Functions 21건, Firebase config 5건과 typecheck·lint·architecture·docs·screenshots·privacy·workflow·Platform SDK·새 AdMob/Analytics 계약 검사를 포함한 `pnpm run test:static`이 통과했다. `pnpm run check:release`는 새 계약 검사를 통과한 뒤 기존 AppsInToss 운영 체크리스트와 Platform 등록 대기 이벤트 10종 때문에 예상대로 실패했다.
+
 ## 2026-08-30 — 공개 이슈 일괄 처리와 Platform Presence 비활성 탑재
 
 - 공개 이슈 #66, #67, #73~#81의 재현 경로와 기존 계약을 확인하고 mobile·AppsInToss 양쪽에 최소 범위로 반영했다. 초대 합류·온보딩 단계·부팅 실패 계측은 고정 allowlist와 분류값만 전송하며 원문 오류·초대 코드·건강정보는 보내지 않는다. 첫 기록은 양육자별 durable marker 기반 `bc_log_create.is_first`로 바꿨다.

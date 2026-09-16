@@ -8,6 +8,7 @@ const MAX_BATCH = 20;
 const MAX_BUFFER = 200;
 const DEFAULT_FLUSH_INTERVAL_MS = 10_000;
 const PLATFORM_TOKEN_MARGIN_MS = 60_000;
+const ANALYTICS_SESSION_TIMEOUT_MS = 30 * 60 * 1_000;
 const CROCKFORD_BASE32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const SDK_VERSION = 'babycare-analytics/1';
 
@@ -41,13 +42,47 @@ export class FanOutAnalytics implements AnalyticsPort {
       this.#sinks.map(sink => Promise.resolve(sink.stop?.()).catch(() => undefined)),
     );
   }
+
+  setForeground(foreground: boolean): void {
+    for (const sink of this.#sinks) {
+      try {
+        sink.setForeground?.(foreground);
+      } catch {
+        // Analytics lifecycle must never escape into the product flow.
+      }
+    }
+  }
 }
 
 export interface PlatformAnalyticsContext {
   readonly platform: 'android' | 'ios' | 'ait';
-  readonly appVersion?: string;
+  readonly appVersion: string;
   readonly locale?: string;
   readonly ga4ClientId?: string;
+  readonly analyticsConsent?: boolean;
+}
+
+export function canonicalAnalyticsDimensions(
+  context: PlatformAnalyticsContext,
+): Readonly<{
+  app_market: 'google_play' | 'app_store' | 'apps_in_toss';
+  runtime_platform: 'android' | 'ios' | 'web';
+  release_version: string;
+}> {
+  const releaseVersion = context.appVersion.trim();
+  if (!releaseVersion) {
+    throw new Error('Analytics appVersion is required');
+  }
+  return {
+    app_market:
+      context.platform === 'ait'
+        ? 'apps_in_toss'
+        : context.platform === 'ios'
+          ? 'app_store'
+          : 'google_play',
+    runtime_platform: context.platform === 'ait' ? 'web' : context.platform,
+    release_version: releaseVersion,
+  };
 }
 
 interface PlatformAnalyticsOptions {
@@ -55,6 +90,7 @@ interface PlatformAnalyticsOptions {
   readonly eventsBaseUrl?: string;
   readonly firebaseIdToken?: () => Promise<string | undefined>;
   readonly context: PlatformAnalyticsContext | (() => PlatformAnalyticsContext);
+  readonly ga4ClientId?: () => Promise<string | undefined>;
   readonly fetchImpl?: typeof fetch;
   readonly now?: () => number;
   readonly flushIntervalMs?: number;
@@ -94,6 +130,7 @@ function ulid(now = Date.now()): string {
 
 function normalizeParams(
   input: Readonly<Record<string, unknown>>,
+  limit = 25,
 ): Readonly<Record<string, string | number>> {
   return Object.fromEntries(
     Object.entries(input)
@@ -113,8 +150,20 @@ function normalizeParams(
         }
         return [key, String(value).slice(0, 100)] as const;
       })
-      .slice(0, 25),
+      .slice(0, limit),
   );
+}
+
+function canonicalParams(
+  context: PlatformAnalyticsContext,
+  sessionId: string,
+  engagementTimeMsec: number,
+): Readonly<Record<string, string | number>> {
+  return {
+    ...canonicalAnalyticsDimensions(context),
+    session_id: sessionId,
+    engagement_time_msec: Math.max(1, Math.round(engagementTimeMsec)),
+  };
 }
 
 function envelopeResult(value: unknown): Record<string, unknown> {
@@ -146,9 +195,12 @@ export class PlatformAnalytics implements AnalyticsPort {
   readonly #context:
     | PlatformAnalyticsContext
     | (() => PlatformAnalyticsContext);
+  readonly #ga4ClientId: (() => Promise<string | undefined>) | undefined;
   readonly #fetch: typeof fetch;
   readonly #now: () => number;
-  readonly #sessionId = ulid();
+  #sessionId: string;
+  #lastEventAt: number;
+  #backgroundAt: number | undefined;
   readonly #timer: ReturnType<typeof setInterval> | undefined;
   #buffer: StoredPlatformEvent[] = [];
   #session: PlatformSession | undefined;
@@ -164,8 +216,12 @@ export class PlatformAnalytics implements AnalyticsPort {
     );
     this.#firebaseIdToken = options.firebaseIdToken;
     this.#context = options.context;
+    this.#ga4ClientId = options.ga4ClientId;
     this.#fetch = options.fetchImpl ?? globalThis.fetch;
     this.#now = options.now ?? Date.now;
+    const startedAt = this.#now();
+    this.#sessionId = String(startedAt);
+    this.#lastEventAt = startedAt;
     const interval = options.flushIntervalMs ?? DEFAULT_FLUSH_INTERVAL_MS;
     if (interval > 0) {
       this.#timer = setInterval(() => void this.flush(), interval);
@@ -179,6 +235,26 @@ export class PlatformAnalytics implements AnalyticsPort {
     if (this.#buffer.length >= MAX_BATCH) {
       void this.flush();
     }
+  }
+
+  setForeground(foreground: boolean): void {
+    const now = this.#now();
+    if (!foreground) {
+      this.#backgroundAt ??= now;
+      return;
+    }
+    if (
+      this.#backgroundAt !== undefined &&
+      now - this.#backgroundAt >= ANALYTICS_SESSION_TIMEOUT_MS
+    ) {
+      this.#sessionId = String(now);
+      this.#lastEventAt = now;
+      this.#enqueue('seori_session_start', {});
+    } else {
+      // Background time is not user engagement.
+      this.#lastEventAt = now;
+    }
+    this.#backgroundAt = undefined;
   }
 
   async stop(): Promise<void> {
@@ -220,6 +296,14 @@ export class PlatformAnalytics implements AnalyticsPort {
       const token = await this.#platformToken();
       const context =
         typeof this.#context === 'function' ? this.#context() : this.#context;
+      let ga4ClientId = context.ga4ClientId;
+      if (!ga4ClientId && this.#ga4ClientId) {
+        try {
+          ga4ClientId = await this.#ga4ClientId();
+        } catch {
+          // Platform ledger collection remains available without GA4 relay.
+        }
+      }
       const events = batch.map(item => item.event);
       if (includeDropped) {
         events.push(this.#event('seori_analytics_dropped', {count: droppedSnapshot}));
@@ -234,7 +318,11 @@ export class PlatformAnalytics implements AnalyticsPort {
         },
         body: JSON.stringify({
           events,
-          context: {...context, sdkVersion: SDK_VERSION},
+          context: {
+            ...context,
+            ...(ga4ClientId ? {ga4ClientId} : {}),
+            sdkVersion: SDK_VERSION,
+          },
         }),
       });
       if (!response.ok) {
@@ -261,12 +349,20 @@ export class PlatformAnalytics implements AnalyticsPort {
     name: string,
     params: Readonly<Record<string, unknown>>,
   ): BufferedPlatformEvent {
+    const now = this.#now();
+    const context =
+      typeof this.#context === 'function' ? this.#context() : this.#context;
+    const paramsWithCanonicalValues = {
+      ...normalizeParams(params, 20),
+      ...canonicalParams(context, this.#sessionId, now - this.#lastEventAt),
+    };
+    this.#lastEventAt = now;
     return {
-      eventId: ulid(this.#now()),
+      eventId: ulid(now),
       name,
       sessionId: this.#sessionId,
-      params: normalizeParams(params),
-      tsUnixMs: this.#now(),
+      params: paramsWithCanonicalValues,
+      tsUnixMs: now,
     };
   }
 

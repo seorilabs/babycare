@@ -194,9 +194,14 @@ export function resolvePlatformAnalyticsContext(input: {
 }): PlatformAnalyticsContext {
   const appVersion = nonEmpty(input.appVersion);
   const locale = nonEmpty(input.locale);
+  if (!appVersion) {
+    throw new FirebaseRuntimeConfigurationError(
+      'Release version is required for analytics',
+    );
+  }
   return {
     platform: input.platform === 'ios' ? 'ios' : 'android',
-    ...(appVersion ? {appVersion} : {}),
+    appVersion,
     ...(locale ? {locale} : {}),
   };
 }
@@ -326,11 +331,16 @@ export async function createFirebaseRuntime(
   }
 
   const auth = getAuth(resolved.app);
+  const analyticsContext = resolvePlatformAnalyticsContext({
+    platform,
+    appVersion: getVersion(),
+    locale: Intl.DateTimeFormat().resolvedOptions().locale,
+  });
   const analytics =
     options.analytics ??
     (resolved.source === 'native'
       ? new FanOutAnalytics([
-          new FirebaseAnalyticsAdapter(resolved.app),
+          new FirebaseAnalyticsAdapter(resolved.app, analyticsContext),
           new PlatformAnalytics({
             baseUrl: PLATFORM_FIREBASE_AUTH_CONFIG.baseUrl,
             eventsBaseUrl: PLATFORM_EVENTS_URL,
@@ -338,11 +348,7 @@ export async function createFirebaseRuntime(
               const user = auth.currentUser;
               return user ? getIdToken(user) : undefined;
             },
-            context: resolvePlatformAnalyticsContext({
-              platform,
-              appVersion: getVersion(),
-              locale: Intl.DateTimeFormat().resolvedOptions().locale,
-            }),
+            context: analyticsContext,
           }),
         ])
       : {track: async () => undefined});

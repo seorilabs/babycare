@@ -25,7 +25,12 @@ describe('analytics lifecycle', () => {
     const flush = jest.fn(async () => {
       throw new Error('offline');
     });
-    const analytics = {track: jest.fn(async () => undefined), flush};
+    const setForeground = jest.fn();
+    const analytics = {
+      track: jest.fn(async () => undefined),
+      flush,
+      setForeground,
+    };
 
     expect(() =>
       flushMobileAnalyticsOnAppState(analytics, 'background'),
@@ -33,6 +38,8 @@ describe('analytics lifecycle', () => {
     await Promise.resolve();
     flushMobileAnalyticsOnAppState(analytics, 'active');
     expect(flush).toHaveBeenCalledTimes(1);
+    expect(setForeground).toHaveBeenNthCalledWith(1, false);
+    expect(setForeground).toHaveBeenNthCalledWith(2, true);
   });
 });
 
@@ -81,6 +88,9 @@ describe('PlatformAnalytics', () => {
         reward_code: 'stats_detail_24h',
         reward_amount: 1,
         email: 'blocked@example.com',
+        app_market: 'spoofed',
+        runtime_platform: 'web',
+        release_version: 'spoofed',
       },
     } as unknown as BabyCareAnalyticsEvent;
     await analytics.track(untrustedEvent);
@@ -122,6 +132,11 @@ describe('PlatformAnalytics', () => {
         ad_format: 'rewarded',
         reward_code: 'stats_detail_24h',
         reward_amount: 1,
+        app_market: 'google_play',
+        runtime_platform: 'android',
+        release_version: '1.0.0',
+        session_id: '1700000000000',
+        engagement_time_msec: 1,
       },
     });
     expect(body.events[1].params).not.toHaveProperty('email');
@@ -136,7 +151,7 @@ describe('PlatformAnalytics', () => {
     >;
     const analytics = new PlatformAnalytics({
       baseUrl: 'https://platform.example.com',
-      context: {platform: 'ait'},
+      context: {platform: 'ait', appVersion: '1.0.0'},
       fetchImpl,
       flushIntervalMs: 0,
       now: () => 1_700_000_000_000,
@@ -159,7 +174,7 @@ describe('PlatformAnalytics', () => {
     >;
     const analytics = new PlatformAnalytics({
       baseUrl: 'https://platform.example.com',
-      context: {platform: 'ait'},
+      context: {platform: 'ait', appVersion: '1.0.0'},
       fetchImpl,
       flushIntervalMs: 0,
       now: () => 1_700_000_000_000,
@@ -192,7 +207,7 @@ describe('PlatformAnalytics', () => {
     >;
     const analytics = new PlatformAnalytics({
       baseUrl: 'https://platform.example.com',
-      context: {platform: 'android'},
+      context: {platform: 'android', appVersion: '1.0.0'},
       fetchImpl,
       flushIntervalMs: 0,
       now: () => 1_700_000_000_000,
@@ -212,7 +227,7 @@ describe('PlatformAnalytics', () => {
     expect(reported).toContainEqual(
       expect.objectContaining({
         name: 'seori_analytics_dropped',
-        params: {count: 10},
+        params: expect.objectContaining({count: 10}),
       }),
     );
     expect(reported[0].params.screen_name).toBe('screen-29');
@@ -228,7 +243,7 @@ describe('PlatformAnalytics', () => {
     >;
     const analytics = new PlatformAnalytics({
       baseUrl: 'https://platform.example.com',
-      context: {platform: 'ios'},
+      context: {platform: 'ios', appVersion: '1.0.0'},
       fetchImpl,
       flushIntervalMs: 0,
     });
@@ -240,5 +255,75 @@ describe('PlatformAnalytics', () => {
     await analytics.stop();
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body)).events).toHaveLength(2);
+  });
+
+  it('keeps one session within 30 minutes and starts a new session after timeout', async () => {
+    let now = 1_700_000_000_000;
+    const fetchImpl = jest.fn(async () => response({ok: true, status: 200})) as unknown as jest.MockedFunction<
+      typeof fetch
+    >;
+    const analytics = new PlatformAnalytics({
+      baseUrl: 'https://platform.example.com',
+      context: {platform: 'ait', appVersion: 'v1.2.3'},
+      fetchImpl,
+      flushIntervalMs: 0,
+      now: () => now,
+    });
+
+    await analytics.track({
+      name: 'core_screen_view',
+      params: {screen_name: 'first'},
+    });
+    await analytics.flush();
+    const firstBatch = JSON.parse(
+      String(fetchImpl.mock.calls[0]?.[1]?.body),
+    ).events;
+    expect(firstBatch.map((event: {name: string}) => event.name)).toEqual([
+      'seori_session_start',
+      'core_screen_view',
+    ]);
+    expect(firstBatch[0].sessionId).toBe(firstBatch[1].sessionId);
+
+    analytics.setForeground(false);
+    now += 29 * 60 * 1_000;
+    analytics.setForeground(true);
+    await analytics.track({
+      name: 'core_screen_view',
+      params: {screen_name: 'same-session'},
+    });
+    await analytics.flush();
+    const sameSessionBatch = JSON.parse(
+      String(fetchImpl.mock.calls[1]?.[1]?.body),
+    ).events;
+    expect(sameSessionBatch).toHaveLength(1);
+    expect(sameSessionBatch[0].sessionId).toBe(firstBatch[0].sessionId);
+
+    analytics.setForeground(false);
+    now += 10 * 60 * 1_000;
+    analytics.setForeground(false);
+    now += 20 * 60 * 1_000;
+    analytics.setForeground(true);
+    await analytics.track({
+      name: 'core_screen_view',
+      params: {screen_name: 'new-session'},
+    });
+    await analytics.flush();
+    const renewedBatch = JSON.parse(
+      String(fetchImpl.mock.calls[2]?.[1]?.body),
+    ).events;
+    expect(renewedBatch.map((event: {name: string}) => event.name)).toEqual([
+      'seori_session_start',
+      'core_screen_view',
+    ]);
+    expect(renewedBatch[0].sessionId).not.toBe(firstBatch[0].sessionId);
+    expect(renewedBatch[0].sessionId).toBe(renewedBatch[1].sessionId);
+    expect(renewedBatch[1].params).toMatchObject({
+      app_market: 'apps_in_toss',
+      runtime_platform: 'web',
+      release_version: 'v1.2.3',
+      session_id: renewedBatch[1].sessionId,
+      engagement_time_msec: expect.any(Number),
+    });
+    expect(renewedBatch[1].params.engagement_time_msec).toBeGreaterThanOrEqual(1);
   });
 });

@@ -144,13 +144,13 @@ it('normalizes native Platform analytics version and locale context', () => {
     appVersion: '1.1.2',
     locale: 'ko-KR',
   });
-  expect(
+  expect(() =>
     resolvePlatformAnalyticsContext({
       platform: 'android',
       appVersion: ' ',
       locale: '',
     }),
-  ).toEqual({platform: 'android'});
+  ).toThrow('Release version is required for analytics');
 });
 
 it('creates a dummy dev app and connects every emulator before adapters are used', async () => {

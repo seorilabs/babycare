@@ -13,6 +13,9 @@ export default defineConfig({
         'process.env.AIT_REWARDED_AD_GROUP_ID': JSON.stringify(
           process.env.AIT_REWARDED_AD_GROUP_ID ?? '',
         ),
+        'process.env.APP_VERSION': JSON.stringify(
+          process.env.APP_VERSION ?? '',
+        ),
       },
     },
   },
