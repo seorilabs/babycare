@@ -3,8 +3,8 @@ import {Platform} from 'react-native';
 import type {RewardedAd} from 'react-native-google-mobile-ads';
 
 export const MOBILE_REWARDED_AD_UNIT_IDS = {
-  android: 'ca-app-pub-2444587584524186/2456871394',
-  ios: 'ca-app-pub-2444587584524186/4934146913',
+  android: 'ca-app-pub-9932778305312246/1805215803',
+  ios: 'ca-app-pub-9932778305312246/4239807450',
 } as const;
 
 const AD_NETWORK = 'admob';

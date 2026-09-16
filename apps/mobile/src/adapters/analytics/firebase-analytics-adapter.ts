@@ -3,12 +3,31 @@ import type {
   AnalyticsPort,
   BabyCareAnalyticsEvent,
 } from '@babycare/product-core';
+import {
+  canonicalAnalyticsDimensions,
+  type PlatformAnalyticsContext,
+} from '@babycare/product-data';
+
+export function firebaseAnalyticsParams(
+  event: BabyCareAnalyticsEvent,
+  context: PlatformAnalyticsContext,
+): Readonly<Record<string, string | number | boolean>> {
+  return {
+    ...event.params,
+    ...canonicalAnalyticsDimensions(context),
+  };
+}
 
 export class FirebaseAnalyticsAdapter implements AnalyticsPort {
   readonly #app: ReactNativeFirebase.FirebaseApp;
+  readonly #context: PlatformAnalyticsContext;
 
-  constructor(app: ReactNativeFirebase.FirebaseApp) {
+  constructor(
+    app: ReactNativeFirebase.FirebaseApp,
+    context: PlatformAnalyticsContext,
+  ) {
     this.#app = app;
+    this.#context = context;
   }
 
   async track(event: BabyCareAnalyticsEvent): Promise<void> {
@@ -17,6 +36,10 @@ export class FirebaseAnalyticsAdapter implements AnalyticsPort {
     const {getAnalytics, logEvent} = await import(
       '@react-native-firebase/analytics'
     );
-    await logEvent(getAnalytics(this.#app), event.name, event.params);
+    await logEvent(
+      getAnalytics(this.#app),
+      event.name,
+      firebaseAnalyticsParams(event, this.#context),
+    );
   }
 }

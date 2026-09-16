@@ -3,12 +3,13 @@ import type {AppStateStatus} from 'react-native';
 
 import {currentFirebaseIdToken} from './babycare-backend';
 import {createAitGateStore} from './platform-update-gate-store';
+import {AIT_APP_VERSION} from './release-version';
 
 const PLATFORM_API_URL =
   'https://platform-api-306278488979.asia-northeast3.run.app';
 const PLATFORM_INGEST_URL =
   'https://platform-ingest-306278488979.asia-northeast3.run.app';
-export const AIT_APP_VERSION = process.env.APP_VERSION ?? '0.1.0';
+export {AIT_APP_VERSION} from './release-version';
 
 export const BABYCARE_AIT_PRESENCE_ENABLED = false;
 

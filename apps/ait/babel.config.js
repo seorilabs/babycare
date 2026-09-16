@@ -8,7 +8,7 @@ const path = require('path');
 // `process.env.FIREBASE_WEB_API_KEY`가 비어 첫 화면이 Firebase 연결 오류로 멈춘다.
 // 두 경로가 같은 값을 보도록 babel에서 인라인한다. CI는 환경변수로, 로컬은 gitignore된
 // `apps/ait/.env`로 주입한다.
-const INLINED_ENV_KEYS = ['FIREBASE_WEB_API_KEY'];
+const INLINED_ENV_KEYS = ['FIREBASE_WEB_API_KEY', 'APP_VERSION'];
 
 function readDotenv() {
   const file = path.join(__dirname, '.env');

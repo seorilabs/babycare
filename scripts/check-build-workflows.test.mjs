@@ -76,7 +76,10 @@ test('latest AppsInToss private upload evidence stays consistent', async () => {
 });
 
 test('AIT build workflow creates only a candidate artifact', async () => {
-  const workflow = await read('.github/workflows/build-ait.yml');
+  const [workflow, graniteConfig] = await Promise.all([
+    read('.github/workflows/build-ait.yml'),
+    read('apps/ait/granite.config.ts'),
+  ]);
 
   assert.match(workflow, /^name: Build Mini-app Candidate$/m);
   assert.match(workflow, /workflow_dispatch:[\s\S]*?release_tag:/);
@@ -87,6 +90,11 @@ test('AIT build workflow creates only a candidate artifact', async () => {
   assert.doesNotMatch(workflow, /NODE_AUTH_TOKEN/);
   assert.match(workflow, /pnpm install --frozen-lockfile/);
   assert.match(workflow, /pnpm --dir apps\/ait build/);
+  assert.match(workflow, /APP_VERSION: \$\{\{ inputs\.release_tag \|\| github\.ref_name \}\}/);
+  assert.match(
+    graniteConfig,
+    /'process\.env\.APP_VERSION': JSON\.stringify\(\s*process\.env\.APP_VERSION \?\? ''/,
+  );
   assert.match(workflow, /path: apps\/ait\/babynest\.ait/);
   assert.doesNotMatch(workflow, /APPS_IN_TOSS_API_KEY|ait deploy|run deploy/i);
 });
@@ -105,13 +113,20 @@ test('AppsInToss build and dev paths both inject the Firebase web API key', asyn
   assert.match(graniteConfig, /process\.env\.FIREBASE_WEB_API_KEY \?\? ''/);
 
   // dev: granite dev는 위 define을 적용하지 않으므로 babel이 같은 키를 인라인한다.
-  assert.match(babelConfig, /INLINED_ENV_KEYS = \['FIREBASE_WEB_API_KEY'\]/);
+  assert.match(
+    babelConfig,
+    /INLINED_ENV_KEYS = \['FIREBASE_WEB_API_KEY', 'APP_VERSION'\]/,
+  );
   // 환경변수 우선이어야 CI 동작이 로컬 .env에 영향받지 않는다.
   assert.match(babelConfig, /process\.env\[key\] \?\? dotenv\[key\]/);
 
   // CI: 중앙 워크플로가 조직 표준 이름 VITE_FIREBASE_API_KEY 로 job env 에 넣어 준다.
   // caller 의 build_command 가 이 앱이 쓰는 이름으로 이어 주고, 값이 비면 build 전에 멈춘다.
   assert.match(workflow, /export FIREBASE_WEB_API_KEY="\$VITE_FIREBASE_API_KEY"/);
+  assert.match(
+    workflow,
+    /export APP_VERSION="\$\{\{ inputs\.release_tag \|\| github\.ref_name \}\}"/,
+  );
   assert.match(workflow, /if \[ -z "\$\{VITE_FIREBASE_API_KEY\/\/\[\[:space:\]\]\/\}" \]; then/);
   assert.match(workflow, /::error::FIREBASE_API_KEY repository variable is required\./);
   assert.ok(

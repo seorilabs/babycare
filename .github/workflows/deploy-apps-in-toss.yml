@@ -83,5 +83,6 @@ jobs:
         fi
         export AIT_REWARDED_AD_GROUP_ID="$ad_group"
         export FIREBASE_WEB_API_KEY="$VITE_FIREBASE_API_KEY"
+        export APP_VERSION="${{ inputs.release_tag || github.ref_name }}"
         pnpm --dir apps/ait build
       artifact_path: apps/ait/babynest.ait

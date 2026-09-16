@@ -78,6 +78,11 @@ if ! node scripts/check-store-screenshots.mjs; then
   blockers=1
 fi
 
+if ! node scripts/check-admob-analytics-contract.mjs; then
+  echo "AdMob or analytics release contract failed." >&2
+  blockers=1
+fi
+
 # Platform 수집에 아직 등록되지 않은 이벤트는 서버가 200 OK 안에서 조용히 버린다.
 # 등록은 seorilabs/platform 의 registry 갱신과 운영 regsync 로만 끝나므로, 남아 있는
 # 동안에는 배포 전 blocker 로 드러낸다.
