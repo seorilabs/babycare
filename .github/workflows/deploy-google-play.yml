@@ -56,7 +56,7 @@ concurrency:
 
 jobs:
   deploy:
-    uses: seorilabs/.github/.github/workflows/rn-deploy-google-play.yml@700348a9511b5ea202291ee1e1de4f73335783e0
+    uses: seorilabs/.github/.github/workflows/rn-deploy-google-play.yml@main
     secrets:
       FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
       GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64 }}

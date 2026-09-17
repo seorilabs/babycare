@@ -52,7 +52,7 @@ concurrency:
 
 jobs:
   deploy:
-    uses: seorilabs/.github/.github/workflows/rn-deploy-ait.yml@700348a9511b5ea202291ee1e1de4f73335783e0
+    uses: seorilabs/.github/.github/workflows/rn-deploy-ait.yml@main
     secrets:
       APPS_IN_TOSS_API_KEY: ${{ secrets.APPS_IN_TOSS_API_KEY }}
     with:
