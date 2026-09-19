@@ -6,8 +6,8 @@
 
 ## 운영 진입점 = 백오피스/Telegram
 
-배포는 `seorilabs-backoffice` 가 GitHub/App Store Connect API 로 구동한다(단방향
-`API → workflow/ciBuildRuns → webhook 미러`). 앱은 **자동 발견**된다 — 백오피스 `seedRegistry()`
+배포는 `seorilabs-backoffice` 가 GitHub API 로 구동한다(단방향
+`API → workflow_dispatch → webhook 미러`). 세 마켓 모두 GitHub Actions 경로다. 앱은 **자동 발견**된다 — 백오피스 `seedRegistry()`
 가 org repo 를 스캔해 `deploy-*.yml` 존재로 `marketTargets` 를, `*-store.config.json` 으로
 식별자를 채운다. babycare 는 관련 파일이 모두 있어 `POST /api/admin/seed` 한 번이면
 `marketTargets=["play","appstore","ait"]`, `iosBundle=com.seorilabs.babycare` 로 등록된다.
@@ -18,26 +18,28 @@ flowchart TD
   RT --> TAG["vX.Y.Z + 출시노트 + GitHub Release"]
   U --> SEL{"배포 대상 선택"}
   SEL -->|"Google Play"| GP["createWorkflowDispatch<br/>deploy-google-play.yml"]
-  SEL -->|"App Store"| XC["ASC POST /v1/ciBuildRuns<br/>Xcode Cloud"]
+  SEL -->|"App Store"| XC["createWorkflowDispatch<br/>deploy-app-store.yml"]
   SEL -->|"AppsInToss"| AIT["createWorkflowDispatch<br/>deploy-apps-in-toss.yml"]
-  GP --> RPI["RPI ARC caller<br/>WIF + gcloud submit"]
-  RPI --> CB["seorilabs-ci Cloud Build<br/>x64 JDK 21 + Android 36"]
-  CB --> AAB["upload-key signed AAB<br/>GCS + GitHub artifact"]
+  GP --> GPR["ubuntu-latest<br/>rn-deploy-google-play.yml"]
+  GPR --> AAB["upload-key signed AAB<br/>GitHub artifact"]
   AAB -->|"upload true only"| PLAY["Google Play Publisher API"]
-  XC --> ACLOUD["Xcode Cloud workflow<br/>apps/mobile/ios/ci_scripts"]
+  XC --> XCR["macos-26<br/>rn-deploy-app-store.yml"]
+  XCR --> IPA["xcarchive + exportArchive"]
+  IPA -->|"upload true only"| ASC["App Store Connect"]
   GP --> WH["workflow_run webhook"]
   WH --> MIR["Backoffice ReleaseRecord 미러 + Telegram 알림"]
 ```
 
-- **App Store 정본 = Xcode Cloud.** babycare 는 RNFirebase 라 Xcode 26.x 정적 링키지 회귀
-  대상이라 macOS 러너 archive 실패 위험이 있어 org 이관 방향(Xcode Cloud)을 따른다.
-  백오피스는 repo 가 `XCODE_CLOUD_APP_STORE_REPOS` allowlist 에 있으면 GH workflow_dispatch
-  대신 ASC `ciBuildRuns` 로 트리거한다. GH Actions 에는 App Store 경로를 두지 않는다.
-  백오피스가 멈추면 App Store Connect 의 Xcode Cloud 에서 해당 태그에 직접 Start Build 한다.
-- **Google Play** 는 GH Actions의 RPI ARC caller가 WIF로 `seorilabs-ci` Cloud Build에
-  제출하는 경로다. x64 빌더가 signed AAB를 만들고, `upload=true`일 때만 별도 ARC job이
-  Google Play Publisher API를 호출한다.
-- 업로드는 명시적 dispatch/ciBuildRuns 에서만. `deploy-*` 의 `upload` 입력이 `false` 면 아티팩트만.
+- **App Store 정본 = GitHub Actions**(2026-09-19 전환). 중앙 `rn-deploy-app-store.yml` 이
+  GitHub-hosted `macos-26` 에서 archive 하고 `exportArchive` 로 App Store Connect 에 올린다.
+  저장소가 public 이라 GitHub-hosted 표준 러너가 무료다.
+  이전에는 "RNFirebase 라 Xcode 26.x 정적 링키지 회귀 대상이라 macOS 러너 archive 가 위험"
+  하다는 판단으로 Xcode Cloud 를 썼다. `v1.1.10`(build `1001010`) 이 Xcode 26.6 / `macos-26`
+  에서 archive·업로드에 성공해 그 전제는 해소됐다. Xcode Cloud 경로와 `ci_scripts/` 는 걷어냈다.
+- **Google Play** 는 중앙 `rn-deploy-google-play.yml` 이 `ubuntu-latest` 에서 직접 signed AAB
+  를 만들고, `upload=true` 일 때만 WIF keyless 로 Google Play Publisher API 를 호출한다.
+  Cloud Build 경유 경로는 더 이상 쓰지 않는다.
+- 업로드는 명시적 dispatch 에서만. `deploy-*` 의 `upload` 입력이 `false` 면 아티팩트만 만든다.
 
 ## 리포 contract (준비 완료)
 
@@ -48,15 +50,16 @@ flowchart TD
 | `scripts/restore-mobile-firebase-config.mjs` (`--android`/`--ios --require`) | ✅ |
 | Android gradle `-PversionNameOverride`/`-PversionCodeOverride` | ✅ |
 | `apps/mobile/ios/Podfile` static framework + RNFB 혼합 링키지 | ✅ (Xcode 26 archive 전제) |
-| `apps/mobile/ios/GoogleService-Info.plist` pbxproj 참조 + Xcode Cloud secret 복원 | ✅ (파일은 커밋하지 않고 누락 시 fail-closed) |
-| `apps/mobile/ios/ci_scripts/` (ci_post_clone / ci_pre_xcodebuild) | ✅ 추가됨 |
+| `apps/mobile/ios/GoogleService-Info.plist` pbxproj 참조 + `app-store` environment secret 복원 | ✅ (파일은 커밋하지 않고 누락 시 fail-closed) |
+| `app-store/exportOptions.plist` (`manageAppVersionAndBuildNumber=false`) | ✅ |
 | Cloud Build 계약 (`build.env`, `cloudbuild-android.yaml`, `scripts/build-android.sh`) | ✅ |
 | 워크플로우 caller (deploy-all/google-play/app-store/apps-in-toss, release-tag) | ✅ |
 
 버전 규칙은 exact stable SemVer 태그와 SHA
 `9afa357f9ba6c8d6a813c7cec7ad3d35c626bdd5`의 중앙 `release-version-authority-v1`이 정한다.
-Google Play `versionCode`와 Xcode Cloud의 marketing/build version은 모두 같은 태그에서
-결정적으로 파생하며, workflow 실행 번호나 저장소 설정은 릴리즈 버전 권한이 아니다.
+Google Play `versionCode`와 iOS marketing/build version은 모두 같은 태그에서 결정적으로
+파생하며, workflow 실행 번호나 저장소 설정은 릴리즈 버전 권한이 아니다. `v1.1.10` 에서
+양쪽 모두 `1.1.10` / `1001010` 으로 나간 것을 확인했다.
 
 ## GitHub secrets / variables / environments
 
@@ -98,11 +101,20 @@ Cloud Build 산출물과 로그는 BabyCare 전용
 > 등록됐다. org 공용 keystore(alias `seorilabs-upload`)로 서명하면 Play 가 업로드를 거부한다.
 > 반드시 위 repo-level 값으로 override 해야 한다.
 
-> **App Store(Xcode Cloud)는 매니지드 서명을 사용한다.** 인증서·provisioning secret은
-> 불필요하지만 `FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64`는 Xcode Cloud secret으로
-> 반드시 주입한다. `@seorilabs/platform-sdk` 설치용 read-only `GITHUB_PACKAGES_TOKEN`도
-> Xcode Cloud secret으로 주입하며, 둘 중 하나라도 누락되면 `ci_post_clone.sh`가 fail-closed
-> 한다. 저장소에는 Firebase plist나 token을 커밋하지 않는다.
+> **App Store 자격증명은 `app-store` environment secret에 둔다.** 저장소 레벨 secret이 아니다.
+> `APPLE_DISTRIBUTION_CERTIFICATE_BASE64`, `APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD`,
+> `APPLE_KEYCHAIN_PASSWORD`, `APPLE_PROVISIONING_PROFILE_BASE64`,
+> `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
+> `APP_STORE_CONNECT_PRIVATE_KEY_BASE64`, `FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64`
+> 여덟 개다. `APPLE_TEAM_ID`는 repo 변수다(org 변수는 `selected` 범위라 이 저장소에 보이지 않는다).
+> 저장소에는 Firebase plist나 인증서를 커밋하지 않고, 누락되면 중앙 워크플로가 fail-closed 한다.
+>
+> 배포 인증서 p12는 macOS `security import` 가 읽을 수 있어야 한다. OpenSSL 3 기본값
+> (AES-256-CBC + SHA-256 MAC)은 거절되므로 `-legacy -keypbe PBE-SHA1-3DES
+> -certpbe PBE-SHA1-3DES -macalg SHA1` 로 만든다.
+>
+> `@seorilabs/platform-sdk` 는 npm 공개 레지스트리에서 받으므로 `GITHUB_PACKAGES_TOKEN` 은
+> 더 이상 필요하지 않다.
 
 ## Google Play WIF 복구
 
@@ -117,7 +129,7 @@ Cloud Build 산출물과 로그는 BabyCare 전용
 
 ## 남은 blocker
 
-1. **백오피스** — `POST /api/admin/seed`(앱 자동 등록) + `k8s/deployment.yaml` 의 `XCODE_CLOUD_APP_STORE_REPOS` 에 `seorilabs/babycare` 추가 후 재배포.
+1. **백오피스** — `POST /api/admin/seed`(앱 자동 등록). App Store 도 `deploy-app-store.yml` workflow_dispatch 로 부르므로 `XCODE_CLOUD_APP_STORE_REPOS` allowlist 등록은 더 이상 필요하지 않고, 남아 있으면 제거해야 한다.
 2. **다음 스토어 릴리스** — 현재 공개본은 `1.1.3`이고, 온보딩·첫 기록 가이드와 초대 설치 링크·`bc_invite_shared` 계측은 이후 `main`에만 있다. App Store의 다음 편집 가능한 버전에는 AdMob 앱 확인용 Marketing URL `https://seorilabs.com/`을 `ko`·`en-US` 모두 반영하고 API readback해야 한다. 새 후보의 실기기 QA 뒤 별도 deployment 승인이 필요하다.
 3. **AppsInToss QA** — private build sandbox 기능·실기기 QA 필요.
 
