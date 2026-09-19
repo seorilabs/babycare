@@ -204,7 +204,7 @@ test('AppsInToss 배포는 중앙 워크플로를 부르고 업로드는 upload 
   assert.match(workflow, /^name: Deploy AppsInToss$/m);
   assert.match(
     workflow,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-ait\.yml@[0-9a-f]{40}/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-ait\.yml@main/,
   );
   assert.match(workflow, /^      ait_dir: apps\/ait$/m);
   assert.match(workflow, /^      artifact_path: apps\/ait\/babynest\.ait$/m);
@@ -241,7 +241,7 @@ test('stable tag creates a signed Android artifact without Play upload', async (
   assert.match(gradle, /findProperty\('versionCodeOverride'\)/);
   assert.match(
     deploy,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@[0-9a-f]{40}/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-google-play\.yml@main/,
   );
   assert.match(deploy, /package_name: com\.seorilabs\.babycare/);
   assert.doesNotMatch(workflow, /upload: true/);
@@ -311,7 +311,7 @@ test('Google Play deployment is a thin exact-SHA central caller', async () => {
   assert.doesNotMatch(workflow, /secrets:\s*inherit|scripts\/resolve-release-version|upload_script|gcloud builds submit/);
   assert.match(
     promotion,
-    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@[0-9a-f]{40}/,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/promote-google-play\.yml@main/,
   );
   assert.match(uploader, /--promote-version-code/);
   assert.match(uploader, /SEORI_EXPECTED_ANDROID_VERSION_CODE/);
@@ -447,33 +447,31 @@ test('every workflow installs with the committed pnpm lockfile', async () => {
   }
 });
 
-// 중앙 판본을 올릴 때 워크플로만 고치고 Xcode Cloud 쪽 AUTHORITY_SHA 를 두고 오는 일이
-// 실제로 있었다. 그러면 Actions 는 새 판본, Xcode Cloud 는 옛 판본으로 갈리는데 어느 쪽도
-// 실패하지 않아 드러나지 않는다. 남겨진 pin 은 저장소 안 어디에서도 쓰이지 않는 SHA 가
-// 되므로, 그 조건으로 잡는다.
-test('중앙 참조 pin 은 전부 immutable SHA 이고 뒤처진 것이 없다', async () => {
+// 중앙 재사용 워크플로는 org 호출 계약(seorilabs/.github README)에 따라 `@main`으로 부른다.
+// 반면 Xcode Cloud 는 워크플로가 아니라 쉘 스크립트가 raw.githubusercontent 에서 중앙 구현을
+// 받아 오므로 immutable SHA + 본문 sha256 으로 고정해야 한다. 두 경로의 고정 방식이 다르다는
+// 사실 자체를 계약으로 박아, 어느 한쪽을 반대로 바꾸는 변경을 여기서 막는다.
+test('중앙 참조는 워크플로=@main, Xcode Cloud=immutable SHA 로 고정한다', async () => {
   const names = (await readdir('.github/workflows')).filter((name) => name.endsWith('.yml'));
   const workflows = await Promise.all(names.map((name) => read(`.github/workflows/${name}`)));
 
-  const pins = new Set();
+  let refCount = 0;
   for (const [index, text] of workflows.entries()) {
     for (const line of text.split('\n')) {
       const ref = line.match(/uses:\s*seorilabs\/\.github\/\.github\/workflows\/[\w.-]+@(\S+)/u);
       if (ref === null) continue;
-      assert.match(ref[1], /^[0-9a-f]{40}$/u, `${names[index]}: 중앙 참조는 40자 commit SHA 여야 한다`);
-      pins.add(ref[1]);
+      assert.equal(ref[1], 'main', `${names[index]}: 중앙 재사용 워크플로는 @main 으로 부른다`);
+      refCount += 1;
     }
   }
-  assert.ok(pins.size > 0, '중앙 재사용 워크플로 참조를 찾지 못했다');
+  assert.ok(refCount > 0, '중앙 재사용 워크플로 참조를 찾지 못했다');
 
-  // Xcode Cloud 는 워크플로가 아니라 스크립트가 중앙 구현을 SHA 로 받아 온다. 같은 저장소
-  // 안에서 아무 워크플로도 쓰지 않는 SHA 를 가리키고 있으면 갱신을 빠뜨린 것이다.
+  // Xcode Cloud 경로는 Actions 의 @main 해석을 쓰지 못한다. SHA 와 본문 해시를 함께 고정한다.
   const prebuild = await read('apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh');
   const authority = prebuild.match(/AUTHORITY_SHA="([0-9a-f]{40})"/u);
   assert.ok(authority, 'ci_pre_xcodebuild.sh 에 AUTHORITY_SHA 가 없다');
-  assert.ok(
-    pins.has(authority[1]),
-    `ci_pre_xcodebuild.sh 의 AUTHORITY_SHA(${authority[1]}) 를 쓰는 워크플로가 없다. ` +
-      `워크플로 pin: ${[...pins].join(', ')}`,
-  );
+  assert.match(prebuild, new RegExp(`raw\\.githubusercontent\\.com/seorilabs/\\.github/\\$\\{AUTHORITY_SHA\\}`, 'u'));
+  assert.match(prebuild, /APPLIER_SHA256="[0-9a-f]{64}"/u);
+  assert.match(prebuild, /AUTHORITY_SHA256="[0-9a-f]{64}"/u);
+  assert.match(prebuild, /shasum -a 256 -c/u);
 });
