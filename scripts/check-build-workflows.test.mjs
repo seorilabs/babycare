@@ -317,6 +317,44 @@ test('Google Play deployment is a thin central caller on @main', async () => {
   assert.match(uploader, /SEORI_EXPECTED_ANDROID_VERSION_CODE/);
 });
 
+test('App Store deployment is a thin central caller with tag-bound versions', async () => {
+  const [workflow, deployAll, exportOptions, rootPackage] = await Promise.all([
+    read('.github/workflows/deploy-app-store.yml'),
+    read('.github/workflows/deploy-all.yml'),
+    read('app-store/exportOptions.plist'),
+    json('package.json'),
+  ]);
+
+  assert.match(
+    workflow,
+    /uses: seorilabs\/\.github\/\.github\/workflows\/rn-deploy-app-store\.yml@main/,
+  );
+  // 업로드는 중앙 워크플로만 소유한다. caller 가 xcodebuild 나 altool 을 직접 부르지 않는다.
+  assert.doesNotMatch(workflow, /xcodebuild|altool|runs-on:|secrets:\s*inherit/);
+  assert.match(workflow, /bundle_id: com\.seorilabs\.babycare/);
+  assert.match(workflow, /xcode_workspace: BabyCare\.xcworkspace/);
+  assert.match(workflow, /export_options_plist: app-store\/exportOptions\.plist/);
+  assert.match(workflow, /firebase_restore_script: scripts\/restore-mobile-firebase-config\.mjs/);
+  // dispatch 기본값은 업로드하지 않는다. 업로드는 명시적으로 켜야 한다.
+  assert.match(workflow, /upload:[\s\S]*?type: boolean\n        default: false/);
+
+  const pnpmVersion = rootPackage.packageManager.replace(/^pnpm@/, '');
+  assert.match(workflow, new RegExp(`pnpm_version: "?${pnpmVersion.replace(/\./gu, '\\.')}"?`, 'u'));
+  assert.match(workflow, /pnpm install [^\n]*--frozen-lockfile\b/);
+
+  // 버전 정본은 태그 하나다. Xcode 가 App Store Connect 최신 build number 를 보고
+  // CFBundleVersion 을 올리면 중앙이 archive 에서 검증한 값과 업로드된 값이 갈린다.
+  assert.match(exportOptions, /<key>manageAppVersionAndBuildNumber<\/key>\s*<false\/>/);
+  assert.match(exportOptions, /<key>method<\/key>\s*<string>app-store-connect<\/string>/);
+  assert.match(exportOptions, /<key>teamID<\/key>\s*<string>HCDUXX4Z3X<\/string>/);
+
+  // deploy-all 은 세 마켓을 모두 fan-out 한다.
+  assert.match(deployAll, /uses: \.\/\.github\/workflows\/deploy-app-store\.yml/);
+  assert.match(deployAll, /deploy_app_store:/);
+  // 호출 대상이 선언하지 않은 secret 을 넘기면 GitHub 가 실행 자체를 거부한다.
+  assert.doesNotMatch(deployAll, /FIREBASE_WEB_API_KEY/);
+});
+
 test('Google Play upload tolerates slow resumable responses', async () => {
   const upload = await read('scripts/upload-google-play-internal.py');
 
