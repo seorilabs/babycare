@@ -468,9 +468,8 @@ test('중앙 참조는 워크플로=@main, Xcode Cloud=immutable SHA 로 고정�
 
   // Xcode Cloud 경로는 Actions 의 @main 해석을 쓰지 못한다. SHA 와 본문 해시를 함께 고정한다.
   const prebuild = await read('apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh');
-  const authority = prebuild.match(/AUTHORITY_SHA="([0-9a-f]{40})"/u);
-  assert.ok(authority, 'ci_pre_xcodebuild.sh 에 AUTHORITY_SHA 가 없다');
-  assert.match(prebuild, new RegExp(`raw\\.githubusercontent\\.com/seorilabs/\\.github/\\$\\{AUTHORITY_SHA\\}`, 'u'));
+  assert.match(prebuild, /AUTHORITY_SHA="[0-9a-f]{40}"/u);
+  assert.match(prebuild, /raw\.githubusercontent\.com\/seorilabs\/\.github\/\$\{AUTHORITY_SHA\}/u);
   assert.match(prebuild, /APPLIER_SHA256="[0-9a-f]{64}"/u);
   assert.match(prebuild, /AUTHORITY_SHA256="[0-9a-f]{64}"/u);
   assert.match(prebuild, /shasum -a 256 -c/u);

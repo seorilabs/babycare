@@ -23,13 +23,16 @@
 - Firebase Emulator job도 private repo에서는 `seorilabs-rpi-arm64`를 사용하되 runner image의 Java를 가정하지 않고 `actions/setup-java@v5`로 Temurin 21을 준비한다.
 - public repo 또는 public PR path에서는 `ubuntu-latest` fallback을 사용한다.
 - Android release build는 RPI ARC로 보내지 않고 `ubuntu-latest` x64 Linux runner를 사용한다.
-- App Store/Xcode build는 RPI ARC로 보내지 않고 `macos-latest` runner를 사용한다.
+- App Store/Xcode archive·업로드는 GitHub Actions runner를 쓰지 않고 Xcode Cloud에서 수행한다. 이 저장소에는 macOS job이 없다.
 
 ## 이 저장소는 ARC를 쓸 수 없다
 
 `seorilabs/babycare`는 2026-09-19에 public으로 전환했다. org runner group은 전부
 `allows_public_repositories: false`라서 public 저장소가 ARC 라벨을 요청하면 job이 실패하지
-않고 큐에 영원히 남는다. 이 저장소의 모든 job은 GitHub-hosted `ubuntu-latest`로 간다.
+않고 큐에 영원히 남는다.
+
+막히는 것은 ARC뿐이고 GitHub-hosted 러너는 제약 없이 쓸 수 있다. 다만 이 저장소의 현재
+워크플로에는 macOS·Windows job이 없어 실제 배정은 전부 `ubuntu-latest`다.
 
 워크플로의 `github.event.repository.private` 조건부 라우팅은 그대로 둔다. private으로 되돌릴
 때 다시 동작해야 하고, 중앙 재사용 워크플로도 같은 패턴으로 라우팅한다. 아래 ARC 관련 기준은
