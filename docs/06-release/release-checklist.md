@@ -80,6 +80,8 @@
 - [x] Google Play app-signing 내부 설치본의 로그인·초대·기록·App Check token QA — 사용자가 현재 `v1.1.3` 실기기 QA 통과를 보고함
 - [x] Google Play production 승격·심사 제출 — internal `1001003`을 production draft로 재빌드 없이 승격하고 전체 출시·176개 국가/지역·변경사항 12개를 제출. 2026-08-11 00:14 KST Publisher production track은 `completed`지만 제출 ID `1`은 `검토 중`, 한국 공개 listing은 HTTP 404
 - [x] Google Play 심사 승인·production 공개·공개 listing `1.1.3` readback — 한국 listing HTTP 200, 제품명·version 확인, 2026-08-21
+- [x] 세 마켓 GitHub Actions 통합 배포 `v1.1.10` — Deploy All run `35424137734`, source `0bc9951`, iOS `1.1.10`/`1001010`(App Store Connect 업로드 성공), Google Play internal `1.1.10`/`1001010`, AppsInToss 업로드 성공. App Review 제출·production 승격은 하지 않음, 2026-09-19
+- [ ] `v1.1.10` ASC readback — build id, `processingState`, `buildAudienceType`, `internalBuildState`, 테스터 수 확인 후 `app-store.config.json`의 `확정 필요` 대체
 - [x] App Store 실제 테스터 설치·실기기 QA와 App Review 제출 — 사용자의 실기기 QA 통과 보고 뒤 review submission `ee65dd96-0297-4a11-b71d-c4bc73e6a39d` 제출. 제출 당시 `WAITING_FOR_REVIEW`, release type `AFTER_APPROVAL`, 2026-08-10
 - [x] App Store 심사 승인·자동 공개·listing `1.1.3` readback — Apple public lookup `resultCount=1`, `currentVersionReleaseDate=2026-08-14T05:35:05Z`, 2026-08-21 재확인
 - [ ] Google Play·App Store 공개 listing 설치본의 launch·로그인·기록 핵심 흐름 smoke — 심사 전 app-signing/TestFlight QA와 공개 listing readback은 완료했지만 공개 후 설치 QA는 별도 미실행

@@ -1,5 +1,14 @@
 # Work Log
 
+## 2026-09-19 — public 전환과 세 마켓 GitHub Actions 통합 배포
+
+- 조직 Actions 쿼타 보호를 위해 저장소를 public으로 전환했다. 전환 전 히스토리 blob 1,772개(38MB)를 스캔해 private key·service account JSON·API 토큰·keystore가 0건임을 확인했고, secret scanning·push protection 활성화 뒤 알림도 0건이다. org runner group이 전부 `allows_public_repositories: false`라 이 저장소는 ARC를 쓸 수 없고 모든 job이 GitHub-hosted `ubuntu-latest`로 간다.
+- iOS 릴리스를 Xcode Cloud에서 GitHub Actions로 옮겼다. 중앙 `rn-deploy-app-store.yml`을 새로 만들고 `apps/mobile/ios/ci_scripts/`를 걷어냈다. 2026-07-23의 "RNFirebase라 Xcode 26.x 정적 링키지 회귀 대상이라 macOS 러너 archive가 위험" 판단은 `macos-26`/Xcode 26.6 성공으로 해소됐다.
+- `v1.1.10`을 Deploy All run `35424137734`로 세 마켓에 동시 배포했다. 한 태그에서 iOS `1.1.10`/`1001010`, Google Play internal `1.1.10`/`1001010`, AppsInToss가 같은 버전으로 나갔다. App Review 제출과 Google Play production 승격은 하지 않았다.
+- 실행 과정에서 잠복 결함 넷을 고쳤다. 전부 해당 경로가 한 번도 실행된 적 없어 드러나지 않았던 것이다. (1) 커밋 #133이 caller를 `@main`으로 옮기고 계약 테스트를 갱신하지 않아 main이 red였다. (2) 중앙 `promote-google-play.yml`이 `seorilabs-x64`를 하드코딩해 public에서 프로덕션 승격이 영구 pending 될 상태였다. (3) `deploy-all`이 `deploy-apps-in-toss.yml`에 선언되지 않은 secret을 넘겨 실행이 거부됐다. (4) `deploy-all` permissions가 caller 선언의 상위집합이 아니라 run 전체가 `startup_failure`로 죽었다.
+- 백오피스 `XCODE_CLOUD_APP_STORE_REPOS` allowlist에서 babycare를 뺐다. 남아 있으면 App Store 배포를 없어진 ASC `ciBuildRuns` 경로로 보낸다.
+- 남은 것: `v1.1.10` ASC readback, RN prebuilt framework dSYM 누락으로 인한 심볼 업로드 실패(이슈 #139, `seorilabs/.github#196`에서 수정 중).
+
 ## 2026-09-16 — AdMob·GA4 표준 차원과 Platform relay 코드 정비
 
 - 중앙 발급 원장 `seorilabs/.github#167`의 유지 Publisher 기준으로 Android/iOS AdMob app ID와 `stats_detail` rewarded unit을 교체했다. 개발 빌드는 계속 공식 `TestIds.REWARDED`를 사용하며, 새 운영 JSON이나 secret은 추가하지 않았다.
