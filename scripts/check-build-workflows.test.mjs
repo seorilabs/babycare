@@ -355,6 +355,48 @@ test('App Store deployment is a thin central caller with tag-bound versions', as
   assert.doesNotMatch(deployAll, /FIREBASE_WEB_API_KEY/);
 });
 
+// deploy-all 은 세 마켓 caller 를 부른다. GitHub 은 재사용 워크플로가 caller 보다 넓은 권한을
+// 요구하면 job 하나가 아니라 run 전체를 startup_failure 로 죽인다. 로그도 남지 않아 진단이
+// 어렵다. 실제로 packages: read 누락으로 한 번 죽었다.
+test('deploy-all 권한은 호출하는 마켓 워크플로의 상위집합이다', async () => {
+  const names = ['deploy-apps-in-toss.yml', 'deploy-google-play.yml', 'deploy-app-store.yml'];
+  const [parent, ...children] = await Promise.all([
+    read('.github/workflows/deploy-all.yml'),
+    ...names.map((n) => read(`.github/workflows/${n}`)),
+  ]);
+
+  const perms = (text) => {
+    const block = text.match(/^permissions:\n((?:[ \t]+\S[^\n]*\n)+)/mu);
+    assert.ok(block, 'permissions 블록이 필요하다');
+    return new Map(
+      block[1]
+        .split('\n')
+        .filter((line) => line.trim())
+        .map((line) => {
+          const [scope, value] = line.trim().split(/:\s*/u);
+          return [scope, value];
+        }),
+    );
+  };
+
+  const rank = { read: 1, write: 2 };
+  const parentPerms = perms(parent);
+
+  for (const [index, child] of children.entries()) {
+    for (const [scope, value] of perms(child)) {
+      const granted = parentPerms.get(scope);
+      assert.ok(
+        granted !== undefined,
+        `deploy-all 에 ${scope} 권한이 없다. ${names[index]} 가 요구한다`,
+      );
+      assert.ok(
+        rank[granted] >= rank[value],
+        `deploy-all 의 ${scope}=${granted} 가 ${names[index]} 의 ${value} 보다 좁다`,
+      );
+    }
+  }
+});
+
 test('Google Play upload tolerates slow resumable responses', async () => {
   const upload = await read('scripts/upload-google-play-internal.py');
 
