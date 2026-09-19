@@ -284,7 +284,7 @@ test('Cloud Build build-only uses ephemeral signing and central tag-derived vers
   assert.doesNotMatch(buildOnly, /google-services\.json.*writeFileSync/s);
 });
 
-test('Google Play deployment is a thin exact-SHA central caller', async () => {
+test('Google Play deployment is a thin central caller on @main', async () => {
   const [workflow, workspace, setup, promotion, uploader] = await Promise.all([
     read('.github/workflows/deploy-google-play.yml'),
     read('pnpm-workspace.yaml'),
