@@ -408,38 +408,6 @@ test('Google Play upload tolerates slow resumable responses', async () => {
   assert.match(upload, /execute\(num_retries=API_RETRIES\)/);
 });
 
-test('Xcode Cloud release path is tag-only, secret-backed, and managed-signed', async () => {
-  const [prebuild, postClone, project, plist, readme] = await Promise.all([
-    read('apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh'),
-    read('apps/mobile/ios/ci_scripts/ci_post_clone.sh'),
-    read('apps/mobile/ios/BabyCare.xcodeproj/project.pbxproj'),
-    read('apps/mobile/ios/BabyCare/Info.plist'),
-    read('apps/mobile/ios/ci_scripts/README.md'),
-  ]);
-
-  assert.match(prebuild, /RELEASE_TAG="\$\{CI_TAG:-\}"/);
-  assert.match(prebuild, /AUTHORITY_SHA="[0-9a-f]{40}"/);
-  assert.match(prebuild, /xcode-cloud-apply-tag-version\.mjs/);
-  assert.match(prebuild, /shasum -a 256 -c/);
-  assert.match(prebuild, /appleMarketingVersion/);
-  assert.match(prebuild, /appleBuildNumber/);
-  assert.match(prebuild, /Info\.plist를 찾지 못함/);
-  assert.doesNotMatch(prebuild, /CI_BUILD_NUMBER/);
-  assert.doesNotMatch(prebuild, /git[^\n]*describe/);
-  assert.doesNotMatch(prebuild, /scripts\/resolve-release-version|github\.run_number/);
-  assert.match(postClone, /brew install node@24 cocoapods/);
-  assert.match(postClone, /FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:-/);
-  assert.match(postClone, /FIREBASE_BUNDLE_ID/);
-  assert.match(project, /CODE_SIGN_STYLE = Automatic;/);
-  assert.doesNotMatch(project, /PROVISIONING_PROFILE_SPECIFIER/);
-  assert.match(
-    plist,
-    /<key>ITSAppUsesNonExemptEncryption<\/key>\s*<false\/>/,
-  );
-  assert.match(readme, /시작 조건=태그\s*`v\*\.\*\.\*`/);
-  assert.match(readme, /FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64/);
-});
-
 test('latest App Store candidate evidence stays consistent', async () => {
   const [config, market, checklist, setup, workLog] = await Promise.all([
     json('app-store/app-store.config.json'),
@@ -528,10 +496,9 @@ test('every workflow installs with the committed pnpm lockfile', async () => {
 });
 
 // 중앙 재사용 워크플로는 org 호출 계약(seorilabs/.github README)에 따라 `@main`으로 부른다.
-// 반면 Xcode Cloud 는 워크플로가 아니라 쉘 스크립트가 raw.githubusercontent 에서 중앙 구현을
-// 받아 오므로 immutable SHA + 본문 sha256 으로 고정해야 한다. 두 경로의 고정 방식이 다르다는
-// 사실 자체를 계약으로 박아, 어느 한쪽을 반대로 바꾸는 변경을 여기서 막는다.
-test('중앙 참조는 워크플로=@main, Xcode Cloud=immutable SHA 로 고정한다', async () => {
+// 2026-09-19 Xcode Cloud 경로를 걷어내면서 raw.githubusercontent 에서 중앙 스크립트를 SHA 로
+// 받아 오던 유일한 예외가 사라졌다. 이제 중앙 참조는 워크플로 `@main` 하나뿐이다.
+test('중앙 참조는 전부 워크플로 @main 이다', async () => {
   const names = (await readdir('.github/workflows')).filter((name) => name.endsWith('.yml'));
   const workflows = await Promise.all(names.map((name) => read(`.github/workflows/${name}`)));
 
@@ -546,11 +513,8 @@ test('중앙 참조는 워크플로=@main, Xcode Cloud=immutable SHA 로 고정�
   }
   assert.ok(refCount > 0, '중앙 재사용 워크플로 참조를 찾지 못했다');
 
-  // Xcode Cloud 경로는 Actions 의 @main 해석을 쓰지 못한다. SHA 와 본문 해시를 함께 고정한다.
-  const prebuild = await read('apps/mobile/ios/ci_scripts/ci_pre_xcodebuild.sh');
-  assert.match(prebuild, /AUTHORITY_SHA="[0-9a-f]{40}"/u);
-  assert.match(prebuild, /raw\.githubusercontent\.com\/seorilabs\/\.github\/\$\{AUTHORITY_SHA\}/u);
-  assert.match(prebuild, /APPLIER_SHA256="[0-9a-f]{64}"/u);
-  assert.match(prebuild, /AUTHORITY_SHA256="[0-9a-f]{64}"/u);
-  assert.match(prebuild, /shasum -a 256 -c/u);
+  // Xcode Cloud 경로가 남아 있으면 버전 정본이 두 갈래가 된다. 되살아나지 않게 막는다.
+  for (const [index, text] of workflows.entries()) {
+    assert.doesNotMatch(text, /AUTHORITY_SHA|ci_pre_xcodebuild|ciBuildRuns/u, names[index]);
+  }
 });
