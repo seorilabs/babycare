@@ -16,6 +16,9 @@ on:
       deploy_google_play:
         type: boolean
         default: true
+      deploy_app_store:
+        type: boolean
+        default: true
       track:
         description: "Google Play track"
         type: choice
@@ -53,8 +56,9 @@ jobs:
     if: ${{ inputs.deploy_ait }}
     uses: ./.github/workflows/deploy-apps-in-toss.yml
     secrets:
+      # deploy-apps-in-toss.yml 이 선언한 secret 만 넘긴다. Firebase 웹 키는 중앙
+      # rn-deploy-ait.yml 이 apps-in-toss environment 에서 직접 받아 job env 로 넣는다.
       APPS_IN_TOSS_API_KEY: ${{ secrets.APPS_IN_TOSS_API_KEY }}
-      FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
     with:
       release_tag: ${{ needs.resolve.outputs.tag }}
       memo: ${{ inputs.memo }}
@@ -75,3 +79,20 @@ jobs:
       track: ${{ inputs.track }}
       release_status: ${{ inputs.release_status }}
 
+  app-store:
+    name: Deploy App Store
+    needs: resolve
+    if: ${{ inputs.deploy_app_store }}
+    uses: ./.github/workflows/deploy-app-store.yml
+    secrets:
+      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
+      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+      APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
+    with:
+      release_tag: ${{ needs.resolve.outputs.tag }}
+      upload: true

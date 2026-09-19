@@ -61,7 +61,8 @@ flowchart LR
 - ARM64/RPI Docker build는 `seorilabs-rpi-arm64-dind`를 사용한다.
 - public PR 경로에는 Seorilabs private ARC runner를 노출하지 않는다. 템플릿 workflow는 `github.event.repository.private` 조건으로 fallback을 둔다.
 - Android AAB/APK release build는 RPI ARC로 보내지 않는다. Android release는 x64 Linux runner를 사용한다.
-- Apple App Store/Xcode build는 macOS/Xcode runner가 필요하므로 RPI ARC로 보내지 않는다.
+- Apple App Store/Xcode build는 GitHub-hosted `macos-26`에서 중앙 `rn-deploy-app-store.yml`로 수행한다. 이 저장소는 public이라 GitHub-hosted 표준 러너가 무료다. ARC로 보내지 않는다.
+- Apple 자격증명(배포 인증서, ASC API key, provisioning profile, iOS Firebase config)은 `app-store` environment secret에 둔다. 저장소 레벨 secret으로 두지 않는다.
 
 ## 테스트 레이어
 
