@@ -408,7 +408,7 @@ test('Google Play upload tolerates slow resumable responses', async () => {
   assert.match(upload, /execute\(num_retries=API_RETRIES\)/);
 });
 
-test('latest App Store candidate evidence stays consistent', async () => {
+test('App Store 공개본과 최신 후보 원장이 문서와 일치한다', async () => {
   const [config, market, checklist, setup, workLog] = await Promise.all([
     json('app-store/app-store.config.json'),
     read('docs/05-markets/app-store.md'),
@@ -416,46 +416,70 @@ test('latest App Store candidate evidence stays consistent', async () => {
     read('docs/06-release/store-upload-setup.md'),
     read('docs/04-work/work-log.md'),
   ]);
-  const release = config.release;
 
+  // 공개본은 ASC readback 과 Apple public lookup 으로 확인이 끝난 값이다.
+  assert.deepEqual(config.publicRelease, {
+    marketingVersion: '1.1.3',
+    buildNumber: '61',
+    sourceTag: 'v1.1.3',
+    sourceCommit: '8ea2ceb656c46ecdf3975027f55c5b033e15e3a8',
+    buildId: 'f9a718d7-829d-4838-8b61-e5d9a968fe6f',
+    releasedAt: '2026-08-14T05:35:05Z',
+    evidence:
+      'Apple public lookup currentVersionReleaseDate 를 2026-08-21 재확인했다. docs/05-markets/app-store.md 참고.',
+  });
+
+  // 최신 후보는 업로드까지만 검증됐다. 워크플로 로그로 확인 가능한 값만 고정한다.
+  const release = config.release;
   assert.deepEqual(
     {
       marketingVersion: release.marketingVersion,
       buildNumber: release.buildNumber,
       sourceTag: release.sourceTag,
       sourceCommit: release.sourceCommit,
-      buildId: release.buildId,
-      processingState: release.processingState,
-      buildAudienceType: release.buildAudienceType,
+      buildPath: release.buildPath,
+      githubActionsRunId: release.githubActionsRunId,
       usesNonExemptEncryption: release.usesNonExemptEncryption,
-      uploadedDate: release.uploadedDate,
-      artifactSha256: release.artifactSha256,
-      betaGroupBuildAssigned: release.betaGroupBuildAssigned,
-      internalBuildState: release.internalBuildState,
-      betaTesterCount: release.betaTesterCount,
+      submittedForReview: release.submittedForReview,
     },
     {
-      marketingVersion: '1.1.3',
-      buildNumber: '61',
-      sourceTag: 'v1.1.3',
-      sourceCommit: '8ea2ceb656c46ecdf3975027f55c5b033e15e3a8',
-      buildId: 'f9a718d7-829d-4838-8b61-e5d9a968fe6f',
-      processingState: 'VALID',
-      buildAudienceType: 'APP_STORE_ELIGIBLE',
+      marketingVersion: '1.1.10',
+      buildNumber: '1001010',
+      sourceTag: 'v1.1.10',
+      sourceCommit: '0bc9951062eaff2443584c7dbdea1c09b3fd2abe',
+      buildPath: 'github-actions',
+      githubActionsRunId: '35424137734',
       usesNonExemptEncryption: false,
-      uploadedDate: '2026-08-10T06:06:53-07:00',
-      artifactSha256: null,
-      betaGroupBuildAssigned: true,
-      internalBuildState: 'IN_BETA_TESTING',
-      betaTesterCount: 2,
+      submittedForReview: false,
     },
   );
 
+  // 업로드 성공은 ASC 상태가 아니다. 확인하지 않은 값을 그럴듯하게 채우지 않았는지 본다.
+  for (const field of [
+    'buildId',
+    'processingState',
+    'buildAudienceType',
+    'internalBuildState',
+    'betaTesterCount',
+    'appStoreState',
+  ]) {
+    assert.match(
+      String(release[field]),
+      /확정 필요 — ASC readback/u,
+      `${field} 는 ASC readback 전까지 확정 필요로 남긴다`,
+    );
+  }
+  assert.equal(release.reviewSubmissionId, null);
+  // Xcode Cloud 경로는 걷어냈다. 후보 원장에 되살아나지 않게 막는다.
+  assert.equal(release.xcodeCloudRunId, undefined);
+
+  // 공개본 증거는 네 문서 모두에 남아 있어야 한다.
   for (const document of [market, checklist, setup, workLog]) {
     assert.match(document, /v1\.1\.3/);
-    assert.match(document, /0abb7047-2126-44f7-979b-d5388314fabb/);
-    assert.match(document, /f9a718d7-829d-4838-8b61-e5d9a968fe6f/);
-    assert.match(document, /APP_STORE_ELIGIBLE/);
+  }
+  for (const document of [market, checklist, workLog]) {
+    assert.match(document, /v1\.1\.10/);
+    assert.match(document, /35424137734/);
   }
 });
 
