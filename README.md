@@ -153,3 +153,9 @@ pnpm run check:release
 - [보안 위협 모델](docs/03-architecture/security-threat-model.md)
 - [작업 백로그](docs/04-work/backlog.md)
 - [테스트 전략](docs/07-qa/test-strategy.md)
+
+## 라이선스
+
+이 저장소는 오픈소스가 아니다. 소스는 공개돼 있지만 복제, 수정, 재배포, 파생 앱의 스토어 배포는 허용하지 않는다. 자세한 조건은 [LICENSE](LICENSE)를 따른다.
+
+공개 전환은 GitHub Actions 조직 쿼타 보호가 목적이다. public 저장소의 GitHub-hosted 표준 러너는 분당 과금이 없다.
