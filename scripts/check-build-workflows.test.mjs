@@ -347,6 +347,11 @@ test('App Store deployment is a thin central caller with tag-bound versions', as
   assert.match(exportOptions, /<key>manageAppVersionAndBuildNumber<\/key>\s*<false\/>/);
   assert.match(exportOptions, /<key>method<\/key>\s*<string>app-store-connect<\/string>/);
   assert.match(exportOptions, /<key>teamID<\/key>\s*<string>HCDUXX4Z3X<\/string>/);
+  // automatic 서명 + -allowProvisioningUpdates 는 러너마다 Apple Development 인증서를
+  // 새로 발급해 Apple 계정 인증서 한도를 소진한다. v1.1.11 빌드가 그래서 죽었다.
+  assert.match(exportOptions, /<key>signingStyle<\/key>\s*<string>manual<\/string>/);
+  assert.match(exportOptions, /<key>signingCertificate<\/key>\s*<string>Apple Distribution<\/string>/);
+  assert.match(exportOptions, /<key>com\.seorilabs\.babycare<\/key>\s*<string>BabyCare App Store<\/string>/);
 
   // deploy-all 은 세 마켓을 모두 fan-out 한다.
   assert.match(deployAll, /uses: \.\/\.github\/workflows\/deploy-app-store\.yml/);

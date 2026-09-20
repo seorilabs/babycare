@@ -8,8 +8,17 @@
 	<string>upload</string>
 	<key>teamID</key>
 	<string>HCDUXX4Z3X</string>
+	<!-- manual 서명. automatic + -allowProvisioningUpdates 는 러너마다 Apple Development
+	     인증서를 새로 발급해 계정 인증서 한도를 소진한다. v1.1.11 빌드가 그 이유로 죽었다. -->
 	<key>signingStyle</key>
-	<string>automatic</string>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.seorilabs.babycare</key>
+		<string>BabyCare App Store</string>
+	</dict>
 	<key>uploadSymbols</key>
 	<true/>
 	<key>generateAppStoreInformation</key>
