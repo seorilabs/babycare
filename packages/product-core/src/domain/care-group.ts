@@ -22,7 +22,13 @@ export interface CareGroup {
   readonly updatedAt: number;
 }
 
-export type GroupAction = 'read' | 'record' | 'invite' | 'remove_member' | 'delete_group';
+export type GroupAction =
+  | 'read'
+  | 'record'
+  | 'invite'
+  | 'update_baby_profile'
+  | 'remove_member'
+  | 'delete_group';
 
 export function canPerformGroupAction(
   membership: Membership | undefined,

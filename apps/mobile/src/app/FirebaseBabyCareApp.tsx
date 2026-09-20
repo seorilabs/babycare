@@ -86,6 +86,8 @@ type RootState =
     }
   | {readonly kind: 'error'; readonly error: Error};
 
+type ActiveRootState = Extract<RootState, {readonly kind: 'active'}>;
+
 const EMPTY_TIMELINE: CareEventTimelineFeedState = {
   events: [],
   hasMore: true,
@@ -113,6 +115,10 @@ export function FirebaseCareDashboard(props: {
   readonly invite?: {readonly code: string; readonly expiresAt: number};
   readonly onInvite: () => Promise<void>;
   readonly onRefreshMembers: () => Promise<void>;
+  readonly onUpdateBabyProfile: (input: {
+    readonly name: string;
+    readonly birthDate: string;
+  }) => Promise<void>;
   readonly onRemoveMember: (member: {
     readonly userId: string;
     readonly displayName: string;
@@ -266,6 +272,7 @@ export function FirebaseCareDashboard(props: {
           }}
           onOpenAdPrivacyOptions={props.runtime.openAdPrivacyOptions}
           onRefreshMembers={props.onRefreshMembers}
+          onUpdateBabyProfile={props.onUpdateBabyProfile}
           onRemoveMember={props.onRemoveMember}
           onReset={async () => undefined}
           session={session}
@@ -461,6 +468,8 @@ export function FirebaseBabyCareApp(
     [],
   );
   const mounted = useRef(true);
+  const activeReadySession = useRef<ActiveRootState | undefined>(undefined);
+  const readyOperationTail = useRef<Promise<void>>(Promise.resolve());
   const [state, setState] = useState<RootState>({kind: 'loading'});
   const [runtimeError, setRuntimeError] = useState<Error>();
   const [retryKey, setRetryKey] = useState(0);
@@ -471,6 +480,75 @@ export function FirebaseBabyCareApp(
   const bootScreenSent = useRef(false);
   const bootTerminalSent = useRef(false);
   const setupAnalytics = state.kind === 'setup' ? state.runtime.analytics : undefined;
+
+  const reportCacheWriteFailure = useCallback(
+    (error: unknown) => {
+      if (!mounted.current) {
+        return;
+      }
+      const value = userFacingError(strings.app.cacheWriteFailedMessage, error);
+      setRuntimeError(value);
+      Alert.alert(strings.app.cacheWriteFailedTitle, value.message);
+    },
+    [strings],
+  );
+
+  const enqueueReadyOperation = useCallback(
+    (
+      expectedToken: CloudCareContextSessionToken,
+      expectedContainer: CareContainer,
+      operation: (current: ActiveRootState) => Promise<ReadyFirebaseSession>,
+      onCacheWriteFailure?: (error: unknown) => void,
+    ): Promise<void> => {
+      const run = async () => {
+        const current = activeReadySession.current;
+        if (
+          !mounted.current ||
+          !current ||
+          current.sessionToken !== expectedToken ||
+          current.container !== expectedContainer ||
+          !sessionStore.isCurrent(expectedToken)
+        ) {
+          return;
+        }
+
+        const ready = await operation(current);
+        const latest = activeReadySession.current;
+        if (
+          !mounted.current ||
+          !latest ||
+          latest.sessionToken !== expectedToken ||
+          latest.container !== expectedContainer ||
+          !sessionStore.isCurrent(expectedToken)
+        ) {
+          return;
+        }
+
+        const next = {...latest, ready};
+        activeReadySession.current = next;
+        setState(stateValue =>
+          stateValue.kind === 'active' &&
+          stateValue.sessionToken === expectedToken &&
+          stateValue.container === expectedContainer
+            ? {...stateValue, ready}
+            : stateValue,
+        );
+
+        try {
+          await sessionStore.save(expectedToken, ready);
+        } catch (error) {
+          onCacheWriteFailure?.(error);
+        }
+      };
+      const result = readyOperationTail.current.then(run, run);
+      readyOperationTail.current = result.then(
+        () => undefined,
+        () => undefined,
+      );
+      return result;
+    },
+    [sessionStore],
+  );
 
   const trackBootScreen = useCallback((analytics: AnalyticsPort) => {
     bootAnalytics.current = analytics;
@@ -544,6 +622,9 @@ export function FirebaseBabyCareApp(
             reason === 'membership_removed'
               ? strings.app.membershipRemovedNotice
               : strings.app.accountChangedNotice;
+          if (activeReadySession.current?.sessionToken === sessionToken) {
+            activeReadySession.current = undefined;
+          }
           sessionStore
             .clear(sessionToken)
             .then(cleared => {
@@ -581,39 +662,30 @@ export function FirebaseBabyCareApp(
         await container.dispose();
         return;
       }
-      setState({
+      const activeState: ActiveRootState = {
         kind: 'active',
         runtime,
         ready,
         container,
         sessionToken,
-      });
+      };
+      activeReadySession.current = activeState;
+      setState(activeState);
       trackBootReady(runtime.analytics);
-      runtime
-        .refreshMemberships(ready)
-        .then(async memberships => {
-          const refreshed = {...ready, memberships};
-          const refreshSaved = await sessionStore.save(
-            sessionToken,
-            refreshed,
-          );
-          if (!refreshSaved || !mounted.current || !isAllowed()) {
-            return;
-          }
-          setState(current =>
-            current.kind === 'active' &&
-            current.container === container &&
-            current.sessionToken === sessionToken
-              ? {...current, ready: refreshed}
-              : current,
-          );
-        })
+      enqueueReadyOperation(
+        sessionToken,
+        container,
+        async current => ({
+          ...current.ready,
+          memberships: await current.runtime.refreshMemberships(current.ready),
+        }),
+      )
         .catch(() => {
           // Cached memberships keep offline startup usable. The lifecycle's
           // server observer remains authoritative for revocation.
         });
     },
-    [sessionStore, strings, trackBootReady],
+    [enqueueReadyOperation, sessionStore, strings, trackBootReady],
   );
 
   useEffect(() => {
@@ -886,34 +958,50 @@ export function FirebaseBabyCareApp(
         });
       }}
       onRefreshMembers={async () => {
-        const memberships = await state.runtime.refreshMemberships(state.ready);
-        const ready = {...state.ready, memberships};
-        const saved = await sessionStore.save(state.sessionToken, ready);
-        if (!saved) {
-          return;
-        }
-        setState(current =>
-          current.kind === 'active' &&
-          current.container === state.container &&
-          current.sessionToken === state.sessionToken
-            ? {...current, ready}
-            : current,
+        await enqueueReadyOperation(
+          state.sessionToken,
+          state.container,
+          async current => ({
+            ...current.ready,
+            memberships: await current.runtime.refreshMemberships(current.ready),
+          }),
+          reportCacheWriteFailure,
+        );
+      }}
+      onUpdateBabyProfile={async input => {
+        await enqueueReadyOperation(
+          state.sessionToken,
+          state.container,
+          async current => ({
+            ...current.ready,
+            context: {
+              ...current.ready.context,
+              baby: await current.runtime.updateBabyProfile(
+                current.ready,
+                input,
+              ),
+            },
+          }),
+          reportCacheWriteFailure,
         );
       }}
       onRemoveMember={async member => {
-        await state.runtime.removeMember(state.ready, userId(member.userId));
-        const memberships = await state.runtime.refreshMemberships(state.ready);
-        const ready = {...state.ready, memberships};
-        const saved = await sessionStore.save(state.sessionToken, ready);
-        if (!saved) {
-          return;
-        }
-        setState(current =>
-          current.kind === 'active' &&
-          current.container === state.container &&
-          current.sessionToken === state.sessionToken
-            ? {...current, ready}
-            : current,
+        await enqueueReadyOperation(
+          state.sessionToken,
+          state.container,
+          async current => {
+            await current.runtime.removeMember(
+              current.ready,
+              userId(member.userId),
+            );
+            return {
+              ...current.ready,
+              memberships: await current.runtime.refreshMemberships(
+                current.ready,
+              ),
+            };
+          },
+          reportCacheWriteFailure,
         );
       }}
       onRuntimeError={setRuntimeError}

@@ -1,5 +1,5 @@
 import {Storage} from '@apps-in-toss/framework';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   AppState,
   Pressable,
@@ -30,6 +30,7 @@ import {
   deleteCareAccount,
   reloadCareSession,
   removeCareMember,
+  updateCareBaby,
   type ReadyCareSession,
 } from '../services/babycare-backend';
 import {
@@ -50,6 +51,8 @@ export function ParityDashboard({
   const theme = useMemo(() => createTheme(dark), [dark]);
   const strings = useMemo(() => createStrings(deviceAppLocale()), []);
   const [ready, setReady] = useState(initialReady);
+  const readyRef = useRef(initialReady);
+  const readyOperationTail = useRef<Promise<void>>(Promise.resolve());
   const [runtime, setRuntime] = useState<AitCareEventRuntime>();
   const [timeline, setTimeline] = useState<CareEventTimelineFeedState>({
     events: initialReady.events,
@@ -80,6 +83,26 @@ export function ParityDashboard({
   }>();
   const [now, setNow] = useState(() => Date.now());
 
+  const commitReady = (next: ReadyCareSession) => {
+    readyRef.current = next;
+    setReady(next);
+  };
+
+  const enqueueReadyOperation = (
+    operation: (current: ReadyCareSession) => Promise<ReadyCareSession>,
+  ): Promise<void> => {
+    const run = async () => {
+      const next = await operation(readyRef.current);
+      commitReady({...next, events: readyRef.current.events});
+    };
+    const result = readyOperationTail.current.then(run, run);
+    readyOperationTail.current = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  };
+
   useEffect(() => {
     let active = true;
     let created: AitCareEventRuntime | undefined;
@@ -103,7 +126,7 @@ export function ParityDashboard({
         });
         stopOverview = value.observeOverview(state => {
           setOverview(state);
-          setReady(current => ({...current, events: state.events}));
+          commitReady({...readyRef.current, events: state.events});
           setNow(Date.now());
         });
         stopSync = value.observeSyncState(setSyncStates);
@@ -263,14 +286,20 @@ export function ParityDashboard({
             });
           }}
           onRefreshMembers={async () => {
-            const latest = await reloadCareSession(ready);
-            setReady(current => ({...latest, events: current.events}));
+            await enqueueReadyOperation(reloadCareSession);
             await runtime?.syncNow();
           }}
+          onUpdateBabyProfile={async input => {
+            await enqueueReadyOperation(async current => ({
+              ...current,
+              baby: await updateCareBaby(current, input),
+            }));
+          }}
           onRemoveMember={async member => {
-            await removeCareMember(ready, member);
-            const latest = await reloadCareSession(ready);
-            setReady(current => ({...latest, events: current.events}));
+            await enqueueReadyOperation(async current => {
+              await removeCareMember(current, member);
+              return reloadCareSession(current);
+            });
           }}
           onReset={async () => undefined}
           session={session}
