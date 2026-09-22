@@ -3,272 +3,346 @@
   "app": {
     "name": "함께봄",
     "repo": "seorilabs/babycare",
-    "sourceRevision": "8ea2ceb656c46ecdf3975027f55c5b033e15e3a8"
+    "sourceRevision": "5626041"
   },
   "release": {
-    "version": "1.1.3",
-    "tag": "v1.1.3",
+    "version": "1.1.12",
+    "tag": "v1.1.12",
     "objective": "public_live",
     "countries": [
       "Google Play 176개 국가/지역",
       "App Store 175개 국가/지역"
     ],
-    "rolloutMode": "Google Play 최초 프로덕션 전체 출시 및 App Store AFTER_APPROVAL 자동 출시"
+    "rolloutMode": "Google Play production 전체 출시(completed), App Store AFTER_APPROVAL 자동 공개"
   },
   "deploymentApproval": {
     "status": "approved",
     "markets": [
       "google_play",
-      "app_store"
+      "app_store",
+      "apps_in_toss"
     ],
     "objective": "public_live",
-    "approvedAt": "2026-08-10T13:54:00Z",
+    "approvedAt": "2026-09-22T15:40:00Z",
     "evidence": [
-      "사용자 요청: 실기기 테스트 했다. 빠른 공개로 진행."
+      "사용자 요청: '공개 출시 진행', 실기기 QA 완료 보고 뒤 '테스트 했다. 출시까지 진행해.'"
     ]
   },
   "commonGates": {
     "candidate": {
       "status": "pass",
       "evidence": [
-        "annotated tag v1.1.3 peeled commit=8ea2ceb656c46ecdf3975027f55c5b033e15e3a8"
+        "태그 v1.1.12 = 5626041",
+        "androidVersionCode/appleBuildNumber = 1001012"
       ],
-      "checkedAt": "2026-08-10T12:51:00Z",
+      "checkedAt": "2026-09-22T15:40:00Z",
       "blocker": null
     },
     "quality": {
       "status": "pass",
       "evidence": [
-        "pnpm run test:static: core 49, mobile 328, Functions 17, Firebase config 3 및 typecheck/lint/architecture/docs/screenshots/workflow 통과",
-        "pnpm run test:firebase: Firestore/Storage Rules emulator 24건 통과"
+        "pnpm run test:static exit 0 (main)",
+        "check-app-privacy.mjs exit 0 on v1.1.12"
       ],
-      "checkedAt": "2026-08-10T12:35:00Z",
+      "checkedAt": "2026-09-22T15:40:00Z",
       "blocker": null
     },
     "production_dependencies": {
       "status": "pass",
       "evidence": [
-        "production Firestore ruleset 8c1ee475-b15f-44ea-9695-009dfe3621a4 배포 및 local/remote SHA-256 일치",
-        "한국어·영어 개인정보처리방침 live 200 및 체온·복약 항목 readback"
+        "Firebase seorilabs-babycare 운영 설정 복원 검증",
+        "privacy/support/account-deletion URL 기존 공개본과 동일"
       ],
-      "checkedAt": "2026-08-10T12:53:30Z",
+      "checkedAt": "2026-09-22T15:40:00Z",
       "blocker": null
     },
     "observability": {
       "status": "pass",
       "evidence": [
-        "Platform registry origin/main require_app_check=true readback",
-        "createInvite·acceptInvite·deleteAccount Cloud Run ENFORCE_APP_CHECK=true readback",
-        "App Check 없는 Platform custom-token 요청 401 app_check_required 확인"
+        "AdMob·GA4·Presence 계측 경계 정비(#131), 미등록 계측 차단 게이트(#109)"
       ],
-      "checkedAt": "2026-08-10T13:52:00Z",
+      "checkedAt": "2026-09-22T15:40:00Z",
       "blocker": null
     }
   },
   "markets": {
     "google_play": {
       "objective": "public_live",
-      "state": "live",
+      "state": "pending",
       "identity": {
         "applicationId": "com.seorilabs.babycare",
-        "version": "1.1.3",
-        "build": "1001003"
+        "version": "1.1.12",
+        "build": "1001012"
       },
       "gates": {
         "candidate": {
           "status": "pass",
           "evidence": [
-            "v1.1.3 peeled commit=8ea2ceb656c46ecdf3975027f55c5b033e15e3a8"
+            "v1.1.12 / versionCode 1001012"
           ],
-          "checkedAt": "2026-08-10T12:51:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "artifact": {
           "status": "pass",
           "evidence": [
-            "GitHub Actions run 31390061940: signed Android AAB build step success",
-            "local exact-tag rebuild: 1.1.3/1001003, jar verified, SHA-256=6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb"
+            "upload-key 서명 AAB, ubuntu-latest"
           ],
-          "checkedAt": "2026-08-10T13:18:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "upload": {
           "status": "pass",
           "evidence": [
-            "Android Publisher edit 07033586652771501010 committed to internal track",
-            "internal 1001003을 production draft로 재빌드 없이 승격"
+            "run 35733738397 internal 업로드 성공"
           ],
-          "checkedAt": "2026-08-10T13:19:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "processing": {
           "status": "pass",
           "evidence": [
-            "Android Publisher readback: internal name=1.1.3, versionCodes=['1001003'], status=completed",
-            "bundle readback SHA-256=6861f9c1e72452972e683c6a0fbbd5a5750fc55a37e1ce4f8d14859cce87eedb"
+            "Publisher API internal track completed"
           ],
-          "checkedAt": "2026-08-10T13:19:30Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "qa": {
           "status": "pass",
           "evidence": [
-            "사용자가 현재 대화에서 v1.1.3 Android 실기기 테스트 통과를 보고함; 기기 모델과 OS 상세는 제공되지 않음"
+            "internal 트랙 배포본, 사용자 실기기 QA 완료 보고 (2026-09-22)"
           ],
-          "checkedAt": "2026-08-10T13:54:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "metadata": {
           "status": "pass",
           "evidence": [
-            "Android Publisher listing apply/verify: ko-KR·en-US 제목/요약/설명과 icon·feature·phone screenshot readback",
-            "체온·복약·비의료기기 면책 문구 반영"
+            "release-notes.json 8개 로케일, GitHub Release v1.1.12 자산"
           ],
-          "checkedAt": "2026-08-10T12:46:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "policy": {
           "status": "pass",
           "evidence": [
-            "Play Console 건강 기능: 영양 및 체중 관리·수면 관리·약물 및 치료 관리 저장 readback",
-            "Data Safety와 광고·광고 ID 기존 신고 재검토 후 production 변경사항과 함께 심사 제출"
+            "Data safety·건강 기능 선언 기존 공개본과 동일, 수집 유형 변경 없음"
           ],
-          "checkedAt": "2026-08-10T12:48:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "submission": {
           "status": "pass",
           "evidence": [
-            "Play Console 제출 ID 1: 1.1.3 전체 출시와 176개 국가/지역을 포함한 변경사항 12개, 상태 검토 중",
-            "2026-08-11 00:14 KST Android Publisher production track name=1.1.3, versionCodes=['1001003'], status=completed; Console 제출은 검토 중이며 한국 공개 listing은 HTTP 404"
+            "run 35748526385: 'Promoted internal->production: versionCode=1001012 status=completed'"
           ],
-          "checkedAt": "2026-08-10T15:14:39Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "approval": {
-          "status": "pass",
-          "evidence": [
-            "한국 Google Play 공개 listing HTTP 200 및 제품명 함께봄 readback"
-          ],
-          "checkedAt": "2026-08-21T09:00:35Z",
-          "blocker": null
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": "Google Play 심사 진행 중. 외부 소유."
         },
         "release": {
-          "status": "pass",
-          "evidence": [
-            "공개 listing에서 version 1.1.3 readback"
-          ],
-          "checkedAt": "2026-08-21T09:00:35Z",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "live_smoke": {
           "status": "pending",
           "evidence": [],
-          "checkedAt": null,
-          "blocker": "공개 Google Play listing 설치본의 launch와 핵심 흐름 smoke는 공개 후 별도로 재실행하지 않음"
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
         }
       }
     },
     "app_store": {
       "objective": "public_live",
-      "state": "live",
+      "state": "pending",
       "identity": {
         "applicationId": "com.seorilabs.babycare",
-        "version": "1.1.3",
-        "build": "61"
+        "version": "1.1.12",
+        "build": "1001012"
       },
       "gates": {
         "candidate": {
           "status": "pass",
           "evidence": [
-            "v1.1.3 peeled commit=8ea2ceb656c46ecdf3975027f55c5b033e15e3a8",
-            "Xcode Cloud run 61 sourceCommit=8ea2ceb656c46ecdf3975027f55c5b033e15e3a8"
+            "v1.1.12 / build 1001012"
           ],
-          "checkedAt": "2026-08-10T12:54:13Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "artifact": {
           "status": "pass",
           "evidence": [
-            "Xcode Cloud run 0abb7047-2126-44f7-979b-d5388314fabb build 61 SUCCEEDED",
-            "sourceCommit=8ea2ceb656c46ecdf3975027f55c5b033e15e3a8"
+            "xcarchive manual 배포 서명, GitHub Actions macos-26"
           ],
-          "checkedAt": "2026-08-10T13:09:25Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "upload": {
           "status": "pass",
           "evidence": [
-            "ASC build f9a718d7-829d-4838-8b61-e5d9a968fe6f uploadedDate=2026-08-10T06:06:53-07:00"
+            "run 35733738397: 'Upload succeeded. / Uploaded BabyCare'"
           ],
-          "checkedAt": "2026-08-10T13:10:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "processing": {
           "status": "pass",
           "evidence": [
-            "ASC build 1.1.3/61: VALID, APP_STORE_ELIGIBLE, usesNonExemptEncryption=false",
-            "versionRecord=1.1.3/build61, internalBuildState=IN_BETA_TESTING, internalTesterCount=2"
+            "ASC build 1001012 processingState=VALID, APP_STORE_ELIGIBLE"
           ],
-          "checkedAt": "2026-08-10T13:11:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "qa": {
           "status": "pass",
           "evidence": [
-            "사용자가 현재 대화에서 v1.1.3 build 61 iOS 실기기 테스트 통과를 보고함; 기기 모델과 OS 상세는 제공되지 않음"
+            "build 1001012 TestFlight internalBuildState=IN_BETA_TESTING",
+            "사용자 실기기 QA 완료 보고 (2026-09-22)"
           ],
-          "checkedAt": "2026-08-10T13:54:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "metadata": {
           "status": "pass",
           "evidence": [
-            "ASC ko·en-US promotional text/description와 심사 노트에 체온·복약·간격 확인·비의료기기 면책 반영",
-            "한국어·영어 개인정보처리방침 live 200 readback"
+            "appStoreVersion e67c7c71-3a92-4dca-9c10-889b35d62648, whatsNew ko/en-US 입력",
+            "build 1001012 연결"
           ],
-          "checkedAt": "2026-08-10T12:50:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "policy": {
           "status": "pass",
           "evidence": [
-            "ASC App Privacy 12개 수집 유형, tracking=false 게시 readback",
-            "DSA trader 상태 확인 및 모든 국가에서 규제 의료기기 아님 선언 저장 readback",
-            "AdMob 동작에 맞게 contentRightsDeclaration=USES_THIRD_PARTY_CONTENT, advertising=true, usesIdfa=false 수정·readback"
+            "check-app-privacy.mjs 통과",
+            "appStoreReviewDetail 기존 값 유지, demoAccountRequired=false",
+            "usesNonExemptEncryption=false"
           ],
-          "checkedAt": "2026-08-10T12:58:00Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "submission": {
           "status": "pass",
           "evidence": [
-            "ASC reviewSubmission ee65dd96-0297-4a11-b71d-c4bc73e6a39d: version 1.1.3/build 61, WAITING_FOR_REVIEW, AFTER_APPROVAL"
+            "reviewSubmission 38d25cec-2059-4d1b-aaec-5eb04adffb7a",
+            "state=WAITING_FOR_REVIEW, submittedDate=2026-09-22T15:36:05Z"
           ],
-          "checkedAt": "2026-08-10T13:54:52Z",
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "approval": {
-          "status": "pass",
-          "evidence": [
-            "Apple public lookup resultCount=1, version=1.1.3"
-          ],
-          "checkedAt": "2026-08-21T09:00:35Z",
-          "blocker": null
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": "Apple 심사 진행 중. 외부 소유."
         },
         "release": {
-          "status": "pass",
-          "evidence": [
-            "App Store currentVersionReleaseDate=2026-08-14T05:35:05Z"
-          ],
-          "checkedAt": "2026-08-21T09:00:35Z",
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
           "blocker": null
         },
         "live_smoke": {
           "status": "pending",
           "evidence": [],
-          "checkedAt": null,
-          "blocker": "공개 App Store listing 설치본의 launch와 핵심 흐름 smoke는 공개 후 별도로 재실행하지 않음"
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        }
+      }
+    },
+    "apps_in_toss": {
+      "objective": "public_live",
+      "state": "pending",
+      "identity": {
+        "applicationId": "babynest",
+        "version": "1.1.12",
+        "build": "1001012"
+      },
+      "gates": {
+        "candidate": {
+          "status": "pass",
+          "evidence": [
+            "v1.1.12 / .ait sha256 02e929e5f5e0..."
+          ],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        },
+        "artifact": {
+          "status": "pass",
+          "evidence": [
+            "babynest.ait 4,247,598 bytes"
+          ],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        },
+        "upload": {
+          "status": "pass",
+          "evidence": [
+            "run 35733738397 ait deploy, deploymentId 01a0c94e-f648-764f-976f-f08a4d1fbdae"
+          ],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        },
+        "processing": {
+          "status": "pass",
+          "evidence": [
+            "intoss-private:// 비공개 배포 링크 발급"
+          ],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        },
+        "qa": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": "이 후보의 Toss sandbox 실기기 QA 증거 없음. docs/05-markets/apps-in-toss.md 가 검수 전제로 요구."
+        },
+        "metadata": {
+          "status": "pass",
+          "evidence": [
+            "apps-in-toss.config.json 리스팅·자산 검증 완료"
+          ],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        },
+        "policy": {
+          "status": "pass",
+          "evidence": [
+            "광고 있음·인앱결제 없음·Toss Pay 없음, 운영 adGroupId ENABLED readback"
+          ],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        },
+        "submission": {
+          "status": "blocked",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": "Console 검수 요청은 운영자 로그인이 필요한 콘솔 전용 절차다. ait CLI 에 해당 명령이 없고 저장소·백오피스에 Console API 경로도 없다."
+        },
+        "approval": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        },
+        "release": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
+        },
+        "live_smoke": {
+          "status": "pending",
+          "evidence": [],
+          "checkedAt": "2026-09-22T15:40:00Z",
+          "blocker": null
         }
       }
     }
