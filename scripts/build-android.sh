@@ -97,6 +97,16 @@ build_release_bundle() {
 
 source_aab="$repo_root/apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
 
+# 자격증명은 Secret Manager 가 아니라 일회성 GCS 객체로 들어온다. cloudbuild 의
+# fetch-ephemeral-credentials 가 BUILD_CREDENTIAL_DIR 에 내려두고 prefix 를 즉시 지운다.
+# exit 가 아니라 return 으로 실패를 알린다. 명령 치환 안의 exit 는 서브셸만 끝내고
+# 부모 스크립트는 계속 돈다.
+read_credential() {
+  local path="$BUILD_CREDENTIAL_DIR/$1"
+  [ -s "$path" ] || { echo "자격증명 파일이 없거나 비어 있음: $1" >&2; return 1; }
+  cat "$path"
+}
+
 run_build_only() {
   local name
   for name in \
@@ -105,7 +115,8 @@ run_build_only() {
     GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64 \
     GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD \
     GOOGLE_PLAY_UPLOAD_KEY_PASSWORD \
-    GOOGLE_PLAY_UPLOAD_KEY_ALIAS; do
+    GOOGLE_PLAY_UPLOAD_KEY_ALIAS \
+    BUILD_CREDENTIAL_DIR; do
     reject_env "$name"
   done
 
@@ -201,15 +212,24 @@ run_market_upload() {
     SEORI_RELEASE_TAG
     SEORI_RELEASE_VERSION_NAME
     SEORI_RELEASE_VERSION_CODE
-    FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64
-    GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64
-    GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD
-    GOOGLE_PLAY_UPLOAD_KEY_PASSWORD
+    BUILD_CREDENTIAL_DIR
     GOOGLE_PLAY_UPLOAD_KEY_ALIAS
   )
   for name in "${required_environment[@]}"; do
     require_env "$name"
   done
+
+  # 아래 node -e 가 자식 프로세스로 돌며 process.env 에서 읽으므로 export 해야 한다.
+  # 선언과 대입을 나눈 건 `export VAR="$(f)"` 가 export 의 종료 상태 0 으로 덮여
+  # set -e 에 걸리지 않기 때문이다. 그대로 두면 자격증명 파일이 없을 때 빈 값으로
+  # 빌드가 계속된다.
+  local FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64
+  local GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD GOOGLE_PLAY_UPLOAD_KEY_PASSWORD
+  FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64="$(read_credential firebase-android-config.b64)"
+  GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64="$(read_credential play-keystore.b64)"
+  GOOGLE_PLAY_UPLOAD_KEYSTORE_PASSWORD="$(read_credential play-keystore-password)"
+  GOOGLE_PLAY_UPLOAD_KEY_PASSWORD="$(read_credential play-key-password)"
+  export FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 GOOGLE_PLAY_UPLOAD_KEYSTORE_BASE64
   [[ -d "$repo_root/$CLOUD_BUILD_PNPM_STORE" ]] || {
     fail "인증된 Cloud Build pnpm store가 없습니다: $CLOUD_BUILD_PNPM_STORE"
   }
