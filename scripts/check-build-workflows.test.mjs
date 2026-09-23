@@ -547,3 +547,54 @@ test('중앙 참조는 전부 워크플로 @main 이다', async () => {
     assert.doesNotMatch(text, /AUTHORITY_SHA|ci_pre_xcodebuild|ciBuildRuns/u, names[index]);
   }
 });
+
+// Cloud Build 폴백은 사람이 급할 때 로컬에서 제출하는 경로라 평소에는 아무도 돌리지 않는다.
+// 2026-09-01 market-upload 가 SEORI_RELEASE_* 를 요구하고 ANDROID_VERSION_* 를 거부하도록
+// 바뀐 뒤 cloudbuild-android.yaml 이 따라가지 않아, 폴백이 첫 검사에서 멈추는 채로 3주가
+// 지났다. 필수·거부 목록을 여기 다시 적지 않고 스크립트에서 직접 읽어 대조한다.
+test('Cloud Build fallback matches the market-upload contract of build-android.sh', async () => {
+  const [script, cloudBuild, buildEnv] = await Promise.all([
+    read('scripts/build-android.sh'),
+    read('cloudbuild-android.yaml'),
+    read('build.env'),
+  ]);
+
+  const marketStart = script.indexOf('run_market_upload()');
+  assert.ok(marketStart >= 0, 'run_market_upload가 필요합니다.');
+  const market = script.slice(marketStart, script.indexOf('\n}\n', marketStart));
+
+  const requiredBlock = market.match(/local required_environment=\(\n([\s\S]*?)\n\s*\)/);
+  assert.ok(requiredBlock, 'market-upload required_environment가 필요합니다.');
+  const required = requiredBlock[1].split('\n').map(line => line.trim()).filter(Boolean);
+
+  const rejectBlock = market.match(/for name in \\\n([\s\S]*?); do\n\s*reject_env "\$name"/);
+  assert.ok(rejectBlock, 'market-upload reject_env 목록이 필요합니다.');
+  const rejected = rejectBlock[1].split(/[\s\\]+/).filter(Boolean);
+
+  const step = cloudBuild.match(/- id: build-signed-aab\n([\s\S]*?)(?=\n {2}- id: |\n\S)/);
+  assert.ok(step, 'cloudbuild-android.yaml에 build-signed-aab 단계가 필요합니다.');
+  const env = Object.fromEntries(
+    [...step[1].matchAll(/^ {6}- ([A-Z0-9_]+)=(.*)$/gm)].map(match => [match[1], match[2]]),
+  );
+
+  for (const name of required) {
+    assert.ok(name in env, `폴백이 market-upload 필수값 ${name}을 넘기지 않습니다.`);
+  }
+  for (const name of rejected) {
+    assert.ok(!(name in env), `폴백이 market-upload가 거부하는 ${name}을 넘깁니다.`);
+  }
+
+  const declared = new Set([...cloudBuild.matchAll(/^ {2}(_[A-Z0-9_]+):/gm)].map(match => match[1]));
+  for (const [name, value] of Object.entries(env)) {
+    for (const [, substitution] of value.matchAll(/\$\{(_[A-Z0-9_]+)\}/g)) {
+      assert.ok(declared.has(substitution), `${name}이 선언되지 않은 ${substitution}을 씁니다.`);
+    }
+  }
+
+  // market-upload 는 CLOUD_BUILD_PNPM_STORE 디렉터리가 없으면 멈춘다. 업로드된 소스에는 없다.
+  assert.match(buildEnv, /^CLOUD_BUILD_PNPM_STORE=\S+$/m);
+  assert.match(step[1], /CLOUD_BUILD_PNPM_STORE/);
+  assert.match(step[1], /mkdir -p "\/workspace\/\$\$store"/);
+
+  assert.doesNotMatch(cloudBuild, /availableSecrets|secretEnv|secretManager/);
+});
