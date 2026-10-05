@@ -3,12 +3,18 @@ import {
   doc,
   getDoc,
   getDocs,
-  setDoc,
+  updateDoc,
   type Firestore,
 } from '@react-native-firebase/firestore';
-import type {Baby, BabyId, BabyRepositoryPort, GroupId} from '@babycare/product-core';
+import type {
+  Baby,
+  BabyId,
+  BabyProfileUpdate,
+  BabyRepositoryPort,
+  GroupId,
+} from '@babycare/product-core';
 
-import {decodeBaby, encodeBabyDocument} from './group-documents';
+import {decodeBaby} from './group-documents';
 
 export class FirebaseBabyRepository implements BabyRepositoryPort {
   readonly #firestore: Firestore;
@@ -27,10 +33,14 @@ export class FirebaseBabyRepository implements BabyRepositoryPort {
     return snapshot.exists() ? decodeBaby(group, snapshot.id, snapshot.data()) : undefined;
   }
 
-  async save(baby: Baby): Promise<void> {
-    await setDoc(
-      doc(this.#firestore, 'groups', baby.groupId, 'babies', baby.id),
-      encodeBabyDocument(baby),
+  async updateProfile(profile: BabyProfileUpdate): Promise<void> {
+    await updateDoc(
+      doc(this.#firestore, 'groups', profile.groupId, 'babies', profile.id),
+      {
+        name: profile.name,
+        birthDate: profile.birthDate,
+        updatedAt: profile.updatedAt,
+      },
     );
   }
 }

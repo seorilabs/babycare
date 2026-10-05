@@ -839,4 +839,123 @@ describe('MoreScreen', () => {
     alert.mockRestore();
     ReactTestRenderer.act(() => renderer.unmount());
   });
+
+  it('lets an owner correct the baby name and date of birth', async () => {
+    const updateBabyProfile = jest.fn(async () => undefined);
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onReset={async () => undefined}
+          onUpdateBabyProfile={updateBabyProfile}
+          session={ownerSession}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '아기 정보 수정'})
+        .props.onPress();
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '아기 이름'})
+        .props.onChangeText('새봄');
+      renderer.root
+        .findByProps({accessibilityLabel: '생년월일'})
+        .props.onChangeText('2024-02-29');
+    });
+    await ReactTestRenderer.act(async () => {
+      renderer.root.findByProps({accessibilityLabel: '저장'}).props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(updateBabyProfile).toHaveBeenCalledWith({
+      name: '새봄',
+      birthDate: '2024-02-29',
+    });
+    expect(
+      renderer.root.findAllByProps({accessibilityLabel: '아기 이름'}),
+    ).toHaveLength(0);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('hides baby profile editing from non-owner members', () => {
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onReset={async () => undefined}
+          onUpdateBabyProfile={jest.fn()}
+          session={{...ownerSession, membershipRole: 'member'}}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+
+    expect(
+      renderer.root.findAllByProps({accessibilityLabel: '아기 정보 수정'}),
+    ).toHaveLength(0);
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
+
+  it('keeps the editor values and explains validation or persistence failure', async () => {
+    const validationError = Object.assign(new Error('technical'), {
+      reason: 'birth_date_invalid',
+    });
+    const updateBabyProfile = jest.fn(async () => {
+      throw validationError;
+    });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation();
+    let renderer!: ReactTestRenderer.ReactTestRenderer;
+
+    ReactTestRenderer.act(() => {
+      renderer = ReactTestRenderer.create(
+        <MoreScreen
+          onReset={async () => undefined}
+          onUpdateBabyProfile={updateBabyProfile}
+          session={ownerSession}
+          strings={createStrings('ko')}
+          theme={createTheme(false)}
+        />,
+      );
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '아기 정보 수정'})
+        .props.onPress();
+    });
+    ReactTestRenderer.act(() => {
+      renderer.root
+        .findByProps({accessibilityLabel: '생년월일'})
+        .props.onChangeText('2026-02-29');
+    });
+    await ReactTestRenderer.act(async () => {
+      renderer.root.findByProps({accessibilityLabel: '저장'}).props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(alert).toHaveBeenCalledWith(
+      '아기 정보를 저장하지 못했어요',
+      '생년월일을 YYYY-MM-DD의 실제 날짜로 입력해 주세요.',
+    );
+    expect(
+      renderer.root.findByProps({accessibilityLabel: '생년월일'}).props.value,
+    ).toBe('2026-02-29');
+    expect(
+      renderer.root
+        .findAllByType(Text)
+        .map(node => node.props.children)
+        .flat(Infinity),
+    ).toContain('하루이네');
+    alert.mockRestore();
+    ReactTestRenderer.act(() => renderer.unmount());
+  });
 });

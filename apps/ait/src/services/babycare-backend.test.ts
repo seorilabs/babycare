@@ -20,10 +20,15 @@ import {
   AitFirestoreCareEventRemoteStore,
   createCareGroup,
   createInviteCode,
+  type ReadyCareSession,
+  updateCareBaby,
 } from './babycare-backend';
 import {
   createCareEvent,
+  babyId,
   eventId,
+  groupId,
+  userId,
   type CareEvent,
   type CareEventMutation,
 } from '../../../../packages/product-core/src/index.ts';
@@ -41,6 +46,17 @@ function response(
     status: options.status ?? 200,
     json: async () => value,
   } as Response;
+}
+
+function toTestFirestoreFields(value: Record<string, string | number>) {
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      typeof item === 'number'
+        ? {integerValue: String(item)}
+        : {stringValue: item},
+    ]),
+  );
 }
 
 function createMutation(event: CareEvent): CareEventMutation {
@@ -206,5 +222,90 @@ describe('AppsInToss BabyCare backend', () => {
         request => request.headers['X-Firebase-AppCheck'] === 'app-check-token',
       ),
     ).toBe(true);
+  });
+
+  it('updates only the owner-editable baby profile fields', async () => {
+    mockStored.set(
+      'babynest.firebase-session.v1',
+      JSON.stringify({
+        refreshToken: 'refresh-token-1',
+        uid: 'owner-1',
+        groupId: 'group-1',
+        babyId: 'baby-1',
+      }),
+    );
+    const now = Date.now();
+    const ready: ReadyCareSession = {
+      uid: 'owner-1',
+      group: {
+        id: groupId('group-1'),
+        name: '하루',
+        ownerId: userId('owner-1'),
+        babyIds: [babyId('baby-1')],
+        createdAt: now - 1_000,
+        updatedAt: now - 1_000,
+      },
+      baby: {
+        id: babyId('baby-1'),
+        groupId: groupId('group-1'),
+        name: '하루',
+        birthDate: '2026-01-01',
+        sex: 'unspecified',
+        createdAt: now - 1_000,
+        updatedAt: now - 1_000,
+      },
+      membership: {
+        userId: userId('owner-1'),
+        groupId: groupId('group-1'),
+        caregiverRole: 'parent',
+        membershipRole: 'owner',
+        displayName: '엄마',
+        color: '#5FB49C',
+        joinedAt: now - 1_000,
+      },
+      memberships: [],
+      events: [],
+    };
+    let patchUrl = '';
+    let patchBody: Record<string, unknown> | undefined;
+    global.fetch = jest.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('securetoken.googleapis.com')) {
+        return response({
+          id_token: 'id-token-2',
+          refresh_token: 'refresh-token-2',
+          user_id: 'owner-1',
+        });
+      }
+      if (url.includes('/mintAitAppCheckToken')) {
+        return response({
+          token: 'app-check-token',
+          expireTimeMillis: Date.now() + 60 * 60 * 1_000,
+        });
+      }
+      if (url.includes('/members/owner-1')) {
+        return response({fields: toTestFirestoreFields({...ready.membership})});
+      }
+      if (url.includes('/babies/baby-1') && init?.method !== 'PATCH') {
+        return response({fields: toTestFirestoreFields({...ready.baby})});
+      }
+      if (url.includes('/babies/baby-1') && init?.method === 'PATCH') {
+        patchUrl = url;
+        patchBody = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return response({updateTime: '2026-09-08T00:00:00Z'});
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }) as unknown as typeof fetch;
+
+    const updated = await updateCareBaby(ready, {
+      name: '새봄',
+      birthDate: '2024-02-29',
+    });
+
+    expect(updated).toMatchObject({name: '새봄', birthDate: '2024-02-29'});
+    expect(patchUrl).toContain('updateMask.fieldPaths=name');
+    expect(patchUrl).toContain('updateMask.fieldPaths=birthDate');
+    expect(patchUrl).toContain('updateMask.fieldPaths=updatedAt');
+    expect(JSON.stringify(patchBody)).not.toContain('ownerId');
+    expect(JSON.stringify(patchBody)).not.toContain('privateNote');
   });
 });

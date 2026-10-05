@@ -94,7 +94,7 @@ function setup(overrides: {
   const babies: BabyRepositoryPort = {
     list: listBabies,
     findById: jest.fn(async () => baby),
-    save: jest.fn(async () => undefined),
+    updateProfile: jest.fn(async () => undefined),
   };
 
   const acceptInvite = jest.fn(async () => membership);
