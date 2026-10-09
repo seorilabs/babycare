@@ -27,6 +27,7 @@ describe('PlatformFirebaseCustomTokenBridge', () => {
       appId: 'babycare',
       fetch: fetchMock as unknown as typeof fetch,
       appCheckToken: async () => 'app-check-token',
+      debugBuild: false,
     });
 
     await expect(
@@ -87,6 +88,7 @@ describe('PlatformFirebaseCustomTokenBridge', () => {
       appCheckToken: async () => {
         throw new Error('App attestation failed');
       },
+      debugBuild: false,
     });
 
     await expect(bridge.createFirebaseCustomToken({})).resolves.toEqual({
@@ -113,6 +115,7 @@ describe('PlatformFirebaseCustomTokenBridge', () => {
       appId: 'babycare',
       fetch: fetchMock as unknown as typeof fetch,
       appCheckToken: async () => 'app-check-token',
+      debugBuild: false,
     });
 
     await expect(
@@ -162,5 +165,73 @@ describe('PlatformFirebaseCustomTokenBridge', () => {
         code: 'platform_response_invalid',
       },
     );
+  });
+
+  describe('개발용 빌드 표시', () => {
+    const devGlobal = globalThis as typeof globalThis & {__DEV__?: boolean};
+    const originalDev = devGlobal.__DEV__;
+
+    afterEach(() => {
+      devGlobal.__DEV__ = originalDev;
+    });
+
+    async function platformRequestHeaders(options: {
+      readonly debugBuild?: boolean;
+    }): Promise<Record<string, string>[]> {
+      const fetchMock = jest.fn(
+        async (input: RequestInfo | URL, _init?: RequestInit) =>
+          String(input).endsWith('/v1/auth/firebase-account')
+            ? response(200, {ok: true, result: {deleted: true}})
+            : response(200, {
+                ok: true,
+                result: {firebaseCustomToken: 'custom-token', appUserId: 'pb-new'},
+              }),
+      );
+      const bridge = new PlatformFirebaseCustomTokenBridge({
+        baseUrl: 'https://platform.test',
+        fetch: fetchMock as unknown as typeof fetch,
+        ...options,
+      });
+
+      await bridge.createFirebaseCustomToken({});
+      await bridge.deleteFirebaseAccount({firebaseIdToken: 'firebase-id-token'});
+
+      expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+        'https://platform.test/v1/auth/firebase-custom-token',
+        'https://platform.test/v1/auth/firebase-account',
+      ]);
+      return fetchMock.mock.calls.map(
+        ([, init]) => init?.headers as Record<string, string>,
+      );
+    }
+
+    it('개발용 빌드는 계정 발급과 삭제 요청에 X-Seori-Build: debug를 붙인다', async () => {
+      const headers = await platformRequestHeaders({debugBuild: true});
+
+      for (const header of headers) {
+        expect(header).toMatchObject({'X-Seori-Build': 'debug'});
+      }
+    });
+
+    it('마켓 출시 빌드는 X-Seori-Build를 보내지 않는다', async () => {
+      const headers = await platformRequestHeaders({debugBuild: false});
+
+      for (const header of headers) {
+        expect(header).not.toHaveProperty('X-Seori-Build');
+      }
+    });
+
+    it.each([
+      [true, 'debug'],
+      [false, undefined],
+    ])('debugBuild를 생략하면 __DEV__=%s를 따른다', async (dev, expected) => {
+      devGlobal.__DEV__ = dev;
+
+      const headers = await platformRequestHeaders({});
+
+      for (const header of headers) {
+        expect(header['X-Seori-Build']).toBe(expected);
+      }
+    });
   });
 });

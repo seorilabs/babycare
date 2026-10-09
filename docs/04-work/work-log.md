@@ -1,5 +1,12 @@
 # Work Log
 
+## 2026-10-09 — 개발용 빌드의 Platform 요청에 `X-Seori-Build: debug` 표시
+
+- QA 실기기의 개발용 빌드가 운영 Platform에 붙을 때마다 가짜 신규 가입 알림과 지표 오염이 생겼다. Platform(seorilabs/platform#222)은 `X-Seori-Build: debug` 요청을 그대로 처리하되 신규 가입·버전 최초 관측·이벤트 수집·presence·광고 보상 알림·사용자 수에서 뺀다.
+- 이 저장소는 SDK 대신 직접 HTTP로 Platform을 부르므로 `packages/product-data/src/platform-build.ts` 한 곳에서 헤더를 만든다. 번들러의 `__DEV__`(Metro·Granite 모두 마켓 출시 번들은 `false`)를 따르고, 사람이 빌드마다 켜고 끄는 설정은 두지 않는다. mobile은 composition root의 `dev`를 Platform 이벤트·인증 bridge에 넘기고, AIT는 인증·계정 삭제·이벤트 요청이 같은 helper를 쓴다.
+- `createPlatform`을 쓰는 update gate·presence 경로는 고정된 `@seorilabs/platform-sdk@0.5.0`이라 아직 헤더를 보내지 않는다. 0.6.0이 같은 동작을 SDK 안에서 하므로 승인된 SDK 버전을 옮길 때 함께 해결된다. 현재 presence는 꺼져 있고 update gate의 `/v1/config`는 운영 관측 대상이 아니다.
+- 서버가 헤더를 해석하고 CORS 허용 목록에도 넣은 Platform#222 배포를 확인한 뒤 병합한다.
+
 ## 2026-09-19 — public 전환과 세 마켓 GitHub Actions 통합 배포
 
 - 조직 Actions 쿼타 보호를 위해 저장소를 public으로 전환했다. 전환 전 히스토리 blob 1,772개(38MB)를 스캔해 private key·service account JSON·API 토큰·keystore가 0건임을 확인했고, secret scanning·push protection 활성화 뒤 알림도 0건이다. org runner group이 전부 `allows_public_repositories: false`라 이 저장소는 ARC를 쓸 수 없고 모든 job이 GitHub-hosted `ubuntu-latest`로 간다.

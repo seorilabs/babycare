@@ -53,6 +53,7 @@ import {
   careEventsEqual,
 } from '../../../../packages/product-data/src/care-event-revision.ts';
 import {careEventSyncStorageKey} from '../../../../packages/product-data/src/persistent-care-event-sync-store.ts';
+import {platformBuildHeaders} from '../../../../packages/product-data/src/platform-build.ts';
 import {currentAitAppCheckToken} from './ait-app-check';
 
 const PROJECT_ID = 'seorilabs-babycare';
@@ -317,6 +318,7 @@ async function createAccessSession(): Promise<AccessSession> {
       headers: {
         'Content-Type': 'application/json',
         'X-Seori-App': 'babycare',
+        ...platformBuildHeaders(),
         'X-Firebase-AppCheck': appCheckToken,
       },
       body: JSON.stringify({appId: 'babycare'}),
@@ -1550,6 +1552,7 @@ export async function deleteCareAccount(ready: ReadyCareSession): Promise<void> 
     headers: {
       'Content-Type': 'application/json',
       'X-Seori-App': 'babycare',
+      ...platformBuildHeaders(),
       'X-Firebase-AppCheck': appCheckToken,
     },
     body: JSON.stringify({
