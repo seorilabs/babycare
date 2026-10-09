@@ -357,6 +357,7 @@ export async function createFirebaseRuntime(
               return user ? getIdToken(user) : undefined;
             },
             context: analyticsContext,
+            debugBuild: dev,
           }),
         ])
       : {track: async () => undefined});
@@ -415,6 +416,7 @@ export async function createFirebaseRuntime(
           appCheckToken: appCheck
             ? () => appCheck.getToken()
             : undefined,
+          debugBuild: dev,
         })
       : undefined);
   const authAdapter = new FirebaseAuthAdapter(

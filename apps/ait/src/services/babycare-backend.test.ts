@@ -20,6 +20,8 @@ import {
   AitFirestoreCareEventRemoteStore,
   createCareGroup,
   createInviteCode,
+  currentFirebaseIdToken,
+  deleteCareAccount,
   type ReadyCareSession,
   updateCareBaby,
 } from './babycare-backend';
@@ -308,4 +310,83 @@ describe('AppsInToss BabyCare backend', () => {
     expect(JSON.stringify(patchBody)).not.toContain('ownerId');
     expect(JSON.stringify(patchBody)).not.toContain('privateNote');
   });
+});
+
+describe('AppsInToss BabyCare backend Platform 개발용 빌드 표시', () => {
+  const devGlobal = globalThis as typeof globalThis & {__DEV__?: boolean};
+  const originalDev = devGlobal.__DEV__;
+
+  beforeEach(() => {
+    mockStored.clear();
+  });
+
+  afterEach(() => {
+    devGlobal.__DEV__ = originalDev;
+  });
+
+  function recordPlatformRequests(): {url: string; headers: Record<string, string>}[] {
+    const platformRequests: {url: string; headers: Record<string, string>}[] = [];
+    global.fetch = jest.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/mintAitAppCheckToken')) {
+        return response({
+          token: 'app-check-token',
+          expireTimeMillis: Date.now() + 60 * 60 * 1_000,
+        });
+      }
+      if (url.includes('/v1/auth/')) {
+        platformRequests.push({
+          url,
+          headers: init?.headers as Record<string, string>,
+        });
+        return url.endsWith('/v1/auth/firebase-account')
+          ? response({ok: true, result: {deleted: true}})
+          : response({
+              ok: true,
+              result: {firebaseCustomToken: 'custom-token', appUserId: 'user-1'},
+            });
+      }
+      if (url.includes('accounts:signInWithCustomToken')) {
+        return response({
+          idToken: 'id-token-1',
+          refreshToken: 'refresh-token-1',
+          localId: 'user-1',
+        });
+      }
+      if (url.includes('securetoken.googleapis.com')) {
+        return response({
+          id_token: 'id-token-2',
+          refresh_token: 'refresh-token-2',
+          user_id: 'user-1',
+        });
+      }
+      if (url.endsWith('/deleteAccount')) {
+        return response({result: {deleted: true}});
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }) as unknown as typeof fetch;
+    return platformRequests;
+  }
+
+  it.each([
+    [true, 'debug'],
+    [false, undefined],
+  ])(
+    '__DEV__=%s일 때 Platform 계정 발급과 삭제 요청의 X-Seori-Build를 맞춘다',
+    async (dev, expected) => {
+      devGlobal.__DEV__ = dev;
+      const platformRequests = recordPlatformRequests();
+
+      await currentFirebaseIdToken();
+      await deleteCareAccount({uid: 'user-1'} as ReadyCareSession);
+
+      expect(platformRequests.map(request => request.url)).toEqual([
+        'https://platform-api-306278488979.asia-northeast3.run.app/v1/auth/firebase-custom-token',
+        'https://platform-api-306278488979.asia-northeast3.run.app/v1/auth/firebase-account',
+      ]);
+      for (const request of platformRequests) {
+        expect(request.headers['X-Seori-Build']).toBe(expected);
+        expect(request.headers['X-Seori-App']).toBe('babycare');
+      }
+    },
+  );
 });

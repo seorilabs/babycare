@@ -3,6 +3,8 @@ import type {
   BabyCareAnalyticsEvent,
 } from '@babycare/product-core';
 
+import {isDevelopmentBuild, platformBuildHeaders} from './platform-build.ts';
+
 const PLATFORM_APP_ID = 'babycare';
 const MAX_BATCH = 20;
 const MAX_BUFFER = 200;
@@ -94,6 +96,8 @@ interface PlatformAnalyticsOptions {
   readonly fetchImpl?: typeof fetch;
   readonly now?: () => number;
   readonly flushIntervalMs?: number;
+  /** 개발용 빌드인지. 생략하면 번들러의 `__DEV__`를 따른다. */
+  readonly debugBuild?: boolean;
 }
 
 interface BufferedPlatformEvent {
@@ -198,6 +202,7 @@ export class PlatformAnalytics implements AnalyticsPort {
   readonly #ga4ClientId: (() => Promise<string | undefined>) | undefined;
   readonly #fetch: typeof fetch;
   readonly #now: () => number;
+  readonly #debugBuild: boolean;
   #sessionId: string;
   #lastEventAt: number;
   #backgroundAt: number | undefined;
@@ -219,6 +224,7 @@ export class PlatformAnalytics implements AnalyticsPort {
     this.#ga4ClientId = options.ga4ClientId;
     this.#fetch = options.fetchImpl ?? globalThis.fetch;
     this.#now = options.now ?? Date.now;
+    this.#debugBuild = options.debugBuild ?? isDevelopmentBuild();
     const startedAt = this.#now();
     this.#sessionId = String(startedAt);
     this.#lastEventAt = startedAt;
@@ -314,6 +320,7 @@ export class PlatformAnalytics implements AnalyticsPort {
           'Content-Type': 'application/json',
           'X-Seori-App': PLATFORM_APP_ID,
           'X-Seori-Sdk': SDK_VERSION,
+          ...platformBuildHeaders(this.#debugBuild),
           ...(token ? {Authorization: `Bearer ${token}`} : {}),
         },
         body: JSON.stringify({
@@ -401,6 +408,7 @@ export class PlatformAnalytics implements AnalyticsPort {
       headers: {
         'Content-Type': 'application/json',
         'X-Seori-App': PLATFORM_APP_ID,
+        ...platformBuildHeaders(this.#debugBuild),
       },
       body: JSON.stringify({
         credential: {kind: 'firebase-id-token', value: idToken},

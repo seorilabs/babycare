@@ -316,3 +316,40 @@ it('builds the scoped care-event container from a ready Firebase session', async
     }),
   );
 });
+
+describe('Platform 개발용 빌드 표시', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it.each([
+    [true, 'debug'],
+    [false, undefined],
+  ])(
+    'composition root의 dev=%s를 Platform 이벤트 요청의 X-Seori-Build로 넘긴다',
+    async (dev, expected) => {
+      const fetchMock = jest.fn(
+        async (_input: RequestInfo | URL, _init?: RequestInit) =>
+          ({ok: true, status: 200, json: async () => ({})}) as Response,
+      );
+      globalThis.fetch = fetchMock as unknown as typeof fetch;
+      mockGetApps.mockReturnValue([nativeApp]);
+
+      const runtime = await createFirebaseRuntime({
+        dev,
+        platform: 'android',
+        appCheck,
+      });
+      await (runtime.analytics as {flush?: () => Promise<void>}).flush?.();
+
+      const eventRequest = fetchMock.mock.calls.find(([input]) =>
+        String(input).endsWith('/v1/events'),
+      );
+      expect(eventRequest).toBeDefined();
+      const headers = eventRequest?.[1]?.headers as Record<string, string>;
+      expect(headers['X-Seori-Build']).toBe(expected);
+    },
+  );
+});

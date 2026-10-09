@@ -1,3 +1,5 @@
+import {isDevelopmentBuild, platformBuildHeaders} from '@babycare/product-data';
+
 export const PLATFORM_FIREBASE_AUTH_CONFIG = {
   appId: 'babycare',
   baseUrl: 'https://platform-api-306278488979.asia-northeast3.run.app',
@@ -48,6 +50,8 @@ export interface PlatformFirebaseCustomTokenBridgeOptions {
   readonly appId?: string;
   readonly fetch?: typeof fetch;
   readonly appCheckToken?: () => Promise<string | undefined>;
+  /** 개발용 빌드인지. 생략하면 번들러의 `__DEV__`를 따른다. */
+  readonly debugBuild?: boolean;
 }
 
 function nonEmptyString(value: unknown): string | undefined {
@@ -133,6 +137,7 @@ export class PlatformFirebaseCustomTokenBridge
   readonly #appId: string;
   readonly #fetch: typeof fetch;
   readonly #appCheckToken?: () => Promise<string | undefined>;
+  readonly #debugBuild: boolean;
 
   constructor(options: PlatformFirebaseCustomTokenBridgeOptions = {}) {
     this.#baseUrl = (
@@ -141,6 +146,7 @@ export class PlatformFirebaseCustomTokenBridge
     this.#appId = options.appId ?? PLATFORM_FIREBASE_AUTH_CONFIG.appId;
     this.#fetch = options.fetch ?? fetch;
     this.#appCheckToken = options.appCheckToken;
+    this.#debugBuild = options.debugBuild ?? isDevelopmentBuild();
   }
 
   async createFirebaseCustomToken(input: {
@@ -157,6 +163,7 @@ export class PlatformFirebaseCustomTokenBridge
         headers: {
           'Content-Type': 'application/json',
           'X-Seori-App': this.#appId,
+          ...platformBuildHeaders(this.#debugBuild),
           ...(appCheckToken
             ? {'X-Firebase-AppCheck': appCheckToken}
             : {}),
@@ -200,6 +207,7 @@ export class PlatformFirebaseCustomTokenBridge
         headers: {
           'Content-Type': 'application/json',
           'X-Seori-App': this.#appId,
+          ...platformBuildHeaders(this.#debugBuild),
           ...(appCheckToken
             ? {'X-Firebase-AppCheck': appCheckToken}
             : {}),

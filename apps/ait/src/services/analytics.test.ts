@@ -90,4 +90,52 @@ describe('AppsInToss Platform analytics relay', () => {
     });
     expect(body.events[1].params.engagement_time_msec).toBeGreaterThanOrEqual(1);
   });
+
+  describe('개발용 빌드 표시', () => {
+    const devGlobal = globalThis as typeof globalThis & {__DEV__?: boolean};
+    const originalDev = devGlobal.__DEV__;
+
+    afterEach(() => {
+      devGlobal.__DEV__ = originalDev;
+    });
+
+    it.each([
+      [true, 'debug'],
+      [false, undefined],
+    ])(
+      '__DEV__=%s일 때 세션 교환과 이벤트 전송의 X-Seori-Build를 맞춘다',
+      async (dev, expected) => {
+        devGlobal.__DEV__ = dev;
+        const fetchImpl = jest.fn(
+          async (url: string | URL | Request, _init?: RequestInit) => {
+            void _init;
+            if (String(url).endsWith('/v1/auth/session')) {
+              return response({
+                ok: true,
+                status: 200,
+                body: {
+                  ok: true,
+                  result: {platformToken: 'platform-token', expiresIn: 3600},
+                },
+              });
+            }
+            return response({ok: true, status: 200});
+          },
+        );
+        const analytics = createBabycareAnalytics(fetchImpl as typeof fetch);
+
+        await analytics.flush();
+        await analytics.stop();
+
+        expect(fetchImpl.mock.calls.map(([url]) => String(url))).toEqual([
+          'https://platform-api-306278488979.asia-northeast3.run.app/v1/auth/session',
+          'https://platform-ingest-306278488979.asia-northeast3.run.app/v1/events',
+        ]);
+        for (const [, init] of fetchImpl.mock.calls) {
+          const headers = init?.headers as Record<string, string>;
+          expect(headers['X-Seori-Build']).toBe(expected);
+        }
+      },
+    );
+  });
 });

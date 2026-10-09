@@ -327,3 +327,77 @@ describe('PlatformAnalytics', () => {
     expect(renewedBatch[1].params.engagement_time_msec).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('PlatformAnalytics 개발용 빌드 표시', () => {
+  const devGlobal = globalThis as typeof globalThis & {__DEV__?: boolean};
+  const originalDev = devGlobal.__DEV__;
+
+  afterEach(() => {
+    devGlobal.__DEV__ = originalDev;
+  });
+
+  async function platformRequests(options: {readonly debugBuild?: boolean}) {
+    const fetchImpl = jest.fn(async (url: string | URL | Request) => {
+      if (String(url).endsWith('/v1/auth/session')) {
+        return response({
+          ok: true,
+          status: 200,
+          body: {
+            ok: true,
+            result: {platformToken: 'platform-token', expiresIn: 3600},
+          },
+        });
+      }
+      return response({ok: true, status: 200});
+    }) as jest.MockedFunction<typeof fetch>;
+    const analytics = new PlatformAnalytics({
+      baseUrl: 'https://platform.example.com',
+      eventsBaseUrl: 'https://platform-ingest.example.com',
+      context: {platform: 'android', appVersion: '1.0.0'},
+      firebaseIdToken: async () => 'firebase-token',
+      fetchImpl,
+      flushIntervalMs: 0,
+      ...options,
+    });
+    await analytics.flush();
+    return fetchImpl.mock.calls.map(([url, init]) => ({
+      url: String(url),
+      headers: init?.headers as Record<string, string>,
+    }));
+  }
+
+  it('개발용 빌드는 세션 교환과 이벤트 전송 모두에 X-Seori-Build: debug를 붙인다', async () => {
+    const requests = await platformRequests({debugBuild: true});
+
+    expect(requests.map(request => request.url)).toEqual([
+      'https://platform.example.com/v1/auth/session',
+      'https://platform-ingest.example.com/v1/events',
+    ]);
+    for (const request of requests) {
+      expect(request.headers).toMatchObject({'X-Seori-Build': 'debug'});
+    }
+  });
+
+  it('마켓 출시 빌드는 어떤 Platform 요청에도 X-Seori-Build를 보내지 않는다', async () => {
+    const requests = await platformRequests({debugBuild: false});
+
+    expect(requests).toHaveLength(2);
+    for (const request of requests) {
+      expect(request.headers).not.toHaveProperty('X-Seori-Build');
+    }
+  });
+
+  it.each([
+    [true, 'debug'],
+    [false, undefined],
+  ])('debugBuild를 생략하면 __DEV__=%s를 따른다', async (dev, expected) => {
+    devGlobal.__DEV__ = dev;
+
+    const requests = await platformRequests({});
+
+    expect(requests).toHaveLength(2);
+    for (const request of requests) {
+      expect(request.headers['X-Seori-Build']).toBe(expected);
+    }
+  });
+});
