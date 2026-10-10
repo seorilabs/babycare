@@ -11,6 +11,7 @@ const PLATFORM_INGEST_URL =
 
 export const BABYCARE_PRESENCE_ENABLED = false;
 
+// SDK client는 debugBuild를 생략해 Metro `__DEV__`를 따른다. 출시 번들은 false다.
 export const mobilePresencePlatform = createPlatform({
   appId: 'babycare',
   baseUrl: PLATFORM_API_URL,

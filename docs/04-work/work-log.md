@@ -1,5 +1,11 @@
 # Work Log
 
+## 2026-10-10 — Platform SDK 0.6.0 고정과 SDK 경로의 개발용 빌드 표시
+
+- `apps/mobile`, `apps/ait`의 `@seorilabs/platform-sdk`를 0.5.0에서 0.6.0으로 올렸다. SDK 0.6.0은 `debugBuild`를 생략하면 번들러의 `__DEV__`를 따라 `X-Seori-Build: debug`를 붙인다. 두 target의 `createPlatform`(update gate·presence)은 옵션을 넘기지 않고 이 기본값을 쓴다. Metro 출시 번들과 `ait build`(dev=false) 번들은 `__DEV__`가 false다.
+- 2026-10-09 기록의 남은 항목(SDK 경로 미표시)이 이것으로 닫혔다. 실제 SDK로 두 조합 지점을 불러와 `__DEV__`에 따른 세션 교환 헤더를 확인하는 테스트를 추가했다.
+- SDK 승인 체계가 은퇴해 lock 검사 기준값을 `APPROVED_SDK_VERSION`에서 `PINNED_SDK_VERSION`(고정 버전)으로 바꿨다. exact 선언·lockfile 해석·npm 공개 레지스트리 integrity 검사는 그대로다. pnpm 신규 릴리스 대기 예외도 0.6.0으로 옮겼다.
+
 ## 2026-10-09 — 개발용 빌드의 Platform 요청에 `X-Seori-Build: debug` 표시
 
 - QA 실기기의 개발용 빌드가 운영 Platform에 붙을 때마다 가짜 신규 가입 알림과 지표 오염이 생겼다. Platform(seorilabs/platform#222)은 `X-Seori-Build: debug` 요청을 그대로 처리하되 신규 가입·버전 최초 관측·이벤트 수집·presence·광고 보상 알림·사용자 수에서 뺀다.
