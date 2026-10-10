@@ -13,6 +13,7 @@ export {AIT_APP_VERSION} from './release-version';
 
 export const BABYCARE_AIT_PRESENCE_ENABLED = false;
 
+// SDK client는 debugBuild를 생략해 Granite 번들의 `__DEV__`를 따른다. `ait build` 번들은 false다.
 export const aitPresencePlatform = createPlatform({
   appId: 'babycare',
   baseUrl: PLATFORM_API_URL,
