@@ -3,6 +3,15 @@
 > 등록·공개 원장. 2026-08-10 사용자 실기기 QA 통과 뒤 `v1.1.3` 전체 출시와 176개 국가·지역을 포함한 변경사항 12개를 제출했다. 2026-08-21 한국 공개 listing HTTP 200, 제품명과 version `1.1.3`을 readback해 공개 gate를 닫았다.
 > 기계 판독 source of truth: `play-store/google-play.config.json`
 
+## 2026-10-29 계정 이전 후 확인
+
+- 사용자 보고: `magicsih@gmail.com`에서 `ih@seorilabs.com`으로 앱 이전 완료. 독립 Edge 세션에서 기대 Google 계정 인증을 확인했고, Play Console의 `Seori Labs` 조직 계정(ID `5851687664284043768`) 앱 목록에서 `com.seorilabs.babycare` 소유를 재조회했다. 이 앱의 후속 작업은 실제 소유 계정을 기준으로 한다.
+- [정책 문제](https://play.google.com/console/u/0/developers/5851687664284043768/app/4972180141736019162/policy-center/issues/4989459429477169661/details): 2026-10-25 `Play Console Requirements` 위반으로 업데이트가 거부됐다. 상세 사유는 앱 분류 또는 신고한 기능 때문에 조직 계정으로 제출해야 한다는 내용이다. 이전 버전은 계속 제공된다. 조직 계정 이전은 확인했지만 거절 해제나 재접수는 아직 확인하지 않았다.
+- 게시용 서비스 계정 `seorilabs-play-publisher@seorilabs-gws.iam.gserviceaccount.com`으로 앱의 트랙 조회에 성공했다. `production`은 `v1.1.12`, `internal`은 `1.1.12`이며 둘 다 `versionCode=1001012`, `status=completed`다. Console 프로덕션 화면도 `v1.1.12`를 활성 최신 출시 버전으로 표시하며 국가와 지역 수는 178개다. 조회용 임시 edit은 commit하지 않고 삭제했다. 개발자 계정 사용자 목록 조회는 HTTP 403이므로 이 결과로 계정 관리 권한을 주장하지 않는다.
+- [게시 개요](https://play.google.com/console/u/0/developers/5851687664284043768/app/4972180141736019162/publishing)는 최근 게시일을 2026-09-23으로 표시한다. 한국어 간단한 설명, 영어 제목 `BabyNest: Baby Tracker`, 영어 간단한 설명의 변경 3건이 제출 전 상태다. 기존에 저장된 변경을 덮어쓰거나 전송하지 않았다.
+- 새 바이너리 출시 경로를 확인하려고 중앙 `seorilabs/.github@30a76ba821e2438910479271862b8a566436661e` 검증기를 기존 태그 `v1.1.12`, 소스 `56260418be805b67f942ca4eabc805661f81d322`, 대상 `google-play`, 단계 `before-release`로 실행했다. 결과는 exit 1, `REQUIRED_DEVELOPMENT_EVIDENCE_MISSING`이다. 해당 Release에는 `release-notes.json`만 있고 필수 `development-evidence.google-play.before-release.json`, `before-deploy.json`, `before-build.json`이 없다. 저장소에도 `docs/design/`의 테스트 계획과 `docs/qa/feature-inventory.json`이 없다. 기존 정적 검사나 9월 사용자 QA를 현재 중앙 검증 통과로 바꾸지 않는다.
+- 이번 확인에서는 새 태그 발급, 새 AAB 빌드나 업로드, 프로덕션 승격, 재제출, 기기 접근을 하지 않았다. 기존 빌드의 등록정보만 재검토할지, 최신 `main@b3a47ab5ccda07ce9999fa3ca07b2dbff3547080`을 새 버전으로 배포할지는 현재 요청의 후속 범위로 구분한다. 새 바이너리는 승인된 검수 계획과 실제 실행 기록을 갖춘 뒤 중앙 검증을 통과해야 한다.
+
 ## App Identity
 
 - **Play Console 앱 생성 + 리스팅 draft 반영 (2026-07-18)** — publisher SA로 ko-KR·en-US 제목·설명, 아이콘 512·피처그래픽·phone 스크린샷 3컷 커밋(리스팅 콘텐츠 검토는 자동 트리거, 앱 게시/출시는 아님 — 릴리스 트랙 없음)
